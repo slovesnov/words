@@ -1,0 +1,123 @@
+Search{
+anagrams
+pangrams
+pattern
+palindromes
+words for crossword
+regular expressions
+modifications of words
+chains of words
+characters sequence
+SEPARATOR
+simple sequence words
+double sequence words
+full sequence words
+SEPARATOR
+keyboard words (one row)
+keyboard words (row + diagonals)
+SEPARATOR
+consonants or vowels sequences
+words with low density of consonants or vowels
+SEPARATOR
+words from two dictionaries{
+matched words (simple)
+matched words (transliteration)
+keyboard words
+}
+}
+Edit{
+select all and copy to clipboard
+select all
+copy to clipboard
+}
+Additions{
+load dictionary{
+english
+russian
+}
+dictionary statistics
+frequency of word length (descend)
+check dictionary
+two nearby characters distribution
+}
+Language{
+english
+russian
+}
+Help{
+about
+homepage
+}
+
+program words version 
+author Alexey Slovesnov
+copyright (C/C++/gtk) 2000 - doomsday
+homepage
+online version
+email
+Invalid word found
+symbol out of alphabet found
+error
+line
+Proceed symbols
+words
+Search palindromes. Palindrome is a word, that reads the same backwards as forwards. For example <i>rotator</i>.
+number of words
+All characters of the word should be on one horizontal or vertical keyboard row.
+All neighbour characters of the word should be adjacent keys (horizontally, vertically or diagonally) on keyboard.
+Full sequence words are pair of words. If read the first word backward one got the second word and vice versa. For example, <i>kramer</i> - <i>remark</i>. Palindromes are ignored.
+different characters
+characters
+vowels
+consonants
+search in any place of the word
+search in beginning of the word
+search in end of the word
+minimum
+maximum
+sequence
+Simple sequence words. Search two sets of words such that some number of last characters for any word of first set are  first characters of any word from second set. Consider two sets. The first one consists of two words <i>animated</i> and <i>exanimated</i>. The second one also has two words <i>animated</i> and <i>animatedly</i>. Last eight letters of any word <i>animated</i> or <i>exanimated</i>, agree with first eight letters of words <i>animated</i> and <i>animatedly</i>.<br><i>Note.</i> Word <i>animated</i> has eight characters and first eight characters are the same with last eight characters. So any word is a sequence of itself. If there are no words found which starts from <i>animated</i> or ended by <i>animated</i> then set is not consider as trivial.
+Search characters sequence. For sequence <i>mata</i> program finds next words <i>matador</i>, <i>razzmatazz</i> and so on.
+Shows two nearby characters distribution in the words of dictionary, sorted in descending order.
+Search anagrams. Anagram is a word, the result of rearranging the letters of it, produce a another word. For example, <i>calligraphy</i> - <i>graphically</i>.
+Pangrams are words which has as many as possible different alphabet characters.
+Search words for crossword. For template <i>m***m</i> program finds the words <i>madam</i>, <i>modem</i> etc.
+Search using pattern. Words include all of the letters or part of the letters or consist of only letters from pattern. Search options<br>1 <i>words contain all of the pattern letters</i> - words have all of the letters from pattern and any number of additional letters.<br>2 <i>words contain part of the pattern letters</i> - words contain part of the letters from pattern and no one another characters.<br>3 <i>words consist of only pattern letters</i> - any letter from word should be one of the pattern letter.
+words contain all of the pattern letters
+words contain part of the pattern letters
+words consist of only pattern letters
+Search regular expressions with given number of matches. Regular expression is a sequence of symbols and characters expressing a string or pattern to be searched for within a longer piece of text. For example for regular expression <i>we$</i> program finds the words which ends with <i>we</i>. Regular expressions are very powerful tool for searching. For more information you can make internet search with request string <i>regular expressions of perl</i>.
+Double sequence words. Search two sets of words such that some number of last characters for any word of first set are  first characters of any word from second set and vice versa. Consider two sets. The first one consists of two words <i>bleeder</i> and <i>blender</i>. The second one also has two words <i>derisible</i> and <i>derivable</i>. Last three letters of any word <i>bleeder</i> or <i>blender</i>, agree with first three letters of words <i>derisible</i> and <i>derivable</i>. And at the same time last three characters of <i>derisible</i> and <i>derisible</i> are first characters of any word <i>bleeder</i> or <i>blender</i>.<br><i>Note.</i> As in the case of searching for sequence words trivial sets are excluded.
+from
+to
+number of matches
+time of last operation
+Search words which write in english the same as in russian. For example, <i>Beep</i> (english word) - <i>веер</i> (russian word).
+Search pairs of words which after keyboard typing with invalid keyboard locale give valid word on another language. For example, <i>entity</i> (english word) - <i>утешен</i> (russian word).
+Frequency of word length.
+Dictionary check finished successfully
+sorted by alphabet
+sorted by frequency
+Characters frequency
+Characters frequency at the beginning of the word
+Characters frequency at the end of the word
+Average word length is
+Frequency of characters on keyboard
+length
+The longest word is
+dictionary
+Search words which write in english the same as in transliterate russian. For example, <i>administrator</i> (english word) - <i>администратор</i> (russian word).
+Search sequences of given number of consonant or vowel characters.
+Search words with low density of consonant or vowel characters.
+sort by alphabet
+sort by length
+sort by number of words
+sort by percent of vowels
+sort by percent of consonants
+sort by number of different characters
+words of dictionary are not in alphabet order
+Search modifications of words. There are three types of modifications: replaces, inserts and substrings. Also it's possible to set several modifications.<br>REPLACES. Syntax <i>string1&gt;string2</i>.<br>String <i>ab&gt;cde</i> means replace all occurences of <i>ab</i> to <i>cde</i>. String <i>k&gt;0</i> means replace all characters <i>k</i> to empty string.<br>INSERTS/CONCATENATIONS. Syntax <i>+index,string</i>.<br>String <i>+0,b</i> add character <i>b</i> to the beginning (before first symbol of word). String <i>+2,we</i> inserts <i>we</i> before third symbol of word. String <i>+L,y</i> add <i>y</i> to the end. String <i>+L-1,s</i> inserts <i>s</i> before last symbol of word.<br>SUBSTRINGS. Syntax <i>-index,length</i>.<br>String <i>-0,3</i> leaves first three chars of word. String  <i>-4,3</i> leaves three chars from fifth char. If second parameter is not set (eg. <i>-3</i>), then left all chars till the end (from fourth symbol). String <i>-L-5,3</i> leaves three letters from fifth char from the end of the word. String <i>-L-5</i> leaves last five chars. Other string examples <i>-4,L-5</i> <i>-L-4,L-5</i>.<br>Not all of replaces change word. If option <i>%s</i> is on, then every single operation should change word.
+every modification changes word
+New version is found on the internet. Download it now?
+Search chains of words such as only one character changes for every step. Consider two words <i>woman</i> and <i>chick</i>. There is a chain <i>woman</i> <i>women</i> <i>woven</i> <i>coven</i> <i>coves</i> <i>cores</i> <i>corns</i> <i>coins</i> <i>chins</i> <i>chink</i> <i>chick</i>. Program searches all chains with shortest length.
+no chains found

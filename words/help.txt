@@ -1,0 +1,283 @@
+==================
+final release
+remove prininfo, println
+remove todos
+NDEBUG
+
+================================================================================
+4.32 only source publish 
+adopted for 64 bit gtk/compiler
+3may2021 make regex under gtk using glib	GRegex*m_regex because standard std::regex doesn't support positive/negative lookahead/lookbehind
+
+================================================================================
+4.31 only source publish (not all features supported by gcc compiler on sourceforge
+
+1. make unique mechanism for regex (cgi & gtk) 
+https://stackoverflow.com/questions/8561850/compile-stdregex-iterator-with-gcc
+<regex> not supported until gcc version 4.9.0
+
+2. make worker threads break using macro #define	RETURN_ON_USER_BREAK(a)
+
+3. avoid breaks using std::unique_ptr
+/* NOTE next two strings of code are the same
+ * to=std::make_unique<StringVector[]>(af.length()); since gcc 4.9
+ * to=std::unique_ptr<StringVector[]>(new StringVector[af.length()]);
+ * but the first one is not supperted by old gcc on sourceforge
+ */
+to=std::unique_ptr<StringVector[]>(new StringVector[af.length()]);
+
+4.3 3 4 2018
+12 апреля 2018 изменения css файла, link:visited, неактивное меню
+добавлен поиск цепочек слов (c++ без php)
+добавлена проверка новой версии
+исправлен баг(?) при синхронизации потоков
+исправлен баг когда пользователь выбирает поиск слов в двух словарях -> совпадающие слова (обычные и транслит), когда текущий словарь английский  (c++ без php)
+исправлен баг когда пользователь выбирает поиск слов в двух словарях и сортировку по числу гл./согл. букв, когда текущий словарь русский  (c++ без php)
+исправлен баг в online версии (картинка поиска неправильно отображалась, под браузером chrome). Картинка перекодирована в photshop'e
+код адаптирован под новую версию gtk 3.22.28
+добавлены слова из спелчекера с сайта <a href="https://extensions.libreoffice.org/extensions/russian-dictionary-pack/0.4.0/">libreoffice.org</a> 254,740 новых слов
+добавлены слова из словарей Лопатина 892 новых слова, Ожегова 259 новых слов
+словарь Даля не добавлялся слишком много устаревших слов
+
+4.3 3 4 2018
+12 april 2018 css file changes, link:visited, disabled menu
+add word chain search (c++ only)
+add check new version
+fixed bug(?) for threads synchronization
+fixed bug when user select search matched words using two dictionaries (simple and translit) when selected english dictionary (c++ only)
+fixed bug when user select search using two dictionaries and sorting by percent of vowels/consonants when selected russian dictionary (c++ only)
+fixed bug for online version (search image not drawing correctly under chrome browser). Image encoded using photoshop
+code is adopted for new gtk version 3.22.28
+added russain words from spellchecker webpage <a href="https://extensions.libreoffice.org/extensions/russian-dictionary-pack/0.4.0/">libreoffice.org</a> 254,740 new words
+added russain words from Lopatin (892 new words) and Ozhegov (259 new words) dictionaries
+russian words from Dal dictionary was not added because there are too many old words
+
+4.2 3 12 2017
+3 декабря 2017 удалены два неправильных слова из русского словаря: "откровеннно" и "поклоннница" 
+добавлена online версия программы, через cgi (проекты cgi_words и gtk_words используют общие файлы)
+добавлена online версия программы, где при поиске используется php
+код адаптирован также под unix системы 
+поиск конкатенаций/подстрок заменен более общим поиском модификаций
+изменен поиск слов последовательностей и двойных слов последовательностей, одинаковые слова теперь не выводятся, если найдено только одно слово в обоих множествах
+строки поиска стали регистронезависимыми для всех опций
+поиск в найденных словах тоже стал регистронезависимым
+добавлена сортировка по алфавиту при поиске последовательности двух букв, если частоты одинаковы
+ускорен поиск клавиатурных слов в двух словарях
+улучшена синхронизация потоков
+
+4.2 3 12 2017
+add online version of program using cgi (cgi_words and gtk_words projects use common files)
+add online version of program using php scripts
+code is adopted for unix systems
+search concatenations/substrings is change to more general modifications search
+change search of simple/double sequence words. The same words now are omitted if only one word in both sets is found
+search strings now case insensitive for all options
+search in found words also case insensitive
+alphabet sorting added for two nearby characters distribution option if frequencies are the same
+accelerate search keyboard words in two dictionaries
+improve thread synchronization
+
+4.1 22 12 2016
+search & sort results using thread to prevent hangs for long operations
+fix bug with regular expressions and some other searches
+source code is adopted for new gcc 5.4.0 & gtk 3.20.6 versions
+accelerate regular expressions search
+add search of concatenations/substrings
+fix bug when user press accelerator key and text entry is active
+correct two words in russian dictionary
+
+4.1 22 12 2016
+поиск и сортировка сделаны отдельной задачей, чтобы предотвратить подвисание при долгих операциях
+исправлен баг при поиске регулярных выражений и похожий поисках
+код переписан для gcc 5.4.0 & gtk 3.20.6
+ускорен поиск регулярных выражений
+добавлен поиск конкатенаций/подстрок
+исправлен баг когда пользователь нажимает акселераторы и при этом курсор в текстовом поле
+исправлены два слова в словаре
+==================
+
+https://wiki.archlinux.org/index.php/Pacman#Installing_package_groups
+17dec
+D:\msys32\mingw32\bin\
+total 349 files
+95 dlls
+212 exe's
+
+
+$ pacman -Ss gtkmm
+mingw32/mingw-w64-i686-gtkmm 2.24.4-3
+    C++ bindings for gtk2 (mingw-w64)
+mingw32/mingw-w64-i686-gtkmm3 3.20.0-1
+    C++ bindings for gtk3 (mingw-w64)
+mingw64/mingw-w64-x86_64-gtkmm 2.24.4-3
+    C++ bindings for gtk2 (mingw-w64)
+mingw64/mingw-w64-x86_64-gtkmm3 3.20.0-1
+    C++ bindings for gtk3 (mingw-w64)
+
+pacman -Rs mingw64/mingw-w64-x86_64-gtkmm3
+==================
+запрос с удаленой базы
+pacman -Ss gtk3
+
+===================================================
+$ pacman -Q
+bash 4.3.042-4
+bash-completion 2.3-1
+bsdcpio 3.2.0-1
+bsdtar 3.2.0-1
+bzip2 1.0.6-2
+ca-certificates 20150426-1
+catgets 1.1-2
+coreutils 8.25-1
+crypt 1.3-1
+curl 7.49.1-1
+dash 0.5.8-1
+file 5.25-1
+filesystem 2016.06-1
+findutils 4.6.0-1
+flex 2.6.0-1
+gawk 4.1.3-1
+gcc-libs 5.3.0-3
+gettext 0.19.7-3
+gmp 6.1.0-2
+gnupg 1.4.20-1
+grep 2.22-3
+gzip 1.7-1
+heimdal-libs 1.5.3-9
+icu 56.1-1
+inetutils 1.9.2-1
+info 6.0-1
+less 481-1
+libarchive 3.2.0-1
+libasprintf 0.19.7-3
+libassuan 2.4.2-1
+libbz2 1.0.6-2
+libcatgets 1.1-2
+libcrypt 1.3-1
+libcurl 7.49.1-1
+libdb 5.3.28-2
+libedit 3.1-20150325
+libexpat 2.1.1-1
+libffi 3.2.1-1
+libgettextpo 0.19.7-3
+libgpg-error 1.21-1
+libgpgme 1.6.0-1
+libiconv 1.14-2
+libidn 1.32-1
+libintl 0.19.7-3
+liblzma 5.2.2-1
+liblzo2 2.09-1
+libmetalink 0.1.2-2
+libnettle 3.2-1
+libopenssl 1.0.2.h-1
+libp11-kit 0.23.2-1
+libpcre 8.38-1
+libpcre16 8.38-1
+libpcre32 8.38-1
+libpcrecpp 8.38-1
+libpcreposix 8.38-1
+libreadline 6.3.008-7
+libsqlite 3.10.0.0-1
+libssh2 1.7.0-1
+libtasn1 4.7-1
+libutil-linux 2.26.2-1
+libxml2 2.9.2-2
+lndir 1.0.3-1
+m4 1.4.17-4
+mingw-w64-i686-adwaita-icon-theme 3.20-1
+mingw-w64-i686-atk 2.20.0-1
+mingw-w64-i686-atkmm 2.24.2-1
+mingw-w64-i686-binutils 2.25.1-5
+mingw-w64-i686-bzip2 1.0.6-5
+mingw-w64-i686-ca-certificates 20150426-2
+mingw-w64-i686-cairo 1.15.2-2
+mingw-w64-i686-cairomm 1.12.0-1
+mingw-w64-i686-crt-git 5.0.0.4671.1b12b90-1
+mingw-w64-i686-expat 2.1.1-1
+mingw-w64-i686-fontconfig 2.11.95-1
+mingw-w64-i686-freetype 2.6.3-2
+mingw-w64-i686-gcc 5.4.0-1
+mingw-w64-i686-gcc-ada 5.4.0-1
+mingw-w64-i686-gcc-fortran 5.4.0-1
+mingw-w64-i686-gcc-libgfortran 5.4.0-1
+mingw-w64-i686-gcc-libs 5.4.0-1
+mingw-w64-i686-gcc-objc 5.4.0-1
+mingw-w64-i686-gdb 7.11.1-2
+mingw-w64-i686-gdbm 1.12-1
+mingw-w64-i686-gdk-pixbuf2 2.35.1-1
+mingw-w64-i686-gettext 0.19.7-1
+mingw-w64-i686-glib2 2.48.1-1
+mingw-w64-i686-glibmm 2.48.1-1
+mingw-w64-i686-gmp 6.1.0-1
+mingw-w64-i686-gnome-common 3.18.0-1
+mingw-w64-i686-graphite2 1.3.8-4
+mingw-w64-i686-gtk2 2.24.28-1
+mingw-w64-i686-gtk3 3.20.6-1
+mingw-w64-i686-harfbuzz 1.2.7-2
+mingw-w64-i686-headers-git 5.0.0.4671.1b12b90-1
+mingw-w64-i686-hicolor-icon-theme 0.15-2
+mingw-w64-i686-isl 0.16.1-1
+mingw-w64-i686-jasper 1.900.1-4
+mingw-w64-i686-json-glib 1.2.0-1
+mingw-w64-i686-libcroco 0.6.11-1
+mingw-w64-i686-libepoxy 1.3.1-1
+mingw-w64-i686-libffi 3.2.1-3
+mingw-w64-i686-libiconv 1.14-5
+mingw-w64-i686-libjpeg-turbo 1.4.2-2
+mingw-w64-i686-libmangle-git 5.0.0.4669.7de6266-1
+mingw-w64-i686-libpng 1.6.21-1
+mingw-w64-i686-librsvg 2.40.16-1
+mingw-w64-i686-libsigc++ 2.8.0-1
+mingw-w64-i686-libsystre 1.0.1-2
+mingw-w64-i686-libtasn1 4.8-1
+mingw-w64-i686-libtiff 4.0.6-1
+mingw-w64-i686-libtre-git r122.c2f5d13-4
+mingw-w64-i686-libwinpthread-git 5.0.0.4670.00cda6f-1
+mingw-w64-i686-libxml2 2.9.4-1
+mingw-w64-i686-lzo2 2.09-2
+mingw-w64-i686-make 4.1.2351.a80a8b8-1
+mingw-w64-i686-mpc 1.0.3-2
+mingw-w64-i686-mpfr 3.1.4-3
+mingw-w64-i686-ncurses 6.0.20160220-2
+mingw-w64-i686-openssl 1.0.2.h-1
+mingw-w64-i686-p11-kit 0.23.2-2
+mingw-w64-i686-pango 1.40.1-1
+mingw-w64-i686-pangomm 2.40.0-1
+mingw-w64-i686-pcre 8.38-1
+mingw-w64-i686-pixman 0.34.0-2
+mingw-w64-i686-pkg-config 0.29.1-1
+mingw-w64-i686-python2 2.7.11-4
+mingw-w64-i686-readline 6.3.008-1
+mingw-w64-i686-shared-mime-info 1.4-2
+mingw-w64-i686-tcl 8.6.5-1
+mingw-w64-i686-termcap 1.3.1-2
+mingw-w64-i686-tk 8.6.5-1
+mingw-w64-i686-tools-git 5.0.0.4669.7de6266-1
+mingw-w64-i686-windows-default-manifest 6.4-2
+mingw-w64-i686-wineditline 2.101-4
+mingw-w64-i686-winpthreads-git 5.0.0.4670.00cda6f-1
+mingw-w64-i686-xz 5.2.2-1
+mingw-w64-i686-zlib 1.2.8-9
+mintty 1~2.3.6-1
+mpfr 3.1.4-1
+msys2-keyring r9.397a52e-1
+msys2-runtime 2.5.2-1
+ncurses 6.0.20160220-1
+openssl 1.0.2.h-1
+p11-kit 0.23.2-1
+pacman 5.0.1.6403.07ca798-1
+pacman-mirrors 20160112-1
+pactoys-git r2.07ca37f-1
+pax-git 20140703.2.1.g469552a-1
+pcre 8.38-1
+pkgfile 15-1
+rebase 4.4.2-1
+sed 4.2.2-2
+tftp-hpa 5.2-1
+time 1.7-1
+tzcode 2015.e-1
+util-linux 2.26.2-1
+wget 1.17.1-3
+which 2.21-2
+xz 5.2.2-1
+zlib 1.2.8-3

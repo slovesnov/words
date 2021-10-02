@@ -1,0 +1,20 @@
+convertion site
+http://icoconvert.com/Multi_Image_to_one_icon
+
+[word icon]
+http://findicons.com/icon/102088/microsoft_word
+
+[ascending]
+http://www.iconarchive.com/show/farm-fresh-icons-by-fatcow/sort-ascending-icon.html
+
+[descending]
+http://www.iconarchive.com/show/farm-fresh-icons-by-fatcow/sort-descending-icon.html
+
+[down]
+http://www.iconarchive.com/show/oxygen-icons-by-oxygen-icons.org/Actions-go-down-icon.html
+
+[up]
+http://www.iconarchive.com/show/oxygen-icons-by-oxygen-icons.org/Actions-go-up-icon.html
+
+[search]
+D:\soft\иконы\kde\modero_icons\new_linyx\32x32\actions\viewmag.png

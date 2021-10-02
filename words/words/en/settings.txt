@@ -1,0 +1,6 @@
+abcdefghijklmnopqrstuvwxyz #alphabet
+aeiouy #vowels
+bcdfghjklmnpqrstvwxyz #consonants Note 'y' is consonant & vowel
+qwertyuiop #keyboard row1
+asdfghjkl  #keyboard row2
+zxcvbnm    #keyboard row3

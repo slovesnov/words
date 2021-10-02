@@ -1,0 +1,27 @@
+//this is en->ru simple conversion rules for more information see enru_translit.txt file 
+ru
+à a
+â b
+ã r
+ä g
+å e
+è u v
+é u v
+ê k
+ì m
+í h
+î o
+ï n
+ð p
+ñ c
+ò t m
+ó y
+õ x
+ö u v
+ø w
+ù w
+ú b
+ü b
+û bi bl
+þ io lo
+ÿ q

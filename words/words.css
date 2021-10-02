@@ -1,0 +1,60 @@
+@define-color selected_bg_color #d0d0d0;
+
+/*messagedialog for new version message*/
+window,dialog,messagedialog {
+	background-image:url('words/images/bg0.jpg');
+}
+
+/*visited link same color with unvisited*/
+dialog label link{
+	color:#2a76c6;
+}
+
+menuitem,menubar{
+	background-color:rgb(240,240,240);
+}
+
+menubar{
+	padding:1px;
+}
+
+menuitem:hover {
+    background-image: -gtk-gradient (linear,left top, left bottom,
+		 from (shade (@selected_bg_color, 1.1)),
+		 to (shade (@selected_bg_color, 0.9)));
+	transition: 200ms linear;		 
+}
+
+menubar > menuitem{/*top menu item no border needs*/
+	border-left:0;
+	border-right:0;
+}
+
+menuitem{
+	color:rgb(0,0,0);
+	border-left: solid 1px rgb(157,157,153); 
+	border-right: solid 1px rgb(157,157,153); 
+}
+
+menuitem:disabled{
+	color:#8e8e8e;
+}
+
+textview {
+	font-size: 10pt;
+	font-family: Monospace;
+}
+
+/*same for menu & label on status bar.*/
+label,combobox{
+	font-size: 10pt;
+	font-family: Tahoma;
+}
+
+.cerror{
+	color:rgb(255,0,0);
+}
+
+.aboutlabel{
+	margin:1px 2px 1px 2px;
+}
