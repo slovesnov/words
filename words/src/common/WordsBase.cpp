@@ -1568,3 +1568,42 @@ bool WordsBase::differenceOnlyOneChar(const std::string& a,
 	return i==1;
 
 }
+
+const std::string WordsBase::localeToUtf8(const std::string& s){
+#ifdef CGI
+	return encode(s,true);
+#else
+	gchar*a=g_locale_to_utf8(s.c_str(), s.length(), NULL, NULL, NULL);
+	std::string r(a);
+	g_free(a);
+	return r;
+#endif
+}
+
+const std::string WordsBase::utf8ToLocale(const std::string& s){
+#ifdef CGI
+	return encode(s,false);
+#else
+	gchar*a=g_locale_from_utf8(s.c_str(), s.length(), NULL, NULL, NULL);
+	std::string r(a);
+	g_free(a);
+	return r;
+#endif
+}
+
+std::string WordsBase::format(const char* f, ...) {
+	va_list a;
+	va_start(a, f);
+	size_t size = vsnprintf(nullptr, 0, f, a) + 1;
+	va_end(a);
+	std::string s;
+	if (size > 1) {
+		s.resize(size);
+		va_start(a, f);
+		vsnprintf(&s[0], size, f, a);
+		va_end(a);
+		s.resize(size - 1);
+	}
+	return s;
+}
+

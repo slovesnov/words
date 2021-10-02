@@ -281,39 +281,14 @@ public:
 		return localeToUtf8(localeToLowerCase(utf8ToLocale(s),onlyRussainChars));
 	}
 
-	static const std::string localeToUtf8(const std::string& s){
-#ifdef CGI
-		return encode(s,true);
-#else
-		return g_locale_to_utf8(s.c_str(),s.length(),NULL,NULL,NULL);
-#endif
-	}
-
-	static const std::string utf8ToLocale(const std::string& s){
-#ifdef CGI
-		return encode(s,false);
-#else
-		return g_locale_from_utf8(s.c_str(),s.length(),NULL,NULL,NULL);
-#endif
-	}
+	static const std::string localeToUtf8(const std::string& s);
+	static const std::string utf8ToLocale(const std::string& s);
 
 	/* remove '\n' or '\r\n' under unix at the end of string
 	 */
 	static void removeLastCRLF(char*p);
 
-	/* in WordsBase::loadLanguage()
-	 * m_language[MODIFICATION_HELP]=format(m_language[MODIFICATION_HELP].c_str(),m_language[EVERY_MODIFICATION_CHANGES_WORD].c_str());
-	 * m_language[MODIFICATION_HELP] is utf8 string so all russian chars is two bytes, so have to use
-	 * approx 2*(MAX_BUFF_LEN+strlen(m_language[EVERY_MODIFICATION_CHANGES_WORD]))
-	 */
-	static std::string format(const char * format, ... ){
-	  char buffer[MAX_BUFF_LEN*2];
-	  va_list args;
-	  va_start (args, format);
-	  vsprintf (buffer,format, args);
-	  va_end (args);
-	  return buffer;
-	}
+	static std::string format(const char * format, ... );
 
 	static std::string intToString(int v,char separator=' '){//format(1234567,3)="1 234 567"
 		const int digits=3;
