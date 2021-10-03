@@ -124,3 +124,4 @@ email
 фильтр (регул€рное выражение)
 с фильтром
  //thousand separator uses only first symbol in string. Space for russia
+размер исполн€емого файла

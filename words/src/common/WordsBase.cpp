@@ -1275,7 +1275,7 @@ bool WordsBase::dictionaryStatistics() {
 	return false;
 }
 
-void WordsBase::sortResults() {
+void WordsBase::sortFilterResults() {
 	int i;
 	//leave SearchResultVectorCI for old gcc compiler under sf.net
 	SearchResultVectorCI it;

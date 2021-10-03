@@ -9,7 +9,7 @@
 
 int main (int argc, char** argv){
 	gtk_init (&argc, &argv);
-	Frame frame;
+	Frame frame(argv[0]);
 	gtk_main ();
 
 	return 0;

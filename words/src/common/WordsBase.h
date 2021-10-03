@@ -288,7 +288,7 @@ public:
 
 	static std::string intToString(int v,char separator);
 	std::string intToString(int v);
-	void sortResults();
+	void sortFilterResults();
 
 	void loadLanguage();
 	static const std::string parseString(const char* buff);

@@ -7,6 +7,7 @@
 
 #include "Frame.h"
 #include "CheckNewVersion.h"
+#include <glib/gstdio.h>
 
 /*
  * WINDOW_SIZE_TYPE=0 default
@@ -51,8 +52,8 @@ static gpointer thread(gpointer) {
 	return NULL;
 }
 
-static gpointer sort_thread(gpointer) {
-	frame->sortAndUpdateResults();
+static gpointer sort_filter_thread(gpointer) {
+	frame->sortFilterAndUpdateResults();
 	return NULL;
 }
 
@@ -108,7 +109,7 @@ static void destroy_window(GtkWidget *object, gpointer) {
 	frame->destroy();
 }
 
-Frame::Frame() :
+Frame::Frame(const char*path) :
 		WordsBase("words/") {
 	GtkWidget *w, *w1, *w2, *scroll;
 	GtkWidget *item;
@@ -119,11 +120,11 @@ Frame::Frame() :
 	std::vector<GtkMenuItem*> subMenu;
 	std::string s;
 
-	assert(G_N_ELEMENTS(ICON_MENU)==G_N_ELEMENTS(ICON_MENU_FILE_NAME));
-	assert(G_N_ELEMENTS(HELPER_MENU)==G_N_ELEMENTS(HELPER_STRING));
-	assert(G_N_ELEMENTS(FUNCTION_MENU)==G_N_ELEMENTS(FUNCTION_ID));
-	assert(G_N_ELEMENTS(BOOL_VOID_MENU)==G_N_ELEMENTS(BOOL_VOID_FUNCTION));
-	assert(MENU_ACCEL_SIZE==G_N_ELEMENTS(ACCEL_KEY));
+	static_assert(G_N_ELEMENTS(ICON_MENU)==G_N_ELEMENTS(ICON_MENU_FILE_NAME));
+	static_assert(G_N_ELEMENTS(HELPER_MENU)==G_N_ELEMENTS(HELPER_STRING));
+	static_assert(G_N_ELEMENTS(FUNCTION_MENU)==G_N_ELEMENTS(FUNCTION_ID));
+	static_assert(G_N_ELEMENTS(BOOL_VOID_MENU)==G_N_ELEMENTS(BOOL_VOID_FUNCTION));
+	static_assert(MENU_ACCEL_SIZE==G_N_ELEMENTS(ACCEL_KEY));
 
 #ifndef NDEBUG
 	//No intersection between FUNCTION_MENU & BOOL_VOID_MENU
@@ -135,6 +136,7 @@ Frame::Frame() :
 #endif
 
 	frame = this;
+	m_exePath=path;
 	m_menuClick = MENU_SEARCH;
 	//set dot as decimal separator, standard locale
 	setlocale(LC_NUMERIC, "C");
@@ -549,15 +551,18 @@ void Frame::aboutDialog() {
 
 	dialog = gtk_dialog_new();
 	gtk_window_set_title(GTK_WINDOW(dialog), getMenuLabel(MENU_ABOUT).c_str());
-
 	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
-	gtk_container_add(GTK_CONTAINER(hbox),
-			gtk_image_new_from_file(getImagePath("word111.png").c_str()));
+
+	const int size = 170;
+	GdkPixbuf *pi = gdk_pixbuf_new_from_file_at_size(
+			getImagePath("word256.png").c_str(), size, size, 0);
+	gtk_container_add(GTK_CONTAINER(hbox), gtk_image_new_from_pixbuf(pi));
+	g_object_unref(pi);
 
 	box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
 
 	ENUM_STRING sid[] = { PROGRAM_VERSION, AUTHOR, COPYRIGHT, HOMEPAGE_STRING,
-			HOMEPAGE_ONLINE_STRING, STRING_SIZE /*build info*/
+			HOMEPAGE_ONLINE_STRING, STRING_SIZE /*build info*/, EXECUTABLE_FILE_SIZE
 	};
 	ENUM_STRING id;
 	for (i = 0; i < G_N_ELEMENTS(sid); i++) {
@@ -578,7 +583,8 @@ void Frame::aboutDialog() {
 							__GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__,
 							GTK_MAJOR_VERSION, GTK_MINOR_VERSION,
 							GTK_MICRO_VERSION);
-		} else {
+		}
+		else {
 			s = m_language[id];
 
 			if (id == AUTHOR) {
@@ -591,6 +597,10 @@ void Frame::aboutDialog() {
 				if (j != std::string::npos) {
 					s = s.substr(0, j + 1) + "\u00A9" + s.substr(j + 2);
 				}
+			}else if(id == EXECUTABLE_FILE_SIZE){
+				GStatBuf b;
+				g_stat(m_exePath.c_str(), &b);
+				s=s+" "+intToString(b.st_size);
 			}
 		}
 
@@ -627,7 +637,8 @@ void Frame::aboutDialog() {
 		gtk_widget_set_halign(label, GTK_ALIGN_START);
 		addClass(label, "aboutlabel");
 
-		gtk_container_add(GTK_CONTAINER(box), label);
+		add(box,label);//stretch vertically
+		//gtk_container_add(GTK_CONTAINER(box), label);
 	}
 
 	gtk_container_add(GTK_CONTAINER(hbox), box);
@@ -757,8 +768,8 @@ void Frame::setHelperPanel() {
 /**
  * Note function can be called from thread
  */
-void Frame::sortAndUpdateResults() {
-	sortResults();
+void Frame::sortFilterAndUpdateResults() {
+	sortFilterResults();
 	gdk_threads_add_idle(end_job, NULL);
 }
 
@@ -876,15 +887,7 @@ void Frame::comboChanged(ENUM_COMBOBOX e) {
 		if (e == COMBOBOX_DICTIONARY) {
 			setDictionary();
 		} else {
-			/* m_result is empty nothing to do, may be we have dictionary statistics or something like this
-			 * calling of sortAndUpdateResults() clear m_result
-			 */
-			if (!m_result.empty()) {
-				/* sortAndUpdateResults() could take a long time so use thread
-				 */
-				startJob(false);
-				startThread(sort_thread);
-			}
+			sortOrFilterChanged();
 		}
 	} else {
 		stopThread();
@@ -913,12 +916,7 @@ void Frame::entryChanged(int entryIndex) {
 	}
 	else if(entryIndex == FILTER_ENTRY_ID){
 		if(prepare()){
-			if (!m_result.empty()) {
-				/* sortAndUpdateResults() could take a long time so use thread
-				 */
-				startJob(false);
-				startThread(sort_thread);
-			}
+			sortOrFilterChanged();
 		}
 	}
 	else {
@@ -1055,7 +1053,7 @@ void Frame::proceedThread() {
 	if (run()) {
 		return;
 	}
-	sortAndUpdateResults();
+	sortFilterAndUpdateResults();
 }
 
 void Frame::startJob(bool clearResult) {
@@ -1068,7 +1066,6 @@ void Frame::startJob(bool clearResult) {
 	//For long jobs show status & view. Long jobs when whole dictionary is added to m_result
 	setStatus(m_language[SEARCH] + "...");
 	updateTextView();
-
 }
 
 void Frame::endJob() {
@@ -1227,4 +1224,16 @@ void Frame::addAccelerators() {
 		gtk_window_add_accel_group(GTK_WINDOW(m_widget), m_accelGroup[i]);
 	}
 
+}
+
+void Frame::sortOrFilterChanged(){
+	/* m_result is empty nothing to do, may be we have dictionary statistics or something like this
+	 * calling of sortFilterAndUpdateResults() clear m_result
+	 */
+	if (!m_result.empty()) {
+		/* sortAndUpdateResults() could take a long time so use thread
+		 */
+		startJob(false);
+		startThread(sort_filter_thread);
+	}
 }

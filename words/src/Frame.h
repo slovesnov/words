@@ -48,6 +48,7 @@ class Frame: WordsBase {
 	 * and ~CheckNewVersion() is waiting while thread is finished so program slow down
 	 */
 	CheckNewVersion m_newVersion;
+	std::string m_exePath;
 
 	gint getComboIndex(ENUM_COMBOBOX e) const {
 		assert(e!=COMBOBOX_SIZE);
@@ -104,7 +105,7 @@ class Frame: WordsBase {
 		return createLabel(m_language[e]);
 	}
 
-	/*make non static because other add() functions is not static*/
+	/*make non static because other add() functions are not static*/
 	void add(GtkWidget *w, GtkWidget *a) {
 		gtk_box_pack_start(GTK_BOX(w), a, TRUE, TRUE, 0);
 	}
@@ -120,7 +121,7 @@ class Frame: WordsBase {
 	void clearHelper();
 
 public:
-	Frame();
+	Frame(const char*path);
 	virtual ~Frame() {
 		g_mutex_clear(&m_mutex);
 	}
@@ -133,7 +134,7 @@ public:
 
 	void openURL(std::string url);
 	void routine();
-	void sortAndUpdateResults();
+	void sortFilterAndUpdateResults();
 
 	bool isSignalsLocked() {
 		return m_lockSignals;
@@ -191,6 +192,8 @@ public:
 	void entryFocusChanged(bool in);
 	void removeAccelerators();
 	void addAccelerators();
+
+	void sortOrFilterChanged();
 
 };
 
