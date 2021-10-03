@@ -39,6 +39,9 @@ WordsBase::WordsBase(const char* basePath) {
 
 	wordsBase=this;
 	m_basePath=basePath;
+#ifndef CGI
+	m_filterRegex=nullptr;
+#endif
 
 	//load settings
 	for(i=0;i<LANGUAGES;i++){
@@ -99,6 +102,12 @@ WordsBase::WordsBase(const char* basePath) {
 		}
 		fclose(f);
 	}
+}
+
+WordsBase::~WordsBase(){
+#ifndef CGI
+	freeRegex(m_filterRegex);
+#endif
 }
 
 std::string WordsBase::replaceAll(std::string subject, const std::string& from,	const std::string& to) {
@@ -1268,17 +1277,27 @@ bool WordsBase::dictionaryStatistics() {
 
 void WordsBase::sortResults() {
 	int i;
+	//leave SearchResultVectorCI for old gcc compiler under sf.net
 	SearchResultVectorCI it;
+
 
 	if(!IN_ARRAY(NO_SORT_FUNCTIONS_MENU,m_menuClick)){//Note NO_SORT_FUNCTIONS_MENU only four items so fast search
 		m_out.clear();
-
+#ifndef CGI
+		m_filteredWordsCount=0;
+#endif
 		std::sort(m_result.begin(),m_result.end(),SORT_FUNCTION[m_comboValue[COMBOBOX_SORT]*2+m_comboValue[COMBOBOX_SORT_ORDER]]);
 		for(it=m_result.begin();it!=m_result.end();it++){
-			if(it!=m_result.begin()){
+#ifndef CGI
+			if(!testFilterRegex(it->s)){
+				continue;
+			}
+			m_filteredWordsCount++;
+#endif
+			if(!m_out.empty()){
 				m_out+="\n";
 			}
-			//it->s could be very long (for sequence of words), so DO NOT USE format("%s ... , localeToUtf8(it->s))
+
 			m_out+=localeToUtf8(it->s)+format(" (%s %d",m_language[CHARACTERS].c_str(),it->length);
 
 			if(it->words>1){
@@ -1339,6 +1358,10 @@ void WordsBase::loadLanguage() {
 
 	m_language[PROGRAM_VERSION]=format("%s %.2lf",m_language[PROGRAM_VERSION].c_str(),WORDS_VERSION);
 	m_language[MODIFICATION_HELP]=format(m_language[MODIFICATION_HELP].c_str(),m_language[EVERY_MODIFICATION_CHANGES_WORD].c_str());
+	/* use only first symbol. In Russian language separator is space, so ignore comment in language.txt file.
+	 * Comment in ru/language.txt is important because otherwise it'll we empty string and looks like a bug
+	 */
+	m_language[SEPARATOR_SYMBOL]=m_language[SEPARATOR_SYMBOL].substr(0, 1);
 
 #ifdef CGI
 	f=open(m_languageIndex,"cgi_language");
@@ -1480,7 +1503,10 @@ bool WordsBase::prepare() {
 std::string WordsBase::getStatusString() {
 	std::string s;
 	if(!m_result.empty()){
-		s=m_language[NUMBER_OF_WORDS]+" "+intToString(m_result.size())+" ";
+		s=m_language[NUMBER_OF_WORDS]+" "+intToString(m_result.size())+", ";
+#ifndef CGI
+		s+=m_language[WITH_FILTER]+" "+intToString(m_filteredWordsCount)+", ";
+#endif
 	}
 	return s+m_language[TIME_OF_LAST_OPERATION]+" "+getTimeString();
 }
@@ -1607,3 +1633,45 @@ std::string WordsBase::format(const char* f, ...) {
 	return s;
 }
 
+#ifndef CGI
+bool WordsBase::setCheckFilterRegex() {
+	if (m_filterText.empty()) {
+		return true;
+	}
+	m_filterRegex = g_regex_new(m_filterText.c_str(),
+			GRegexCompileFlags(G_REGEX_RAW | G_REGEX_CASELESS),
+			GRegexMatchFlags(0), NULL);
+	return m_filterRegex != nullptr;
+}
+
+bool WordsBase::testFilterRegex(const std::string &s) {
+	return m_filterRegex == nullptr || g_regex_match(m_filterRegex, s.c_str(), GRegexMatchFlags(0), NULL);
+}
+
+void WordsBase::freeRegex(GRegex *r) {
+	if (r) {
+		g_regex_unref(r);
+		r = nullptr;
+	}
+}
+#endif
+
+std::string WordsBase::intToString(int v,char separator){//format(1234567,3)="1 234 567"
+	const int digits=3;
+	char b[16];
+	std::string s;
+	sprintf(b,"%d",v);
+	int i;
+	char*p;
+	for(p=b,i=strlen(b)-1;*p!=0;p++,i--){
+		s+=*p;
+		if(i%digits==0 && i!=0){
+			s+=separator;
+		}
+	}
+	return s;
+}
+
+std::string WordsBase::intToString(int v){
+	return intToString(v,m_language[SEPARATOR_SYMBOL][0]);
+}

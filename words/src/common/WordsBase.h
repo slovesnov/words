@@ -112,6 +112,9 @@ protected:
 	std::regex m_regex;
 #else
 	GRegex*m_regex;
+	GRegex*m_filterRegex;
+	std::string m_filterText;//locale
+	int m_filteredWordsCount;
 #endif
 
 	int m_languageIndex;
@@ -183,6 +186,9 @@ protected:
 #ifndef CGI
 	virtual bool userBreakThread()=0;
 	virtual void setMenuLabel(ENUM_MENU e,std::string const& text)=0;
+	bool setCheckFilterRegex();
+	bool testFilterRegex(const std::string& s);
+	void freeRegex(GRegex*r);
 #endif
 
 	const std::string& getAlphabet()const{
@@ -206,9 +212,10 @@ protected:
 	bool run();
 
 	void fillResultFromMap(const MapStringTwoStringVectors& map, size_t len);
+
 public:
 	WordsBase(const char* basePath);
-	virtual ~WordsBase(){}
+	virtual ~WordsBase();
 
 	static int** create2dArray(int dimension1, int dimension2);
 	static void delete2dArray(int**p, int dimension1);
@@ -290,22 +297,8 @@ public:
 
 	static std::string format(const char * format, ... );
 
-	static std::string intToString(int v,char separator=' '){//format(1234567,3)="1 234 567"
-		const int digits=3;
-		char b[16];
-		std::string s;
-		sprintf(b,"%d",v);
-		int i;
-		char*p;
-		for(p=b,i=strlen(b)-1;*p!=0;p++,i--){
-			s+=*p;
-			if(i%digits==0 && i!=0){
-				s+=separator;
-			}
-		}
-		return s;
-	}
-
+	static std::string intToString(int v,char separator);
+	std::string intToString(int v);
 	void sortResults();
 
 	void loadLanguage();
