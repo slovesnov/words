@@ -9,6 +9,7 @@ localeToUtf8, utf8ToLocale now clear memory for non CGI mode
 format() function count size of buffer automatically
 add language dependent separator symbol for intToString() function
 add filter of results
+remove support 32bit platform for window application
 
 ================================================================================
 4.32 only source publish 

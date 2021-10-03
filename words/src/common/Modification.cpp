@@ -76,11 +76,7 @@ void Modification::info(){
 		printf("error");
 		return;
 	}
-#ifdef PLATFORM_64BIT
-	printf("ok sz=%lld{\n",vr.size());
-#else
-	printf("ok sz=%d{\n",vr.size());
-#endif
+	printf("ok sz=%d{\n",int(vr.size()));// 32 & 64bit
 	ModificationItemVectorCI it;
 	for(it=vr.begin();it!=vr.end();it++){
 		it->info();

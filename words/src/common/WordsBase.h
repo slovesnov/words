@@ -24,19 +24,8 @@
 #else
 	#include <gtk/gtk.h>
 
-#if INTPTR_MAX == INT64_MAX
-#define PLATFORM_64BIT
-#elif INTPTR_MAX != INT32_MAX
-#error unknown platform
-#endif
-
-#ifdef PLATFORM_64BIT
 #define GP2INT(a) int(int64_t(a))
 #define GP(a) gpointer(int64_t(a))
-#else
-#define GP2INT(a) int(a)
-#define GP(a) gpointer(a)
-#endif
 
 #endif
 
