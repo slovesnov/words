@@ -55,7 +55,7 @@ std::string ModificationItem::apply(const std::string& s)const {
 	int i,j;
 
 	if(type==MODIFICATION_TYPE_REPLACE){
-		return WordsBase::replaceAll(s,from,to);
+		return replaceAll(s,from,to);
 	}
 	else if(type==MODIFICATION_TYPE_INSERT){
 		i = countIn(0,s);

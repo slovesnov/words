@@ -6,12 +6,10 @@
  */
 
 #include "consts.h"
+#include "WordsBase.h"
 #include <memory> //unique_ptr
 
-#ifdef CGI
-	#include <iconv.h>
-#endif
-
+typedef unsigned char uchar;
 
 #ifdef CGI
 	#define	RETURN_ON_USER_BREAK(a)
@@ -28,7 +26,7 @@
 
 WordsBase*wordsBase;
 
-WordsBase::WordsBase(const char* basePath) {
+WordsBase::WordsBase() {
 	int i,j;
 	FILE*f;
 	char*p;
@@ -38,7 +36,6 @@ WordsBase::WordsBase(const char* basePath) {
 #endif
 
 	wordsBase=this;
-	m_basePath=basePath;
 #ifndef CGI
 	m_filterRegex=nullptr;
 #endif
@@ -110,15 +107,6 @@ WordsBase::~WordsBase(){
 #endif
 }
 
-std::string WordsBase::replaceAll(std::string subject, const std::string& from,	const std::string& to) {
-	size_t pos = 0;
-	while ((pos = subject.find(from, pos)) != std::string::npos) {
-		subject.replace(pos, from.length(), to);
-		pos += to.length();
-	}
-	return subject;
-}
-
 bool WordsBase::spanIncluding(const char* p, const std::string& pattern) {
 	for(;*p!=0;p++){
 		if(pattern.find(*p)==std::string::npos){
@@ -127,47 +115,6 @@ bool WordsBase::spanIncluding(const char* p, const std::string& pattern) {
 	}
 	return true;
 }
-
-std::string WordsBase::localeToLowerCase(const std::string& s, bool onlyRussainChars) {
-	cpuchar p;
-	std::string q;
-	for(p=cpuchar(s.c_str());*p!=0;p++){
-		q+= (*p>=0xc0 && *p<0xe0) ? (*p)+0x20 : (onlyRussainChars ? *p : tolower(*p) );
-	}
-	return q;
-}
-
-#ifdef CGI
-std::string WordsBase::encode(const std::string& s, bool toUtf8) {
-	std::string r;
-	const char UTF8[]="UTF-8";
-	const char CP1251[]="cp1251";
-	iconv_t cd = toUtf8 ? iconv_open( UTF8, CP1251 ) : iconv_open( CP1251, UTF8 );
-	if ((iconv_t) -1 == cd) {
-		printf("error %d",__LINE__);
-		perror("iconv_open");
-		return r;
-	}
-
-	size_t inbytesleft = s.length();
-	char*in=new char[inbytesleft];
-	strncpy(in,s.c_str(),inbytesleft);
-	size_t outbytesleft = inbytesleft*2+1;
-	char*out=new char[outbytesleft];
-	char*outbuf=out;
-	size_t ret = iconv(cd, &in, &inbytesleft, &outbuf, &outbytesleft);
-	if ((size_t) -1 == ret) {
-		printf("error %d",__LINE__);
-		perror("iconv");
-		return r;
-	}
-	*outbuf=0;
-	r=out;
-	delete[]out;
-	iconv_close(cd);
-	return r;
-}
-#endif
 
 bool WordsBase::checkKeyboardWordSimple(const std::string& s) {
 	const char* p=s.c_str();
@@ -1059,7 +1006,7 @@ bool WordsBase::wordFrequency() {
 	for(itv=v.begin();itv!=v.end();itv++){
 		//use separator for intToString for understandable view
 		m_out+=format("\n%2d %6.3lf%% %6s/%s",itv->second,100.*itv->first/r.size()
-				,intToString(itv->first,',').c_str(), intToString(r.size(),',').c_str() );
+				,::intToString(itv->first,',').c_str(), ::intToString(r.size(),',').c_str() );
 	}
 
 	delete[]m;
@@ -1122,7 +1069,7 @@ bool WordsBase::twoCharactersDistribution() {
 	StringSetCI it;
 	int i,j;
 	const int s=getAlphabetSize();
-	int** a=create2dArray(s,s);
+	int** a=create2dArray<int>(s,s);
 	std::string ss;
 
 	for(i=0;i<s;i++){
@@ -1160,7 +1107,7 @@ bool WordsBase::twoCharactersDistribution() {
 			m_out+="\n";
 		}
 		m_out+=localeToUtf8(format("%s %.2f%% %6s/%s",p->first.c_str(),(p->second*100.)/total
-				,intToString(p->second,',').c_str(), intToString(r.size(),',').c_str() ));
+				,::intToString(p->second,',').c_str(), ::intToString(r.size(),',').c_str() ));
 	}
 
 	delete2dArray(a,s);
@@ -1177,7 +1124,7 @@ bool WordsBase::dictionaryStatistics() {
 	std::string additionalCaption[2];
 	std::string longestWord;
 	const int a=getAlphabetSize();
-	int** m=create2dArray(SZ_CAPTION,a+1);
+	int** m=create2dArray<int>(SZ_CAPTION,a+1);
 	StringSet const& r=getDictionary();
 
 	for(i=0;i<SZ_CAPTION;i++){
@@ -1531,24 +1478,6 @@ void WordsBase::removeLastCRLF(char* p) {
 	}
 }
 
-int** WordsBase::create2dArray(int dimension1, int dimension2) {
-	int i;
-	int**p = new int*[dimension1];
-	for(i = 0; i < dimension1; i++){
-		p[i] = new int[dimension2];
-	}
-	return p;
-}
-
-void WordsBase::delete2dArray(int**p, int dimension1) {
-	int i;
-	for(i = 0; i <dimension1; i++){
-		delete[] p[i];
-	}
-
-	delete[] p;
-}
-
 bool WordsBase::run() {
 	StringSet const& r=getDictionary();
 	StringSetCI it;
@@ -1595,44 +1524,6 @@ bool WordsBase::differenceOnlyOneChar(const std::string& a,
 
 }
 
-const std::string WordsBase::localeToUtf8(const std::string& s){
-#ifdef CGI
-	return encode(s,true);
-#else
-	gchar*a=g_locale_to_utf8(s.c_str(), s.length(), NULL, NULL, NULL);
-	std::string r(a);
-	g_free(a);
-	return r;
-#endif
-}
-
-const std::string WordsBase::utf8ToLocale(const std::string& s){
-#ifdef CGI
-	return encode(s,false);
-#else
-	gchar*a=g_locale_from_utf8(s.c_str(), s.length(), NULL, NULL, NULL);
-	std::string r(a);
-	g_free(a);
-	return r;
-#endif
-}
-
-std::string WordsBase::format(const char* f, ...) {
-	va_list a;
-	va_start(a, f);
-	size_t size = vsnprintf(nullptr, 0, f, a) + 1;
-	va_end(a);
-	std::string s;
-	if (size > 1) {
-		s.resize(size);
-		va_start(a, f);
-		vsnprintf(&s[0], size, f, a);
-		va_end(a);
-		s.resize(size - 1);
-	}
-	return s;
-}
-
 #ifndef CGI
 bool WordsBase::setCheckFilterRegex() {
 	if (m_filterText.empty()) {
@@ -1656,22 +1547,11 @@ void WordsBase::freeRegex(GRegex *r) {
 }
 #endif
 
-std::string WordsBase::intToString(int v,char separator){//format(1234567,3)="1 234 567"
-	const int digits=3;
-	char b[16];
-	std::string s;
-	sprintf(b,"%d",v);
-	int i;
-	char*p;
-	for(p=b,i=strlen(b)-1;*p!=0;p++,i--){
-		s+=*p;
-		if(i%digits==0 && i!=0){
-			s+=separator;
-		}
-	}
-	return s;
+std::string WordsBase::intToString(int v){
+	return ::intToString(v,m_language[SEPARATOR_SYMBOL][0]);
 }
 
-std::string WordsBase::intToString(int v){
-	return intToString(v,m_language[SEPARATOR_SYMBOL][0]);
+FILE* WordsBase::open(int i, std::string s, bool binary/*=false*/){
+	std::string p=getResourcePath(getShortLanguageString(i) + "/"+s+".txt");
+	return ::open(p,binary? "rb":"r");
 }

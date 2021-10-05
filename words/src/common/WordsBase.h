@@ -15,19 +15,13 @@
 #include <cstring>
 #include <algorithm>
 #include <ctime>
+#include "aslov.h"
 
-#ifdef CGI
-	#define G_N_ELEMENTS(arr)		(sizeof (arr) / sizeof ((arr)[0]))
-	#include <regex>
-	#include <stdarg.h>
-	#include <stdio.h>
-#else
-	#include <gtk/gtk.h>
-
-#define GP2INT(a) int(int64_t(a))
-#define GP(a) gpointer(int64_t(a))
-
-#endif
+//#ifdef CGI
+//	#include <regex>
+//	#include <stdarg.h>
+//	#include <stdio.h>
+//#endif
 
 const char SEPARATOR[]="SEPARATOR";
 const std::string LNG[]={"en","ru"};
@@ -40,44 +34,7 @@ extern WordsBase*wordsBase;
 typedef bool (WordsBase::*BOOL_STRING_WORDSBASE_FUNCTION)(const std::string&);
 typedef bool (WordsBase::*BOOL_VOID_WORDSBASE_FUNCTION)();
 
-//========= BEGIN define println & printinfo functions ===========
-/* to remove occurences println & printinfo before final release just commment them and try to compile
- */
-
-#ifndef NDEBUG
-
-	#ifdef CGI
-		#define g_print printf
-		#define G_DIR_SEPARATOR '/'
-	#endif
-
-#define println(f, ...)  {\
-	char __s[1024],__b[127];\
-	sprintf(__b,__FILE__);\
-	char*__p=strrchr(__b,G_DIR_SEPARATOR);\
-	sprintf(__s,f,##__VA_ARGS__);\
-	g_print("%-40s %s:%d %s()\n",__s,__p==NULL?__b:__p+1,__LINE__,__func__);\
-}
-
-#define printinfo println(" ")
-
-#else
-
-#define println(f, ...)  ((void)0)
-#define printinfo
-
-#endif
-
-//========= END define println & printinfo functions ===========
-
-#define IN_ARRAY(array,item) (INDEX_OF(array,item)!=-1)
-#define INDEX_OF(array,item) indexOf(array,G_N_ELEMENTS(array),item)
-
 class WordsBase {
-#ifdef CGI
-	static std::string encode(const std::string& s, bool toUtf8);
-#endif
-
 	//prepare addons before search;
 	void setTemplateSearch();
 	void setKeyboardOneRow();
@@ -119,7 +76,6 @@ protected:
 	StringVector m_cgiLanguage;//utf8
 #endif
 
-	std::string m_basePath;
 	/* some helper strings in language.txt file are very long. String EVERY_MODIFICATION_CHANGE_WORD
 	 * length > 1024 (in russain), files language.txt is loaded in two function so use one constant
 	 */
@@ -130,14 +86,6 @@ protected:
 
 	inline int getMaximumWordLength(){
 		return m_longestWordLength[getDictionaryIndex()];
-	}
-
-	static bool startsWith(const char*buff,const char*begin){
-		return strncmp(buff,begin,strlen(begin))==0;
-	}
-
-	static bool startsWith(const char*buff,const std::string& begin){
-		return startsWith(buff,begin.c_str());
 	}
 
 	static inline std::string getShortLanguageString(int i){
@@ -155,22 +103,9 @@ protected:
 		return m_comboValue[COMBOBOX_DICTIONARY];
 	}
 
-	FILE* open(int i, std::string s, bool binary=false){
-		std::string p=getResourcePath(getShortLanguageString(i) + "/"+s+".txt");
-		return fopen(p.c_str(),binary? "rb":"r");
-	}
-
-	std::string getResourcePath(std::string name){
-		return m_basePath+name;
-	}
+	FILE* open(int i, std::string s, bool binary=false);
 
 	bool prepare();
-
-	//used for type=ENUM_MENU and for type=std::string see Words::parsePostParam
-	template <class type>static int indexOf(const type a[], const unsigned aSize, const type e){
-		unsigned i=std::find(a,a+aSize,e)-a;
-		return i==aSize ? -1 : i;
-	}
 
 #ifndef CGI
 	virtual bool userBreakThread()=0;
@@ -193,21 +128,14 @@ protected:
 		return k==std::string::npos ? -1 : k;
 	}
 
-	inline static int charIndex(const char*p, char c){
-		return strchr(p,c)-p;
-	}
-
 	//return true if was user break
 	bool run();
 
 	void fillResultFromMap(const MapStringTwoStringVectors& map, size_t len);
 
 public:
-	WordsBase(const char* basePath);
+	WordsBase();
 	virtual ~WordsBase();
-
-	static int** create2dArray(int dimension1, int dimension2);
-	static void delete2dArray(int**p, int dimension1);
 
 	bool checkPangram(const std::string& s);
 	bool checkTemplate(const std::string& s);
@@ -243,7 +171,6 @@ public:
 	//helper BOOL_VOID_FUNCTION
 	bool twoDictionaries(bool translit);
 
-	static std::string replaceAll(std::string subject, const std::string& from,const std::string& to);
 	static bool spanIncluding(const char* p, const std::string& pattern);
 	static bool differenceOnlyOneChar(std::string const& a,std::string const& b);
 
@@ -271,22 +198,10 @@ public:
 		return getAlphabet().find(p)!=std::string::npos;
 	}
 
-	//convert localed "s" to lowercase in cp1251
-	static std::string localeToLowerCase(const std::string& s, bool onlyRussainChars=false);
-	static std::string utf8ToLowerCase(const std::string& s, bool onlyRussainChars=false) {
-		return localeToUtf8(localeToLowerCase(utf8ToLocale(s),onlyRussainChars));
-	}
-
-	static const std::string localeToUtf8(const std::string& s);
-	static const std::string utf8ToLocale(const std::string& s);
-
 	/* remove '\n' or '\r\n' under unix at the end of string
 	 */
 	static void removeLastCRLF(char*p);
 
-	static std::string format(const char * format, ... );
-
-	static std::string intToString(int v,char separator);
 	std::string intToString(int v);
 	void sortFilterResults();
 

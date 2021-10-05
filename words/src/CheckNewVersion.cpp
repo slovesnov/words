@@ -74,7 +74,7 @@ void CheckNewVersion::routine() {
 			StringVectorCI it;
 			for(it=vs.begin();it!=vs.end();it++){
 				if(it!=vs.begin()){
-					m_message+=WordsBase::localeToUtf8("\n"+*it);
+					m_message+=localeToUtf8("\n"+*it);
 				}
 			}
 			gdk_threads_add_idle(new_version_message,NULL);
@@ -100,6 +100,6 @@ void CheckNewVersion::newVesionMessage() {
 	gtk_widget_destroy (dialog);
 
 	if(result==GTK_RESPONSE_YES){
-		frame->openURL(m_downloadUrl);
+		openURL(m_downloadUrl);
 	}
 }

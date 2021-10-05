@@ -13,8 +13,6 @@
 #include <map>
 #include <set>
 
-typedef unsigned char uchar;
-typedef const uchar* cpuchar;
 typedef std::string::iterator StringI;
 typedef std::string::const_iterator StringCI;
 

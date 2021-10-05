@@ -6,11 +6,11 @@
  */
 
 #include "Frame.h"
+#include "aslov.h"
 
 int main (int argc, char** argv){
 	gtk_init (&argc, &argv);
-	Frame frame(argv[0]);
+	aslovInit(argv);
+	Frame frame;
 	gtk_main ();
-
-	return 0;
 }

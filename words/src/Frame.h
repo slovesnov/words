@@ -48,7 +48,6 @@ class Frame: WordsBase {
 	 * and ~CheckNewVersion() is waiting while thread is finished so program slow down
 	 */
 	CheckNewVersion m_newVersion;
-	std::string m_exePath;
 
 	gint getComboIndex(ENUM_COMBOBOX e) const {
 		assert(e!=COMBOBOX_SIZE);
@@ -72,18 +71,6 @@ class Frame: WordsBase {
 	GtkWidget* createTextCombo(ENUM_COMBOBOX e, int from, int to, int active);
 	GtkWidget* createTextCombo(ENUM_COMBOBOX e, ENUM_STRING from,
 			ENUM_STRING to, int active);
-
-	static void addClass(GtkWidget *w, const gchar *s) {
-		GtkStyleContext *context;
-		context = gtk_widget_get_style_context(w);
-		gtk_style_context_add_class(context, s);
-	}
-
-	static void removeClass(GtkWidget *w, const gchar *s) {
-		GtkStyleContext *context;
-		context = gtk_widget_get_style_context(w);
-		gtk_style_context_remove_class(context, s);
-	}
 
 	GtkWidget* createEntry(int i);
 
@@ -121,18 +108,17 @@ class Frame: WordsBase {
 	void clearHelper();
 
 public:
-	Frame(const char*path);
+	Frame();
 	virtual ~Frame() {
 		g_mutex_clear(&m_mutex);
 	}
-	;
+
 	void destroy();
 
 	void startJob(bool clearResult);
 	void endJob();
 	bool prepare(); //return true if entry data is valid
 
-	void openURL(std::string url);
 	void routine();
 	void sortFilterAndUpdateResults();
 
@@ -146,10 +132,6 @@ public:
 
 	void unlockSignals() {
 		m_lockSignals = false;
-	}
-
-	std::string getImagePath(std::string name) {
-		return getResourcePath("images/" + name);
 	}
 
 	void clickMenu(ENUM_MENU menu);

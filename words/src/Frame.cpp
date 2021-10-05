@@ -17,7 +17,6 @@
 #define WINDOW_SIZE_TYPE 0
 
 //Note WORDS_VERSION defined in WordsBase
-const char CONFIG_FILE_NAME[] = "words.cfg";
 const char MAIL[] = "slovesnov@yandex.ru";
 const char HOMEPAGE[] = "http://slovesnov.users.sf.net/?words"; //sf shorter than sourceforge, better looks in about dialog
 const char HOMEPAGE_ONLINE[] = "http://slovesnov.users.sf.net/?words_online"; //sf shorter than sourceforge, better looks in about dialog
@@ -45,6 +44,9 @@ const int MAX_ANAGRAM_LENGTH = 31; //counted {18,31}
 const int MAX_PANGRAM_LENGTH = 20; //counted {16,20}
 const int MAX_WORD_SEQUENCE_LENGTH = 21; //counted {20,21}
 const int MAX_DOUBLE_WORD_SEQUENCE_LENGTH = 14; //counted {6,14}
+
+const std::string CONFIG_TAGS[]={"version","language","dictionary"};
+
 Frame *frame;
 
 static gpointer thread(gpointer) {
@@ -97,7 +99,7 @@ static void button_clicked(GtkWidget *button, gpointer) {
 }
 
 static gboolean label_clicked(GtkWidget *label, const gchar *uri, gpointer) {
-	frame->openURL(uri);
+	openURL(uri);
 	return TRUE;
 }
 
@@ -109,8 +111,8 @@ static void destroy_window(GtkWidget *object, gpointer) {
 	frame->destroy();
 }
 
-Frame::Frame(const char*path) :
-		WordsBase("words/") {
+Frame::Frame() :
+		WordsBase() {
 	GtkWidget *w, *w1, *w2, *scroll;
 	GtkWidget *item;
 	FILE *f;
@@ -136,7 +138,6 @@ Frame::Frame(const char*path) :
 #endif
 
 	frame = this;
-	m_exePath=path;
 	m_menuClick = MENU_SEARCH;
 	//set dot as decimal separator, standard locale
 	setlocale(LC_NUMERIC, "C");
@@ -249,36 +250,26 @@ Frame::Frame(const char*path) :
 	gtk_container_add(GTK_CONTAINER(m_widget), w);
 
 	//load configuration file
-	int dictionary;
-	f = fopen(CONFIG_FILE_NAME, "r");
-	if (f == NULL) {
-		dictionary = m_languageIndex = 0;
-	} else {
-		fscanf(f, "%s", buff);
-		for (i = 0; i < LANGUAGES; i++) {
-			if (getShortLanguageString(i) == buff) {
-				break;
+	int dictionary=0;
+	m_languageIndex = 0;
+
+	MapStringString m;
+	MapStringString::iterator it;
+	if (loadConfig(m)) {
+		for (j = 0; j < 2; j++) {
+			if ((it = m.find(j == 0 ? "language" : "dictionary")) != m.end()) {
+				for (i = 0; i < LANGUAGES; i++) {
+					if (getShortLanguageString(i) == it->second) {
+						if (j == 0) {
+							m_languageIndex = i;
+						} else {
+							dictionary = i;
+						}
+						break;
+					}
+				}
 			}
 		}
-		assert(i<LANGUAGES);
-		if (i == LANGUAGES) { //for release
-			i = 0;
-		}
-		dictionary = i;
-
-		fscanf(f, "%s", buff);
-		for (i = 0; i < LANGUAGES; i++) {
-			if (getShortLanguageString(i) == buff) {
-				break;
-			}
-		}
-		assert(i<LANGUAGES);
-		if (i == LANGUAGES) { //for release
-			i = 0;
-		}
-		m_languageIndex = i;
-
-		fclose(f);
 	}
 
 	//load menu
@@ -358,23 +349,7 @@ Frame::Frame(const char*path) :
 	setComboIndex(COMBOBOX_DICTIONARY, dictionary);
 	setDictionary();
 
-	/*---------------- CSS ----------------------------------------------------------------------------------------------------*/
-	GtkCssProvider *provider;
-	GdkDisplay *display;
-	GdkScreen *screen;
-
-	provider = gtk_css_provider_new();
-	display = gdk_display_get_default();
-	screen = gdk_display_get_default_screen(display);
-	gtk_style_context_add_provider_for_screen(screen,
-			GTK_STYLE_PROVIDER(provider),
-			GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
-
-	const gchar *home = "words.css";
-	gtk_css_provider_load_from_path(provider,
-			g_filename_to_utf8(home, strlen(home), NULL, NULL, NULL), NULL);
-	g_object_unref(provider);
-	/*-------------------------------------------------------------------------------------------------------------------------*/
+	loadCSS();
 
 	connectEntrySignals(SEARCH_ENTRY_ID);
 	connectEntrySignals(FILTER_ENTRY_ID);
@@ -502,11 +477,10 @@ void Frame::clickMenu(ENUM_MENU menu) {
 }
 
 void Frame::destroy() {
-	FILE *f = fopen(CONFIG_FILE_NAME, "w+");
-	assert(f!=NULL);
-	fprintf(f, "%s %s", getShortLanguageString(getDictionaryIndex()).c_str(),
-			getShortLanguageString(m_languageIndex).c_str());
-	fclose(f);
+	//const std::string CONFIG_TAGS[]={"version","language","dictionary"};
+	WRITE_CONFIG(CONFIG_TAGS, WORDS_VERSION,
+			getShortLanguageString(m_languageIndex) ,
+			getShortLanguageString(getDictionaryIndex()) );
 
 	stopThread();
 	gtk_main_quit();
@@ -527,19 +501,6 @@ void Frame::setDictionary() {
 	if (m_menuClick != MENU_SEARCH) {
 		stopThreadAndNewRoutine();
 	}
-}
-
-void Frame::openURL(std::string url) {
-	//
-	/* Note since gtk 3.22.28 gtk_show_uri_on_window works fine
-	 * gtk_show_uri_on_window first parameter is "GtkWindow *parent"
-	 *
-	 * GdkWindow *gdk=gtk_widget_get_parent_window (m_widget);
-	 * GtkWidget *w=gtk_widget_get_parent (m_widget);
-	 * println("%x %x",unsigned(gdk),unsigned(w));//print "0 0"
-	 * no parent for Frame which is top window
-	 */
-	gtk_show_uri_on_window(0, url.c_str(), gtk_get_current_event_time(), NULL);
 }
 
 void Frame::aboutDialog() {
@@ -565,15 +526,15 @@ void Frame::aboutDialog() {
 			HOMEPAGE_ONLINE_STRING, STRING_SIZE /*build info*/, EXECUTABLE_FILE_SIZE
 	};
 	ENUM_STRING id;
-	for (i = 0; i < G_N_ELEMENTS(sid); i++) {
+	for (i = 0; i < SIZE(sid); i++) {
 		id = sid[i];
 		if (id == STRING_SIZE) {
-			for (j = 0; j < G_N_ELEMENTS(MONTH); j++) {
+			for (j = 0; j < SIZE(MONTH); j++) {
 				if (strncasecmp(__DATE__, MONTH[j], 3) == 0) {
 					break;
 				}
 			}
-			assert(j<G_N_ELEMENTS(MONTH));
+			assert(j<SIZE(MONTH));
 			//make longer string
 			//__DATE__="Dec 15 2016" we need "15 December 2016"
 			s =
@@ -598,9 +559,7 @@ void Frame::aboutDialog() {
 					s = s.substr(0, j + 1) + "\u00A9" + s.substr(j + 2);
 				}
 			}else if(id == EXECUTABLE_FILE_SIZE){
-				GStatBuf b;
-				g_stat(m_exePath.c_str(), &b);
-				s=s+" "+intToString(b.st_size);
+				s+=" "+intToString(getApplicationFileSize());
 			}
 		}
 
