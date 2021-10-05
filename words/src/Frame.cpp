@@ -182,9 +182,7 @@ Frame::Frame() :
 	m_searchTagLabel = gtk_label_new("");
 	for (i = 0; i < int(G_N_ELEMENTS(m_searchButton)); i++) {
 		m_searchButton[i] = gtk_button_new();
-		gtk_button_set_image(GTK_BUTTON(m_searchButton[i]),
-				gtk_image_new_from_file(
-						getImagePath(i == 0 ? "down.png" : "up.png").c_str()));
+		gtk_button_set_image(GTK_BUTTON(m_searchButton[i]),image(i == 0 ? "down.png" : "up.png"));
 	}
 	m_currentDictionary = gtk_label_new("");
 	m_filterLabel = gtk_label_new("");
@@ -301,9 +299,7 @@ Frame::Frame() :
 			w = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
 			w1 = gtk_accel_label_new("");
 
-			gtk_container_add(GTK_CONTAINER(w),
-					gtk_image_new_from_file(
-							getImagePath(ICON_MENU_FILE_NAME[j]).c_str()));
+			gtk_container_add(GTK_CONTAINER(w),image(ICON_MENU_FILE_NAME[j]));
 
 			gtk_label_set_use_underline(GTK_LABEL(w1), TRUE);
 			gtk_label_set_xalign(GTK_LABEL(w1), 0.0);
@@ -939,9 +935,7 @@ void Frame::createImageCombo(ENUM_COMBOBOX e) {
 	GtkListStore *gls = gtk_list_store_new(1, GDK_TYPE_PIXBUF);
 	for (i = 0; i < 2; i++) {
 		gtk_list_store_append(gls, &iter);
-		gtk_list_store_set(gls, &iter, 0,
-				gdk_pixbuf_new_from_file(getImagePath(image[j + i]).c_str(),
-						NULL), -1);
+		gtk_list_store_set(gls, &iter, 0, pixbuf(image[j + i]), -1);
 	}
 	m_combo[e] = gtk_combo_box_new_with_model(GTK_TREE_MODEL(gls));
 	renderer = gtk_cell_renderer_pixbuf_new();
