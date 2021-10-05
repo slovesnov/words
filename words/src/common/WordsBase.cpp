@@ -1228,7 +1228,7 @@ void WordsBase::sortFilterResults() {
 	SearchResultVectorCI it;
 
 
-	if(!IN_ARRAY(NO_SORT_FUNCTIONS_MENU,m_menuClick)){//Note NO_SORT_FUNCTIONS_MENU only four items so fast search
+	if(!ONE_OF(NO_SORT_FUNCTIONS_MENU,m_menuClick)){//Note NO_SORT_FUNCTIONS_MENU only four items so fast search
 		m_out.clear();
 #ifndef CGI
 		m_filteredWordsCount=0;
@@ -1351,7 +1351,7 @@ bool WordsBase::prepare() {
 		return true;
 	}
 
-	if(!IN_ARRAY(TEMPLATE_MENU,m_menuClick)){
+	if(!ONE_OF(TEMPLATE_MENU,m_menuClick)){
 		return true;
 	}
 

@@ -847,7 +847,7 @@ void Frame::comboChanged(ENUM_COMBOBOX e) {
 	} else {
 		stopThread();
 		if ((e == COMBOBOX_HELPER0 || e == COMBOBOX_HELPER1)
-				&& IN_ARRAY(MENU_ADJUST_COMBO, m_menuClick)) {
+				&& ONE_OF(MENU_ADJUST_COMBO, m_menuClick)) {
 			if (getComboIndex(COMBOBOX_HELPER0)
 					> getComboIndex(COMBOBOX_HELPER1)) {
 				lockSignals();
@@ -979,7 +979,7 @@ void Frame::clearHelper() {
 
 void Frame::setMenuLabel(ENUM_MENU e, std::string const &text) {
 	GtkWidget *w = m_menuMap[e];
-	if (IN_ARRAY(ICON_MENU, e)) {
+	if (ONE_OF(ICON_MENU, e)) {
 		w = gtk_bin_get_child(GTK_BIN(w));
 		GList *list = gtk_container_get_children(GTK_CONTAINER(w));
 		assert(g_list_length (list)==2);
@@ -992,7 +992,7 @@ void Frame::setMenuLabel(ENUM_MENU e, std::string const &text) {
 
 std::string Frame::getMenuLabel(ENUM_MENU e) {
 	GtkWidget *w = m_menuMap[e];
-	if (IN_ARRAY(ICON_MENU, e)) {
+	if (ONE_OF(ICON_MENU, e)) {
 		w = gtk_bin_get_child(GTK_BIN(w));
 		GList *list = gtk_container_get_children(GTK_CONTAINER(w));
 		assert(g_list_length (list)==2);

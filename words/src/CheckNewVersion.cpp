@@ -12,16 +12,6 @@
 extern Frame* frame;
 static CheckNewVersion*pCheckNewVersion;
 
-StringVector split(const std::string& subject, const std::string& separator) {
-	StringVector r;
-	size_t pos,prev;
-	for( prev=0 ; (pos = subject.find(separator, prev)) != std::string::npos ; prev= pos+separator.length() ) {
-		r.push_back(subject.substr(prev,pos-prev));
-	}
-	r.push_back(subject.substr(prev,subject.length()));
-	return r;
-}
-
 static gpointer check_new_nersion_thread(gpointer){
 	pCheckNewVersion->routine();
 	return NULL;
