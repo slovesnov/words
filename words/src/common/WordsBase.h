@@ -112,7 +112,6 @@ protected:
 	virtual void setMenuLabel(ENUM_MENU e,std::string const& text)=0;
 	bool setCheckFilterRegex();
 	bool testFilterRegex(const std::string& s);
-	void freeRegex(GRegex*r);
 #endif
 
 	const std::string& getAlphabet()const{

@@ -1527,7 +1527,6 @@ bool WordsBase::differenceOnlyOneChar(const std::string& a,
 #ifndef CGI
 bool WordsBase::setCheckFilterRegex() {
 	if (m_filterText.empty()) {
-		m_filterRegex=nullptr;//for testFilterRegex
 		return true;
 	}
 	m_filterRegex = g_regex_new(m_filterText.c_str(),
@@ -1537,7 +1536,7 @@ bool WordsBase::setCheckFilterRegex() {
 }
 
 bool WordsBase::testFilterRegex(const std::string &s) {
-	return m_filterRegex == nullptr || g_regex_match(m_filterRegex, s.c_str(), GRegexMatchFlags(0), NULL);
+	return m_filterRegex == nullptr || m_filterText.empty() || g_regex_match(m_filterRegex, s.c_str(), GRegexMatchFlags(0), NULL);
 }
 
 void WordsBase::freeRegex(GRegex *r) {
