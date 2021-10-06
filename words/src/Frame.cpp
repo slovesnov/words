@@ -7,7 +7,6 @@
 
 #include "Frame.h"
 #include "CheckNewVersion.h"
-#include <glib/gstdio.h>
 
 /*
  * WINDOW_SIZE_TYPE=0 default
@@ -131,7 +130,7 @@ Frame::Frame() :
 #ifndef NDEBUG
 	//No intersection between FUNCTION_MENU & BOOL_VOID_MENU
 	for(i=0;i<int(G_N_ELEMENTS(FUNCTION_MENU));i++){
-		if(IN_ARRAY(BOOL_VOID_MENU,FUNCTION_MENU[i])){
+		if(ONE_OF(BOOL_VOID_MENU,FUNCTION_MENU[i])){
 			assert(0);
 		}
 	}
@@ -293,7 +292,7 @@ Frame::Frame() :
 
 		bSubMenu = strchr(buff, '{') != NULL;
 
-		if ((j = INDEX_OF(ICON_MENU, ENUM_MENU(i))) != -1) {
+		if ((j = INDEX_OF(ENUM_MENU(i),ICON_MENU)) != -1) {
 			item = gtk_menu_item_new();
 
 			w = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
@@ -321,7 +320,7 @@ Frame::Frame() :
 								gtk_menu_item_get_submenu(subMenu.back())),
 				item);
 
-		if ((j = INDEX_OF(MENU_ACCEL, ENUM_MENU(i))) != -1) {
+		if ((j = INDEX_OF(ENUM_MENU(i),MENU_ACCEL)) != -1) {
 			gtk_widget_add_accelerator(item, "activate", m_accelGroup[j],
 					ACCEL_KEY[j], GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
 		}
@@ -629,7 +628,7 @@ void Frame::setHelperPanel() {
 	clearHelper();
 
 	//set label
-	if ((i = INDEX_OF(HELPER_MENU, m_menuClick)) != -1) {//for some of menu items only needs clear helper panel
+	if ((i = INDEX_OF(m_menuClick,HELPER_MENU )) != -1) {//for some of menu items only needs clear helper panel
 		w = gtk_label_new("");
 		gtk_container_add(GTK_CONTAINER(m_helperUp), w);
 		gtk_label_set_justify(GTK_LABEL(w), GTK_JUSTIFY_FILL);
@@ -644,7 +643,7 @@ void Frame::setHelperPanel() {
 	}
 
 	//add entry with template
-	if ((i = INDEX_OF(TEMPLATE_MENU, m_menuClick)) != -1) {
+	if ((i = INDEX_OF(m_menuClick,TEMPLATE_MENU)) != -1) {
 		addEntryLineToHelper(i);
 	}
 
@@ -847,7 +846,7 @@ void Frame::comboChanged(ENUM_COMBOBOX e) {
 	} else {
 		stopThread();
 		if ((e == COMBOBOX_HELPER0 || e == COMBOBOX_HELPER1)
-				&& ONE_OF(MENU_ADJUST_COMBO, m_menuClick)) {
+				&& ONE_OF(m_menuClick,MENU_ADJUST_COMBO )) {
 			if (getComboIndex(COMBOBOX_HELPER0)
 					> getComboIndex(COMBOBOX_HELPER1)) {
 				lockSignals();
@@ -979,7 +978,7 @@ void Frame::clearHelper() {
 
 void Frame::setMenuLabel(ENUM_MENU e, std::string const &text) {
 	GtkWidget *w = m_menuMap[e];
-	if (ONE_OF(ICON_MENU, e)) {
+	if (ONE_OF(e,ICON_MENU)) {
 		w = gtk_bin_get_child(GTK_BIN(w));
 		GList *list = gtk_container_get_children(GTK_CONTAINER(w));
 		assert(g_list_length (list)==2);
@@ -992,7 +991,7 @@ void Frame::setMenuLabel(ENUM_MENU e, std::string const &text) {
 
 std::string Frame::getMenuLabel(ENUM_MENU e) {
 	GtkWidget *w = m_menuMap[e];
-	if (ONE_OF(ICON_MENU, e)) {
+	if (ONE_OF(e,ICON_MENU)) {
 		w = gtk_bin_get_child(GTK_BIN(w));
 		GList *list = gtk_container_get_children(GTK_CONTAINER(w));
 		assert(g_list_length (list)==2);
@@ -1100,7 +1099,7 @@ bool Frame::prepare() {
 				GTK_TOGGLE_BUTTON(m_check))==TRUE;
 	}
 
-	bool hasEntry = INDEX_OF(TEMPLATE_MENU,m_menuClick) != -1;
+	bool hasEntry = INDEX_OF(m_menuClick,TEMPLATE_MENU) != -1;
 
 	if (hasEntry) {
 		//should encode to locale string at first to get valid length

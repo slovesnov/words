@@ -1228,7 +1228,7 @@ void WordsBase::sortFilterResults() {
 	SearchResultVectorCI it;
 
 
-	if(!ONE_OF(NO_SORT_FUNCTIONS_MENU,m_menuClick)){//Note NO_SORT_FUNCTIONS_MENU only four items so fast search
+	if(!ONE_OF(m_menuClick,NO_SORT_FUNCTIONS_MENU)){//Note NO_SORT_FUNCTIONS_MENU only four items so fast search
 		m_out.clear();
 #ifndef CGI
 		m_filteredWordsCount=0;
@@ -1351,7 +1351,7 @@ bool WordsBase::prepare() {
 		return true;
 	}
 
-	if(!ONE_OF(TEMPLATE_MENU,m_menuClick)){
+	if(!ONE_OF(m_menuClick,TEMPLATE_MENU)){
 		return true;
 	}
 
@@ -1483,11 +1483,11 @@ bool WordsBase::run() {
 	StringSetCI it;
 	int i;
 
-	if( (i=INDEX_OF(BOOL_VOID_MENU,m_menuClick))!=-1 ){
+	if( (i=INDEX_OF(m_menuClick,BOOL_VOID_MENU))!=-1 ){
 		return (this->*BOOL_VOID_FUNCTION[i])();
 	}
 
-	i=INDEX_OF(FUNCTION_MENU,m_menuClick);
+	i=INDEX_OF(m_menuClick,FUNCTION_MENU);
 	assert(i!=-1);
 	BOOL_STRING_WORDSBASE_FUNCTION searchFunction=FUNCTION_ID[i];
 
@@ -1527,6 +1527,7 @@ bool WordsBase::differenceOnlyOneChar(const std::string& a,
 #ifndef CGI
 bool WordsBase::setCheckFilterRegex() {
 	if (m_filterText.empty()) {
+		m_filterRegex=nullptr;//for testFilterRegex
 		return true;
 	}
 	m_filterRegex = g_regex_new(m_filterText.c_str(),
