@@ -103,7 +103,9 @@ WordsBase::WordsBase() {
 
 WordsBase::~WordsBase(){
 #ifndef CGI
-	freeRegex(m_filterRegex);
+	if(m_filterRegex){
+		g_regex_unref(m_filterRegex);
+	}
 #endif
 }
 
@@ -1537,13 +1539,6 @@ bool WordsBase::setCheckFilterRegex() {
 
 bool WordsBase::testFilterRegex(const std::string &s) {
 	return m_filterRegex == nullptr || m_filterText.empty() || g_regex_match(m_filterRegex, s.c_str(), GRegexMatchFlags(0), NULL);
-}
-
-void WordsBase::freeRegex(GRegex *r) {
-	if (r) {
-		g_regex_unref(r);
-		r = nullptr;
-	}
 }
 #endif
 
