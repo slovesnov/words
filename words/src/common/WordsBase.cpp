@@ -824,12 +824,11 @@ bool WordsBase::twoDictionaries(bool translit) {
 	const char BR[]=" ";
 	char*p,*p1;
 	FILE*f=fopen( getResourcePath(LNG[0]+LNG[1]+"_"+(translit?"translit":"simple")+".txt").c_str() , "r");
-	assert(f!=NULL);
+	assert(f);
 	const int BUFF_LEN=128;
 	char buff[BUFF_LEN];
 	char COMMENT[]="//";
-	std::string s;
-	const char*alphabetFrom=NULL;
+	std::string s,alphabetFrom;
 	const int di=getDictionaryIndex();
 
 	while(fgets(buff,BUFF_LEN,f)!=NULL){
@@ -842,7 +841,7 @@ bool WordsBase::twoDictionaries(bool translit) {
 			for ( i=0,p=buff ; (p1=strstr(p,BR))!=NULL ; i++,p=p1+strlen(BR)){
 				if(i==0){
 					assert(p1-p==1);//the first string should have length=1
-					j=charIndex(alphabetFrom,*p);
+					j=indexOf(*p,alphabetFrom);
 					assert(j>=0);
 				}
 				else{
@@ -855,7 +854,7 @@ bool WordsBase::twoDictionaries(bool translit) {
 			for(fromIndex=0 ; fromIndex<LANGUAGES && !startsWith(buff,getShortLanguageString(fromIndex)) ; fromIndex++);
 			assert(fromIndex<LANGUAGES);
 			const std::string& af=m_settings[fromIndex][SETTINGS_ALPHABET];
-			alphabetFrom=af.c_str();
+			alphabetFrom=af;
 			//to[.] is vector of transformation fromAlphabet->symbols n toAlphabet //fixed 4.3
 
 			//to=new StringVector[af.length()];
@@ -889,7 +888,7 @@ bool WordsBase::twoDictionaries(bool translit) {
 
 		len=it->length();
 		for(pk=k.get(),n=1,i=0;i<len;i++,pk++){
-			j=charIndex(alphabetFrom, (*it)[i] );
+			j=indexOf((*it)[i],alphabetFrom);
 			assert(j>=0);
 			//Check whether char has no correspondence in config file.
 			//For example symbol '-' in russian alphabet, has no correspondence in english alphabet
