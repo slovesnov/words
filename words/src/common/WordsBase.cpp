@@ -1007,7 +1007,7 @@ bool WordsBase::wordFrequency() {
 	for(itv=v.begin();itv!=v.end();itv++){
 		//use separator for intToString for understandable view
 		m_out+=format("\n%2d %6.3lf%% %6s/%s",itv->second,100.*itv->first/r.size()
-				,::intToString(itv->first,',').c_str(), ::intToString(r.size(),',').c_str() );
+				,intToString(itv->first,',').c_str(), intToString(r.size(),',').c_str() );
 	}
 
 	delete[]m;
@@ -1054,7 +1054,7 @@ bool WordsBase::checkDictionary() {
 			if(!m_out.empty()){
 				m_out+="\n";
 			}
-			m_out+=m_language[STRING_ERROR]+". "+m_language[error]+" "+m_language[LINE]+" "+intToString(line);
+			m_out+=m_language[STRING_ERROR]+". "+m_language[error]+" "+m_language[LINE]+" "+intToStringLocaled(line);
 		}
 	}
 	fclose(f);
@@ -1108,7 +1108,7 @@ bool WordsBase::twoCharactersDistribution() {
 			m_out+="\n";
 		}
 		m_out+=localeToUtf8(format("%s %.2f%% %6s/%s",p->first.c_str(),(p->second*100.)/total
-				,::intToString(p->second,',').c_str(), ::intToString(r.size(),',').c_str() ));
+				,intToString(p->second,',').c_str(), intToString(r.size(),',').c_str() ));
 	}
 
 	delete2dArray(a,s);
@@ -1160,7 +1160,7 @@ bool WordsBase::dictionaryStatistics() {
 	}
 
 	std::string s,s2;
-	m_out=m_language[PROCEED_SYMBOLS]+" "+intToString(m[0][a])+", "+m_language[WORDS]+" "+intToString(m[1][a]);
+	m_out=m_language[PROCEED_SYMBOLS]+" "+intToStringLocaled(m[0][a])+", "+m_language[WORDS]+" "+intToStringLocaled(m[1][a]);
 
 	m_out+="\n"+m_language[AVERAGE_WORD_LENGTH_EQUALS]+format(" %.2lf",(double(m[0][a]))/m[1][a]);
 
@@ -1451,9 +1451,9 @@ bool WordsBase::prepare() {
 std::string WordsBase::getStatusString() {
 	std::string s;
 	if(!m_result.empty()){
-		s=m_language[NUMBER_OF_WORDS]+" "+intToString(m_result.size())+", ";
+		s=m_language[NUMBER_OF_WORDS]+" "+intToStringLocaled(m_result.size())+", ";
 #ifndef CGI
-		s+=m_language[WITH_FILTER]+" "+intToString(m_filteredWordsCount)+", ";
+		s+=m_language[WITH_FILTER]+" "+intToStringLocaled(m_filteredWordsCount)+", ";
 #endif
 	}
 	return s+m_language[TIME_OF_LAST_OPERATION]+" "+getTimeString();
@@ -1541,8 +1541,8 @@ bool WordsBase::testFilterRegex(const std::string &s) {
 }
 #endif
 
-std::string WordsBase::intToString(int v){
-	return ::intToString(v,m_language[SEPARATOR_SYMBOL][0]);
+std::string WordsBase::intToStringLocaled(int v){
+	return intToString(v,m_language[SEPARATOR_SYMBOL][0]);
 }
 
 FILE* WordsBase::open(int i, std::string s, bool binary/*=false*/){

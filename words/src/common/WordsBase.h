@@ -201,7 +201,7 @@ public:
 	 */
 	static void removeLastCRLF(char*p);
 
-	std::string intToString(int v);
+	std::string intToStringLocaled(int v);
 	void sortFilterResults();
 
 	void loadLanguage();

@@ -554,7 +554,7 @@ void Frame::aboutDialog() {
 					s = s.substr(0, j + 1) + "\u00A9" + s.substr(j + 2);
 				}
 			}else if(id == EXECUTABLE_FILE_SIZE){
-				s+=" "+intToString(getApplicationFileSize());
+				s+=" "+intToString(getApplicationFileSize(),',');
 			}
 		}
 
