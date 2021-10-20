@@ -41,11 +41,11 @@ class WordsBase {
 	void setKeyboardRowDiagonals();
 
 protected:
-	static const int LANGUAGES=G_N_ELEMENTS(LNG);
+	static const int LANGUAGES=SIZEI(LNG);
 	StringSet m_dictionary[LANGUAGES];
-	StringVector m_settings[LANGUAGES];//m_settings[i] see ENUM_SETTINGS {encoding=locale}
+	VString m_settings[LANGUAGES];//m_settings[i] see ENUM_SETTINGS {encoding=locale}
 #ifndef CGI
-	StringVector m_template[LANGUAGES];//{encoding=locale}
+	VString m_template[LANGUAGES];//{encoding=locale}
 #endif
 	std::string m_keyboardOneRow[256][2];
 	std::string m_keyboardRowDiagonals[256];
@@ -71,9 +71,11 @@ protected:
 
 	int m_comboValue[COMBOBOX_SIZE];//Note use helper value is faster and thread safe, note m_comboValue[COMBOBOX_DICTIONARY] is not used
 	bool m_checkValue;
-	StringVector m_language;//utf8
+	VString m_language;//utf8
 #ifdef CGI
-	StringVector m_cgiLanguage;//utf8
+	VString m_cgiLanguage;//utf8
+#else
+	std::string m_programVersion;
 #endif
 
 	/* some helper strings in language.txt file are very long. String EVERY_MODIFICATION_CHANGE_WORD

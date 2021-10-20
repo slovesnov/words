@@ -49,7 +49,8 @@ about
 homepage
 }
 
-program words version 
+program words
+version
 author Alexey Slovesnov
 copyright (C/C++/gtk) 2000 - doomsday
 homepage
@@ -121,7 +122,9 @@ every modification changes word
 New version is found on the internet. Download it now?
 Search chains of words such as only one character changes for every step. Consider two words <i>woman</i> and <i>chick</i>. There is a chain <i>woman</i> <i>women</i> <i>woven</i> <i>coven</i> <i>coves</i> <i>cores</i> <i>corns</i> <i>coins</i> <i>chins</i> <i>chink</i> <i>chick</i>. Program searches all chains with shortest length.
 no chains found
-filter (regular expression)
+results filter (regular expression)
+found
+not found
 with filter
 ,
 executable file size

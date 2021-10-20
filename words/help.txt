@@ -1,11 +1,9 @@
 ==================
 final release
-remove prininfo, println
-remove todos
-NDEBUG
 
-4.4 6oct2021
-add regex filter of results
+4.4 ~8oct2021
+adopted for Windows 10
+add positive/negative regex filter of results
 sources added to github
 use aslov lib
 add language dependent separator symbol for intToString() function

@@ -30,8 +30,8 @@ class Frame: WordsBase {
 	GtkWidget *m_searchButton[2]; //next, previous buttons
 	GtkWidget *m_searchEntry;
 	GtkWidget *m_currentDictionary;
-	GtkWidget *m_filterLabel;
 	GtkWidget *m_filterEntry;
+	GtkWidget *m_filterFrame;
 	GtkWidget *m_check;
 
 	MenuMap m_menuMap;
@@ -67,7 +67,8 @@ class Frame: WordsBase {
 	void setHelperPanel();
 
 	void createImageCombo(ENUM_COMBOBOX e);
-	GtkWidget* createTextCombo(ENUM_COMBOBOX e, StringVector v, int active);
+	GtkWidget* createTextCombo(ENUM_COMBOBOX e, VString v, int active);
+	GtkWidget* createTextCombo(ENUM_COMBOBOX e);//empty
 	GtkWidget* createTextCombo(ENUM_COMBOBOX e, int from, int to, int active);
 	GtkWidget* createTextCombo(ENUM_COMBOBOX e, ENUM_STRING from,
 			ENUM_STRING to, int active);
@@ -177,6 +178,8 @@ public:
 
 	void sortOrFilterChanged();
 
+	void refillCombo(ENUM_COMBOBOX e,ENUM_STRING first,int length);
+	void newVersionMessage();
 };
 
 #endif /* FRAME_H_ */

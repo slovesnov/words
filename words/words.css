@@ -58,3 +58,9 @@ label,combobox{
 .aboutlabel{
 	margin:1px 2px 1px 2px;
 }
+
+frame border{
+	padding:5px;
+ 	border-radius: .4em;
+	border-color: black;
+}

@@ -79,7 +79,7 @@ WordsBase::WordsBase() {
 			}
 		}
 
-		assert(m_template[i].size()==G_N_ELEMENTS(TEMPLATE_MENU));
+		assert(m_template[i].size()==SIZE(TEMPLATE_MENU));
 		fclose(f);
 	}
 #endif
@@ -365,7 +365,6 @@ bool WordsBase::findAnagram(){
 	std::string s;
 	MapStringStringVector map;
 	MapStringStringVectorI cit;
-	StringVectorCI svi;
 
 	for(i=m_comboValue[COMBOBOX_HELPER0];i<=m_comboValue[COMBOBOX_HELPER1];i++){
 		for(it=r.begin();it!=r.end();it++){
@@ -376,7 +375,7 @@ bool WordsBase::findAnagram(){
 			std::sort(s.begin(), s.end());
 			cit=map.find(s);
 			if(cit==map.end()){
-				StringVector v;
+				VString v;
 				v.push_back(*it);
 				map[s]=v;
 			}
@@ -385,16 +384,16 @@ bool WordsBase::findAnagram(){
 			}
 		}
 		for( cit=map.begin();cit!=map.end();cit++){
-			StringVector& rv=cit->second;
+			VString& rv=cit->second;
 			if(rv.size()<2){
 				continue;
 			}
 			s="";
-			for(svi=rv.begin();svi!=rv.end();svi++){
+			for(auto svi:rv){
 				if(!s.empty()){
 					s+=" ";
 				}
-				s+=*svi;
+				s+=svi;
 			}
 			m_result.push_back(SearchResult(s,rv.begin()->length(),rv.size()));
 		}
@@ -416,7 +415,6 @@ bool WordsBase::findSimpleWordSequence(){
 	std::string s;
 	MapStringTwoStringVectors map;
 	MapStringTwoStringVectorsI mit;
-	StringVectorCI svi;
 	for(i=m_comboValue[COMBOBOX_HELPER0];i<=m_comboValue[COMBOBOX_HELPER1];i++){
 		for(it=r.begin();it!=r.end();it++){
 			if( int(it->length()) >= i ){
@@ -450,7 +448,6 @@ bool WordsBase::findDoubleWordSequence(){
 	std::string s,t,q;
 	MapStringTwoStringVectors map;
 	MapStringTwoStringVectorsI mit;
-	StringVectorCI svi;
 
 	for(i=m_comboValue[COMBOBOX_HELPER0];i<=m_comboValue[COMBOBOX_HELPER1];i++){
 		for(it=r.begin();it!=r.end();it++){
@@ -544,16 +541,14 @@ bool WordsBase::findChain(){
 	StringSetCI dci;
 	int i,j,k,l,mx[2],*ni,*nis;
 	MapStringInt dl;
-	StringVector v,w[2];
-	StringVectorI vit;
-	StringVectorCI vci;
+	VString v,w[2];
 	StringI ic;
 	StringCI ia;
 	MapStringIntI mi;
 	char c;
 	std::string s;
 	StringSet vs[2];
-	StringVector* vl;
+	VString* vl;
 	ChainNodeVector*ch;
 	ChainNodeVectorI cni;
 	ChainNodeVectorCI cni1;
@@ -579,8 +574,8 @@ bool WordsBase::findChain(){
 		j++;
 		for(i=0;i<2;i++){
 			v.clear();
-			for(vit=w[i].begin();vit!=w[i].end();vit++){
-				std::string& vr=*vit;
+			for(auto& vit:w[i]){
+				std::string& vr=vit;
 				for(ic=vr.begin();ic!=vr.end();ic++){
 					c=*ic;
 					for(ia=getAlphabet().begin();ia!=getAlphabet().end();ia++){
@@ -639,7 +634,7 @@ l210:
 	//so j-=2;
 	j-=2;
 
-	vl=new StringVector[j];
+	vl=new VString[j];
 	ch=new ChainNodeVector[j];
 	ni=new int[j];
 	nis=new int[j];
@@ -687,14 +682,14 @@ l210:
 				i-=3;
 			}
 			for( ; k==-1 ? i>=0 : i<j ; i+=k ){
-				for(vci=vl[i].begin();vci!=vl[i].end();vci++){
+				for(auto& vci:vl[i]){
 					cp=0;
 					l=i-k;
 					for(cni=ch[l].begin();cni!=ch[l].end();cni++){
-						if(differenceOnlyOneChar(*vci,cni->s) ){
+						if(differenceOnlyOneChar(vci,cni->s) ){
 							//find all links, so no break here
 							if(!cp){
-								ch[i].push_back(ChainNode(*vci));
+								ch[i].push_back(ChainNode(vci));
 								cp=&(ch[i].back());
 							}
 							if(k==-1){
@@ -764,8 +759,8 @@ l210:
 
 	//sort results by alphabet
 	std::sort(v.begin(),v.end());
-	for(vci=v.begin();vci!=v.end();vci++){
-		m_out+=*vci+format(" (%s %d)\n",m_language[WORDS].c_str(),j+2);
+	for(auto& vci:v){
+		m_out+=vci+format(" (%s %d)\n",m_language[WORDS].c_str(),j+2);
 	}
 
 	return false;
@@ -773,14 +768,14 @@ l210:
 
 void WordsBase::fillResultFromMap(const MapStringTwoStringVectors& map, size_t len){
 	MapStringTwoStringVectorsCI mit;
-	StringVectorCI svi;
+	std::string svi;
 	int j,k;
 	std::string s;
 
 	for( mit=map.begin() ; mit!=map.end() ; mit++ ){
 		const TwoStringVectors& v=mit->second;
-		StringVector const& v1=v.v1;
-		StringVector const& v2=v.v2;
+		VString const& v1=v.v1;
+		VString const& v2=v.v2;
 		j=v1.size();
 		k=v2.size();
 
@@ -792,12 +787,12 @@ void WordsBase::fillResultFromMap(const MapStringTwoStringVectors& map, size_t l
 			}
 
 			s="";
-			for(svi=v1.begin();svi!=v1.end();svi++){
-				s+=*svi+" ";
+			for(auto svi:v1){
+				s+=svi+" ";
 			}
 			s+="-";
-			for(svi=v2.begin();svi!=v2.end();svi++){
-				s+=" "+*svi;
+			for(auto svi:v2){
+				s+=" "+svi;
 			}
 
 			m_result.push_back(SearchResult(s,v1.begin()->length(),j+k ));
@@ -816,8 +811,8 @@ bool WordsBase::twoDictionaries(bool translit) {
 	 * translit=true   1.73  1.50 (1.73-1.50)/1.73=13.3%
 	 */
 
-	std::unique_ptr<StringVector[]> to;
-	//StringVector* to=NULL;
+	std::unique_ptr<VString[]> to;
+	//VString* to=NULL;
 	StringSetCI it;
 	int i,j,l;
 	int fromIndex=-1;
@@ -857,16 +852,16 @@ bool WordsBase::twoDictionaries(bool translit) {
 			alphabetFrom=af;
 			//to[.] is vector of transformation fromAlphabet->symbols n toAlphabet //fixed 4.3
 
-			//to=new StringVector[af.length()];
-			//to=std::make_unique<StringVector[]>(af.length());
+			//to=new VString[af.length()];
+			//to=std::make_unique<VString[]>(af.length());
 
 			/* NOTE next two strings of code are the same
-			 * to=std::make_unique<StringVector[]>(af.length()); since gcc 4.9
-			 * to=std::unique_ptr<StringVector[]>(new StringVector[af.length()]);
+			 * to=std::make_unique<VString[]>(af.length()); since gcc 4.9
+			 * to=std::unique_ptr<VString[]>(new VString[af.length()]);
 			 * but the first one is not supported by old gcc on sourceforge
 			 */
-			//to=std::make_unique<StringVector[]>(af.length()); since gcc 4.9
-			to=std::unique_ptr<StringVector[]>(new StringVector[af.length()]);
+			//to=std::make_unique<VString[]>(af.length()); since gcc 4.9
+			to=std::unique_ptr<VString[]>(new VString[af.length()]);
 		}
 	}
 	fclose(f);
@@ -1132,7 +1127,7 @@ bool WordsBase::dictionaryStatistics() {
 		caption[i]=m_language[i==0 ? CHARACTER_FREQUENCY_PERCENTS : (i==1 ? CHARACTER_FREQUENCY_AT_THE_BEGINNING_PERCENTS:CHARACTER_FREQUENCY_AT_THE_END_PERCENTS )];
 	}
 
-	for(i=0;i<int(G_N_ELEMENTS(additionalCaption));i++){
+	for(i=0;i<SIZEI(additionalCaption);i++){
 		additionalCaption[i]=" "+m_language[i==0? SORTED_BY_ALPHABET : SORTED_BY_FREQUENCY];
 	}
 
@@ -1228,6 +1223,9 @@ void WordsBase::sortFilterResults() {
 	//leave SearchResultVectorCI for old gcc compiler under sf.net
 	SearchResultVectorCI it;
 
+#ifndef CGI
+	bool find=m_comboValue[COMBOBOX_FILTER]==0;
+#endif
 
 	if(!ONE_OF(m_menuClick,NO_SORT_FUNCTIONS_MENU)){//Note NO_SORT_FUNCTIONS_MENU only four items so fast search
 		m_out.clear();
@@ -1237,7 +1235,7 @@ void WordsBase::sortFilterResults() {
 		std::sort(m_result.begin(),m_result.end(),SORT_FUNCTION[m_comboValue[COMBOBOX_SORT]*2+m_comboValue[COMBOBOX_SORT_ORDER]]);
 		for(it=m_result.begin();it!=m_result.end();it++){
 #ifndef CGI
-			if(!testFilterRegex(it->s)){
+			if(find!=testFilterRegex(it->s)){
 				continue;
 			}
 			m_filteredWordsCount++;
@@ -1304,7 +1302,10 @@ void WordsBase::loadLanguage() {
 	fclose(f);
 	assert(m_language.size()==STRING_SIZE);
 
-	m_language[PROGRAM_VERSION]=format("%s %.2lf",m_language[PROGRAM_VERSION].c_str(),WORDS_VERSION);
+#ifndef CGI
+	//forma("4.4") -> "4.4", "4.41" -> "4.31" no zeros after
+	m_programVersion=m_language[PROGRAM]+" "+m_language[VERSION]+" "+forma(WORDS_VERSION);
+#endif
 	m_language[MODIFICATION_HELP]=format(m_language[MODIFICATION_HELP].c_str(),m_language[EVERY_MODIFICATION_CHANGES_WORD].c_str());
 	/* use only first symbol. In Russian language separator is space, so ignore comment in language.txt file.
 	 * Comment in ru/language.txt is important because otherwise it'll we empty string and looks like a bug

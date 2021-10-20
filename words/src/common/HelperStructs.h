@@ -8,9 +8,7 @@
 #ifndef HELPERSTRUCTS_H_
 #define HELPERSTRUCTS_H_
 
-#include <string>
-#include <vector>
-#include <map>
+#include "aslov.h"
 #include <set>
 
 typedef std::string::iterator StringI;
@@ -22,18 +20,15 @@ typedef std::pair<int,double> IntDouble;
 typedef std::pair<int,int> IntInt;
 
 //vectors
-typedef std::vector<std::string> StringVector;
-typedef StringVector::iterator StringVectorI;
-typedef StringVector::const_iterator StringVectorCI;
 typedef std::vector<int> IntVector;
 typedef std::vector<StringInt> StringIntVector;
 typedef StringIntVector::const_iterator StringIntVectorCI;
-typedef StringVector* StringVectorPtr;
+typedef VString* StringVectorPtr;
 typedef std::vector<IntInt> IntIntVector;
 typedef IntIntVector::const_iterator IntIntVectorCI;
 
 //maps
-typedef std::map<std::string,StringVector> MapStringStringVector;
+typedef std::map<std::string,VString> MapStringStringVector;
 typedef MapStringStringVector::iterator MapStringStringVectorI;
 typedef std::map<std::string,int> MapStringInt;
 typedef MapStringInt::iterator MapStringIntI;
@@ -43,7 +38,7 @@ typedef std::set<std::string> StringSet;
 typedef StringSet::const_iterator StringSetCI;
 
 struct TwoStringVectors{
-	StringVector v1,v2;
+	VString v1,v2;
 	void add(int i,std::string s){
 		if(i==0){
 			v1.push_back(s);
