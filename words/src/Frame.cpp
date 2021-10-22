@@ -23,8 +23,6 @@ const char markTag[] = "mark";
 const char activeTag[] = "active";
 const int SEARCH_ENTRY_ID = -1;
 const int FILTER_ENTRY_ID =-2;
-const char *MONTH[] = { "January", "February", "March", "April", "May", "June",
-		"July", "August", "September", "October", "November", "December" };
 const char CERROR[] = "cerror";
 
 const char DOWNLOAD_URL[] =
@@ -533,21 +531,7 @@ void Frame::aboutDialog() {
 			s=m_programVersion;
 		}
 		else if (id == STRING_SIZE) {
-			for (j = 0; j < SIZE(MONTH); j++) {
-				if (strncasecmp(__DATE__, MONTH[j], 3) == 0) {
-					break;
-				}
-			}
-			assert(j<SIZE(MONTH));
-			//make longer string
-			//__DATE__="Dec 15 2016" we need "15 December 2016"
-			s =
-					format(
-							"build %.*s %s %s %s, gcc version %d.%d.%d, gtk version %d.%d.%d ",
-							2, __DATE__ + 4, MONTH[j], __DATE__ + 7, __TIME__,
-							__GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__,
-							GTK_MAJOR_VERSION, GTK_MINOR_VERSION,
-							GTK_MICRO_VERSION);
+			s =getBuildVersionString(true);
 		}
 		else {
 			s = m_language[id];
@@ -1081,7 +1065,7 @@ void Frame::updateComboValue(ENUM_COMBOBOX e) {
 	if (GTK_IS_COMBO_BOX_TEXT(m_combo[e])) {
 		char *p = gtk_combo_box_text_get_active_text(
 				GTK_COMBO_BOX_TEXT(m_combo[e]));
-		if (p && stringToInt(p,v)) {
+		if (p && ::parseString(p,v)) {
 			assert(v>=0);
 		}
 	}

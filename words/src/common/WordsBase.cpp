@@ -1002,7 +1002,7 @@ bool WordsBase::wordFrequency() {
 	for(itv=v.begin();itv!=v.end();itv++){
 		//use separator for intToString for understandable view
 		m_out+=format("\n%2d %6.3lf%% %6s/%s",itv->second,100.*itv->first/r.size()
-				,intToString(itv->first,',').c_str(), intToString(r.size(),',').c_str() );
+				,toString(itv->first,',').c_str(), toString(r.size(),',').c_str() );
 	}
 
 	delete[]m;
@@ -1103,7 +1103,7 @@ bool WordsBase::twoCharactersDistribution() {
 			m_out+="\n";
 		}
 		m_out+=localeToUtf8(format("%s %.2f%% %6s/%s",p->first.c_str(),(p->second*100.)/total
-				,intToString(p->second,',').c_str(), intToString(r.size(),',').c_str() ));
+				,toString(p->second,',').c_str(), toString(r.size(),',').c_str() ));
 	}
 
 	delete2dArray(a,s);
@@ -1543,7 +1543,7 @@ bool WordsBase::testFilterRegex(const std::string &s) {
 #endif
 
 std::string WordsBase::intToStringLocaled(int v){
-	return intToString(v,m_language[SEPARATOR_SYMBOL][0]);
+	return toString(v,m_language[SEPARATOR_SYMBOL][0]);
 }
 
 FILE* WordsBase::open(int i, std::string s, bool binary/*=false*/){
