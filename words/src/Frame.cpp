@@ -5,15 +5,18 @@
  *      Author: alexey slovesnov
  */
 
-#include "Frame.h"
-#include "CheckNewVersion.h"
-
 /*
  * WINDOW_SIZE_TYPE=0 default
  * WINDOW_SIZE_TYPE=1 for youtube helper clip writing
  * WINDOW_SIZE_TYPE=2 for site screenshots
  */
 #define WINDOW_SIZE_TYPE 0
+
+#include "Frame.h"
+#include "CheckNewVersion.h"
+#if WINDOW_SIZE_TYPE==2
+#include <windows.h>
+#endif
 
 //Note WORDS_VERSION defined in WordsBase
 const char MAIL[] = "slovesnov@yandex.ru";
@@ -714,9 +717,12 @@ void Frame::setHelperPanel() {
 
 /**
  * Note function can be called from thread
+ *
  */
 void Frame::sortFilterAndUpdateResults() {
 	sortFilterResults();
+	//printl("end set")
+	m_end=clock();
 	gdk_threads_add_idle(end_job, NULL);
 }
 
@@ -990,16 +996,21 @@ std::string Frame::getMenuLabel(ENUM_MENU e) {
 }
 
 void Frame::proceedThread() {
-	if (run()) {
-		return;
+	if (run()) {//was user break
+		//printl("end set")
+		m_end=clock();
 	}
-	sortFilterAndUpdateResults();
+	else{
+		//m_end set in sortFilterAndUpdateResults
+		sortFilterAndUpdateResults();
+	}
 }
 
 void Frame::startJob(bool clearResult) {
 	if (clearResult) {
 		m_result.clear();
 	}
+//	printl("begin set")
 	m_begin = clock();
 	m_out = "";
 
@@ -1010,13 +1021,10 @@ void Frame::startJob(bool clearResult) {
 
 void Frame::endJob() {
 	setStatus(getStatusString());
-
 	updateTextView();
-
 	//update tags if user searched something
 	m_tagIndex = 0;
 	updateTags();
-
 }
 
 /**

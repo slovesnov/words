@@ -1461,7 +1461,7 @@ std::string WordsBase::getStatusString() {
 }
 
 std::string WordsBase::getTimeString() {
-	return format("%.2lf", double(clock() - m_begin) / CLOCKS_PER_SEC );
+	return format("%.2lf", double(m_end - m_begin) / CLOCKS_PER_SEC );
 }
 
 void WordsBase::removeLastCRLF(char* p) {

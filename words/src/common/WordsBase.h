@@ -53,7 +53,7 @@ protected:
 	std::string m_out;
 	SearchResultVector m_result;
 	int m_longestWordLength[LANGUAGES];
-	clock_t m_begin;
+	clock_t m_begin, m_end;
 #ifdef CGI
 	std::regex m_regex;
 #else
