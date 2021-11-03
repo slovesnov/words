@@ -1,12 +1,19 @@
 ==================
 final release
 
-4.4 ~8oct2021
+4.4 3nov2021
 adopted for Windows 10
 add positive/negative regex filter of results
 sources added to github
-use aslov lib
-add language dependent separator symbol for intToString() function
+project uses aslov helper library
+add language dependent thousand separator symbol
+
+[ru]
+адаптировано под Windows 10
+добавлен позитивный/негативный фильтр результатов через регулярные выражения
+исходный код добавлен на github
+проект использует вспомогательную библиотеку aslov
+добавлен зависящий от языка разделитель групп разрядов
 
 ================================================================================
 4.32 only source publish 
