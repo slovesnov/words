@@ -996,6 +996,11 @@ std::string Frame::getMenuLabel(ENUM_MENU e) {
 }
 
 void Frame::proceedThread() {
+	/* sortFilterAndUpdateResults() can be called
+	 * without proceedThread() when use want to
+	 * only sort results so need to set m_end
+	 * in two places
+	 */
 	if (run()) {//was user break
 		//printl("end set")
 		m_end=clock();
