@@ -14,7 +14,7 @@
 #endif
 
 //need for cgi & gtk
-const double WORDS_VERSION=4.4;
+const double WORDS_VERSION=4.41;
 
 //BEGIN ENCODE ARRAYS
 const ENUM_MENU FUNCTION_MENU[]={
