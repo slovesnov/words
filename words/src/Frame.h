@@ -33,6 +33,7 @@ class Frame: WordsBase {
 	GtkWidget *m_filterEntry;
 	GtkWidget *m_filterFrame;
 	GtkWidget *m_check;
+	GtkWidget *m_comboline;
 
 	MenuMap m_menuMap;
 	GtkAccelGroup *m_accelGroup[MENU_ACCEL_SIZE];
@@ -55,11 +56,7 @@ class Frame: WordsBase {
 		return gtk_combo_box_get_active(GTK_COMBO_BOX(m_combo[e]));
 	}
 
-	void setComboIndex(ENUM_COMBOBOX e, gint v) {
-		assert(GTK_IS_COMBO_BOX(m_combo[e]));
-		gtk_combo_box_set_active(GTK_COMBO_BOX(m_combo[e]), v);
-		updateComboValue(e);
-	}
+	void setComboIndex(ENUM_COMBOBOX e, gint v);
 
 	void updateComboValue(ENUM_COMBOBOX e);
 
@@ -78,7 +75,8 @@ class Frame: WordsBase {
 	void addEntryLineToHelper(int i);
 	void addComboLineToHelper(ENUM_STRING id, int from, int to, int active,
 			ENUM_STRING eid);
-	void addComboToHelper(ENUM_STRING from, ENUM_STRING to, int active);
+	void addComboToHelper(ENUM_STRING from, ENUM_STRING to, int active,
+			ENUM_COMBOBOX comboboxId = COMBOBOX_HELPER0);
 	void addComboLineToHelper(ENUM_STRING id, int from, int to, int active,
 			std::string s1, std::string s2, std::string s3);
 

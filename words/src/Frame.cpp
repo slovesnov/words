@@ -138,7 +138,7 @@ Frame::Frame() :
 #ifndef NDEBUG
 	//No intersection between FUNCTION_MENU & BOOL_VOID_MENU
 	for(i=0;i<SIZEI(FUNCTION_MENU);i++){
-		if(ONE_OF(BOOL_VOID_MENU,FUNCTION_MENU[i])){
+		if(ONE_OF(FUNCTION_MENU[i],BOOL_VOID_MENU)){
 			assert(0);
 		}
 	}
@@ -672,6 +672,11 @@ void Frame::setHelperPanel() {
 		g_signal_connect(m_check, "toggled", G_CALLBACK(check_changed), NULL);
 		break;
 
+	case MENU_CHARACTER_SEQUENCE:
+		addComboToHelper(SEARCH_IN_ANY_PLACE_OF_WORD, SEARCH_IN_END_OF_WORD, 0,COMBOBOX_HELPER2);
+		addComboLineToHelper(NUMBER_OF_MATCHES, 1, 10, 0, STRING_SIZE);
+		break;
+
 	case MENU_SIMPLE_WORD_SEQUENCE:
 		addComboLineToHelper(SEQUENCE, 8, MAX_WORD_SEQUENCE_LENGTH, 0,
 				CHARACTERS);
@@ -680,10 +685,6 @@ void Frame::setHelperPanel() {
 	case MENU_DOUBLE_WORD_SEQUENCE:
 		addComboLineToHelper(LENGTH, 2, MAX_DOUBLE_WORD_SEQUENCE_LENGTH, 2,
 				CHARACTERS);
-		break;
-
-	case MENU_CHARACTER_SEQUENCE:
-		addComboToHelper(SEARCH_IN_ANY_PLACE_OF_WORD, SEARCH_IN_END_OF_WORD, 0);
 		break;
 
 	case MENU_CONSONANT_VOWEL_SEQUENCE:
@@ -817,16 +818,23 @@ void Frame::addComboLineToHelper(ENUM_STRING id, int from, int to, int active,
 		add(w, s3);
 	}
 	gtk_container_add(GTK_CONTAINER(m_helperUp), w);
+	m_comboline=w;
 }
 
-void Frame::addComboToHelper(ENUM_STRING from, ENUM_STRING to, int active) {
+void Frame::addComboToHelper(ENUM_STRING from, ENUM_STRING to, int active,
+		ENUM_COMBOBOX comboboxId/*=COMBOBOX_HELPER0*/) {
 	gtk_container_add(GTK_CONTAINER(m_helperUp),
-			createTextCombo(COMBOBOX_HELPER0, from, to, active));
+			createTextCombo(comboboxId, from, to, active));
 }
 
 void Frame::comboChanged(ENUM_COMBOBOX e) {
 	assert(e != COMBOBOX_SIZE);
 	updateComboValue(e);
+
+	if (m_menuClick == MENU_CHARACTER_SEQUENCE && e == COMBOBOX_HELPER2) {
+		//visible is "any place of word"
+		gtk_widget_set_visible(m_comboline, getComboIndex(e) == 0);
+	}
 
 	if (oneOf(e, COMBOBOX_SORT, COMBOBOX_SORT_ORDER, COMBOBOX_DICTIONARY,
 			COMBOBOX_FILTER)) {
@@ -1072,6 +1080,12 @@ void Frame::waitThread() {
 	}
 }
 
+void Frame::setComboIndex(ENUM_COMBOBOX e, gint v) {
+	assert(GTK_IS_COMBO_BOX(m_combo[e]));
+	gtk_combo_box_set_active(GTK_COMBO_BOX(m_combo[e]), v);
+	updateComboValue(e);
+}
+
 void Frame::updateComboValue(ENUM_COMBOBOX e) {
 	assert(e!=COMBOBOX_SIZE);
 	int v = -1;
@@ -1084,7 +1098,7 @@ void Frame::updateComboValue(ENUM_COMBOBOX e) {
 	}
 	if (v == -1) {
 		v = getComboIndex(e);
-		assert(v!=-1);
+		//v can be =-1 when combobox just created
 	}
 	m_comboValue[e] = v;
 }

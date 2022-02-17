@@ -185,18 +185,29 @@ bool WordsBase::checkTemplate(const std::string& s) {
 }
 
 bool WordsBase::checkCharacterSequence(const std::string& s){
-	if(m_comboValue[COMBOBOX_HELPER0]==0){
-		return s.find(m_entryText)!=std::string::npos;
-	}
-	else if(m_comboValue[COMBOBOX_HELPER0]==1){
-		return s.compare(0,m_entryText.length(),m_entryText)==0;
-	}
-	else{
-		unsigned i=s.length();
-		if(i<m_entryText.length()){
+	auto j = m_comboValue[COMBOBOX_HELPER2];
+	if (j == 0) {
+		auto min = m_comboValue[COMBOBOX_HELPER0];
+		auto max = m_comboValue[COMBOBOX_HELPER1];
+		j = 0;
+		std::string::size_type pos = 0;
+		while ((pos = s.find(m_entryText, pos)) != std::string::npos) {
+			j++;
+			if (j > max) {
+				return false;
+			}
+			pos += m_entryText.length();
+		}
+		return j >= min;
+	} else if (j == 1) {
+		return s.compare(0, m_entryText.length(), m_entryText) == 0;
+	} else {
+		unsigned i = s.length();
+		if (i < m_entryText.length()) {
 			return false;
 		}
-		return s.compare(i-m_entryText.length(),m_entryText.length(),m_entryText)==0;
+		return s.compare(i - m_entryText.length(), m_entryText.length(),
+				m_entryText) == 0;
 	}
 }
 
