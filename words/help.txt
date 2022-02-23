@@ -1,5 +1,5 @@
 
-4.42 ??feb2022
+4.42 17feb2022
 add number of matches for characters sequence search
 fixed bugs if NDEBUG not defined, now compiles normally
 remove incorrect word from russian dictionary
