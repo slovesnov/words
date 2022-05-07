@@ -13,6 +13,10 @@
 	#include <gtk/gtk.h>//for GDK_KEY_...
 #endif
 
+/* fixed bug aslov lib (check new version) when no internet and router return some html on any page
+ *
+ */
+
 //need for cgi & gtk
 const double WORDS_VERSION=4.42;
 
