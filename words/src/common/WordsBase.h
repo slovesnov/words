@@ -17,11 +17,11 @@
 #include <ctime>
 #include "aslov.h"
 
-//#ifdef CGI
+#ifdef CGI
 //	#include <regex>
 //	#include <stdarg.h>
 //	#include <stdio.h>
-//#endif
+#endif
 
 const char SEPARATOR[]="SEPARATOR";
 const std::string LNG[]={"en","ru"};
@@ -54,13 +54,14 @@ protected:
 	SearchResultVector m_result;
 	int m_longestWordLength[LANGUAGES];
 	clock_t m_begin, m_end;
-#ifdef CGI
-	std::regex m_regex;
-#else
+#ifdef _WIN32
+	//under windows use powerful regex from gtk even in cgi mode
 	GRegex*m_regex;
 	GRegex*m_filterRegex;
 	std::string m_filterText;//locale
 	int m_filteredWordsCount;
+#else
+	std::regex m_regex;
 #endif
 
 	int m_languageIndex;
@@ -106,6 +107,10 @@ protected:
 	}
 
 	FILE* open(int i, std::string s, bool binary=false);
+#ifdef CGI
+	std::string getResourcePath(std::string name);
+	void cgi();
+#endif
 
 	bool prepare();
 
@@ -208,7 +213,6 @@ public:
 
 	void loadLanguage();
 	static const std::string parseString(const char* buff);
-
 };
 
 #endif /* COMMON_WORDSBASE_H_ */

@@ -8,6 +8,8 @@
 #ifndef FRAME_H_
 #define FRAME_H_
 
+#ifndef CGI
+
 #include "common/consts.h"
 #include "common/WordsBase.h"
 #include "CheckNewVersion.h"
@@ -179,5 +181,6 @@ public:
 	void refillCombo(ENUM_COMBOBOX e,ENUM_STRING first,int length);
 	void newVersionMessage();
 };
+#endif
 
 #endif /* FRAME_H_ */

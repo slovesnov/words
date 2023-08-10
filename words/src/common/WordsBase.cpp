@@ -8,6 +8,7 @@
 #include "consts.h"
 #include "WordsBase.h"
 #include <memory> //unique_ptr
+#include "aslov.h"
 
 typedef unsigned char uchar;
 
@@ -17,11 +18,45 @@ typedef unsigned char uchar;
 	#define	RETURN_ON_USER_BREAK(a) if( userBreakThread()){return a;}
 #endif
 
-
-#ifdef __unix__
-		const char EL='\r';
+#ifdef _WIN32
+	const char EL='\n';
 #else
-		const char EL='\n';
+	const char EL='\r';
+#endif
+
+#ifdef CGI
+	#include "cgi.h"
+
+	//should match with POST_ENUM
+	const std::string POST_NAME[]={"searchType","entry","dictionary","sortType","sortOrder","language","combo0","combo1","combo2","check"};
+
+	const ENUM_MENU COMBO_MENU[]={
+		MENU_ANAGRAM,
+		MENU_PANGRAM,
+		MENU_TEMPLATE,
+		MENU_PALINDROME,
+		MENU_CROSSWORD,
+		MENU_REGULAR_EXPRESSIONS,
+		MENU_MODIFICATION,
+		MENU_CHAIN,
+		MENU_CHARACTER_SEQUENCE,
+		MENU_SIMPLE_WORD_SEQUENCE,
+		MENU_DOUBLE_WORD_SEQUENCE,
+		MENU_WORD_SEQUENCE_FULL,
+		MENU_KEYBOARD_WORD_SIMPLE,
+		MENU_KEYBOARD_WORD_COMPLEX,
+		MENU_CONSONANT_VOWEL_SEQUENCE,
+		MENU_DENSITY,
+
+		MENU_TWO_DICTIONARIES_SIMPLE,
+		MENU_TWO_DICTIONARIES_TRANSLIT,
+		MENU_TWO_DICTIONARIES_KEYBOARD_WORD,
+
+		MENU_DICTIONARY_STATISTICS,
+		MENU_WORD_FREQUENCY,
+		MENU_CHECK_DICTIONARY,
+		MENU_TWO_CHARACTERS_DISTRIBUTION
+	};
 #endif
 
 WordsBase*wordsBase;
@@ -31,6 +66,7 @@ WordsBase::WordsBase() {
 	FILE*f;
 	char*p;
 	char buff[MAX_BUFF_LEN];
+
 #ifndef CGI
 	char *p1,*p2;
 #endif
@@ -99,6 +135,9 @@ WordsBase::WordsBase() {
 		}
 		fclose(f);
 	}
+#ifdef CGI
+	cgi();
+#endif
 }
 
 WordsBase::~WordsBase(){
@@ -288,13 +327,7 @@ bool WordsBase::checkPalindrome(const std::string& s) {
 }
 
 bool WordsBase::checkRegularExpression(const std::string& s) {
-#ifdef CGI
-	//gcc on sourceforge 4.8.5 doesn't support std::sregex_iterator
-	std::ptrdiff_t const matches(std::distance(
-			std::sregex_iterator(s.begin(), s.end(), m_regex),
-			std::sregex_iterator()));
-	return matches>=m_comboValue[COMBOBOX_HELPER0] && matches<=m_comboValue[COMBOBOX_HELPER1];
-#else
+#ifdef _WIN32
 	GMatchInfo *matchInfo;
 	g_regex_match (m_regex, s.c_str(), GRegexMatchFlags(0), &matchInfo);
 	int i;
@@ -305,6 +338,12 @@ bool WordsBase::checkRegularExpression(const std::string& s) {
 	g_match_info_free (matchInfo);
 
 	return i>=m_comboValue[COMBOBOX_HELPER0] && i<=max;
+#else
+	//gcc on sourceforge 4.8.5 doesn't support std::sregex_iterator
+	std::ptrdiff_t const matches(std::distance(
+			std::sregex_iterator(s.begin(), s.end(), m_regex),
+			std::sregex_iterator()));
+	return matches>=m_comboValue[COMBOBOX_HELPER0] && matches<=m_comboValue[COMBOBOX_HELPER1];
 #endif
 }
 
@@ -1376,17 +1415,17 @@ bool WordsBase::prepare() {
 	if(m_menuClick==MENU_REGULAR_EXPRESSIONS){//finish with MENU_REGULAR_EXPRESSIONS
 		//russain char to lowercase, other ignorecase options in regcomp/g_regex_new functions
 		m_entryText=localeToLowerCase(m_entryText,true);
-#ifdef CGI
+#ifdef _WIN32
+		//Note G_REGEX_RAW support 's' in locale, otherwise 's' should be a utf8 string
+		m_regex = g_regex_new (m_entryText.c_str(), GRegexCompileFlags(G_REGEX_RAW|G_REGEX_CASELESS), GRegexMatchFlags(0), NULL);
+		if(m_regex==NULL){
+			return false;
+		}
+#else
 		try {
 			m_regex=std::regex(m_entryText.c_str(),std::regex_constants::icase | std::regex_constants::extended );
 		}
 		catch (std::regex_error&) {
-			return false;
-		}
-#else
-		//Note G_REGEX_RAW support 's' in locale, otherwise 's' should be a utf8 string
-		m_regex = g_regex_new (m_entryText.c_str(), GRegexCompileFlags(G_REGEX_RAW|G_REGEX_CASELESS), GRegexMatchFlags(0), NULL);
-		if(m_regex==NULL){
 			return false;
 		}
 #endif
@@ -1561,3 +1600,84 @@ FILE* WordsBase::open(int i, std::string s, bool binary/*=false*/){
 	std::string p=getResourcePath(getShortLanguageString(i) + "/"+s+".txt");
 	return ::open(p,binary? "rb":"r");
 }
+
+#ifdef CGI
+std::string WordsBase::getResourcePath(std::string name){
+		return
+
+#ifdef _WIN32
+ "C:/Users/user/git/words"
+#else
+ "../htdocs"
+#endif
++std::string("/words/words/")
+				+name;
+	}
+
+void WordsBase::cgi(){
+	int i,j;
+	std::string s;
+	m_begin = clock();
+	Cgi c;
+	for (auto a : c) {
+		i = INDEX_OF(a.first,POST_NAME);
+		//assert(i!=POST_SIZE); later in switch
+		s=a.second;
+		if(i!=POST_ENTRY){
+			//std::stoi throws exception if not valid number
+			j=std::stoi(s.c_str());
+		}
+		switch(i){
+		case POST_SEARCHTYPE:
+			m_menuClick=COMBO_MENU[j];
+			break;
+
+		case POST_ENTRY:
+			m_entryText=utf8ToLocale(s);
+			break;
+
+		case POST_DICTIONARY:
+			m_comboValue[COMBOBOX_DICTIONARY]=j;
+			break;
+
+		case POST_SORTTYPE:
+			m_comboValue[COMBOBOX_SORT]=j;
+			break;
+
+		case POST_SORTORDER:
+			m_comboValue[COMBOBOX_SORT_ORDER]=j;
+			break;
+
+		case POST_LANGUAGE:
+			m_languageIndex=j;
+			break;
+
+		case POST_COMBO0:
+		case POST_COMBO1:
+		case POST_COMBO2:
+			m_comboValue[COMBOBOX_HELPER0+i-POST_COMBO0]=j;
+			break;
+
+		case POST_CHECK:
+			m_checkValue= j!=0;
+			break;
+
+		default:
+			assert(0);
+		}
+	}
+
+	loadLanguage();//prepare can output error message so load before
+
+	if(!prepare()){
+		printf(" %s",getTimeString().c_str());
+		return;
+	}
+
+	run();
+	sortFilterResults();
+	m_end=clock();
+	printf("%s\n%s",getStatusString().c_str(),m_out.c_str());
+}
+
+#endif
