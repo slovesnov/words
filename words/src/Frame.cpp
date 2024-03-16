@@ -609,6 +609,7 @@ void Frame::routine() {
 	if (prepare()) {
 		startThread(thread);
 	} else {			//wrapper to call endJob() if prepare() returns false
+		m_end = clock();
 		endJob();
 	}
 }
@@ -1019,8 +1020,7 @@ void Frame::startJob(bool clearResult) {
 		m_result.clear();
 	}
 //	printl("begin set")
-	//16mar24 need to set m_end if user break thread
-	m_begin = m_end = clock();
+	m_begin = clock();
 	m_out = "";
 
 	//For long jobs show status & view. Long jobs when whole dictionary is added to m_result

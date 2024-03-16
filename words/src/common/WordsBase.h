@@ -179,7 +179,7 @@ public:
 	bool dummy() {
 		return false;
 	} //Helper wrapper function for language change menu
-	//helper BOOL_VOID_FUNCTION
+	  //helper BOOL_VOID_FUNCTION
 	bool twoDictionaries(bool translit);
 
 	static bool spanIncluding(const char *p, const std::string &pattern);
