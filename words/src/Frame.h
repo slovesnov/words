@@ -67,7 +67,7 @@ class Frame: WordsBase {
 
 	void createImageCombo(ENUM_COMBOBOX e);
 	GtkWidget* createTextCombo(ENUM_COMBOBOX e, VString v, int active);
-	GtkWidget* createTextCombo(ENUM_COMBOBOX e);//empty
+	GtkWidget* createTextCombo(ENUM_COMBOBOX e); //empty
 	GtkWidget* createTextCombo(ENUM_COMBOBOX e, int from, int to, int active);
 	GtkWidget* createTextCombo(ENUM_COMBOBOX e, ENUM_STRING from,
 			ENUM_STRING to, int active);
@@ -178,7 +178,7 @@ public:
 
 	void sortOrFilterChanged();
 
-	void refillCombo(ENUM_COMBOBOX e,ENUM_STRING first,int length);
+	void refillCombo(ENUM_COMBOBOX e, ENUM_STRING first, int length);
 	void newVersionMessage();
 };
 #endif

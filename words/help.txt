@@ -1,3 +1,16 @@
+4.43
+added split group of characters by two/three words option (only window mode)
+project recompliled under new version of gcc and gtk libraries (gtk library bug with text alignment is fixed)
+removed/added/changed several words from russian dictionary, added word tokmak in english language
+added using of custom cgi library in cgi mode
+added remove/add/change mechanism for dictionaries
+
+[ru]
+добавлено разбиение группы букв на два/три слова (только для окнного режима)
+проект перекомпилирован для новой версии gcc и gtk (в gtk исправлен баг с выравнивание текста) 
+удалено несколько несуществующих слов из русского словара: аьберт, госкомсанэпидназдор, октябрьскский, ухойдакать добавлены слова: рухнет, прескриптивизм. Добавлено слово tokmak в английский словарь
+добавлено использование собственной библиотеки cgi для режима cgi
+добавлено удаление/добавление/изменение слов для словарей
 
 4.42 17feb2022
 add number of matches for characters sequence search

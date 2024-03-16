@@ -25,13 +25,12 @@ const char HOMEPAGE_ONLINE[] = "http://slovesnov.users.sf.net/?words_online"; //
 const char markTag[] = "mark";
 const char activeTag[] = "active";
 const int SEARCH_ENTRY_ID = -1;
-const int FILTER_ENTRY_ID =-2;
+const int FILTER_ENTRY_ID = -2;
 const char CERROR[] = "cerror";
 
 const char DOWNLOAD_URL[] =
 		"http://sourceforge.net/projects/javawords/files/latest/download";
 //const char DOWNLOAD_URL[]="https://sourceforge.net/projects/javawords/files/";//all versions
-
 
 const char VERSION_FILE_URL[] =
 		"http://slovesnov.users.sf.net/words/version.txt";
@@ -47,7 +46,7 @@ const int MAX_PANGRAM_LENGTH = 20; //counted {16,20}
 const int MAX_WORD_SEQUENCE_LENGTH = 21; //counted {20,21}
 const int MAX_DOUBLE_WORD_SEQUENCE_LENGTH = 14; //counted {6,14}
 
-const std::string CONFIG_TAGS[]={"version","language","dictionary"};
+const std::string CONFIG_TAGS[] = { "version", "language", "dictionary" };
 
 Frame *frame;
 
@@ -190,7 +189,8 @@ Frame::Frame() :
 	m_searchTagLabel = gtk_label_new("");
 	for (i = 0; i < SIZEI(m_searchButton); i++) {
 		m_searchButton[i] = gtk_button_new();
-		gtk_button_set_image(GTK_BUTTON(m_searchButton[i]),image(i == 0 ? "down.png" : "up.png"));
+		gtk_button_set_image(GTK_BUTTON(m_searchButton[i]),
+				image(i == 0 ? "down.png" : "up.png"));
 	}
 	m_currentDictionary = gtk_label_new("");
 	m_filterEntry = gtk_entry_new();
@@ -229,7 +229,7 @@ Frame::Frame() :
 	add(w1, m_filterEntry); //stretch
 	gtk_container_add(GTK_CONTAINER(w1), m_combo[COMBOBOX_FILTER]);
 
-	m_filterFrame= gtk_frame_new("");
+	m_filterFrame = gtk_frame_new("");
 	gtk_container_add(GTK_CONTAINER(m_filterFrame), w1);
 	gtk_frame_set_label_align(GTK_FRAME(m_filterFrame), 0.15, 0.5);
 	gtk_container_add(GTK_CONTAINER(w), m_filterFrame);
@@ -255,7 +255,7 @@ Frame::Frame() :
 	gtk_container_add(GTK_CONTAINER(m_widget), w);
 
 	//load configuration file
-	int dictionary=0;
+	int dictionary = 0;
 	m_languageIndex = 0;
 
 	MapStringString m;
@@ -300,13 +300,13 @@ Frame::Frame() :
 
 		bSubMenu = strchr(buff, '{') != NULL;
 
-		if ((j = INDEX_OF(ENUM_MENU(i),ICON_MENU)) != -1) {
+		if ((j = INDEX_OF(ENUM_MENU(i), ICON_MENU)) != -1) {
 			item = gtk_menu_item_new();
 
 			w = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
 			w1 = gtk_accel_label_new("");
 
-			gtk_container_add(GTK_CONTAINER(w),image(ICON_MENU_FILE_NAME[j]));
+			gtk_container_add(GTK_CONTAINER(w), image(ICON_MENU_FILE_NAME[j]));
 
 			gtk_label_set_use_underline(GTK_LABEL(w1), TRUE);
 			gtk_label_set_xalign(GTK_LABEL(w1), 0.0);
@@ -328,7 +328,7 @@ Frame::Frame() :
 								gtk_menu_item_get_submenu(subMenu.back())),
 				item);
 
-		if ((j = INDEX_OF(ENUM_MENU(i),MENU_ACCEL)) != -1) {
+		if ((j = INDEX_OF(ENUM_MENU(i), MENU_ACCEL)) != -1) {
 			gtk_widget_add_accelerator(item, "activate", m_accelGroup[j],
 					ACCEL_KEY[j], GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
 		}
@@ -370,8 +370,9 @@ Frame::Frame() :
 	g_signal_connect(m_widget, "destroy", G_CALLBACK (destroy_window), NULL);
 
 #if WINDOW_SIZE_TYPE==0
-	const int height = 680;
-	gtk_widget_set_size_request(m_widget, 16 * height / 10, height); //notebook resolution 1366x768 40pixels low pane+title
+	gtk_window_maximize(GTK_WINDOW(m_widget));
+//	const int height = 680;
+//	gtk_widget_set_size_request(m_widget, 16 * height / 10, height); //notebook resolution 1366x768 40pixels low pane+title
 #endif
 
 	gtk_widget_show_all(m_widget);
@@ -395,8 +396,7 @@ Frame::Frame() :
 	gtk_widget_set_size_request(m_widget,width-(rect.right-rect.left),height-(rect.bottom-rect.top));
 #endif
 
-	m_newVersion.start(VERSION_FILE_URL, WORDS_VERSION,
-			new_version_message);
+	m_newVersion.start(VERSION_FILE_URL, WORDS_VERSION, new_version_message);
 }
 
 void Frame::clickMenu(ENUM_MENU menu) {
@@ -481,8 +481,8 @@ void Frame::clickMenu(ENUM_MENU menu) {
 void Frame::destroy() {
 	//const std::string CONFIG_TAGS[]={"version","language","dictionary"};
 	WRITE_CONFIG(CONFIG_TAGS, WORDS_VERSION,
-			getShortLanguageString(m_languageIndex) ,
-			getShortLanguageString(getDictionaryIndex()) );
+			getShortLanguageString(m_languageIndex),
+			getShortLanguageString(getDictionaryIndex()));
 
 	stopThread();
 	gtk_main_quit();
@@ -525,18 +525,16 @@ void Frame::aboutDialog() {
 	box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
 
 	ENUM_STRING sid[] = { PROGRAM, AUTHOR, COPYRIGHT, HOMEPAGE_STRING,
-			HOMEPAGE_ONLINE_STRING, STRING_SIZE /*build info*/, EXECUTABLE_FILE_SIZE
-	};
+			HOMEPAGE_ONLINE_STRING, STRING_SIZE /*build info*/,
+			EXECUTABLE_FILE_SIZE };
 	ENUM_STRING id;
 	for (i = 0; i < SIZE(sid); i++) {
 		id = sid[i];
 		if (id == PROGRAM) {
-			s=m_programVersion;
-		}
-		else if (id == STRING_SIZE) {
-			s =getBuildVersionString(true);
-		}
-		else {
+			s = m_programVersion;
+		} else if (id == STRING_SIZE) {
+			s = getBuildVersionString(true);
+		} else {
 			s = m_language[id];
 
 			if (id == AUTHOR) {
@@ -549,8 +547,8 @@ void Frame::aboutDialog() {
 				if (j != std::string::npos) {
 					s = s.substr(0, j + 1) + "\u00A9" + s.substr(j + 2);
 				}
-			}else if(id == EXECUTABLE_FILE_SIZE){
-				s+=" "+toString(getApplicationFileSize(),',');
+			} else if (id == EXECUTABLE_FILE_SIZE) {
+				s += " " + toString(getApplicationFileSize(), ',');
 			}
 		}
 
@@ -587,7 +585,7 @@ void Frame::aboutDialog() {
 		gtk_widget_set_halign(label, GTK_ALIGN_START);
 		addClass(label, "aboutlabel");
 
-		add(box,label);//stretch vertically
+		add(box, label); //stretch vertically
 		//gtk_container_add(GTK_CONTAINER(box), label);
 	}
 
@@ -624,7 +622,7 @@ void Frame::setHelperPanel() {
 	clearHelper();
 
 	//set label
-	if ((i = INDEX_OF(m_menuClick,HELPER_MENU )) != -1) {//for some of menu items only needs clear helper panel
+	if ((i = INDEX_OF(m_menuClick, HELPER_MENU)) != -1) {//for some of menu items only needs clear helper panel
 		w = gtk_label_new("");
 		gtk_container_add(GTK_CONTAINER(m_helperUp), w);
 		gtk_label_set_justify(GTK_LABEL(w), GTK_JUSTIFY_FILL);
@@ -639,7 +637,7 @@ void Frame::setHelperPanel() {
 	}
 
 	//add entry with template
-	if ((i = INDEX_OF(m_menuClick,TEMPLATE_MENU)) != -1) {
+	if ((i = INDEX_OF(m_menuClick, TEMPLATE_MENU)) != -1) {
 		addEntryLineToHelper(i);
 	}
 
@@ -673,7 +671,8 @@ void Frame::setHelperPanel() {
 		break;
 
 	case MENU_CHARACTER_SEQUENCE:
-		addComboToHelper(SEARCH_IN_ANY_PLACE_OF_WORD, SEARCH_IN_END_OF_WORD, 0,COMBOBOX_HELPER2);
+		addComboToHelper(SEARCH_IN_ANY_PLACE_OF_WORD, SEARCH_IN_END_OF_WORD, 0,
+				COMBOBOX_HELPER2);
 		addComboLineToHelper(NUMBER_OF_MATCHES, 1, 10, 0, STRING_SIZE);
 		break;
 
@@ -723,7 +722,7 @@ void Frame::setHelperPanel() {
 void Frame::sortFilterAndUpdateResults() {
 	sortFilterResults();
 	//printl("end set")
-	m_end=clock();
+	m_end = clock();
 	gdk_threads_add_idle(end_job, NULL);
 }
 
@@ -741,18 +740,18 @@ void Frame::loadAndUpdateCurrentLanguage() {
 
 	gtk_window_set_title(GTK_WINDOW(m_widget), m_language[PROGRAM].c_str());
 
-	gtk_frame_set_label(GTK_FRAME(m_filterFrame),m_language[RESULTS_FILTER].c_str());
+	gtk_frame_set_label(GTK_FRAME(m_filterFrame),
+			m_language[RESULTS_FILTER].c_str());
 
-
-	refillCombo(COMBOBOX_SORT,SORT_BY_ALPHABET,NUMBER_OF_SORTS);
-	refillCombo(COMBOBOX_FILTER,FOUND,2);
+	refillCombo(COMBOBOX_SORT, SORT_BY_ALPHABET, NUMBER_OF_SORTS);
+	refillCombo(COMBOBOX_FILTER, FOUND, 2);
 }
 
 GtkWidget* Frame::createTextCombo(ENUM_COMBOBOX e, VString v, int active) {
 	assert(e!=COMBOBOX_SIZE);
 
 	GtkWidget *w = m_combo[e] = gtk_combo_box_text_new();
-	for (auto & a:v) {
+	for (auto &a : v) {
 		gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(w), a.c_str());
 	}
 
@@ -761,8 +760,8 @@ GtkWidget* Frame::createTextCombo(ENUM_COMBOBOX e, VString v, int active) {
 	return w;
 }
 
-GtkWidget* Frame::createTextCombo(ENUM_COMBOBOX e){
-	return createTextCombo(e,{},-1);
+GtkWidget* Frame::createTextCombo(ENUM_COMBOBOX e) {
+	return createTextCombo(e, { }, -1);
 }
 
 GtkWidget* Frame::createTextCombo(ENUM_COMBOBOX e, int from, int to,
@@ -818,7 +817,7 @@ void Frame::addComboLineToHelper(ENUM_STRING id, int from, int to, int active,
 		add(w, s3);
 	}
 	gtk_container_add(GTK_CONTAINER(m_helperUp), w);
-	m_comboline=w;
+	m_comboline = w;
 }
 
 void Frame::addComboToHelper(ENUM_STRING from, ENUM_STRING to, int active,
@@ -844,11 +843,10 @@ void Frame::comboChanged(ENUM_COMBOBOX e) {
 		} else {
 			sortOrFilterChanged();
 		}
-	}
-	else {
+	} else {
 		stopThread();
 		if ((e == COMBOBOX_HELPER0 || e == COMBOBOX_HELPER1)
-				&& ONE_OF(m_menuClick,MENU_ADJUST_COMBO )) {
+				&& ONE_OF(m_menuClick, MENU_ADJUST_COMBO)) {
 			if (getComboIndex(COMBOBOX_HELPER0)
 					> getComboIndex(COMBOBOX_HELPER1)) {
 				lockSignals();
@@ -869,13 +867,11 @@ void Frame::entryChanged(int entryIndex) {
 		waitThread();
 		m_tagIndex = 0;
 		updateTags();
-	}
-	else if(entryIndex == FILTER_ENTRY_ID){
-		if(prepare()){
+	} else if (entryIndex == FILTER_ENTRY_ID) {
+		if (prepare()) {
 			sortOrFilterChanged();
 		}
-	}
-	else {
+	} else {
 		stopThreadAndNewRoutine();
 	}
 }
@@ -980,7 +976,7 @@ void Frame::clearHelper() {
 
 void Frame::setMenuLabel(ENUM_MENU e, std::string const &text) {
 	GtkWidget *w = m_menuMap[e];
-	if (ONE_OF(e,ICON_MENU)) {
+	if (ONE_OF(e, ICON_MENU)) {
 		w = gtk_bin_get_child(GTK_BIN(w));
 		GList *list = gtk_container_get_children(GTK_CONTAINER(w));
 		assert(g_list_length (list)==2);
@@ -993,7 +989,7 @@ void Frame::setMenuLabel(ENUM_MENU e, std::string const &text) {
 
 std::string Frame::getMenuLabel(ENUM_MENU e) {
 	GtkWidget *w = m_menuMap[e];
-	if (ONE_OF(e,ICON_MENU)) {
+	if (ONE_OF(e, ICON_MENU)) {
 		w = gtk_bin_get_child(GTK_BIN(w));
 		GList *list = gtk_container_get_children(GTK_CONTAINER(w));
 		assert(g_list_length (list)==2);
@@ -1009,11 +1005,10 @@ void Frame::proceedThread() {
 	 * only sort results so need to set m_end
 	 * in two places
 	 */
-	if (run()) {//was user break
+	if (run()) {			//was user break
 		//printl("end set")
-		m_end=clock();
-	}
-	else{
+		m_end = clock();
+	} else {
 		//m_end set in sortFilterAndUpdateResults
 		sortFilterAndUpdateResults();
 	}
@@ -1092,7 +1087,7 @@ void Frame::updateComboValue(ENUM_COMBOBOX e) {
 	if (GTK_IS_COMBO_BOX_TEXT(m_combo[e])) {
 		char *p = gtk_combo_box_text_get_active_text(
 				GTK_COMBO_BOX_TEXT(m_combo[e]));
-		if (p && ::parseString(p,v)) {
+		if (p && ::parseString(p, v)) {
 			assert(v>=0);
 		}
 	}
@@ -1117,8 +1112,8 @@ bool Frame::prepare() {
 		m_entryText = utf8ToLocale(gtk_entry_get_text(GTK_ENTRY(m_entry)));
 	}
 
-	m_filterText=utf8ToLocale(gtk_entry_get_text(GTK_ENTRY(m_filterEntry)));
-	if(!setCheckFilterRegex()){
+	m_filterText = utf8ToLocale(gtk_entry_get_text(GTK_ENTRY(m_filterEntry)));
+	if (!setCheckFilterRegex()) {
 		addClass(m_filterEntry, CERROR);			//red font
 		return false;
 	}
@@ -1141,7 +1136,7 @@ bool Frame::prepare() {
 
 void Frame::connectEntrySignals(int index) {
 	GtkWidget *w;
-	switch(index){
+	switch (index) {
 	case SEARCH_ENTRY_ID:
 		w = m_searchEntry;
 		break;
@@ -1151,7 +1146,7 @@ void Frame::connectEntrySignals(int index) {
 		break;
 
 	default:
-		w=m_entry;
+		w = m_entry;
 	}
 	g_signal_connect_after(G_OBJECT(w), "insert-text", G_CALLBACK(entry_insert),
 			GP(index));
@@ -1187,7 +1182,7 @@ void Frame::addAccelerators() {
 	}
 }
 
-void Frame::sortOrFilterChanged(){
+void Frame::sortOrFilterChanged() {
 	/* m_result is empty nothing to do, may be we have dictionary statistics or something like this
 	 * calling of sortFilterAndUpdateResults() clear m_result
 	 */
@@ -1199,20 +1194,19 @@ void Frame::sortOrFilterChanged(){
 	}
 }
 
-void Frame::refillCombo(ENUM_COMBOBOX e,ENUM_STRING first,int length) {
-	int i,j = getComboIndex(e);
-	if(j==-1){//was empty combo
-		if(e==COMBOBOX_SORT){
+void Frame::refillCombo(ENUM_COMBOBOX e, ENUM_STRING first, int length) {
+	int i, j = getComboIndex(e);
+	if (j == -1) {			//was empty combo
+		if (e == COMBOBOX_SORT) {
 			//sort by length descendant
-			j=1;
-		}
-		else{
+			j = 1;
+		} else {
 			//regex filter "match" option - default filter
-			j=0;
+			j = 0;
 		}
 	}
 	lockSignals();
-	auto c=GTK_COMBO_BOX_TEXT(m_combo[e]);
+	auto c = GTK_COMBO_BOX_TEXT(m_combo[e]);
 	gtk_combo_box_text_remove_all(c);
 	for (i = 0; i < length; i++) {
 		gtk_combo_box_text_append_text(c, m_language[first + i].c_str());
@@ -1222,9 +1216,10 @@ void Frame::refillCombo(ENUM_COMBOBOX e,ENUM_STRING first,int length) {
 }
 
 void Frame::newVersionMessage() {
-	std::string s=m_language[NEW_VERSION_MESSAGE]+"\n"+m_newVersion.m_message;
-	GtkWidget *d = gtk_message_dialog_new(GTK_WINDOW(m_widget), GTK_DIALOG_MODAL,
-			GTK_MESSAGE_INFO, GTK_BUTTONS_YES_NO, s.c_str());
+	std::string s = m_language[NEW_VERSION_MESSAGE] + "\n"
+			+ m_newVersion.m_message;
+	GtkWidget *d = gtk_message_dialog_new(GTK_WINDOW(m_widget),
+			GTK_DIALOG_MODAL, GTK_MESSAGE_INFO, GTK_BUTTONS_YES_NO, s.c_str());
 
 	gtk_window_set_title(GTK_WINDOW(d), m_programVersion.c_str());
 	gint result = gtk_dialog_run(GTK_DIALOG(d));

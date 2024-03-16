@@ -31,111 +31,104 @@
  */
 
 #ifdef NDEBUG
-	#define RET return false;
+#define RET return false;
 #else
 	#define RET errorLine=__LINE__;return false;
 #endif
 
-void ModificationItem::skipSpaces(const char*& p) {
-	while(*p==' '){
+void ModificationItem::skipSpaces(const char *&p) {
+	while (*p == ' ') {
 		p++;
 	}
 }
 
-bool ModificationItem::readAlphabetString(std::string& s, const char*& p) {
-	s="";
-	while(wordsBase->isAlphabetChar(*p)){
-		s+=*p++;
+bool ModificationItem::readAlphabetString(std::string &s, const char *&p) {
+	s = "";
+	while (wordsBase->isAlphabetChar(*p)) {
+		s += *p++;
 	}
 	return !s.empty();
 }
 
-std::string ModificationItem::apply(const std::string& s)const {
+std::string ModificationItem::apply(const std::string &s) const {
 	assert(type!=MODIFICATION_TYPE_SIZE);
-	int i,j;
+	int i, j;
 
-	if(type==MODIFICATION_TYPE_REPLACE){
-		return replaceAll(s,from,to);
-	}
-	else if(type==MODIFICATION_TYPE_INSERT){
-		i = countIn(0,s);
+	if (type == MODIFICATION_TYPE_REPLACE) {
+		return replaceAll(s, from, to);
+	} else if (type == MODIFICATION_TYPE_INSERT) {
+		i = countIn(0, s);
 		//if i==s.length() then s.substr(i)="" that's need php & c++ ok
-		if( (l[0] && i<0) || i>int(s.length()) ){
-			return "";//too short string
+		if ((l[0] && i < 0) || i > int(s.length())) {
+			return ""; //too short string
 		}
-		return s.substr(0,i)+from+s.substr(i);
-	}
-	else{//MODIFICATION_TYPE_SUBSTRING
-		i=countIn(0,s);
-		if(i>=int(s.length()) || i<0){
-			return "";//too short string
+		return s.substr(0, i) + from + s.substr(i);
+	} else { //MODIFICATION_TYPE_SUBSTRING
+		i = countIn(0, s);
+		if (i >= int(s.length()) || i < 0) {
+			return ""; //too short string
 		}
-		j=countIn(1,s);
-		if(j<=0){
-			return "";//too short string
+		j = countIn(1, s);
+		if (j <= 0) {
+			return ""; //too short string
 		}
 		//if j>s.length() it's ok for php & c++, takes recent part of string
-		return s.substr(i, j );
+		return s.substr(i, j);
 	}
 
 }
 
-bool ModificationItem::parseLI(const char*&p, int i, char operation) {
+bool ModificationItem::parseLI(const char *&p, int i, char operation) {
 	assert(operation=='+' || operation=='-');
-	l[i] = *p=='l';//string already in lowercase
-	if(l[i]){
+	l[i] = *p == 'l'; //string already in lowercase
+	if (l[i]) {
 		p++;
 	}
 	skipSpaces(p);
 
 	//strtol ("- 4") not recognise as -4, so read sign manually
 
-	bool invert=false;
-	bool readIn=true;
-	char*q;
+	bool invert = false;
+	bool readIn = true;
+	char *q;
 
-	if(l[i]){
-		if(*p==','){
-			readIn=false;
-		}
-		else if(*p=='-'){
+	if (l[i]) {
+		if (*p == ',') {
+			readIn = false;
+		} else if (*p == '-') {
 			p++;
-			invert=true;
-		}
-		else if(*p=='+'){
+			invert = true;
+		} else if (*p == '+') {
 			p++;
-		}
-		else{
+		} else {
 			RET
 		}
-	}
-	else{
-		if(!isdigit(*p)){
+	} else {
+		if (!isdigit(*p)) {
 			RET
 		}
 	}
 
-	if(readIn){
-		in[i]=strtol(p,&q,10);//some spaces after sing can be it's ok
-		if(invert){
-			in[i]=-in[i];
+	if (readIn) {
+		in[i] = strtol(p, &q, 10); //some spaces after sing can be it's ok
+		if (invert) {
+			in[i] = -in[i];
 		}
-		if(p==q){
+		if (p == q) {
 			RET
 		}
-		p=q;
-	}
-	else{
-		in[i]=0;
+		p = q;
+	} else {
+		in[i] = 0;
 	}
 
-	if(l[i]){
-		if( (operation=='+' && in[i]>0) || (operation=='-' && in[i]>=0) ){
+	if (l[i]) {
+		if ((operation == '+' && in[i] > 0)
+				|| (operation == '-' && in[i] >= 0)) {
 			RET
 		}
-	}
-	else{
-		if(in[i]<0){
+	} else {
+		if (in[i] < 0) {
 			RET
 		}
 	}
@@ -143,93 +136,89 @@ bool ModificationItem::parseLI(const char*&p, int i, char operation) {
 	return true;
 }
 
-bool ModificationItem::parse(const char*& p) {
-	type=MODIFICATION_TYPE_SIZE;
-	if(*p=='+'){
+bool ModificationItem::parse(const char *&p) {
+	type = MODIFICATION_TYPE_SIZE;
+	if (*p == '+') {
 		p++;
 		skipSpaces(p);
-		if(!parseLI(p,0,'+')){
+		if (!parseLI(p, 0, '+')) {
 			RET
 		}
 
 		skipSpaces(p);
-		if(*p++!=','){
+		if (*p++ != ',') {
 			RET
 		}
 
 		skipSpaces(p);
-		if(!readAlphabetString(from,p)){
+		if (!readAlphabetString(from, p)) {
 			RET
 		}
 
-		type=MODIFICATION_TYPE_INSERT;
+		type = MODIFICATION_TYPE_INSERT;
 		return true;
-	}
-	else if(*p=='-'){
+	} else if (*p == '-') {
 		p++;
 		skipSpaces(p);
-		if(!parseLI(p,0,'-')){
+		if (!parseLI(p, 0, '-')) {
 			RET
 		}
 
 		skipSpaces(p);
-		if(*p==','){
+		if (*p == ',') {
 			p++;
 			skipSpaces(p);
-			if(!parseLI(p,1,'-')){
+			if (!parseLI(p, 1, '-')) {
 				RET
 			}
 
-			if(!l[1] && in[1]==0){//-L-4,0 or -4,0
+			if (!l[1] && in[1] == 0) { //-L-4,0 or -4,0
 				RET
 			}
 
-			if( (l[0] && !l[1]) || (!l[0] && l[1]) ){
-				if(in[0]+in[1]>0){
+			if ((l[0] && !l[1]) || (!l[0] && l[1])) {
+				if (in[0] + in[1] > 0) {
 					RET
 				}
 			}
 
-		}
-		else{//-4 or -L-3
-			if(!l[0] && in[0]==0){
+		} else { //-4 or -L-3
+			if (!l[0] && in[0] == 0) {
 				RET
 			}
 			/* -4 -> -4,L-4
 			 * -L-3 -> -L-3,3
 			 */
-			l[1]=!l[0];
-			in[1]=-in[0];
+			l[1] = !l[0];
+			in[1] = -in[0];
 		}
 
-		type=MODIFICATION_TYPE_SUBSTRING;
+		type = MODIFICATION_TYPE_SUBSTRING;
 		return true;
-	}
-	else{
-		if(!readAlphabetString(from,p)){
+	} else {
+		if (!readAlphabetString(from, p)) {
 			RET
 		}
 		skipSpaces(p);
-		if(*p++!='>'){
+		if (*p++ != '>') {
 			RET
 		}
 
 		skipSpaces(p);
-		if(!readAlphabetString(to,p) ){
+		if (!readAlphabetString(to, p)) {
 			//no alphabet symbols found, parse "b>0"
-			if(*p++=='0'){
-				to="";
-			}
-			else{
+			if (*p++ == '0') {
+				to = "";
+			} else {
 				RET
 			}
 		}
 
-		if(from==to){
+		if (from == to) {
 			RET
 		}
 
-		type=MODIFICATION_TYPE_REPLACE;
+		type = MODIFICATION_TYPE_REPLACE;
 		return true;
 	}
 

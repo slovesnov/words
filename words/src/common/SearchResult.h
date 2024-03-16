@@ -17,7 +17,7 @@ public:
 	std::string s;
 	int length;
 	int words;
-	double percent[VOWELS_CONSONANTS_SIZE];//percent of vowels,consonants
+	double percent[VOWELS_CONSONANTS_SIZE]; //percent of vowels,consonants
 	int differentCharacters;
 
 	SearchResult(std::string _s, int _length, int _words);
@@ -25,7 +25,8 @@ public:
 
 typedef std::vector<SearchResult> SearchResultVector;
 typedef SearchResultVector::const_iterator SearchResultVectorCI;
-typedef bool (*BOOL_SEARCH_RESULT_SEARCH_RESULT_FUNCTION)(const SearchResult&,const SearchResult&);
+typedef bool (*BOOL_SEARCH_RESULT_SEARCH_RESULT_FUNCTION)(const SearchResult&,
+		const SearchResult&);
 extern BOOL_SEARCH_RESULT_SEARCH_RESULT_FUNCTION SORT_FUNCTION[];
 extern const int NUMBER_OF_SORTS;
 

@@ -8,20 +8,20 @@
 #include "Modification.h"
 #include "WordsBase.h"
 
-bool Modification::parse(const std::string& s) {
+bool Modification::parse(const std::string &s) {
 	ModificationItem ri;
-	const char*p=s.c_str();//string already in lowercase
+	const char *p = s.c_str(); //string already in lowercase
 
 	//clear previous parsing
 	vr.clear();
-	while(1){
+	while (1) {
 		//skip spaces before any search
 		ModificationItem::skipSpaces(p);
-		if(*p==0){
+		if (*p == 0) {
 			return !vr.empty();
 		}
 
-		if(!ri.parse(p)){
+		if (!ri.parse(p)) {
 #ifndef NDEBUG
 			vr.clear();//vr.size()==0 means error in info() function
 			//ri.info();
@@ -34,19 +34,20 @@ bool Modification::parse(const std::string& s) {
 
 }
 
-std::string Modification::apply(const std::string& s, bool everyOperationChangesWord) {
+std::string Modification::apply(const std::string &s,
+		bool everyOperationChangesWord) {
 	ModificationItemVectorCI it;
-	std::string r=s;
+	std::string r = s;
 	std::string q;
-	for(it=vr.begin();it!=vr.end();it++){
-		if(everyOperationChangesWord){
-			q=r;
+	for (it = vr.begin(); it != vr.end(); it++) {
+		if (everyOperationChangesWord) {
+			q = r;
 		}
-		r=it->apply(r);
-		if(r.empty()){
+		r = it->apply(r);
+		if (r.empty()) {
 			return "";
 		}
-		if(everyOperationChangesWord && q==r){
+		if (everyOperationChangesWord && q == r) {
 			return "";
 		}
 	}

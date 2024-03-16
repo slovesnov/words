@@ -18,17 +18,17 @@
 #ifdef CGI
 	#include "common/WordsBase.h"
 #else
-	#include "Frame.h"
-	#include "aslov.h"
+#include "Frame.h"
+#include "aslov.h"
 #endif
 
-int main (int argc, char** argv){
+int main(int argc, char **argv) {
 #ifdef CGI
 	WordsBase w;
 #else
-	gtk_init (&argc, &argv);
+	gtk_init(&argc, &argv);
 	aslovInit(argv);
 	Frame frame;
-	gtk_main ();
+	gtk_main();
 #endif
 }
