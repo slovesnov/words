@@ -8,6 +8,7 @@ regular expressions
 modifications of words
 chains of words
 characters sequence
+letter group split
 SEPARATOR
 simple sequence words
 double sequence words
@@ -128,3 +129,7 @@ not found
 with filter
 ,
 executable file size
+splits not found
+Splitting a group of letters into two or three words. First all splits of a group of letters into two words are searched, then all splits into three words are searched. If the same letter is repeated in the search, all repetitions are ignored, i.e. it is considered as if the letter is specified once.
+pairs
+triplets

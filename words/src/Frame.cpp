@@ -721,8 +721,8 @@ void Frame::setHelperPanel() {
  */
 void Frame::sortFilterAndUpdateResults() {
 	sortFilterResults();
-	//printl("end set")
 	m_end = clock();
+//	printl(m_begin,m_end,m_end-m_begin)
 	gdk_threads_add_idle(end_job, NULL);
 }
 
@@ -1006,7 +1006,7 @@ void Frame::proceedThread() {
 	 * in two places
 	 */
 	if (run()) {			//was user break
-		//printl("end set")
+//		printl("end set")
 		m_end = clock();
 	} else {
 		//m_end set in sortFilterAndUpdateResults
@@ -1019,7 +1019,8 @@ void Frame::startJob(bool clearResult) {
 		m_result.clear();
 	}
 //	printl("begin set")
-	m_begin = clock();
+	//16mar24 need to set m_end if user break thread
+	m_begin = m_end = clock();
 	m_out = "";
 
 	//For long jobs show status & view. Long jobs when whole dictionary is added to m_result

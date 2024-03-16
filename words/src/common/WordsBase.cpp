@@ -295,6 +295,10 @@ bool WordsBase::checkCharacterSequence(const std::string &s) {
 	}
 }
 
+bool WordsBase::checkLetterGroupSplit(const std::string &s) {
+	return s.length() > 2;
+}
+
 bool WordsBase::checkCrossword(const std::string &s) {
 	unsigned i;
 	if (s.length() != m_entryText.length()) {
@@ -1573,7 +1577,7 @@ bool WordsBase::prepare() {
 }
 
 std::string WordsBase::getStatusString() {
-	std::string s;
+	std::string s = m_addstatus;
 	if (!m_result.empty()) {
 		s = m_language[NUMBER_OF_WORDS] + " "
 				+ intToStringLocaled(m_result.size()) + ", ";
@@ -1759,3 +1763,184 @@ void WordsBase::cgi(){
 }
 
 #endif
+
+const std::string invalidDifference = "$";
+std::vector<std::map<std::string, std::vector<std::string>>> eqmap;
+
+std::string sub(std::string const &minuend, std::string const &subtrahend) {
+	if (minuend.length() < subtrahend.length()) {
+		return invalidDifference;
+	}
+	if (minuend.length() == subtrahend.length()) {
+		return minuend == subtrahend ? "" : invalidDifference;
+	}
+
+	std::string difference;
+	auto p1 = minuend.c_str();
+	auto p = subtrahend.c_str();
+	for (; *p1; p1++) {
+		if (*p1 == *p) {
+			p++;
+			if (!*p) {
+				return difference + (p1 + 1);
+			}
+		} else if (*p1 < *p) {
+			difference += *p1;
+		} else {
+			return invalidDifference;
+		}
+	}
+	return invalidDifference;
+}
+
+std::string getOrderedString(std::string const &s) {
+	auto o = s;
+	std::sort(o.begin(), o.end());
+	return o;
+}
+
+//get list of dictionary words from ordered string
+std::string getUserString(std::string const &s) {
+	auto &a = eqmap[s.length()].find(s)->second;
+	bool f = true;
+	std::string o;
+	for (auto &e : a) {
+		if (!f) {
+			o += ' ';
+		}
+		o += e;
+		f = false;
+	}
+	if (a.size() != 1) {
+		o = '{' + o + '}';
+	}
+	return o;
+}
+
+std::vector<std::pair<std::string, std::string>> getAllPairs(
+		std::string const &s, std::string const &low = invalidDifference) {
+	std::vector<std::pair<std::string, std::string>> v;
+	for (size_t i = 1; i < s.size(); i++) {
+		for (auto &e : eqmap[i]) {
+			if (low == invalidDifference || low <= e.first) {
+				auto a = sub(s, e.first);
+				if (a != invalidDifference && e.first <= a) {
+					auto &m = eqmap[a.length()];
+					if (m.find(a) != m.end()) {
+						v.push_back(
+								{ getUserString(e.first), getUserString(a) });
+					}
+				}
+			}
+		}
+	}
+	return v;
+}
+
+//output all pairs to string
+std::string pairsToString(
+		std::vector<std::pair<std::string, std::string>> const &v, bool p = 0) {
+	std::string sout = "";
+	bool first = true;
+	if (p) {
+		sout += "[";
+	}
+	for (auto &e : v) {
+		if (first) {
+			first = false;
+		} else {
+			sout += p ? ", " : "\n";
+		}
+		sout += e.first + " " + e.second;
+	}
+	if (p) {
+		sout += "]";
+	}
+	sout += "\n";
+	return sout;
+}
+
+bool WordsBase::findLetterGroupSplit() {
+	std::string s, s1, t, lng;
+	size_t i, j;
+	StringSet const &r = getDictionary();
+	auto charset = getOrderedString(m_entryText);
+
+	const size_t size = m_entryText.length();
+//#ifndef CGI
+//	size_t sz[size];
+//#endif
+	eqmap.resize(size);
+
+	for (auto &s : r) {
+		j = s.length();
+		if (j < size) {
+			s1 = getOrderedString(s);
+			auto &m = eqmap[j];
+			auto it = m.find(s1);
+			if (it == m.end()) {
+				t = sub(charset, s1);
+				if (t != invalidDifference) {
+					m.insert( { s1, { s } });
+				}
+			} else {
+				it->second.push_back(s);
+			}
+		}
+	}
+
+	/*
+	 #ifndef CGI
+	 sz[0] = j = 0;
+	 s = "";
+	 for (i = 1; i < size; i++) {
+	 sz[i] = 0;
+	 auto &m = eqmap[i];
+	 if (!m.empty()) {
+	 for (auto &a : m) {
+	 sz[i] += a.second.size();
+	 sz[0] += a.second.size();
+	 }
+	 j += m.size();
+	 s += ' ' + std::to_string(i) + ':' + std::to_string(m.size()) + '('
+	 + std::to_string(sz[i]) + ')';
+	 }
+	 }
+	 sout += "words:" + std::to_string(j) + '(' + std::to_string(sz[0]) + ')' + s
+	 + '\n';
+	 #endif
+	 */
+
+	auto v = getAllPairs(charset);
+	size_t n[2] = { v.size() };
+
+	if (!v.empty()) {
+		m_out = localeToUtf8(pairsToString(v)) + "----------------\n";
+	}
+
+	for (i = 1; i < size; i++) {
+		auto &m = eqmap[i];
+		for (auto &e : m) {
+			t = sub(charset, e.first);
+			if (t != invalidDifference) {
+				auto v = getAllPairs(t, e.first);
+				n[1] += v.size();
+				if (!v.empty()) {
+					m_out += localeToUtf8(
+							getUserString(e.first) + " "
+									+ pairsToString(v, v.size() != 1));
+				}
+			}
+		}
+	}
+	if (m_out.empty()) {
+		m_out = m_language[SPLITS_NOT_FOUND];
+	}
+	m_addstatus = "";
+	for (i = 0; i < 2; i++) {
+		m_addstatus += m_language[i ? TRIPLETS : PAIRS] + " "
+				+ toString(n[i],m_language[SEPARATOR_SYMBOL][0]) + " ";
+	}
+
+	return false;
+}

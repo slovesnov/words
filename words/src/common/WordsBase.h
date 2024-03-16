@@ -73,6 +73,7 @@ protected:
 	int m_comboValue[COMBOBOX_SIZE]; //Note use helper value is faster and thread safe, note m_comboValue[COMBOBOX_DICTIONARY] is not used
 	bool m_checkValue;
 	VString m_language; //utf8
+	std::string m_addstatus;
 #ifdef CGI
 	VString m_cgiLanguage;//utf8
 #else
@@ -149,6 +150,7 @@ public:
 	bool checkCrossword(const std::string &s);
 	bool checkRegularExpression(const std::string &s);
 	bool checkCharacterSequence(const std::string &s);
+	bool checkLetterGroupSplit(const std::string &s);
 	bool checkConsonantVowelSequence(const std::string &s);
 	bool checkDensity(const std::string &s);
 
@@ -162,6 +164,7 @@ public:
 	bool findWordSequenceFull();
 	bool findModification();
 	bool findChain();
+	bool findLetterGroupSplit();
 	bool twoDictionariesSimple() {
 		return twoDictionaries(false);
 	}
@@ -216,6 +219,7 @@ public:
 
 	void loadLanguage();
 	static const std::string parseString(const char *buff);
+
 };
 
 #endif /* COMMON_WORDSBASE_H_ */
