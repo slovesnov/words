@@ -1610,7 +1610,6 @@ void WordsBase::removeLastCRLF(char *p) {
 
 bool WordsBase::run() {
 	StringSet const &r = getDictionary();
-	StringSetCI it;
 	int i;
 
 	if ((i = INDEX_OF(m_menuClick, BOOL_VOID_MENU)) != -1) {
@@ -1621,9 +1620,9 @@ bool WordsBase::run() {
 	assert(i!=-1);
 	BOOL_STRING_WORDSBASE_FUNCTION searchFunction = FUNCTION_ID[i];
 
-	for (it = r.begin(); it != r.end(); it++) {
-		if ((this->*searchFunction)(*it)) {
-			m_result.push_back(SearchResult(*it, it->length(), 1));
+	for (auto &e : r) {
+		if ((this->*searchFunction)(e)) {
+			m_result.push_back(SearchResult(e, e.length(), 1));
 		}
 
 		RETURN_ON_USER_BREAK(true)
