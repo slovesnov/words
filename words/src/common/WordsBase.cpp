@@ -122,18 +122,20 @@ WordsBase::WordsBase() {
 #endif
 
 //#define MODIFY_DICTIONARY
-#ifdef MODIFY_DICTIONARY
-	int cn[] = { 0, 0 };
-//	const int MODIFY_INDEX = 1;
-//	const VString deleteWords = { "аьберт", "госкомсанэпидназдор",
-//			"окт€брьскский","ухойдакать" };
-//	const MapStringString modifyWords ={};
-//	const VString addWords = { "рухнет", "прескриптивизм" };
 
-	const int MODIFY_INDEX = 0;
-	const VString deleteWords = {  };
-	const MapStringString modifyWords ={};
-	const VString addWords = { "tokmak"};
+#ifdef MODIFY_DICTIONARY
+	int cn = 0;
+	//modify word is equivalent delete & add
+	const int MODIFY_INDEX = 1;
+	const VString deleteWords = { "аьберт", "госкомсанэпидназдор",
+			"окт€брьскский", "ухойдакать" };
+	const VString addWords = { "рухнет", "прескриптивизм" };
+
+	/*
+	 const int MODIFY_INDEX = 0;
+	 const VString deleteWords = {  };
+	 const VString addWords = { "tokmak"};
+	 */
 
 #endif
 	//load dictionaries
@@ -147,14 +149,8 @@ WordsBase::WordsBase() {
 			if (i == MODIFY_INDEX) {
 				std::string s = buff;
 				if (oneOf(s, deleteWords)) {
-					cn[0]++;
+					cn++;
 					continue;
-				}
-				auto it = modifyWords.find(s);
-				if (it != modifyWords.end()) {
-					s = it->second;
-					sprintf(buff, s.c_str());
-					cn[1]++;
 				}
 			}
 #endif
@@ -167,12 +163,15 @@ WordsBase::WordsBase() {
 		fclose(f);
 	}
 #ifdef MODIFY_DICTIONARY
-	printl("deleted",cn[0],'/',deleteWords.size())
-	printl("modified",cn[1],'/',modifyWords.size())
+	printl("deleted",cn,'/',deleteWords.size())
+	cn = 0;
 	for (auto &a : addWords) {
-		m_dictionary[MODIFY_INDEX].insert(a);
+		if (m_dictionary[MODIFY_INDEX].insert(a).second) {
+			cn++;
+		}
 	}
-	printl("added",addWords.size())
+	printl("added",cn,'/',addWords.size())
+	//store dictionary
 	f = open(MODIFY_INDEX, "words1", 2);
 	assert(f!=NULL);
 	for (auto &a : m_dictionary[MODIFY_INDEX]) {
@@ -1889,28 +1888,6 @@ bool WordsBase::findLetterGroupSplit() {
 			}
 		}
 	}
-
-	/*
-	 #ifndef CGI
-	 sz[0] = j = 0;
-	 s = "";
-	 for (i = 1; i < size; i++) {
-	 sz[i] = 0;
-	 auto &m = eqmap[i];
-	 if (!m.empty()) {
-	 for (auto &a : m) {
-	 sz[i] += a.second.size();
-	 sz[0] += a.second.size();
-	 }
-	 j += m.size();
-	 s += ' ' + std::to_string(i) + ':' + std::to_string(m.size()) + '('
-	 + std::to_string(sz[i]) + ')';
-	 }
-	 }
-	 sout += "words:" + std::to_string(j) + '(' + std::to_string(sz[0]) + ')' + s
-	 + '\n';
-	 #endif
-	 */
 
 	auto v = getAllPairs(charset);
 	size_t n[2] = { v.size() };
