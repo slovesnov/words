@@ -1917,7 +1917,7 @@ bool WordsBase::findLetterGroupSplit() {
 	m_addstatus = "";
 	for (i = 0; i < 2; i++) {
 		m_addstatus += m_language[i ? TRIPLETS : PAIRS] + " "
-				+ toString(n[i], m_language[SEPARATOR_SYMBOL][0]) + " ";
+				+ intToStringLocaled(n[i]) + " ";
 	}
 
 	return false;
