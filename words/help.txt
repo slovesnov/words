@@ -1,4 +1,4 @@
-4.43 17mar2024
+4.43 18mar2024
 added split group of characters by two/three words (only window mode)
 project recompliled under new version of gcc and gtk libraries (gtk library bug with text alignment is fixed)
 removed/added several words from russian dictionary, added word tokmak in english dictionary
