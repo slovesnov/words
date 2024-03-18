@@ -506,7 +506,8 @@ void Frame::setDictionary() {
 }
 
 void Frame::aboutDialog() {
-	unsigned i, j;
+	int i;
+	size_t j;
 	std::string s;
 	GtkWidget *box, *hbox, *dialog, *label;
 	char *markup;
@@ -516,19 +517,13 @@ void Frame::aboutDialog() {
 	gtk_window_set_title(GTK_WINDOW(dialog), getMenuLabel(MENU_ABOUT).c_str());
 	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
 
-	const int size = 170;
-	GdkPixbuf *pi = gdk_pixbuf_new_from_file_at_size(
-			getImagePath("word256.png").c_str(), size, size, 0);
-	gtk_container_add(GTK_CONTAINER(hbox), gtk_image_new_from_pixbuf(pi));
-	g_object_unref(pi);
-
 	box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
 
 	ENUM_STRING sid[] = { PROGRAM, AUTHOR, COPYRIGHT, HOMEPAGE_STRING,
 			HOMEPAGE_ONLINE_STRING, STRING_SIZE /*build info*/,
 			EXECUTABLE_FILE_SIZE };
 	ENUM_STRING id;
-	for (i = 0; i < SIZE(sid); i++) {
+	for (i = 0; i < SIZEI(sid); i++) {
 		id = sid[i];
 		if (id == PROGRAM) {
 			s = m_programVersion;
@@ -599,6 +594,17 @@ void Frame::aboutDialog() {
 
 	gtk_window_set_resizable(GTK_WINDOW(dialog), FALSE);
 	gtk_widget_show_all(dialog);
+
+	//get height after show_all
+	gtk_widget_get_preferred_height(box, nullptr, &i);
+	GdkPixbuf *pi = gdk_pixbuf_new_from_file_at_size(
+			getImagePath("word256.png").c_str(), i, i, 0);
+	label = gtk_image_new_from_pixbuf(pi);
+	gtk_container_add(GTK_CONTAINER(hbox), label);
+	gtk_box_reorder_child(GTK_BOX(hbox), label, 0);
+	g_object_unref(pi);
+	gtk_widget_show_all(dialog);//need to call show_all second time
+
 	gtk_dialog_run(GTK_DIALOG(dialog));
 	gtk_widget_destroy(dialog);
 }
