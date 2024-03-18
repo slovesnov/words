@@ -1889,7 +1889,7 @@ bool WordsBase::findLetterGroupSplit() {
 	}
 
 	auto v = getAllPairs(charset);
-	size_t n[2] = { v.size() };
+	size_t n[] = { v.size(), 0 };
 
 	if (!v.empty()) {
 		m_out = localeToUtf8(pairsToString(v)) + "----------------\n";
@@ -1901,8 +1901,8 @@ bool WordsBase::findLetterGroupSplit() {
 			t = sub(charset, e.first);
 			if (t != invalidDifference) {
 				auto v = getAllPairs(t, e.first);
-				n[1] += v.size();
 				if (!v.empty()) {
+					n[1]++;
 					m_out += localeToUtf8(
 							getUserString(e.first) + " "
 									+ pairsToString(v, v.size() != 1));
