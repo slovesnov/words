@@ -5,6 +5,7 @@ removed/added several words from russian dictionary, added word tokmak in englis
 fixed bug with end time
 added using of custom cgi library in cgi mode
 added deleting/adding words to dictionaries
+image height in about dialog is counted from content
 
 [ru]
 добавлено разбиение группы букв на два/три слова (только для оконного режима)
@@ -13,6 +14,7 @@ added deleting/adding words to dictionaries
 исправлен баг с конечным временем
 добавлено использование собственной библиотеки cgi для режима cgi
 добавлено удаление/добавление слов в словари
+высота рисунка в панели "о программе" считается из контента
 
 4.42 17feb2022
 add number of matches for characters sequence search
