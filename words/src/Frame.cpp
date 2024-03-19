@@ -509,13 +509,15 @@ void Frame::aboutDialog() {
 	int i;
 	size_t j;
 	std::string s;
-	GtkWidget *box, *hbox, *dialog, *label;
+	GtkWidget *box, *hbox, *dialog, *label, *img = gtk_image_new();
 	char *markup;
 	const char *p;
+	GdkPixbuf *pi;
 
 	dialog = gtk_dialog_new();
 	gtk_window_set_title(GTK_WINDOW(dialog), getMenuLabel(MENU_ABOUT).c_str());
 	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
+	gtk_container_add(GTK_CONTAINER(hbox), img);
 
 	box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
 
@@ -597,13 +599,10 @@ void Frame::aboutDialog() {
 
 	//get height after show_all
 	gtk_widget_get_preferred_height(box, nullptr, &i);
-	GdkPixbuf *pi = gdk_pixbuf_new_from_file_at_size(
-			getImagePath("word256.png").c_str(), i, i, 0);
-	label = gtk_image_new_from_pixbuf(pi);
-	gtk_container_add(GTK_CONTAINER(hbox), label);
-	gtk_box_reorder_child(GTK_BOX(hbox), label, 0);
+	pi = gdk_pixbuf_new_from_file_at_size(getImagePath("word256.png").c_str(),
+			i, i, 0);
+	gtk_image_set_from_pixbuf(GTK_IMAGE(img), pi);
 	g_object_unref(pi);
-	gtk_widget_show_all(dialog);//need to call show_all second time
 
 	gtk_dialog_run(GTK_DIALOG(dialog));
 	gtk_widget_destroy(dialog);
