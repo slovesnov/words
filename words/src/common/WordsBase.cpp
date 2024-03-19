@@ -1347,9 +1347,6 @@ void WordsBase::sortFilterResults() {
 #endif
 
 	m_out.clear();
-#ifndef CGI
-	m_filteredWordsCount = 0;
-#endif
 	if (!m_outSplitted) {
 		std::sort(m_result.begin(), m_result.end(),
 				SORT_FUNCTION[m_comboValue[COMBOBOX_SORT] * 2
