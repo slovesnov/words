@@ -1118,6 +1118,8 @@ bool Frame::prepare() {
 				GTK_TOGGLE_BUTTON(m_check))==TRUE;
 	}
 
+	m_filteredWordsCount = 0;//need to set always because in case of error need m_filteredWordsCount = 0
+
 	bool hasEntry = INDEX_OF(m_menuClick,TEMPLATE_MENU) != -1;
 
 	if (hasEntry) {

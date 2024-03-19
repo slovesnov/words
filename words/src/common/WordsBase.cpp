@@ -1356,7 +1356,6 @@ void WordsBase::sortFilterResults() {
 						+ m_comboValue[COMBOBOX_SORT_ORDER]]);
 	}
 
-
 	for (it = m_result.begin(); it != m_result.end(); it++) {
 		s=localeToUtf8(it->s);
 #ifndef CGI
