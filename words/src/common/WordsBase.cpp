@@ -1340,6 +1340,7 @@ void WordsBase::sortFilterResults() {
 	int i;
 	//leave SearchResultVectorCI for old gcc compiler under sf.net
 	SearchResultVectorCI it;
+	std::string s;
 
 #ifndef CGI
 	bool find = m_comboValue[COMBOBOX_FILTER] == 0;
@@ -1355,9 +1356,11 @@ void WordsBase::sortFilterResults() {
 						+ m_comboValue[COMBOBOX_SORT_ORDER]]);
 	}
 
+
 	for (it = m_result.begin(); it != m_result.end(); it++) {
+		s=localeToUtf8(it->s);
 #ifndef CGI
-		if (find != testFilterRegex(it->s)) {
+		if (find != testFilterRegex(s)) {
 			continue;
 		}
 		m_filteredWordsCount++;
@@ -1366,7 +1369,7 @@ void WordsBase::sortFilterResults() {
 			m_out += "\n";
 		}
 
-		m_out += localeToUtf8(it->s);
+		m_out += s;
 		if (!m_outSplitted) {
 			m_out += format(" (%s %d", m_language[CHARACTERS].c_str(),
 					it->length);
@@ -1658,8 +1661,9 @@ bool WordsBase::setCheckFilterRegex() {
 	if (m_filterText.empty()) {
 		return true;
 	}
-	m_filterRegex = g_regex_new(m_filterText.c_str(),
-			GRegexCompileFlags(G_REGEX_RAW | G_REGEX_CASELESS),
+	//need case insensitive filter (Частота букв), work ok in russian only for utf8
+	auto s = localeToUtf8(m_filterText);
+	m_filterRegex = g_regex_new(s.c_str(), GRegexCompileFlags(G_REGEX_CASELESS),
 			GRegexMatchFlags(0), NULL);
 	return m_filterRegex != nullptr;
 }
