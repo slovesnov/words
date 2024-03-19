@@ -62,7 +62,7 @@ const BOOL_VOID_WORDSBASE_FUNCTION BOOL_VOID_FUNCTION[] = {
 		, &WordsBase::findWordSequenceFull //version 4.3 time 0.18 no user break need
 		, &WordsBase::findModification //user break implemented
 		, &WordsBase::findChain //version 4.3 time 0.05 [depends on search option] no user break need
-		, &WordsBase::findLetterGroupSplit//version 4.43 time 0.18 no user break need
+		, &WordsBase::findLetterGroupSplit //version 4.43 time 0.18 no user break need
 
 		, &WordsBase::twoDictionariesSimple //user break implemented
 		, &WordsBase::twoDictionariesTranslit //user break implemented
@@ -75,9 +75,8 @@ const BOOL_VOID_WORDSBASE_FUNCTION BOOL_VOID_FUNCTION[] = {
 		, &WordsBase::dummy, &WordsBase::dummy };
 //END ENCODE ARRAYS
 
-const ENUM_MENU NO_SORT_FUNCTIONS_MENU[] = { MENU_CHAIN,
-		MENU_LETTER_GROUP_SPLIT, MENU_DICTIONARY_STATISTICS,
-		MENU_WORD_FREQUENCY, MENU_CHECK_DICTIONARY,
+const ENUM_MENU NO_SORT_FUNCTIONS_MENU[] = { MENU_LETTER_GROUP_SPLIT,
+		MENU_DICTIONARY_STATISTICS, MENU_WORD_FREQUENCY, MENU_CHECK_DICTIONARY,
 		MENU_TWO_CHARACTERS_DISTRIBUTION };
 
 const ENUM_MENU TEMPLATE_MENU[] = { MENU_TEMPLATE, MENU_CROSSWORD,

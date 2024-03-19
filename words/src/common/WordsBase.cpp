@@ -831,7 +831,7 @@ bool WordsBase::findChain() {
 		}
 		s += " ";
 		s += m_chainHelper[1];
-		v.push_back(localeToUtf8(s));
+		v.push_back(s);
 
 		for (k = j - 1; k > -1; k--) {
 			if (++ni[k] != nis[k]) {
@@ -853,10 +853,8 @@ bool WordsBase::findChain() {
 	delete[] ni;
 	delete[] nis;
 
-	//sort results by alphabet
-	std::sort(v.begin(), v.end());
-	for (auto &vci : v) {
-		m_out += vci + format(" (%s %d)\n", m_language[WORDS].c_str(), j + 2);
+	for (auto &e : v) {
+		m_result.push_back(SearchResult(e, m_chainHelper[0].length(), j + 2));
 	}
 
 	return false;
@@ -1347,28 +1345,31 @@ void WordsBase::sortFilterResults() {
 	bool find = m_comboValue[COMBOBOX_FILTER] == 0;
 #endif
 
-	if (!ONE_OF(m_menuClick, NO_SORT_FUNCTIONS_MENU)) {	//Note NO_SORT_FUNCTIONS_MENU only four items so fast search
-		m_out.clear();
+	m_out.clear();
 #ifndef CGI
-		m_filteredWordsCount = 0;
+	m_filteredWordsCount = 0;
 #endif
+	if (!m_outSplitted) {
 		std::sort(m_result.begin(), m_result.end(),
 				SORT_FUNCTION[m_comboValue[COMBOBOX_SORT] * 2
 						+ m_comboValue[COMBOBOX_SORT_ORDER]]);
-		for (it = m_result.begin(); it != m_result.end(); it++) {
-#ifndef CGI
-			if (find != testFilterRegex(it->s)) {
-				continue;
-			}
-			m_filteredWordsCount++;
-#endif
-			if (!m_out.empty()) {
-				m_out += "\n";
-			}
+	}
 
-			m_out += localeToUtf8(it->s)
-					+ format(" (%s %d", m_language[CHARACTERS].c_str(),
-							it->length);
+	for (it = m_result.begin(); it != m_result.end(); it++) {
+#ifndef CGI
+		if (find != testFilterRegex(it->s)) {
+			continue;
+		}
+		m_filteredWordsCount++;
+#endif
+		if (!m_out.empty()) {
+			m_out += "\n";
+		}
+
+		m_out += localeToUtf8(it->s);
+		if (!m_outSplitted) {
+			m_out += format(" (%s %d", m_language[CHARACTERS].c_str(),
+					it->length);
 
 			if (it->words > 1) {
 				m_out += format(" %s %d", m_language[WORDS].c_str(), it->words);
@@ -1384,9 +1385,8 @@ void WordsBase::sortFilterResults() {
 			}
 
 			m_out += ")";
-
-			RETURN_ON_USER_BREAK()
 		}
+		RETURN_ON_USER_BREAK()
 	}
 }
 
@@ -1577,7 +1577,7 @@ bool WordsBase::prepare() {
 
 std::string WordsBase::getStatusString() {
 	std::string s = m_addstatus;
-	if (!m_result.empty()) {
+	if (!m_outSplitted) {
 		s = m_language[NUMBER_OF_WORDS] + " "
 				+ intToStringLocaled(m_result.size()) + ", ";
 #ifndef CGI

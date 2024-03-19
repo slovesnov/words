@@ -1,5 +1,7 @@
 4.43 18mar2024
 added split group of characters by two/three words (only window mode)
+filter works for all search/statistics options
+sort working for chains of words option
 project recompliled under new version of gcc and gtk libraries (gtk library bug with text alignment is fixed)
 removed/added several words from russian dictionary, added word tokmak in english dictionary
 fixed bug with end time
@@ -9,6 +11,8 @@ image height in about dialog is counted from content
 
 [ru]
 добавлено разбиение группы букв на два/три слова (только для оконного режима)
+фильтр работает для все опций статистики/поиска
+сортировка работает для опции поиска цепочек
 проект перекомпилирован для новой версии gcc и gtk (в gtk исправлен баг с выравнивание текста) 
 удалено несколько несуществующих слов из русского словара: аьберт, госкомсанэпидназдор, октябрьскский, ухойдакать добавлены слова: рухнет, прескриптивизм. Добавлено слово tokmak в английский словарь
 исправлен баг с конечным временем

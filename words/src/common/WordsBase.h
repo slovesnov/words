@@ -54,6 +54,7 @@ protected:
 	SearchResultVector m_result;
 	int m_longestWordLength[LANGUAGES];
 	clock_t m_begin, m_end;
+	bool m_outSplitted;
 #ifdef _WIN32
 	//under windows use powerful regex from gtk even in cgi mode
 	GRegex *m_regex;

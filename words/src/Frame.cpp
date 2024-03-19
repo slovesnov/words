@@ -895,7 +895,6 @@ void Frame::updateTags() {
 	gtk_text_buffer_remove_tag_by_name(buffer, activeTag, &start, &end);
 
 	s = gtk_entry_get_text(GTK_ENTRY(m_searchEntry));
-	s = utf8ToLowerCase(s);
 	text = s.c_str();
 	if (strlen(text) == 0) {
 		gtk_label_set_text(GTK_LABEL(m_searchTagLabel), "");
@@ -907,6 +906,7 @@ void Frame::updateTags() {
 			gtk_text_iter_forward_search(&first, text,
 					GtkTextSearchFlags(
 							GTK_TEXT_SEARCH_TEXT_ONLY
+									| GTK_TEXT_SEARCH_CASE_INSENSITIVE
 									| GTK_TEXT_SEARCH_VISIBLE_ONLY), &start,
 					&end, NULL); m_tags++) {
 
@@ -1011,7 +1011,16 @@ void Frame::proceedThread() {
 	 * only sort results so need to set m_end
 	 * in two places
 	 */
-	if (run()) {			//was user break
+	bool b = run();
+	m_outSplitted = m_result.empty();
+	if (m_outSplitted) {
+		auto v = split(m_out, "\n");
+		for (auto &e : v) {
+			m_result.push_back(SearchResult(utf8ToLocale(e), 0, 0));
+		}
+	}
+
+	if (b) {			//was user break
 //		printl("end set")
 		m_end = clock();
 	} else {
@@ -1027,6 +1036,7 @@ void Frame::startJob(bool clearResult) {
 //	printl("begin set")
 	m_begin = clock();
 	m_out = "";
+	m_addstatus = "";
 
 	//For long jobs show status & view. Long jobs when whole dictionary is added to m_result
 	setStatus(m_language[SEARCH] + "...");
@@ -1061,7 +1071,6 @@ bool Frame::userBreakThread() {
 		m_out = "";
 		return true;
 	}
-
 }
 
 /**
@@ -1189,15 +1198,10 @@ void Frame::addAccelerators() {
 }
 
 void Frame::sortOrFilterChanged() {
-	/* m_result is empty nothing to do, may be we have dictionary statistics or something like this
-	 * calling of sortFilterAndUpdateResults() clear m_result
+	startJob(false);
+	/* sortAndUpdateResults() could take a long time so use thread
 	 */
-	if (!m_result.empty()) {
-		/* sortAndUpdateResults() could take a long time so use thread
-		 */
-		startJob(false);
-		startThread(sort_filter_thread);
-	}
+	startThread(sort_filter_thread);
 }
 
 void Frame::refillCombo(ENUM_COMBOBOX e, ENUM_STRING first, int length) {
