@@ -1035,6 +1035,7 @@ void Frame::startJob(bool clearResult) {
 	m_begin = clock();
 	m_out = "";
 	m_addstatus = "";
+	m_filteredWordsCount = 0;//need to set always because in case of error need m_filteredWordsCount = 0
 
 	//For long jobs show status & view. Long jobs when whole dictionary is added to m_result
 	setStatus(m_language[SEARCH] + "...");
@@ -1117,8 +1118,6 @@ bool Frame::prepare() {
 		m_checkValue = gtk_toggle_button_get_active(
 				GTK_TOGGLE_BUTTON(m_check))==TRUE;
 	}
-
-	m_filteredWordsCount = 0;//need to set always because in case of error need m_filteredWordsCount = 0
 
 	bool hasEntry = INDEX_OF(m_menuClick,TEMPLATE_MENU) != -1;
 
