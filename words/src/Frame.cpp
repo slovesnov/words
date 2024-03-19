@@ -1006,18 +1006,16 @@ std::string Frame::getMenuLabel(ENUM_MENU e) {
 }
 
 void Frame::proceedThread() {
-	/* sortFilterAndUpdateResults() can be called
-	 * without proceedThread() when use want to
-	 * only sort results so need to set m_end
-	 * in two places
-	 */
 	bool b = run();
-	m_outSplitted = m_result.empty();
-	if (m_outSplitted) {
+
+	if ((m_outSplitted = m_result.empty())) {
 		auto v = split(m_out, "\n");
 		for (auto &e : v) {
 			m_result.push_back(SearchResult(utf8ToLocale(e), 0, 0));
 		}
+	}
+	for(auto &e:{COMBOBOX_SORT,COMBOBOX_SORT_ORDER}){
+		gtk_widget_set_sensitive(m_combo[e], !m_outSplitted);
 	}
 
 	if (b) {			//was user break
