@@ -883,10 +883,13 @@ void Frame::entryChanged(int entryIndex) {
 }
 
 void Frame::updateTags() {
-	GtkTextIter first, scroll;
-	GtkTextIter start, end;
-	std::string s;
-	const gchar *text;
+	GtkTextIter first, scroll, start, end;
+	gint i, j;
+	const gchar *text = gtk_entry_get_text(GTK_ENTRY(m_searchEntry));
+	if (strlen(text) == 0) {
+		gtk_label_set_text(GTK_LABEL(m_searchTagLabel), "");
+		return;
+	}
 
 	GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(m_text));
 	gtk_text_buffer_get_start_iter(buffer, &start);
@@ -894,12 +897,7 @@ void Frame::updateTags() {
 	gtk_text_buffer_remove_tag_by_name(buffer, markTag, &start, &end);
 	gtk_text_buffer_remove_tag_by_name(buffer, activeTag, &start, &end);
 
-	s = gtk_entry_get_text(GTK_ENTRY(m_searchEntry));
-	text = s.c_str();
-	if (s.length() == 0) {
-		gtk_label_set_text(GTK_LABEL(m_searchTagLabel), "");
-		return;
-	}
+	VString v = split(gtk_text_iter_get_text(&start, &end), "\n");
 
 	gtk_text_buffer_get_start_iter(buffer, &first);
 	for (m_tags = 0;
@@ -908,15 +906,29 @@ void Frame::updateTags() {
 							GTK_TEXT_SEARCH_TEXT_ONLY
 									| GTK_TEXT_SEARCH_CASE_INSENSITIVE
 									| GTK_TEXT_SEARCH_VISIBLE_ONLY), &start,
-					&end, NULL); m_tags++) {
+					&end, NULL);
+			gtk_text_buffer_get_iter_at_offset(buffer, &first,
+					gtk_text_iter_get_offset(&end))) {
+
+		/* this code disables search "char" in "henslowe (characters 8)"
+		 * string because text in brackets is additional information
+		 */
+		i = gtk_text_iter_get_line(&start);
+		j = gtk_text_iter_get_line_offset(&start);
+		auto p = v[i].find('(');
+		if (p != std::string::npos) {
+			i = g_utf8_strlen(v[i].c_str(), p);
+			if (j >= i) {
+				continue;
+			}
+		}
 
 		if (m_tags == m_tagIndex) {
 			scroll = start;
 		}
 		gtk_text_buffer_apply_tag_by_name(buffer,
 				m_tags == m_tagIndex ? activeTag : markTag, &start, &end);
-		gint offset = gtk_text_iter_get_offset(&end);
-		gtk_text_buffer_get_iter_at_offset(buffer, &first, offset);
+		m_tags++;
 	}
 
 	if (m_tags > 0) {
@@ -1014,7 +1026,7 @@ void Frame::proceedThread() {
 			m_result.push_back(SearchResult(utf8ToLocale(e), 0, 0));
 		}
 	}
-	for(auto &e:{COMBOBOX_SORT,COMBOBOX_SORT_ORDER}){
+	for (auto &e : { COMBOBOX_SORT, COMBOBOX_SORT_ORDER }) {
 		gtk_widget_set_sensitive(m_combo[e], !m_outSplitted);
 	}
 
