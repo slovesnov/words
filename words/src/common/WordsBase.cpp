@@ -654,8 +654,8 @@ bool WordsBase::findChain() {
 	ChainNode *cp;
 
 	if (differenceOnlyOneChar(m_chainHelper[0], m_chainHelper[1])) {
-		m_out = localeToUtf8(m_chainHelper[0] + " " + m_chainHelper[1])
-				+ format(" (%s 2)", m_language[WORDS].c_str());
+		m_out = localeToUtf8(m_chainHelper[0] + " " + m_chainHelper[1])+OPEN_S+m_language[WORDS]
+				+ "2)";
 		return false;
 	}
 
@@ -1367,8 +1367,7 @@ void WordsBase::sortFilterResults() {
 
 		m_out += s;
 		if (!m_outSplitted) {
-			m_out += format(" (%s %d", m_language[CHARACTERS].c_str(),
-					it->length);
+			m_out += OPEN_S+m_language[CHARACTERS]+format(" %d",it->length);
 
 			if (it->words > 1) {
 				m_out += format(" %s %d", m_language[WORDS].c_str(), it->words);

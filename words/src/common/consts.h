@@ -13,12 +13,11 @@
 #include <gtk/gtk.h>//for GDK_KEY_...
 #endif
 
-/* fixed bug aslov lib (check new version) when no internet and router return some html on any page
- *
- */
-
 //need for cgi & gtk
 const double WORDS_VERSION = 4.43;
+
+const char OPEN_BRACKET='(';
+const std::string OPEN_S=" "+std::string(1, OPEN_BRACKET);
 
 //BEGIN ENCODE ARRAYS
 const ENUM_MENU FUNCTION_MENU[] = { MENU_PANGRAM, MENU_TEMPLATE,
