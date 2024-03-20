@@ -896,7 +896,7 @@ void Frame::updateTags() {
 
 	s = gtk_entry_get_text(GTK_ENTRY(m_searchEntry));
 	text = s.c_str();
-	if (strlen(text) == 0) {
+	if (s.length() == 0) {
 		gtk_label_set_text(GTK_LABEL(m_searchTagLabel), "");
 		return;
 	}
