@@ -916,7 +916,7 @@ void Frame::updateTags() {
 		i = gtk_text_iter_get_line(&start);
 		j = gtk_text_iter_get_line_offset(&start);
 		auto p = v[i].find(OPEN_BRACKET);
-		if (p != std::string::npos) {
+		if (p != std::string::npos && !m_outSplitted) {
 			i = g_utf8_strlen(v[i].c_str(), p);
 			if (j >= i) {
 				continue;
