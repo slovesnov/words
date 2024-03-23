@@ -36,7 +36,6 @@ typedef bool (WordsBase::*BOOL_VOID_WORDSBASE_FUNCTION)();
 
 class WordsBase {
 	//prepare addons before search;
-	void setTemplateSearch();
 	void setKeyboardOneRow();
 	void setKeyboardRowDiagonals();
 
@@ -68,6 +67,7 @@ protected:
 	int m_languageIndex;
 	std::string m_entryText; //locale
 	char m_templateHelper[256];
+	char *m_template_a;
 	Modification m_modifications;
 	std::string m_chainHelper[2]; //locale
 
@@ -140,6 +140,7 @@ protected:
 	bool run();
 
 	void fillResultFromMap(const MapStringTwoStringVectors &map, size_t len);
+	void clear_m_template_a();
 
 public:
 	WordsBase();

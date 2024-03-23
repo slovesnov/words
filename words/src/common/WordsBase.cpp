@@ -66,6 +66,7 @@ WordsBase::WordsBase() {
 	FILE *f;
 	char *p;
 	char buff[MAX_BUFF_LEN];
+	m_template_a=nullptr;
 
 #ifndef CGI
 	char *p1, *p2;
@@ -192,6 +193,7 @@ WordsBase::~WordsBase() {
 		g_regex_unref(m_filterRegex);
 	}
 #endif
+	clear_m_template_a();
 }
 
 bool WordsBase::spanIncluding(const char *p, const std::string &pattern) {
@@ -258,6 +260,16 @@ bool WordsBase::checkTemplate(const std::string &s) {
 		for (; *p != 0; p++) {
 			u = *p;
 			if (++a[u] > m_templateHelper[u]) {
+				return false;
+			}
+		}
+		return true;
+	} else if (param == 2) {
+		size_t i, j, k;
+		for (i = j = 0; i < s.length(); i++) {
+			k = m_template_a[j * 256 + uchar(s[i])];
+			if (!k
+					|| ((j += k) >= m_entryText.length() && i + 1 < s.length())) {
 				return false;
 			}
 		}
@@ -395,14 +407,6 @@ bool WordsBase::checkRegularExpression(const std::string &s) {
 			std::sregex_iterator()));
 	return matches>=m_comboValue[COMBOBOX_HELPER0] && matches<=m_comboValue[COMBOBOX_HELPER1];
 #endif
-}
-
-void WordsBase::setTemplateSearch() {
-	memset(m_templateHelper, 0, 256);
-	const char *p;
-	for (p = m_entryText.c_str(); *p != 0; p++) {
-		m_templateHelper[uchar(*p)]++;
-	}
 }
 
 void WordsBase::setKeyboardOneRow() {
@@ -1535,7 +1539,26 @@ bool WordsBase::prepare() {
 	}
 
 	if (m_menuClick == MENU_TEMPLATE) {
-		setTemplateSearch();
+		memset(m_templateHelper, 0, 256);
+		const char *p;
+		for (p = m_entryText.c_str(); *p != 0; p++) {
+			m_templateHelper[uchar(*p)]++;
+		}
+
+		size_t i, j;
+		clear_m_template_a();
+		m_template_a = new char[m_entryText.length() * 256];
+		for (j = 0; j < m_entryText.length(); j++) {
+			auto a = m_template_a + j * 256;
+			memset(a, 0, 256);
+			s = m_entryText.substr(j);
+			for (i = 0; i < s.length(); i++) {
+				uchar u = s[i];
+				if (!a[u]) {
+					a[u] = i + 1;
+				}
+			}
+		}
 	} else if (m_menuClick == MENU_CHAIN) {	//all symbols from alphabet or spaces
 		//m_chainHelper is only from alphabet checked
 		s = m_entryText;
@@ -1919,4 +1942,10 @@ bool WordsBase::findLetterGroupSplit() {
 	}
 
 	return false;
+}
+
+void WordsBase::clear_m_template_a(){
+	if (m_template_a) {
+		delete[] m_template_a;
+	}
 }
