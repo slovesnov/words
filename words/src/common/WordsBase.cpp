@@ -1935,10 +1935,12 @@ bool WordsBase::findLetterGroupSplit() {
 	if (m_out.empty()) {
 		m_out = m_language[SPLITS_NOT_FOUND];
 	}
-	m_addstatus = "";
-	for (i = 0; i < 2; i++) {
-		m_addstatus += m_language[i ? TRIPLETS : PAIRS] + " "
-				+ intToStringLocaled(n[i]) + " ";
+	else{
+		m_addstatus = "";
+		for (i = 0; i < 2; i++) {
+			m_addstatus += m_language[i ? TRIPLETS : PAIRS] + " "
+					+ intToStringLocaled(n[i]) + " ";
+		}
 	}
 
 	return false;
