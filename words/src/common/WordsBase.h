@@ -67,7 +67,8 @@ protected:
 	int m_languageIndex;
 	std::string m_entryText; //locale
 	char m_templateHelper[256];
-	char *m_template_a;
+	char **m_template_a;
+	int m_template_d1;
 	Modification m_modifications;
 	std::string m_chainHelper[2]; //locale
 

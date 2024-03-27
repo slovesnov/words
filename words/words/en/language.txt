@@ -40,6 +40,8 @@ dictionary statistics
 frequency of word length (descend)
 check dictionary
 two nearby characters distribution
+two nearby characters distribution at the beginning of a word
+two nearby characters distribution at the end of a word
 }
 Language{
 english

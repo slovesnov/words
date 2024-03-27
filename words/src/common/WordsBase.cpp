@@ -267,7 +267,7 @@ bool WordsBase::checkTemplate(const std::string &s) {
 	} else if (param == 2) {
 		size_t i, j, k;
 		for (i = j = 0; i < s.length(); i++) {
-			k = m_template_a[j * 256 + uchar(s[i])];
+			k = m_template_a[j][uchar(s[i])];
 			if (!k
 					|| ((j += k) >= m_entryText.length() && i + 1 < s.length())) {
 				return false;
@@ -1173,6 +1173,7 @@ bool WordsBase::twoCharactersDistribution() {
 	const int s = getAlphabetSize();
 	int **a = create2dArray<int>(s, s);
 	std::string ss;
+	StringIntVectorCI p;
 
 	for (i = 0; i < s; i++) {
 		for (j = 0; j < s; j++) {
@@ -1185,7 +1186,14 @@ bool WordsBase::twoCharactersDistribution() {
 		if (it->length() < 2) {
 			continue;
 		}
-		for (i = 0; i < int(it->length()) - 1; i++) {
+		if(m_menuClick==MENU_TWO_CHARACTERS_DISTRIBUTION){
+			for (i = 0; i < int(it->length()) - 1; i++) {
+				a[alphabetIndex((*it)[i])][alphabetIndex((*it)[i + 1])]++;
+				total++;
+			}
+		}
+		else{
+			i=m_menuClick==MENU_TWO_CHARACTERS_DISTRIBUTION_START ? 0: it->length()-2;
 			a[alphabetIndex((*it)[i])][alphabetIndex((*it)[i + 1])]++;
 			total++;
 		}
@@ -1202,17 +1210,19 @@ bool WordsBase::twoCharactersDistribution() {
 		}
 	}
 	std::sort(v.begin(), v.end(), sortStringInt);
-
-	StringIntVectorCI p;
+	p=v.begin();
+	i=format("%.2f",(p->second * 100.) / total).length();
+	j=intToStringLocaled(p->second).length();
+	ss="%s %"+std::to_string(i)+".2f%% = %"+std::to_string(j)+"s / %s";
 	for (p = v.begin(); p != v.end(); p++) {
 		if (p != v.begin()) {
 			m_out += "\n";
 		}
 		m_out += localeToUtf8(
-				format("%s %.2f%% %6s/%s", p->first.c_str(),
+				format(ss.c_str(), p->first.c_str(),
 						(p->second * 100.) / total,
-						toString(p->second, ',').c_str(),
-						toString(r.size(), ',').c_str()));
+						intToStringLocaled(p->second).c_str(),
+						intToStringLocaled(total).c_str()));
 	}
 
 	delete2dArray(a, s);
@@ -1547,9 +1557,10 @@ bool WordsBase::prepare() {
 
 		size_t i, j;
 		clear_m_template_a();
-		m_template_a = new char[m_entryText.length() * 256];
+		m_template_d1=m_entryText.length();
+		m_template_a=create2dArray<char>(m_template_d1,256);
 		for (j = 0; j < m_entryText.length(); j++) {
-			auto a = m_template_a + j * 256;
+			auto a = m_template_a[j];
 			memset(a, 0, 256);
 			s = m_entryText.substr(j);
 			for (i = 0; i < s.length(); i++) {
@@ -1948,6 +1959,6 @@ bool WordsBase::findLetterGroupSplit() {
 
 void WordsBase::clear_m_template_a(){
 	if (m_template_a) {
-		delete[] m_template_a;
+		delete2dArray(m_template_a, m_template_d1);
 	}
 }

@@ -1,5 +1,6 @@
-4.43 18mar2024
-added split group of characters by two/three words (only window mode)
+4.43 28mar2024
+added split group of characters by two/three words
+added distribution of the sequence of two letters at the beginning/end of a word
 filter works for all search/statistics options
 sort working for chains of words option
 project recompliled under new version of gcc and gtk libraries (gtk library bug with text alignment is fixed)
@@ -10,7 +11,8 @@ added deleting/adding words to dictionaries
 image height in about dialog is counted from content
 
 [ru]
-добавлено разбиение группы букв на два/три слова (только для оконного режима)
+добавлено разбиение группы букв на два/три слова
+добавлено распределение последовательности двух букв в начале/конце слова
 фильтр работает для всех опций статистики/поиска
 сортировка работает для опции поиска цепочек
 проект перекомпилирован для новой версии gcc и gtk (в gtk исправлен баг с выравнивание текста) 
