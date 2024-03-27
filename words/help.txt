@@ -1,5 +1,6 @@
 4.43 28mar2024
 added split group of characters by two/three words
+added search for words containing part of letters from the template (ordered)
 added distribution of the sequence of two letters at the beginning/end of a word
 filter works for all search/statistics options
 sort working for chains of words option
@@ -12,10 +13,11 @@ image height in about dialog is counted from content
 
 [ru]
 добавлено разбиение группы букв на два/три слова
+добавлен поиск слов содержащих часть букв из шаблона (упорядочено)
 добавлено распределение последовательности двух букв в начале/конце слова
 фильтр работает для всех опций статистики/поиска
 сортировка работает для опции поиска цепочек
-проект перекомпилирован для новой версии gcc и gtk (в gtk исправлен баг с выравнивание текста) 
+проект перекомпилирован для новой версии gcc и gtk (в gtk исправлен баг с выравниванием текста) 
 удалено несколько несуществующих слов из русского словара: аьберт, госкомсанэпидназдор, октябрьскский, ухойдакать добавлены слова: рухнет, прескриптивизм. Добавлено слово tokmak в английский словарь
 исправлен баг с конечным временем
 добавлено использование собственной библиотеки cgi для режима cgi
