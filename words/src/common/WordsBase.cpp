@@ -1209,23 +1209,23 @@ bool WordsBase::twoCharactersDistribution() {
 			}
 		}
 	}
+	delete2dArray(a, s);
 	std::sort(v.begin(), v.end(), sortStringInt);
-	p=v.begin();
-	i=format("%.2f",(p->second * 100.) / total).length();
-	j=intToStringLocaled(p->second).length();
-	ss="%s %"+std::to_string(i)+".2f%% = %"+std::to_string(j)+"s / %s";
+	p = v.begin();
+	i = format("%.2f", (p->second * 100.) / total).length();
+	j = intToStringLocaled(p->second).length();
+	ss = "%s %" + std::to_string(i) + ".2f%% = %" + std::to_string(j)
+			+ "s / %s";
 	for (p = v.begin(); p != v.end(); p++) {
 		if (p != v.begin()) {
 			m_out += "\n";
 		}
 		m_out += localeToUtf8(
-				format(ss.c_str(), p->first.c_str(),
-						(p->second * 100.) / total,
+				format(ss.c_str(), p->first.c_str(), (p->second * 100.) / total,
 						intToStringLocaled(p->second).c_str(),
 						intToStringLocaled(total).c_str()));
 	}
-
-	delete2dArray(a, s);
+	m_addstatus += m_language[PAIRS] + " " + intToStringLocaled(v.size()) + " ";
 	return false;
 }
 
