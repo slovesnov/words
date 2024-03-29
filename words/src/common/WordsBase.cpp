@@ -1225,7 +1225,7 @@ bool WordsBase::twoCharactersDistribution() {
 						intToStringLocaled(p->second).c_str(),
 						intToStringLocaled(total).c_str()));
 	}
-	m_addstatus += m_language[PAIRS] + " " + intToStringLocaled(v.size()) + " ";
+	m_addstatus = m_language[PAIRS] + " " + intToStringLocaled(v.size());
 	return false;
 }
 
@@ -1609,6 +1609,9 @@ bool WordsBase::prepare() {
 
 std::string WordsBase::getStatusString() {
 	std::string s = m_addstatus;
+	if (!s.empty()) {
+		s += ", ";
+	}
 	if (!m_outSplitted) {
 		s = m_language[NUMBER_OF_WORDS] + " "
 				+ intToStringLocaled(m_result.size()) + ", ";
@@ -1947,10 +1950,9 @@ bool WordsBase::findLetterGroupSplit() {
 		m_out = m_language[SPLITS_NOT_FOUND];
 	}
 	else{
-		m_addstatus = "";
 		for (i = 0; i < 2; i++) {
 			m_addstatus += m_language[i ? TRIPLETS : PAIRS] + " "
-					+ intToStringLocaled(n[i]) + " ";
+					+ intToStringLocaled(n[i]) + (i ? "" : ", ");
 		}
 	}
 
