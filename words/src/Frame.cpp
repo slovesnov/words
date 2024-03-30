@@ -939,6 +939,7 @@ void Frame::updateTags() {
 			format("%d/%d", m_tags == 0 ? 0 : m_tagIndex + 1, m_tags).c_str());
 
 }
+
 void Frame::createImageCombo(ENUM_COMBOBOX e) {
 	int i;
 	GtkTreeIter iter;
