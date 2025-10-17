@@ -18,10 +18,10 @@
 #include <windows.h>
 #endif
 
-//Note WORDS_VERSION defined in WordsBase
+//Note WORDS_VERSION defined in consts.h
 const char MAIL[] = "slovesnov@yandex.ru";
-const char HOMEPAGE[] = "http://slovesnov.users.sf.net/?words"; //sf shorter than sourceforge, better looks in about dialog
-const char HOMEPAGE_ONLINE[] = "http://slovesnov.users.sf.net/?words_online"; //sf shorter than sourceforge, better looks in about dialog
+const char HOMEPAGE[] = "https://slovesnov.rf.gd/?words";
+const char HOMEPAGE_ONLINE[] = "https://slovesnov.rf.gd/?words_online";
 const char markTag[] = "mark";
 const char activeTag[] = "active";
 const int SEARCH_ENTRY_ID = -1;
@@ -30,10 +30,9 @@ const char CERROR[] = "cerror";
 
 const char DOWNLOAD_URL[] =
 		"http://sourceforge.net/projects/javawords/files/latest/download";
-//const char DOWNLOAD_URL[]="https://sourceforge.net/projects/javawords/files/";//all versions
 
 const char VERSION_FILE_URL[] =
-		"http://slovesnov.users.sf.net/words/version.txt";
+		"https://slovesnov.rf.gd/words/version.txt";
 
 //const char VERSION_FILE_URL[] = "file:///C:/slovesno/site/words/version.txt";
 /* too many items in combobox, so set maximum bound.

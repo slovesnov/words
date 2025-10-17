@@ -14,7 +14,7 @@
 #endif
 
 //need for cgi & gtk
-const double WORDS_VERSION = 4.43;
+const double WORDS_VERSION = 4.44;
 
 const char OPEN_BRACKET='(';
 const std::string OPEN_S=" "+std::string(1, OPEN_BRACKET);

@@ -1,3 +1,11 @@
+4.44
+changed links
+some words in the Russian dictionary have been removed/corrected/added
+
+[ru]
+изменены ссылки
+удалены/исправлены/добавлены некоторые слова в русском словаре
+
 4.43 28mar2024
 added split group of characters by two/three words
 added search for words containing part of letters from the template (ordered)
