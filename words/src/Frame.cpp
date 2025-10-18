@@ -31,9 +31,10 @@ const char CERROR[] = "cerror";
 const char DOWNLOAD_URL[] =
 		"http://sourceforge.net/projects/javawords/files/latest/download";
 
-const std::string VERSION_FILE_URL = "https://slovesnov.rf.gd/words/version.txt";
-
+const std::string VERSION_FILE_URL =
+		"https://slovesnov.github.io/wordsversion.txt"; //https://slovesnov.rf.gd/words/version.txt returns ugly data
 //const std::string VERSION_FILE_URL[] = "file:///C:/slovesno/site/words/version.txt";
+
 /* too many items in combobox, so set maximum bound.
  * values counted from dictionary
  * makes the same for all dictionaries to avoid refill after
