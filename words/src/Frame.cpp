@@ -20,8 +20,8 @@
 
 //Note WORDS_VERSION defined in consts.h
 const char MAIL[] = "slovesnov@yandex.ru";
-const char HOMEPAGE[] = "https://slovesnov.rf.gd/?words";
-const char HOMEPAGE_ONLINE[] = "https://slovesnov.rf.gd/?words_online";
+const std::string HOMEPAGE = "https://slovesnov.rf.gd/?words";
+const std::string HOMEPAGE_ONLINE = "https://slovesnov.rf.gd/?words_online";
 const char markTag[] = "mark";
 const char activeTag[] = "active";
 const int SEARCH_ENTRY_ID = -1;
@@ -31,10 +31,9 @@ const char CERROR[] = "cerror";
 const char DOWNLOAD_URL[] =
 		"http://sourceforge.net/projects/javawords/files/latest/download";
 
-const char VERSION_FILE_URL[] =
-		"https://slovesnov.rf.gd/words/version.txt";
+const std::string VERSION_FILE_URL = "https://slovesnov.rf.gd/words/version.txt";
 
-//const char VERSION_FILE_URL[] = "file:///C:/slovesno/site/words/version.txt";
+//const std::string VERSION_FILE_URL[] = "file:///C:/slovesno/site/words/version.txt";
 /* too many items in combobox, so set maximum bound.
  * values counted from dictionary
  * makes the same for all dictionaries to avoid refill after
@@ -507,10 +506,9 @@ void Frame::setDictionary() {
 void Frame::aboutDialog() {
 	int i;
 	size_t j;
-	std::string s;
+	std::string s, s1;
 	GtkWidget *box, *hbox, *dialog, *label, *img = gtk_image_new();
 	char *markup;
-	const char *p;
 	GdkPixbuf *pi;
 
 	dialog = gtk_dialog_new();
@@ -536,8 +534,7 @@ void Frame::aboutDialog() {
 			if (id == AUTHOR) {
 				s += " " + m_language[EMAIL_STRING] + " " + MAIL;
 			} else if (id == HOMEPAGE_STRING || id == HOMEPAGE_ONLINE_STRING) {
-				s += " ";
-				s += id == HOMEPAGE_STRING ? HOMEPAGE : HOMEPAGE_ONLINE;
+				s += " " + (id == HOMEPAGE_STRING ? HOMEPAGE : HOMEPAGE_ONLINE);
 			} else if (id == COPYRIGHT) {
 				j = s.find('(');
 				if (j != std::string::npos) {
@@ -549,16 +546,15 @@ void Frame::aboutDialog() {
 		}
 
 		if (id == HOMEPAGE_STRING || id == HOMEPAGE_ONLINE_STRING) {
-			p = id == HOMEPAGE_STRING ? HOMEPAGE : HOMEPAGE_ONLINE;
-			label = gtk_label_new("");
-			markup = g_markup_printf_escaped("%s <a href=\"%s,%s\">\%s,%s</a>",
-					m_language[id].c_str(), p,
-					LANGUAGE[m_languageIndex].c_str(), p,
-					LANGUAGE[m_languageIndex].c_str());
+			s1 = (id == HOMEPAGE_STRING ? HOMEPAGE : HOMEPAGE_ONLINE) + ','
+					+ LANGUAGE[m_languageIndex];
+			label = gtk_label_new(NULL);
+			markup = g_markup_printf_escaped("%s <a href=\"%s\">\%s</a>",
+					m_language[id].c_str(), s1.c_str(), s1.c_str());
 			gtk_label_set_markup(GTK_LABEL(label), markup);
 			g_free(markup);
 			g_signal_connect(label, "activate-link", G_CALLBACK(label_clicked),
-					gpointer(p));
+					gpointer(NULL));
 
 			/*
 			 //Extra spaces I cann't remove them
