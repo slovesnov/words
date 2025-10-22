@@ -136,3 +136,4 @@ splits not found
 Splitting a group of letters into two or three words. First all splits of a group of letters into two words are searched, then all splits into three words are searched. For example, the letter group <i>anticodonpall</i> can be split into the two words <i>capital</i> and <i>london</i> or into the three words <i>all</i>, <i>pant</i>, <i>conoid</i>.
 pairs
 triplets
+any

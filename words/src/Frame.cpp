@@ -104,7 +104,11 @@ static gboolean label_clicked(GtkWidget *label, const gchar *uri, gpointer) {
 }
 
 static void check_changed(GtkWidget *check, gpointer) {
-	frame->checkChanged(check);
+	frame->stopThreadAndNewRoutine();
+}
+
+static void radio_changed(GtkWidget *radio, gpointer) {
+	frame->radioChanged(radio);
 }
 
 static void destroy_window(GtkWidget *object, gpointer) {
@@ -423,7 +427,8 @@ void Frame::clickMenu(ENUM_MENU menu) {
 			clipboard = gtk_clipboard_get(GDK_SELECTION_CLIPBOARD);
 			buf = gtk_text_view_get_buffer(GTK_TEXT_VIEW(m_text));
 			if (gtk_text_buffer_get_selection_bounds(buf, &start, &end)) {
-				text = gtk_text_buffer_get_text(buf, &start, &end, TRUE); //utf8
+				text = gtk_text_buffer_get_text(buf, &start, &end,
+				TRUE); //utf8
 				gtk_clipboard_set_text(clipboard, text, -1);
 				/* TODO
 				 * 4.3 if select search something and then select MENU_EDIT_SELECT_ALL_AND_COPY_TO_CLIPBOARD
@@ -609,7 +614,7 @@ void Frame::routine() {
 
 	if (prepare()) {
 		startThread(thread);
-	} else {			//wrapper to call endJob() if prepare() returns false
+	} else {	//wrapper to call endJob() if prepare() returns false
 		m_end = clock();
 		endJob();
 	}
@@ -661,7 +666,7 @@ void Frame::setHelperPanel() {
 		break;
 
 	case MENU_REGULAR_EXPRESSIONS:
-		addComboLineToHelper(NUMBER_OF_MATCHES, 1, 10, 0, STRING_SIZE);
+		addComboLineToHelper(NUMBER_OF_MATCHES, 1, 10, 0, STRING_SIZE, true);
 		break;
 
 	case MENU_MODIFICATION:
@@ -675,7 +680,7 @@ void Frame::setHelperPanel() {
 	case MENU_CHARACTER_SEQUENCE:
 		addComboToHelper(SEARCH_IN_ANY_PLACE_OF_WORD, SEARCH_IN_END_OF_WORD, 0,
 				COMBOBOX_HELPER2);
-		addComboLineToHelper(NUMBER_OF_MATCHES, 1, 10, 0, STRING_SIZE);
+		addComboLineToHelper(NUMBER_OF_MATCHES, 1, 10, 0, STRING_SIZE, true);
 		break;
 
 	case MENU_SIMPLE_WORD_SEQUENCE:
@@ -801,18 +806,34 @@ void Frame::addEntryLineToHelper(int i) {
 }
 
 void Frame::addComboLineToHelper(ENUM_STRING id, int from, int to, int active,
-		ENUM_STRING eid) {
-	addComboLineToHelper(id, from, to, active,
-			m_language[id] + " " + m_language[FROM], m_language[TO],
-			eid == STRING_SIZE ? "" : m_language[eid]);
+		ENUM_STRING eid, bool any) {
+	addComboLineToHelper(id, from, to, active, m_language[id], m_language[TO],
+			eid == STRING_SIZE ? "" : m_language[eid], any);
 }
 
 void Frame::addComboLineToHelper(ENUM_STRING id, int from, int to, int active,
-		std::string s1, std::string s2, std::string s3) {
-	int i;
-	GtkWidget *w = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, COMBOLINE_MARGIN);
+		std::string s1, std::string s2, std::string s3, bool any) {
+	int i, j;
+	GtkWidget *w = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, COMBOLINE_MARGIN),
+			*r;
 	for (i = 0; i < 2; i++) {
-		add(w, i == 0 ? s1 : s2);
+		add(w, i == 0 ? s1 + (any ? "" : " " + m_language[FROM]) : s2);
+		if (!i && any) {
+			m_radioValue = 0;
+			for (j = 0; j < 2; j++) {
+				if (j == 0) {
+					m_radio = r = gtk_radio_button_new_with_label(NULL,
+							m_language[ANY].c_str());
+				} else {
+					r = gtk_radio_button_new_with_label_from_widget(
+							GTK_RADIO_BUTTON(m_radio),
+							m_language[FROM].c_str());
+				}
+				add(w, r);
+				g_signal_connect(r, "toggled", G_CALLBACK (radio_changed),
+						NULL);
+			}
+		}
 		add(w, createTextCombo(HELPER_COMBOBOX[i], from, to, active));
 	}
 	if (!s3.empty()) {
@@ -951,7 +972,8 @@ void Frame::createImageCombo(ENUM_COMBOBOX e) {
 	}
 	m_combo[e] = gtk_combo_box_new_with_model(GTK_TREE_MODEL(gls));
 	renderer = gtk_cell_renderer_pixbuf_new();
-	gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(m_combo[e]), renderer, TRUE);
+	gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(m_combo[e]), renderer,
+	TRUE);
 	gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(m_combo[e]), renderer,
 			"pixbuf", 0, NULL);
 }
@@ -1122,10 +1144,9 @@ void Frame::updateComboValue(ENUM_COMBOBOX e) {
 }
 
 bool Frame::prepare() {
-
 	if (m_menuClick == MENU_MODIFICATION) {
 		m_checkValue = gtk_toggle_button_get_active(
-				GTK_TOGGLE_BUTTON(m_check))==TRUE;
+				GTK_TOGGLE_BUTTON(m_check)) == TRUE;
 	}
 
 	bool hasEntry = INDEX_OF(m_menuClick,TEMPLATE_MENU) != -1;
@@ -1247,4 +1268,13 @@ void Frame::newVersionMessage() {
 		openURL(DOWNLOAD_URL);
 	}
 }
+
+void Frame::radioChanged(GtkWidget *w) {
+	if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(w))) {
+		GSList *group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(w));
+		m_radioValue = g_slist_length(group) - 1 - g_slist_index(group, w);	//Note group inverted order
+		stopThreadAndNewRoutine();
+	}
+}
+
 #endif

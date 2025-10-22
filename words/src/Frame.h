@@ -36,6 +36,7 @@ class Frame: WordsBase {
 	GtkWidget *m_filterFrame;
 	GtkWidget *m_check;
 	GtkWidget *m_comboline;
+	GtkWidget *m_radio;
 
 	MenuMap m_menuMap;
 	GtkAccelGroup *m_accelGroup[MENU_ACCEL_SIZE];
@@ -76,11 +77,11 @@ class Frame: WordsBase {
 
 	void addEntryLineToHelper(int i);
 	void addComboLineToHelper(ENUM_STRING id, int from, int to, int active,
-			ENUM_STRING eid);
+			ENUM_STRING eid, bool any = false);
+	void addComboLineToHelper(ENUM_STRING id, int from, int to, int active,
+			std::string s1, std::string s2, std::string s3, bool any = false);
 	void addComboToHelper(ENUM_STRING from, ENUM_STRING to, int active,
 			ENUM_COMBOBOX comboboxId = COMBOBOX_HELPER0);
-	void addComboLineToHelper(ENUM_STRING id, int from, int to, int active,
-			std::string s1, std::string s2, std::string s3);
 
 	void updateTags();
 
@@ -141,10 +142,8 @@ public:
 	void loadAndUpdateCurrentLanguage();
 	void comboChanged(ENUM_COMBOBOX e);
 	void entryChanged(int entryIndex);
+	void radioChanged(GtkWidget *w);
 	void clickButton(GtkWidget *button);
-	void checkChanged(GtkWidget *check) {
-		stopThreadAndNewRoutine();
-	}
 
 	void stopThreadAndNewRoutine() {
 		stopThread();

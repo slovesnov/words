@@ -66,7 +66,7 @@ WordsBase::WordsBase() {
 	FILE *f;
 	char *p;
 	char buff[MAX_BUFF_LEN];
-	m_template_a=nullptr;
+	m_template_a = nullptr;
 
 #ifndef CGI
 	char *p1, *p2;
@@ -287,6 +287,9 @@ bool WordsBase::checkCharacterSequence(const std::string &s) {
 		j = 0;
 		std::string::size_type pos = 0;
 		while ((pos = s.find(m_entryText, pos)) != std::string::npos) {
+			if (!m_radioValue) {
+				return true;
+			}
 			j++;
 			if (j > max) {
 				return false;
@@ -390,6 +393,9 @@ bool WordsBase::checkPalindrome(const std::string &s) {
 
 bool WordsBase::checkRegularExpression(const std::string &s) {
 #ifdef _WIN32
+	if (!m_radioValue) {
+		return g_regex_match(m_regex, s.c_str(), GRegexMatchFlags(0), NULL);
+	}
 	GMatchInfo *matchInfo;
 	g_regex_match(m_regex, s.c_str(), GRegexMatchFlags(0), &matchInfo);
 	int i;
@@ -399,7 +405,7 @@ bool WordsBase::checkRegularExpression(const std::string &s) {
 	}
 	g_match_info_free(matchInfo);
 
-	return i >= m_comboValue[COMBOBOX_HELPER0] && i <= max;
+	return (i >= m_comboValue[COMBOBOX_HELPER0] && i <= max);
 #else
 	//gcc on sourceforge 4.8.5 doesn't support std::sregex_iterator
 	std::ptrdiff_t const matches(std::distance(
@@ -658,8 +664,8 @@ bool WordsBase::findChain() {
 	ChainNode *cp;
 
 	if (differenceOnlyOneChar(m_chainHelper[0], m_chainHelper[1])) {
-		m_out = localeToUtf8(m_chainHelper[0] + " " + m_chainHelper[1])+OPEN_S+m_language[WORDS]
-				+ "2)";
+		m_out = localeToUtf8(m_chainHelper[0] + " " + m_chainHelper[1]) + OPEN_S
+				+ m_language[WORDS] + "2)";
 		return false;
 	}
 
@@ -1186,14 +1192,14 @@ bool WordsBase::twoCharactersDistribution() {
 		if (it->length() < 2) {
 			continue;
 		}
-		if(m_menuClick==MENU_TWO_CHARACTERS_DISTRIBUTION){
+		if (m_menuClick == MENU_TWO_CHARACTERS_DISTRIBUTION) {
 			for (i = 0; i < int(it->length()) - 1; i++) {
 				a[alphabetIndex((*it)[i])][alphabetIndex((*it)[i + 1])]++;
 				total++;
 			}
-		}
-		else{
-			i=m_menuClick==MENU_TWO_CHARACTERS_DISTRIBUTION_START ? 0: it->length()-2;
+		} else {
+			i = m_menuClick == MENU_TWO_CHARACTERS_DISTRIBUTION_START ?
+					0 : it->length() - 2;
 			a[alphabetIndex((*it)[i])][alphabetIndex((*it)[i + 1])]++;
 			total++;
 		}
@@ -1368,7 +1374,7 @@ void WordsBase::sortFilterResults() {
 	}
 
 	for (it = m_result.begin(); it != m_result.end(); it++) {
-		s=localeToUtf8(it->s);
+		s = localeToUtf8(it->s);
 #ifndef CGI
 		if (find != testFilterRegex(s)) {
 			continue;
@@ -1381,7 +1387,8 @@ void WordsBase::sortFilterResults() {
 
 		m_out += s;
 		if (!m_outSplitted) {
-			m_out += OPEN_S+m_language[CHARACTERS]+format(" %d",it->length);
+			m_out += OPEN_S + m_language[CHARACTERS]
+					+ format(" %d", it->length);
 
 			if (it->words > 1) {
 				m_out += format(" %s %d", m_language[WORDS].c_str(), it->words);
@@ -1557,8 +1564,8 @@ bool WordsBase::prepare() {
 
 		size_t i, j;
 		clear_m_template_a();
-		m_template_d1=m_entryText.length();
-		m_template_a=create2dArray<char>(m_template_d1,256);
+		m_template_d1 = m_entryText.length();
+		m_template_a = create2dArray<char>(m_template_d1, 256);
 		for (j = 0; j < m_entryText.length(); j++) {
 			auto a = m_template_a[j];
 			memset(a, 0, 256);
@@ -1948,8 +1955,7 @@ bool WordsBase::findLetterGroupSplit() {
 	}
 	if (m_out.empty()) {
 		m_out = m_language[SPLITS_NOT_FOUND];
-	}
-	else{
+	} else {
 		for (i = 0; i < 2; i++) {
 			m_addstatus += m_language[i ? TRIPLETS : PAIRS] + " "
 					+ intToStringLocaled(n[i]) + (i ? "" : ", ");
@@ -1959,7 +1965,7 @@ bool WordsBase::findLetterGroupSplit() {
 	return false;
 }
 
-void WordsBase::clear_m_template_a(){
+void WordsBase::clear_m_template_a() {
 	if (m_template_a) {
 		delete2dArray(m_template_a, m_template_d1);
 	}
