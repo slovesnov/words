@@ -107,8 +107,6 @@ class Frame: WordsBase {
 		add(w, createLabel(e));
 	}
 
-	void clearHelper();
-
 public:
 	Frame();
 	virtual ~Frame() {

@@ -626,7 +626,7 @@ void Frame::setHelperPanel() {
 	gchar *p;
 	std::string s;
 
-	clearHelper();
+	clearContainer(m_helperUp);
 
 	//set label
 	if ((i = INDEX_OF(m_menuClick, HELPER_MENU)) != -1) {//for some of menu items only needs clear helper panel
@@ -1000,15 +1000,6 @@ void Frame::clickButton(GtkWidget *button) {
 
 	m_tagIndex %= m_tags;
 	updateTags();
-}
-
-void Frame::clearHelper() {
-	GList *children, *iter;
-	children = gtk_container_get_children(GTK_CONTAINER(m_helperUp));
-	for (iter = children; iter != NULL; iter = g_list_next(iter)) {
-		gtk_widget_destroy(GTK_WIDGET(iter->data));
-	}
-	g_list_free(children);
 }
 
 void Frame::setMenuLabel(ENUM_MENU e, std::string const &text) {
