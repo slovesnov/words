@@ -141,10 +141,11 @@ Frame::Frame() :
 
 #ifndef NDEBUG
 	//No intersection between FUNCTION_MENU & BOOL_VOID_MENU
-	for(i=0;i<SIZEI(FUNCTION_MENU);i++){
-		if(ONE_OF(FUNCTION_MENU[i],BOOL_VOID_MENU)){
-			pr(FUNCTION_MENU[i],i);
-			int j=0;
+	i=0;
+	for(auto&a:FUNCTION_MENU){
+		if(ONE_OF(a,BOOL_VOID_MENU)){
+			pr(a,i);
+			j=0;
 			for(auto&a:BOOL_VOID_MENU){
 				pr(std::format("{} {}",int(a),j));
 				j++;
@@ -152,6 +153,7 @@ Frame::Frame() :
 			}
 			assert(0);
 		}
+		i++;
 	}
 #endif
 

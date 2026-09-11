@@ -16,9 +16,11 @@ en 'words_alpha.txt' https://github.com/dwyl/english-words/blob/master/words_alp
 /////////////////////////////////////
 DONE copy dictionary.js
 
-"template" Нормальный, файлы переделать
+"template" Нормальный, файлы переделать,коменты как в settings
 remove removeLastCRLF(char *p)
 add load file to VString
+dictionary.js without last '\n'
+иконка в make
 (words.exe:8916): Gdk-WARNING **: 18:16:54.330: Setting selection property with 0x0000000000000000 =
 = NULL or 0x0 == 0 or 0x0000000000000000 == 0
 
