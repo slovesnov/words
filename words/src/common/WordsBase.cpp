@@ -1506,9 +1506,8 @@ bool WordsBase::prepare() {
 
     size_t i, j;
     m_template_a = create2dArray<char>(m_entryText.length(), 256, 0);
-    pr(m_template_a.size(),m_entryText.length()); 
-	for (j = 0; j < m_entryText.length(); j++) {
-      auto a = m_template_a[j];
+	j=0;
+	for (auto& a: m_template_a) {
       s = m_entryText.substr(j);
       for (i = 0; i < s.length(); i++) {
         uchar u = s[i];
@@ -1516,6 +1515,7 @@ bool WordsBase::prepare() {
           a[u] = i + 1;
         }
       }
+	  j++;
     }
   } else if (m_menuClick == MENU_CHAIN) { // all symbols from alphabet or spaces
     // m_chainHelper is only from alphabet checked
