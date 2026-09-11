@@ -23,6 +23,8 @@ template нормальные файлы
 TODO 
 open()
 remove removeLastCRLF(char *p)
+open() may be remove?
+MAX_BUFF_LEN remove?
 dictionary.js without last '\n'
 иконка в make
 зависимости??
