@@ -14,8 +14,9 @@ ru 'index.dic' https://github.com/wooorm/dictionaries/tree/main/dictionaries/ru
 en 'enindex.dic' https://github.com/wooorm/dictionaries/tree/main/dictionaries/da
 en 'words_alpha.txt' https://github.com/dwyl/english-words/blob/master/words_alpha.txt
 /////////////////////////////////////
-copy dictionary.js
+DONE copy dictionary.js
 
+"template" Нормальный, файлы переделать
 remove removeLastCRLF(char *p)
 add load file to VString
 (words.exe:8916): Gdk-WARNING **: 18:16:54.330: Setting selection property with 0x0000000000000000 =
