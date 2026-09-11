@@ -24,7 +24,6 @@
 const char SEPARATOR[] = "SEPARATOR";
 constexpr std::string LANGUAGE[] = {"english", "russian"};
 constexpr int LANGUAGES = SIZEI(LANGUAGE);
-std::string LNG[LANGUAGES];
 
 class WordsBase;
 extern WordsBase *wordsBase;
@@ -67,8 +66,7 @@ protected:
   int m_languageIndex;
   std::string m_entryText; // locale
   char m_templateHelper[256];
-  char **m_template_a;
-  int m_template_d1;
+  std::vector<std::vector<char>> m_template_a;
   Modification m_modifications;
   std::string m_chainHelper[2]; // locale
 
@@ -98,11 +96,7 @@ protected:
     return m_longestWordLength[getDictionaryIndex()];
   }
 
-  static inline std::string getShortLanguageString(int i) {
-    assert(i >= 0 && i < LANGUAGES);
-    return LNG[i];
-  }
-
+  static std::string getShortLanguageString(int i);
 #ifndef CGI
   inline const std::string &getTemplate(int i) const {
     return m_template[getDictionaryIndex()][i];
@@ -141,7 +135,6 @@ protected:
   bool run();
 
   void fillResultFromMap(const MapStringTwoStringVectors &map, size_t len);
-  void clear_m_template_a();
 
 public:
   WordsBase();

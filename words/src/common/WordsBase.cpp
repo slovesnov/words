@@ -10,7 +10,6 @@
 #include "consts.h"
 #include <memory> //unique_ptr
 
-
 typedef unsigned char uchar;
 
 #ifdef CGI
@@ -22,11 +21,8 @@ typedef unsigned char uchar;
   }
 #endif
 
-#ifdef _WIN32
 const char EL = '\n';
-#else
-const char EL = '\r';
-#endif
+std::string LNG[LANGUAGES];
 
 #ifdef CGI
 #include "cgi.h"
@@ -70,7 +66,6 @@ WordsBase::WordsBase() {
   FILE *f;
   char *p;
   char buff[MAX_BUFF_LEN];
-  m_template_a = nullptr;
 
   for (i = 0; i < LANGUAGES; i++) {
     LNG[i] = LANGUAGE[i].substr(0, 2);
@@ -157,7 +152,6 @@ WordsBase::~WordsBase() {
     g_regex_unref(m_filterRegex);
   }
 #endif
-  clear_m_template_a();
 }
 
 bool WordsBase::spanIncluding(const char *p, const std::string &pattern) {
@@ -1137,15 +1131,9 @@ bool WordsBase::twoCharactersDistribution() {
   StringSetCI it;
   int i, j;
   const int s = getAlphabetSize();
-  int **a = create2dArray<int>(s, s);
+  auto a = create2dArray<int>(s, s, 0);
   std::string ss;
   StringIntVectorCI p;
-
-  for (i = 0; i < s; i++) {
-    for (j = 0; j < s; j++) {
-      a[i][j] = 0;
-    }
-  }
 
   int total = 0;
   for (it = r.begin(); it != r.end(); it++) {
@@ -1176,7 +1164,6 @@ bool WordsBase::twoCharactersDistribution() {
       }
     }
   }
-  delete2dArray(a, s);
   std::sort(v.begin(), v.end(), sortStringInt);
   p = v.begin();
   i = format("%.2f", (p->second * 100.) / total).length();
@@ -1205,7 +1192,7 @@ bool WordsBase::dictionaryStatistics() {
   std::string additionalCaption[2];
   std::string longestWord;
   const int a = getAlphabetSize();
-  int **m = create2dArray<int>(SZ_CAPTION, a + 1);
+  auto m = create2dArray<int>(SZ_CAPTION, a + 1, 0);
   StringSet const &r = getDictionary();
 
   for (i = 0; i < SZ_CAPTION; i++) {
@@ -1221,12 +1208,7 @@ bool WordsBase::dictionaryStatistics() {
         " " + m_language[i == 0 ? SORTED_BY_ALPHABET : SORTED_BY_FREQUENCY];
   }
 
-  for (j = 0; j < SZ_CAPTION; j++) {
-    for (i = 0; i < a + 1; ++i) {
-      m[j][i] = 0;
-    }
-  }
-
+  // TODO
   for (it = r.begin(); it != r.end(); it++) {
     m[0][a] += it->length();
     m[1][a]++;
@@ -1253,7 +1235,7 @@ bool WordsBase::dictionaryStatistics() {
 
   IntDouble ve[a];
   const int COLUMNS = a / 3;
-  double *frequency = new double[getAlphabetSize()];
+  std::vector<double> frequency(getAlphabetSize());
   const char FORMAT[] = "%c %6.3lf  ";
 
   for (j = 0; j < SZ_CAPTION; j++) {
@@ -1305,8 +1287,6 @@ bool WordsBase::dictionaryStatistics() {
            format(" - %s (%s %d).", localeToUtf8(longestWord).c_str(),
                   m_language[LENGTH].c_str(), longestWord.length());
 
-  delete2dArray(m, SZ_CAPTION);
-  delete[] frequency;
   return false;
 }
 
@@ -1525,12 +1505,10 @@ bool WordsBase::prepare() {
     }
 
     size_t i, j;
-    clear_m_template_a();
-    m_template_d1 = m_entryText.length();
-    m_template_a = create2dArray<char>(m_template_d1, 256);
-    for (j = 0; j < m_entryText.length(); j++) {
+    m_template_a = create2dArray<char>(m_entryText.length(), 256, 0);
+    pr(m_template_a.size(),m_entryText.length()); 
+	for (j = 0; j < m_entryText.length(); j++) {
       auto a = m_template_a[j];
-      memset(a, 0, 256);
       s = m_entryText.substr(j);
       for (i = 0; i < s.length(); i++) {
         uchar u = s[i];
@@ -1923,8 +1901,7 @@ bool WordsBase::findLetterGroupSplit() {
   return false;
 }
 
-void WordsBase::clear_m_template_a() {
-  if (m_template_a) {
-    delete2dArray(m_template_a, m_template_d1);
-  }
+std::string WordsBase::getShortLanguageString(int i) {
+  assert(i >= 0 && i < LANGUAGES);
+  return LNG[i];
 }
