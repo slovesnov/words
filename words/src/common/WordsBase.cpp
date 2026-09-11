@@ -1208,22 +1208,22 @@ bool WordsBase::dictionaryStatistics() {
         " " + m_language[i == 0 ? SORTED_BY_ALPHABET : SORTED_BY_FREQUENCY];
   }
 
-  // TODO
-  for (it = r.begin(); it != r.end(); it++) {
-    m[0][a] += it->length();
-    m[1][a]++;
-    m[2][a]++;
+  m[1][a] = m[2][a] = r.size();
 
-    if (it->length() > longestWord.length()) {
-      longestWord = *it;
+
+  for (auto&e:r) {
+    m[0][a] += e.length();
+
+    if (e.length() > longestWord.length()) {
+      longestWord = e;
     }
 
-    for (i = 0; i < int(it->length()); ++i) {
-      m[0][alphabetIndex((*it)[i])]++;
+    for (auto c:e) {
+      m[0][alphabetIndex(c)]++;
     }
 
-    m[1][alphabetIndex((*it)[0])]++;
-    m[2][alphabetIndex((*it)[it->length() - 1])]++;
+    m[1][alphabetIndex(e.front())]++;
+    m[2][alphabetIndex(e.back())]++;
   }
 
   std::string s, s2;
@@ -1506,8 +1506,8 @@ bool WordsBase::prepare() {
 
     size_t i, j;
     m_template_a = create2dArray<char>(m_entryText.length(), 256, 0);
-	j=0;
-	for (auto& a: m_template_a) {
+    j = 0;
+    for (auto &a : m_template_a) {
       s = m_entryText.substr(j);
       for (i = 0; i < s.length(); i++) {
         uchar u = s[i];
@@ -1515,7 +1515,7 @@ bool WordsBase::prepare() {
           a[u] = i + 1;
         }
       }
-	  j++;
+      j++;
     }
   } else if (m_menuClick == MENU_CHAIN) { // all symbols from alphabet or spaces
     // m_chainHelper is only from alphabet checked

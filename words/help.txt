@@ -18,6 +18,9 @@ copy dictionary.js
 
 remove removeLastCRLF(char *p)
 add load file to VString
+(words.exe:8916): Gdk-WARNING **: 18:16:54.330: Setting selection property with 0x0000000000000000 =
+= NULL or 0x0 == 0 or 0x0000000000000000 == 0
+
 
 mingw32-make
 mingw32-make clean
