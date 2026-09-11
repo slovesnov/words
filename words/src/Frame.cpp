@@ -18,6 +18,8 @@
 #include <windows.h>
 #endif
 
+#include <format>
+
 //Note WORDS_VERSION defined in consts.h
 const char MAIL[] = "slovesnov@yandex.ru";
 const std::string HOMEPAGE = "https://slovesnov.rf.gd/?words";
@@ -141,6 +143,13 @@ Frame::Frame() :
 	//No intersection between FUNCTION_MENU & BOOL_VOID_MENU
 	for(i=0;i<SIZEI(FUNCTION_MENU);i++){
 		if(ONE_OF(FUNCTION_MENU[i],BOOL_VOID_MENU)){
+			pr(FUNCTION_MENU[i],i);
+			int j=0;
+			for(auto&a:BOOL_VOID_MENU){
+				pr(std::format("{} {}",int(a),j));
+				j++;
+
+			}
 			assert(0);
 		}
 	}

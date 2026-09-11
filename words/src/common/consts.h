@@ -17,13 +17,13 @@
 const double WORDS_VERSION = 4.44;
 
 const char OPEN_BRACKET = '(';
-const std::string OPEN_S = " " + std::string(1, OPEN_BRACKET);
+const std::string OPEN_S = std::string(" ") + OPEN_BRACKET;
 
 //BEGIN ENCODE ARRAYS
 const ENUM_MENU FUNCTION_MENU[] = { MENU_PANGRAM, MENU_TEMPLATE,
 		MENU_PALINDROME, MENU_CROSSWORD, MENU_REGULAR_EXPRESSIONS
 
-		, MENU_CHARACTER_SEQUENCE, MENU_LETTER_GROUP_SPLIT,
+		, MENU_CHARACTER_SEQUENCE,
 		MENU_KEYBOARD_WORD_SIMPLE, MENU_KEYBOARD_WORD_COMPLEX,
 		MENU_CONSONANT_VOWEL_SEQUENCE
 
@@ -32,7 +32,7 @@ const BOOL_STRING_WORDSBASE_FUNCTION FUNCTION_ID[] = { &WordsBase::checkPangram,
 		&WordsBase::checkTemplate, &WordsBase::checkPalindrome,
 		&WordsBase::checkCrossword, &WordsBase::checkRegularExpression
 
-		, &WordsBase::checkCharacterSequence, &WordsBase::checkLetterGroupSplit,
+		, &WordsBase::checkCharacterSequence,
 		&WordsBase::checkKeyboardWordSimple,
 		&WordsBase::checkKeyboardWordComplex,
 		&WordsBase::checkConsonantVowelSequence
@@ -41,7 +41,7 @@ const BOOL_STRING_WORDSBASE_FUNCTION FUNCTION_ID[] = { &WordsBase::checkPangram,
 
 const ENUM_MENU BOOL_VOID_MENU[] = { MENU_ANAGRAM, MENU_SIMPLE_WORD_SEQUENCE,
 		MENU_DOUBLE_WORD_SEQUENCE, MENU_WORD_SEQUENCE_FULL, MENU_MODIFICATION,
-		MENU_CHAIN, MENU_LETTER_GROUP_SPLIT
+		MENU_CHAIN, MENU_LETTER_GROUP_SPLIT 
 
 		, MENU_TWO_DICTIONARIES_SIMPLE, MENU_TWO_DICTIONARIES_TRANSLIT,
 		MENU_TWO_DICTIONARIES_KEYBOARD_WORD

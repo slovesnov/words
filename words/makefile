@@ -1,15 +1,15 @@
 # mingw32-make -j%NUMBER_OF_PROCESSORS%
 
 # 1. Настройки компилятора и флагов
-ASLOV:=../../../aslov/aslov/src/aslov
+ASLOV:=../../aslov/aslov/src/aslov
 CXX      := g++
-CXXFLAGS := -O2  -I$(ASLOV) -Icommon $(shell pkg-config --cflags gtk+-3.0)
+CXXFLAGS := -O2  -I$(ASLOV) -Isrc/common $(shell pkg-config --cflags gtk+-3.0)
 LIBS     := $(shell pkg-config --libs gtk+-3.0)
 TARGET   := words
 
 # 2. Автоматический поиск файлов
 # Находит все файлы .cpp в текущей директории
-SRCS     := $(wildcard *.cpp) $(wildcard */*.cpp) $(wildcard $(ASLOV)/*.cpp)
+SRCS     := $(wildcard src/*.cpp) $(wildcard src/*/*.cpp) $(wildcard $(ASLOV)/*.cpp)
 # Меняет расширение .cpp на .o для создания списка объектных файлов
 OBJS     := $(SRCS:.cpp=.o)
 
