@@ -1353,13 +1353,7 @@ void WordsBase::loadLanguage() {
   f = open(m_languageIndex, "language");
   assert(f != NULL);
 
-#ifdef __unix__
-  const char ML = 2;
-#else
-  const char ML = 1;
-#endif
-
-  for (i = 0; fgets(buff, MAX_BUFF_LEN, f) != NULL && strlen(buff) > ML;) {
+  for (i = 0; fgets(buff, MAX_BUFF_LEN, f) != NULL && strlen(buff) > 1;) {
     if (startsWith(buff, SEPARATOR) || strchr(buff, '}') != NULL) {
       continue;
     }
