@@ -63,14 +63,8 @@ WordsBase *wordsBase;
 
 WordsBase::WordsBase() {
   int i, j;
-  FILE *f;
-  char *p;
-  char buff[MAX_BUFF_LEN];
-
   wordsBase = this;
-
 #ifndef CGI
-  char *p1, *p2;
   m_filterRegex = nullptr;
 #endif
 
@@ -81,22 +75,21 @@ WordsBase::WordsBase() {
     m_template[i] = readFile(i, "template");
     assert(m_template[i].size() == SIZE(TEMPLATE_MENU));
 #endif
-  }
 
-  // load dictionaries
-  for (i = 0; i < LANGUAGES; i++) {
-    m_longestWordLength[i] = 0;
-    f = open(i, "words");
-    assert(f != NULL);
-    while (fgets(buff, MAX_BUFF_LEN, f) != NULL) {
-      removeLastCRLF(buff);
-      m_dictionary[i].insert(buff);
-      j = strlen(buff);
+    // load dictionaries
+    m_longestWordLength[i]=0;
+    std::ifstream file(path(i, "words"));
+    assert(file.is_open());
+    std::string line;
+    while (std::getline(file, line)) {
+      m_dictionary[i].insert(line);
+      j = line.size();
       if (j > m_longestWordLength[i]) {
         m_longestWordLength[i] = j;
       }
     }
-    fclose(f);
+    file.close();
+    pr(m_longestWordLength[i]);
   }
 
 #ifdef CGI
