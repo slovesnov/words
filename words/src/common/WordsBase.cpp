@@ -77,7 +77,7 @@ WordsBase::WordsBase() {
 #endif
 
     // load dictionaries
-    m_longestWordLength[i]=0;
+    m_longestWordLength[i] = 0;
     std::ifstream file(path(i, "words"));
     assert(file.is_open());
     std::string line;

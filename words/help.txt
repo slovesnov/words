@@ -18,9 +18,10 @@ DONE
 copy dictionary.js
 open mode=2
 add load file to VString
+template нормальные файлы
 
 TODO 
-"template" Нормальный, файлы переделать,коменты как в settings
+open()
 remove removeLastCRLF(char *p)
 dictionary.js without last '\n'
 иконка в make
