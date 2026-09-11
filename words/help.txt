@@ -14,21 +14,31 @@ ru 'index.dic' https://github.com/wooorm/dictionaries/tree/main/dictionaries/ru
 en 'enindex.dic' https://github.com/wooorm/dictionaries/tree/main/dictionaries/da
 en 'words_alpha.txt' https://github.com/dwyl/english-words/blob/master/words_alpha.txt
 /////////////////////////////////////
-DONE copy dictionary.js
+DONE 
+copy dictionary.js
+open mode=2
+add load file to VString
 
-TODO open mode=2
+TODO 
 "template" Нормальный, файлы переделать,коменты как в settings
 remove removeLastCRLF(char *p)
-add load file to VString
 dictionary.js without last '\n'
 иконка в make
+зависимости??
+??words2.txt неправильное количество слов
 
 cd E:/slovesno/words/words
 mingw32-make
 mingw32-make clean
 
-update html,site en,ru содержит ... слов
-??words2.txt неправильное количество слов
+update site
+aslov {
+    changed create2darray, removed delete2darray
+    added pr pri pr1 prv
+}
+words{
+    en,ru содержит ... слов
+}
 ============================================================================================================
 4.44 17oct2025
 changed links

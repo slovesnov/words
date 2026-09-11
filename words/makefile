@@ -1,11 +1,12 @@
 # mingw32-make -j%NUMBER_OF_PROCESSORS%
 
 # 1. Настройки компилятора и флагов
-ASLOV:=../../aslov/aslov/src/aslov
+ASLOV    := ../../aslov/aslov/src/aslov
 CXX      := g++
-CXXFLAGS := -O2 -I$(ASLOV) -Isrc/common $(shell pkg-config --cflags gtk+-3.0)
+CXXFLAGS := -std=c++23 -O2 -I$(ASLOV) -Isrc/common $(shell pkg-config --cflags gtk+-3.0)
 LIBS     := $(shell pkg-config --libs gtk+-3.0)
-TARGET   := a
+# have to be words
+TARGET   := words
 
 # 2. Автоматический поиск файлов
 # Находит все файлы .cpp в текущей директории
@@ -27,7 +28,7 @@ $(TARGET): $(OBJS)
 # 4. Вспомогательные команды
 # Очистка проекта от временных файлов (запуск: `make clean`)
 clean:
-	rm -f $(OBJS) $(TARGET)
+	rm -f $(OBJS) $(TARGET) $(TARGET).exe
 
 # Указываем, что эти цели не являются реальными файлами
 .PHONY: all clean

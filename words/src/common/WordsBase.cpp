@@ -67,63 +67,21 @@ WordsBase::WordsBase() {
   char *p;
   char buff[MAX_BUFF_LEN];
 
-  for (i = 0; i < LANGUAGES; i++) {
-    LNG[i] = LANGUAGE[i].substr(0, 2);
-  }
+  wordsBase = this;
 
 #ifndef CGI
   char *p1, *p2;
-#endif
-
-  wordsBase = this;
-#ifndef CGI
   m_filterRegex = nullptr;
 #endif
 
-  // load settings
   for (i = 0; i < LANGUAGES; i++) {
-    f = open(i, "settings");
-    assert(f != NULL);
-    while (fgets(buff, MAX_BUFF_LEN, f) != NULL) {
-      p = strchr(buff, ' ');
-      assert(p != NULL);
-      m_settings[i].push_back(std::string(buff, p - buff));
-    }
-    fclose(f);
-  }
+    LNG[i] = LANGUAGE[i].substr(0, 2);
+    m_settings[i] = readFile(i, "settings");
 #ifndef CGI
-  // load templates
-  for (i = 0; i < LANGUAGES; i++) {
-    f = open(i, "template");
-    assert(f != NULL);
-    p = fgets(buff, MAX_BUFF_LEN, f); // skip first line
-    assert(p);
-    p = fgets(buff, MAX_BUFF_LEN, f);
-    assert(p);
-    for (; (p1 = strchr(p, ' ')) != NULL || (p1 = strchr(p, EL)) != NULL;
-         p = p1 + 1) {
-      assert(p1);
-
-      // parse substring with quotes
-      p2 = strchr(p, '"');
-      j = p2 && p2 < p1;
-      if (j) {
-        p = p2 + 1;
-        p1 = strchr(p, '"');
-        assert(p1);
-      }
-
-      m_template[i].push_back(std::string(p, p1 - p));
-
-      if (j) {
-        p1++;
-      }
-    }
-
+    m_template[i] = readFile(i, "template");
     assert(m_template[i].size() == SIZE(TEMPLATE_MENU));
-    fclose(f);
-  }
 #endif
+  }
 
   // load dictionaries
   for (i = 0; i < LANGUAGES; i++) {
@@ -1655,12 +1613,12 @@ std::string WordsBase::path(int i, std::string s) {
 }
 
 FILE *WordsBase::open(int i, std::string s, int mode /*=0*/) {
-  return ::open(path(i, s),  mode ? "rb" : "r");
+  return ::open(path(i, s), mode ? "rb" : "r");
 }
 
 VString WordsBase::readFile(int i, std::string s) {
   VString lines;
-  std::ifstream file(path(i,s));
+  std::ifstream file(path(i, s));
   if (file.is_open()) {
     std::string line;
     while (std::getline(file, line)) {
