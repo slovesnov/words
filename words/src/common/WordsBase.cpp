@@ -128,9 +128,9 @@ WordsBase::WordsBase() {
 	int cn = 0;
 	//modify word is equivalent delete & add
 	const int MODIFY_INDEX = 1;
-	const VString deleteWords = { "аьберт", "госкомсанэпидназдор",
-			"октябрьскский", "ухойдакать" };
-	const VString addWords = { "рухнет", "прескриптивизм" };
+	const VString deleteWords = { "пїЅпїЅпїЅпїЅпїЅпїЅ", "пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ",
+			"пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ", "пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ" };
+	const VString addWords = { "пїЅпїЅпїЅпїЅпїЅпїЅ", "пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ" };
 
 	/*
 	 const int MODIFY_INDEX = 0;
@@ -703,11 +703,11 @@ bool WordsBase::findChain() {
 										s = vr;
 										*ic = c;
 										if (mi->second > 0) {
-											//USE set not vector to avoid same words. Example "тара кофе"
+											//USE set not vector to avoid same words. Example "пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ"
 											vs[0].insert(s);
 											vs[1].insert(vr);
 										} else {
-											//USE set not vector to avoid same words. Example "тара кофе"
+											//USE set not vector to avoid same words. Example "пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ"
 											vs[0].insert(vr);
 											vs[1].insert(s);
 										}
@@ -749,7 +749,7 @@ bool WordsBase::findChain() {
 	ni = new int[j];
 	nis = new int[j];
 
-	if (j == 1) {//special proceeding for j==1 on change check check [тара->кора]
+	if (j == 1) {//special proceeding for j==1 on change check check [пїЅпїЅпїЅпїЅ->пїЅпїЅпїЅпїЅ]
 		for (dci = vs[0].begin(); dci != vs[0].end(); dci++) {
 			ch[0].push_back(ChainNode(*dci));
 		}
@@ -1700,7 +1700,7 @@ bool WordsBase::setCheckFilterRegex() {
 	if (m_filterText.empty()) {
 		return true;
 	}
-	//need case insensitive filter (Частота букв), work ok in russian only for utf8
+	//need case insensitive filter (пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ), work ok in russian only for utf8
 	auto s = localeToUtf8(m_filterText);
 	m_filterRegex = g_regex_new(s.c_str(), GRegexCompileFlags(G_REGEX_CASELESS),
 			GRegexMatchFlags(0), NULL);
@@ -1721,6 +1721,7 @@ std::string WordsBase::intToStringLocaled(int v) {
 FILE* WordsBase::open(int i, std::string s, int mode/*=0*/) {
 	std::string p = getResourcePath(
 			getShortLanguageString(i) + "/" + s + ".txt");
+		pr(p)
 	return ::open(p, mode == 2 ? "wb" : (mode ? "rb" : "r"));
 }
 
