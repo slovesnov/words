@@ -1210,15 +1210,14 @@ bool WordsBase::dictionaryStatistics() {
 
   m[1][a] = m[2][a] = r.size();
 
-
-  for (auto&e:r) {
+  for (auto &e : r) {
     m[0][a] += e.length();
 
     if (e.length() > longestWord.length()) {
       longestWord = e;
     }
 
-    for (auto c:e) {
+    for (auto c : e) {
       m[0][alphabetIndex(c)]++;
     }
 
@@ -1651,9 +1650,27 @@ std::string WordsBase::intToStringLocaled(int v) {
   return toString(v, m_language[SEPARATOR_SYMBOL][0]);
 }
 
+std::string WordsBase::path(int i, std::string s) {
+  return getResourcePath(getShortLanguageString(i) + "/" + s + ".txt");
+}
+
 FILE *WordsBase::open(int i, std::string s, int mode /*=0*/) {
-  std::string p = getResourcePath(getShortLanguageString(i) + "/" + s + ".txt");
-  return ::open(p, mode == 2 ? "wb" : (mode ? "rb" : "r"));
+  return ::open(path(i, s),  mode ? "rb" : "r");
+}
+
+VString WordsBase::readFile(int i, std::string s) {
+  VString lines;
+  std::ifstream file(path(i,s));
+  if (file.is_open()) {
+    std::string line;
+    while (std::getline(file, line)) {
+      lines.emplace_back(std::move(line));
+    }
+    file.close();
+  } else {
+    assert(0);
+  }
+  return lines;
 }
 
 #ifdef CGI

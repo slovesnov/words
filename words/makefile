@@ -3,9 +3,9 @@
 # 1. Настройки компилятора и флагов
 ASLOV:=../../aslov/aslov/src/aslov
 CXX      := g++
-CXXFLAGS := -O2  -I$(ASLOV) -Isrc/common $(shell pkg-config --cflags gtk+-3.0)
+CXXFLAGS := -O2 -I$(ASLOV) -Isrc/common $(shell pkg-config --cflags gtk+-3.0)
 LIBS     := $(shell pkg-config --libs gtk+-3.0)
-TARGET   := words
+TARGET   := a
 
 # 2. Автоматический поиск файлов
 # Находит все файлы .cpp в текущей директории

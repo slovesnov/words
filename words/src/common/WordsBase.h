@@ -97,23 +97,21 @@ protected:
   }
 
   static std::string getShortLanguageString(int i);
-#ifndef CGI
-  inline const std::string &getTemplate(int i) const {
-    return m_template[getDictionaryIndex()][i];
-  }
-#endif
 
+  bool prepare();
   int getDictionaryIndex() const { return m_comboValue[COMBOBOX_DICTIONARY]; }
 
-  FILE *open(int i, std::string s, int mode = 0);
+  static std::string path(int i, std::string s);
+  static FILE *open(int i, std::string s, int mode = 0);
+  static VString readFile(int i, std::string s);
+
 #ifdef CGI
   std::string getResourcePath(std::string name);
   void cgi();
-#endif
-
-  bool prepare();
-
-#ifndef CGI
+#else
+  inline const std::string &getTemplate(int i) const {
+    return m_template[getDictionaryIndex()][i];
+  }
   virtual bool userBreakThread() = 0;
   virtual void setMenuLabel(ENUM_MENU e, std::string const &text) = 0;
   bool setCheckFilterRegex();
