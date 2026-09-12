@@ -2,7 +2,7 @@
 
 4.5.0 ??
 [ru]
-увеличены русский 2 415 400 и английcкий словари 390 051
+увеличены русский 2,415,400 и английcкий словари 390,051
 исправлен баг MENU_LETTER_GROUP_SPLIT
 добавлена многозадачность? (для некоторых операций7)
 рефакторинг упрощено чтение файлов
@@ -22,13 +22,14 @@ template нормальные файлы
 open() remove
 MAX_BUFF_LEN remove
 parseString remove
+dictionary.js without last '\n'
+иконка в make
 
 TODO
+поиск... (думаю...)
 twoDictionaries
 remove removeLastCRLF(char *p)
-dictionary.js without last '\n'
 -wall
-иконка в make
 makefile зависимости??
 ??words2.txt неправильное количество слов
 

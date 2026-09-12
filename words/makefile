@@ -14,12 +14,14 @@ SRCS     := $(wildcard src/*.cpp) $(wildcard src/*/*.cpp) $(wildcard $(ASLOV)/*.
 # Меняет расширение .cpp на .o для создания списка объектных файлов
 OBJS     := $(SRCS:.cpp=.o)
 
+EXTRA_OBJS := words/icon/app.o
+
 # 3. Главный таргет (выполняется по команде `make`)
 all: $(TARGET)
 
 # Сборка исполняемого файла из объектных
-$(TARGET): $(OBJS)
-	$(CXX) $(CXXFLAGS) -o $(TARGET) $(OBJS) $(LIBS)
+$(TARGET): $(OBJS) $(EXTRA_OBJS)
+	$(CXX) $(CXXFLAGS) -o $(TARGET) $(OBJS) $(EXTRA_OBJS) $(LIBS)
 
 # Правило для компиляции каждого файла .cpp в .o
 %.o: %.cpp
