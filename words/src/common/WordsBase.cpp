@@ -807,68 +807,38 @@ void WordsBase::fillResultFromMap(const MapStringTwoStringVectors &map,
   }
 }
 
-void removeLastCRLF(char *p) {
-  int i = strlen(p);
-  if (i == 0) {
-    return;
-  }
-  p += i - 1;
-  if (*p == '\n') {
-#ifdef __unix__
-    if (i > 1 && p[-1] == '\r') {
-      p--;
-    }
-#endif
-    *p = 0;
-  }
-}
-
 bool WordsBase::twoDictionaries(bool translit) {
-  /*
-   * Note time difference with same code java & c++ (c++ just took from java,
-   * only small  not significant optimizations so it's the same code. Time is
-   * written to store it before some accelerations) java   c++
-   * translit=false  1.03  0.71 (1.03-0.71)/1.03=31%
-   * translit=true   1.73  1.50 (1.73-1.50)/1.73=13.3%
-   */
-
   std::unique_ptr<VString[]> to;
-  // VString* to=NULL;
   StringSetCI it;
   int i, j, l;
   int fromIndex = -1;
   const char BR[] = " ";
-  char *p, *p1;
-  FILE *f = fopen(getResourcePath(LNG[0] + LNG[1] + "_" +
-                                  (translit ? "translit" : "simple") + ".txt")
-                      .c_str(),
-                  "r");
-  assert(f);
-  const int BUFF_LEN = 128;
-  char buff[BUFF_LEN];
+  const char *p, *p1;
   std::string s, alphabetFrom;
   const int di = getDictionaryIndex();
-
-  while (fgets(buff, BUFF_LEN, f) != NULL) {
-    removeLastCRLF(buff);
-
+  s = LNG[0] + LNG[1] + "_" + (translit ? "translit" : "simple") + ".txt";
+  for (auto &s : readFile(getResourcePath(s))) {
     if (to) {
-      for (i = 0, p = buff; (p1 = strstr(p, BR)) != NULL;
+      for (i = 0, p = s.c_str(); (p1 = strstr(p, BR)) != NULL;
            i++, p = p1 + strlen(BR)) {
         if (i == 0) {
           assert(p1 - p == 1); // the first string should have length=1
           j = indexOf(*p, alphabetFrom);
           assert(j >= 0);
-        } else {
+        }
+        else {
           to[j].push_back(
               *p == '\'' ? ""
                          : format("%.*s", p1 - p, p)); //'\'' = empty string
+        pr(
+              *p == '\'' ? ""
+                         : format("%.*s", p1 - p, p));
         }
       }
       to[j].push_back(*p == '\'' ? "" : p); //'\'' = empty string
     } else {
       for (fromIndex = 0; fromIndex < LANGUAGES &&
-                          !startsWith(buff, getShortLanguageString(fromIndex));
+                          !s.starts_with(getShortLanguageString(fromIndex));
            fromIndex++)
         ;
       assert(fromIndex < LANGUAGES);
@@ -877,7 +847,6 @@ bool WordsBase::twoDictionaries(bool translit) {
       to = std::unique_ptr<VString[]>(new VString[af.length()]);
     }
   }
-  fclose(f);
 
   StringSet const &df = m_dictionary[fromIndex];
   StringSet const &dt = m_dictionary[fromIndex == 1 ? 0 : 1];
@@ -886,8 +855,6 @@ bool WordsBase::twoDictionaries(bool translit) {
   i = m_longestWordLength[fromIndex];
   std::unique_ptr<StringVectorPtr[]> k(new StringVectorPtr[i]);
   std::unique_ptr<int[]> id(new int[i]);
-  // StringVectorPtr* k=new StringVectorPtr[m_longestWordLength[fromIndex]];
-  // int*id=new int[m_longestWordLength[fromIndex]];
   StringVectorPtr *pk;
   int *pid;
   int len, n;
@@ -1547,8 +1514,12 @@ std::string WordsBase::path(int i, std::string s) {
 }
 
 VString WordsBase::readFile(int i, std::string s) {
+  return readFile(path(i, s));
+}
+
+VString WordsBase::readFile(std::string path) {
   VString lines;
-  std::ifstream file(path(i, s));
+  std::ifstream file(path);
   if (file.is_open()) {
     std::string line;
     while (std::getline(file, line)) {

@@ -97,6 +97,7 @@ protected:
 
   static std::string path(int i, std::string s);
   static VString readFile(int i, std::string s);
+  static VString readFile(std::string path);
 
 #ifdef CGI
   std::string getResourcePath(std::string name);
