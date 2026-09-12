@@ -6,6 +6,7 @@
 исправлен баг MENU_LETTER_GROUP_SPLIT
 добавлена многозадачность? (для некоторых операций7)
 рефакторинг упрощено чтение файлов
+рефакторинг некоторый функций
 в связи с прекращением поддержки php на сайте sourceforge изменена проверка новой версии
 
 ru 'Russian.dic' https://github.com/titoBouzout/Dictionaries
@@ -24,11 +25,11 @@ MAX_BUFF_LEN remove
 parseString remove
 dictionary.js without last '\n'
 иконка в make
+remove removeLastCRLF(char *p)
 
 TODO
 поиск... (думаю...)
 twoDictionaries
-remove removeLastCRLF(char *p)
 -wall
 makefile зависимости??
 ??words2.txt неправильное количество слов

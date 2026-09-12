@@ -786,7 +786,6 @@ void WordsBase::fillResultFromMap(const MapStringTwoStringVectors &map,
     k = v2.size();
 
     if (j != 0 && k != 0) {
-
       // 21nov2017 fixed only one same word found
       if (j == 1 && k == 1 && v1[0] == v2[0] && v1[0].length() == len) {
         continue;
@@ -809,39 +808,31 @@ void WordsBase::fillResultFromMap(const MapStringTwoStringVectors &map,
 bool WordsBase::twoDictionaries(bool translit) {
   std::vector<VString> to;
   StringSetCI it;
-  int i, j, m, l, len, n;
-  int fromIndex = -1;
-  const char BR[] = " ";
-  const char *p, *p1;
+  int i, j, m, l, len, n, fromIndex;
   std::string s, alphabetFrom;
+  VString v;
   const int di = getDictionaryIndex();
   s = LNG[0] + LNG[1] + "_" + (translit ? "translit" : "simple") + ".txt";
   for (auto &s : readFile(getResourcePath(s))) {
-    if (!to.empty()) {
-      for (i = 0, p = s.c_str(); (p1 = strstr(p, BR)) != NULL;
-           i++, p = p1 + strlen(BR)) {
-        if (i == 0) {
-          assert(p1 - p == 1); // the first string should have length=1
-          j = indexOf(*p, alphabetFrom);
-          assert(j >= 0);
-        } else {
-          to[j].push_back(
-              *p == '\'' ? ""
-                         : format("%.*s", p1 - p, p)); //'\'' = empty string
-          // pr(
-          //       *p == '\'' ? ""
-          //                  : format("%.*s", p1 - p, p));
-        }
-      }
-      to[j].push_back(*p == '\'' ? "" : p); //'\'' = empty string
-    } else {
-      for (fromIndex = 0; fromIndex < LANGUAGES &&
-                          !s.starts_with(getShortLanguageString(fromIndex));
-           fromIndex++)
-        ;
-      assert(fromIndex < LANGUAGES);
+    if (to.empty()) {
+      fromIndex = INDEX_OF(s, LNG);
+      assert(fromIndex != -1);
       alphabetFrom = m_settings[fromIndex][SETTINGS_ALPHABET];
       to.resize(alphabetFrom.length());
+    } else {
+      v = split(s, ' ');
+      assert(v.size() > 1);
+      i = 0;
+      for (auto &a : v) {
+        if (i) {
+          to[j].push_back(a == "'" ? "" : a); //"'" = empty string
+        } else {
+          assert(a.size() == 1);
+          j = indexOf(a[0], alphabetFrom);
+          assert(j >= 0);
+        }
+        i++;
+      }
     }
   }
 

@@ -1,4 +1,4 @@
-ru - first dictionary ru (so change strings from ru dictionary)
+ru
 à a
 á b
 â v
