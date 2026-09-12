@@ -2,10 +2,14 @@
 import fs from 'fs/promises';
 import iconv from 'iconv-lite';
 
+import fss from 'fs';
+import path from 'path';
+
 let dic = [], set = [];
 const ENGLISH = 1;
 
 main()
+//checkdir('E:/slovesno/words/words/words/en')
 
 function tos(i) {
     return i.toLocaleString('en-US')
@@ -15,7 +19,7 @@ async function main() {
     let i, e, start, gstart, c;
     gstart = start = performance.now();
     //
-    let D = ENGLISH ? ['words_alpha.txt'/*, 'enindex.dic'*/] : ['Russian.dic', 'ru_RU.txt', 'index.dic'];
+    let D = ENGLISH ? ['words_alpha.txt', 'enindex.dic'] : ['Russian.dic', 'ru_RU.txt', 'index.dic'];
     D.unshift(`../site2mar/words/words/${ENGLISH ? 'en' : 'ru'}/words.txt`)
     const promises = D.map(async (e, i) => await loadDictionary(e, i));
 
@@ -63,7 +67,7 @@ async function main() {
     start = performance.now();
 
     try {
-        const text = dic[0].slice(0,3).join('\n');
+        const text = dic[0].join('\n');
         const buffer = ENGLISH ? Buffer.from(text) : iconv.encode(text, 'windows-1251');
         await fs.writeFile('words.txt', buffer);
     } catch (err) {
@@ -112,7 +116,7 @@ async function loadDictionary(f, i) {
             if (ENGLISH) {
                 if ([2].includes(i)) {
                     a = a.slice(1)
-                    a = a.filter(e => !/[\d']/.test(e)).map(e=>e.toLowerCase())
+                    a = a.filter(e => !/[\d']/.test(e)).map(e => e.toLowerCase())
                 }
             }
             else {
@@ -129,5 +133,35 @@ async function loadDictionary(f, i) {
         set[i] = new Set(a)
     } catch (err) {
         console.error('Ошибка:', err, f, i);
+    }
+}
+
+function checkdir(dirPath) {
+    try {
+        // Получаем список объектов dirent (directory entry)
+        const files = fss.readdirSync(dirPath, { withFileTypes: true });
+
+        files.forEach(file => {
+            // Проверяем, что это именно файл, а не папка или ссылка
+            if (file.isFile()) {
+
+                // Если нужно получить полный путь к файлу:
+                const fullPath = path.join(dirPath, file.name);
+                if (checkCarriageReturn(fullPath)) {
+                    console.log(file.name);
+                }
+            }
+        });
+    } catch (err) {
+        console.error('Ошибка чтения каталога:', err.message);
+    }
+}
+
+function checkCarriageReturn(filePath) {
+    try {
+        const content = fss.readFileSync(filePath, 'utf8');
+        return content.includes('\r')
+    } catch (error) {
+        console.error(`Ошибка при чтении файла: ${error.message}`);
     }
 }
