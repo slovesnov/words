@@ -8,7 +8,7 @@
 #include "WordsBase.h"
 #include "aslov.h"
 #include "consts.h"
-#include <memory> //unique_ptr
+#include <memory>
 
 typedef unsigned char uchar;
 
@@ -808,9 +808,9 @@ void WordsBase::fillResultFromMap(const MapStringTwoStringVectors &map,
 }
 
 bool WordsBase::twoDictionaries(bool translit) {
-  std::unique_ptr<VString[]> to;
+  std::vector<VString> to;
   StringSetCI it;
-  int i, j, l;
+  int i, j,m, l;
   int fromIndex = -1;
   const char BR[] = " ";
   const char *p, *p1;
@@ -818,7 +818,7 @@ bool WordsBase::twoDictionaries(bool translit) {
   const int di = getDictionaryIndex();
   s = LNG[0] + LNG[1] + "_" + (translit ? "translit" : "simple") + ".txt";
   for (auto &s : readFile(getResourcePath(s))) {
-    if (to) {
+    if (!to.empty()) {
       for (i = 0, p = s.c_str(); (p1 = strstr(p, BR)) != NULL;
            i++, p = p1 + strlen(BR)) {
         if (i == 0) {
@@ -830,9 +830,9 @@ bool WordsBase::twoDictionaries(bool translit) {
           to[j].push_back(
               *p == '\'' ? ""
                          : format("%.*s", p1 - p, p)); //'\'' = empty string
-        pr(
-              *p == '\'' ? ""
-                         : format("%.*s", p1 - p, p));
+        // pr(
+        //       *p == '\'' ? ""
+        //                  : format("%.*s", p1 - p, p));
         }
       }
       to[j].push_back(*p == '\'' ? "" : p); //'\'' = empty string
@@ -842,21 +842,19 @@ bool WordsBase::twoDictionaries(bool translit) {
            fromIndex++)
         ;
       assert(fromIndex < LANGUAGES);
-      const std::string &af = m_settings[fromIndex][SETTINGS_ALPHABET];
-      alphabetFrom = af;
-      to = std::unique_ptr<VString[]>(new VString[af.length()]);
+      alphabetFrom = m_settings[fromIndex][SETTINGS_ALPHABET];
+      to.resize(alphabetFrom.length());
     }
   }
 
   StringSet const &df = m_dictionary[fromIndex];
   StringSet const &dt = m_dictionary[fromIndex == 1 ? 0 : 1];
 
-  // 4.31 use smart pointers to avoid make common user break mechanism
   i = m_longestWordLength[fromIndex];
   std::unique_ptr<StringVectorPtr[]> k(new StringVectorPtr[i]);
-  std::unique_ptr<int[]> id(new int[i]);
+  //std::unique_ptr<int[]> id(new int[i]);
+  std::vector<int> id(i);
   StringVectorPtr *pk;
-  int *pid;
   int len, n;
 
   for (it = df.begin(); it != df.end(); it++) {
@@ -868,7 +866,7 @@ bool WordsBase::twoDictionaries(bool translit) {
       // Check whether char has no correspondence in config file.
       // For example symbol '-' in russian alphabet, has no correspondence in
       // english alphabet
-      *pk = to.get() + j;
+      *pk = &(to[j]);
       l = (*pk)->size();
       if (l == 0) {
         goto l1531;
@@ -881,9 +879,10 @@ bool WordsBase::twoDictionaries(bool translit) {
     for (j = 0; j < n; j++) {
       s.clear();
       l = j;
-      for (pk = k.get(), pid = id.get(), i = 0; i < len; i++, pk++, pid++) {
-        s += (**pk)[l % *pid];
-        l /= *pid;
+      for (pk = k.get(), i = 0; i < len; i++, pk++) {
+        m=id[i];
+        s += (**pk)[l % m];
+        l /= m;
       }
       if (dt.find(s) != dt.end()) {
         /* fixed 4.3 first word should be in current dictionary language,
