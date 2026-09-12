@@ -29,10 +29,8 @@ remove removeLastCRLF(char *p)
 
 TODO
 поиск... (думаю...)
-twoDictionaries
 -wall
 makefile зависимости??
-??words2.txt неправильное количество слов
 
 cd E:/slovesno/words/words
 mingw32-make

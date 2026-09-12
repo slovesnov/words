@@ -97,8 +97,8 @@ from
 to
 number of matches
 time of last operation
-Search words which write in english the same as in russian. For example, <i>Beep</i> (english word) - <i>веер</i> (russian word).
-Search pairs of words which after keyboard typing with invalid keyboard locale give valid word on another language. For example, <i>entity</i> (english word) - <i>утешен</i> (russian word).
+Search words which write in english the same as in russian. For example, <i>Beep</i> (english word) - <i>пїЅпїЅпїЅпїЅ</i> (russian word).
+Search pairs of words which after keyboard typing with invalid keyboard locale give valid word on another language. For example, <i>entity</i> (english word) - <i>пїЅпїЅпїЅпїЅпїЅпїЅ</i> (russian word).
 Frequency of word length.
 Dictionary check finished successfully
 sorted by alphabet
@@ -111,7 +111,7 @@ Frequency of characters on keyboard
 length
 The longest word is
 dictionary
-Search words which write in english the same as in transliterate russian. For example, <i>administrator</i> (english word) - <i>администратор</i> (russian word).
+Search words which write in english the same as in transliterate russian. For example, <i>administrator</i> (english word) - <i>пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ</i> (russian word).
 Search sequences of given number of consonant or vowel characters.
 Search words with low density of consonant or vowel characters.
 sort by alphabet
@@ -137,3 +137,4 @@ Splitting a group of letters into two or three words. First all splits of a grou
 pairs
 triplets
 any
+waiting
