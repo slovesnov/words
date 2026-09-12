@@ -1,6 +1,3 @@
-//this is config file which uses for search in both dictionaries
-//"'" symbol means replace to empty
-//for russian alphabet '-' symbol is omited, because we have no english analogue 
 ru - first dictionary ru (so change strings from ru dictionary)
 à a
 á b

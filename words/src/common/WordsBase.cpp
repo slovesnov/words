@@ -846,14 +846,10 @@ bool WordsBase::twoDictionaries(bool translit) {
   assert(f);
   const int BUFF_LEN = 128;
   char buff[BUFF_LEN];
-  char COMMENT[] = "//";
   std::string s, alphabetFrom;
   const int di = getDictionaryIndex();
 
   while (fgets(buff, BUFF_LEN, f) != NULL) {
-    if (startsWith(buff, COMMENT)) {
-      continue;
-    }
     removeLastCRLF(buff);
 
     if (to) {

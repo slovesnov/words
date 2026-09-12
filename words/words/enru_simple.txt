@@ -1,4 +1,3 @@
-//this is en->ru simple conversion rules for more information see enru_translit.txt file 
 ru
 à a
 â b
