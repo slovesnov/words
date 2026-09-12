@@ -2,6 +2,5 @@
 /Release/
 /Output/
 /log.txt
-
-words.exe
+*.exe
 *.o

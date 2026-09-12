@@ -1,36 +1,41 @@
 #!/bin/bash
 
-# Указываем ваш исполняемый файл
-TARGET_EXE="words.exe"
-
-if [ ! -f "$TARGET_EXE" ]; then
-    echo "Ошибка: Файл $TARGET_EXE не найден в текущей папке!"
+# 1. Проверяем, передан ли аргумент
+if [ -z "$1" ]; then
+    echo "Ошибка: Не указан исполняемый файл!"
+    echo "Использование: $0 <имя_файла.exe>"
     exit 1
 fi
 
-total_bytes=0
-counter=0
+TARGET_EXE="$1"
 
-printf "%-4s %-25s %s\n" "№" "Имя DLL" "Размер"
-printf "%-4s %-25s %s\n" "---" "-------------------------" "------"
+# 2. Проверяем, существует ли файл
+if [ ! -f "$TARGET_EXE" ]; then
+    echo "Ошибка: Файл '$TARGET_EXE' не найден!"
+    exit 1
+fi
 
-# Проходим по всем DLL из mingw64
+dll_list=()
+
+# Собираем уникальные полные пути
 while read -r file; do
     if [ -f "$file" ]; then
-        counter=$((counter + 1))
-        name=$(basename "$file")
-        size_human=$(ls -lh "$file" | awk '{print $5}')
-        size_bytes=$(stat -c %s "$file")
-        
-        # Выводим строку с номером
-        printf "%-4d %-25s %s\n" "$counter" "$name" "$size_human"
-        
-        # Суммируем байты
-        total_bytes=$((total_bytes + size_bytes))
+        dll_name=$(basename "$file")
+        name_without_ext=${dll_name%.*}
+        dll_list+=("$name_without_ext")
     fi
-done < <(ldd "$TARGET_EXE" | awk -F '=> ' '{print $2}' | awk '{print $1}' | grep "/mingw64/")
+done < <(ldd "$TARGET_EXE" | awk -F '=> ' '{print $2}' | awk '{print $1}' | grep "/mingw64/" | sort | uniq)
 
-# Выводим итоговую сумму
-printf "%-4s %-25s %s\n" "---" "-------------------------" "------"
-printf "%-4s %-25s " "" "ИТОГО:"
-echo "$total_bytes" | awk '{printf "%.2f MB\n", $1 / 1048576}'
+# 3. СОРТИРОВКА ИМЁН ФАЙЛОВ ПО АЛФАВИТУ
+# Пересобираем массив, сортируя его элементы встроенными средствами bash + sort
+IFS=$'\n' sorted_dll_list=($(sort <<<"${dll_list[*]}"))
+unset IFS
+
+total_files=${#sorted_dll_list[@]}
+
+# 4. Вывод результата в формате Inno Setup
+echo "#dim Files[$total_files]"
+
+for ((i=0; i<total_files; i++)); do
+    echo "#define Files[$i] \"${sorted_dll_list[$i]}\""
+done

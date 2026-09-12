@@ -1,4 +1,4 @@
-# mingw32-make -j%NUMBER_OF_PROCESSORS%
+# mingw32-make -j $(nproc)
 
 # 1. Настройки компилятора и флагов
 ASLOV    := ../../aslov/aslov/src/aslov
@@ -15,7 +15,7 @@ SRCS     := $(wildcard src/*.cpp) $(wildcard src/*/*.cpp) $(wildcard $(ASLOV)/*.
 # Меняет расширение .cpp на .o для создания списка объектных файлов
 OBJS     := $(SRCS:.cpp=.o)
 
-EXTRA_OBJS := words/icon/app.o
+EXTRA_OBJS := $(TARGET)/icon/app.o
 
 # 3. Главный таргет (выполняется по команде `make`)
 all: $(TARGET)
@@ -31,7 +31,7 @@ $(TARGET): $(OBJS) $(EXTRA_OBJS)
 # 4. Вспомогательные команды
 # Очистка проекта от временных файлов (запуск: `make clean`)
 clean:
-	rm -f $(OBJS) $(TARGET) $(TARGET).exe
+	rm -f $(OBJS) $(TARGET).exe
 
 # Указываем, что эти цели не являются реальными файлами
 .PHONY: all clean
