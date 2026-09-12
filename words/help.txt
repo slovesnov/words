@@ -27,9 +27,9 @@ dictionary.js without last '\n'
 иконка в make
 remove removeLastCRLF(char *p)
 поиск... (думаю...)
+check new version
 
 TODO
-check new version
 -wall
 makefile зависимости??
 
@@ -41,6 +41,7 @@ update site
 aslov {
     changed create2darray, removed delete2darray
     added pr pri pr1 prv
+    changed checknewversion remove 1st parameter;double m_version;
 }
 words{
     en,ru содержит ... слов

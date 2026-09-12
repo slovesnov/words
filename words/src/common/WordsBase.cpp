@@ -808,7 +808,7 @@ void WordsBase::fillResultFromMap(const MapStringTwoStringVectors &map,
 bool WordsBase::twoDictionaries(bool translit) {
   std::vector<VString> to;
   StringSetCI it;
-  int i, j, m, l, len, n, fromIndex;
+  int i, j, m, l, len, n, fromIndex=-1;
   std::string s, alphabetFrom;
   VString v;
   const int di = getDictionaryIndex();

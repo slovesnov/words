@@ -33,11 +33,6 @@ const char CERROR[] = "cerror";
 const char DOWNLOAD_URL[] =
     "http://sourceforge.net/projects/javawords/files/latest/download";
 
-const std::string VERSION_FILE_URL =
-    "https://slovesnov.github.io/wordsversion.txt"; // https://slovesnov.rf.gd/words/version.txt
-                                                    // returns ugly data
-// const std::string VERSION_FILE_URL[] =
-// "file:///C:/slovesno/site/words/version.txt";
 
 /* too many items in combobox, so set maximum bound.
  * values counted from dictionary
@@ -126,7 +121,6 @@ static gboolean new_version_message(gpointer) {
 Frame::Frame() : WordsBase() {
   GtkWidget *w, *w1, *w2, *scroll;
   GtkWidget *item;
-  FILE *f;
   bool bSubMenu;
   int i, j;
   std::vector<GtkMenuItem *> subMenu;
@@ -406,7 +400,7 @@ Frame::Frame() : WordsBase() {
                               height - (rect.bottom - rect.top));
 #endif
 
-  m_newVersion.start(VERSION_FILE_URL, WORDS_VERSION, new_version_message);
+  m_newVersion.start(WORDS_VERSION, new_version_message);
 }
 
 void Frame::clickMenu(ENUM_MENU menu) {

@@ -3,8 +3,9 @@
 # 1. Настройки компилятора и флагов
 ASLOV    := ../../aslov/aslov/src/aslov
 CXX      := g++
-CXXFLAGS := -std=c++23 -O2 -I$(ASLOV) -Isrc/common $(shell pkg-config --cflags gtk+-3.0)
-LIBS     := $(shell pkg-config --libs gtk+-3.0)
+#-O2 -Wall -Wextra -Wpedantic
+CXXFLAGS := -O3 -DNDEBUG -Wall -std=c++23 -I$(ASLOV) -Isrc/common $(shell pkg-config --cflags gtk+-3.0)
+LIBS     := $(shell pkg-config --libs gtk+-3.0) -lcurl
 # have to be words
 TARGET   := words
 
