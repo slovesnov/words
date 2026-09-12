@@ -8,7 +8,6 @@
 #include "WordsBase.h"
 #include "aslov.h"
 #include "consts.h"
-#include <memory>
 
 typedef unsigned char uchar;
 
@@ -810,7 +809,7 @@ void WordsBase::fillResultFromMap(const MapStringTwoStringVectors &map,
 bool WordsBase::twoDictionaries(bool translit) {
   std::vector<VString> to;
   StringSetCI it;
-  int i, j,m, l;
+  int i, j, m, l, len, n;
   int fromIndex = -1;
   const char BR[] = " ";
   const char *p, *p1;
@@ -825,14 +824,13 @@ bool WordsBase::twoDictionaries(bool translit) {
           assert(p1 - p == 1); // the first string should have length=1
           j = indexOf(*p, alphabetFrom);
           assert(j >= 0);
-        }
-        else {
+        } else {
           to[j].push_back(
               *p == '\'' ? ""
                          : format("%.*s", p1 - p, p)); //'\'' = empty string
-        // pr(
-        //       *p == '\'' ? ""
-        //                  : format("%.*s", p1 - p, p));
+          // pr(
+          //       *p == '\'' ? ""
+          //                  : format("%.*s", p1 - p, p));
         }
       }
       to[j].push_back(*p == '\'' ? "" : p); //'\'' = empty string
@@ -851,23 +849,19 @@ bool WordsBase::twoDictionaries(bool translit) {
   StringSet const &dt = m_dictionary[fromIndex == 1 ? 0 : 1];
 
   i = m_longestWordLength[fromIndex];
-  std::unique_ptr<StringVectorPtr[]> k(new StringVectorPtr[i]);
-  //std::unique_ptr<int[]> id(new int[i]);
+  std::vector<VString> k(i);
   std::vector<int> id(i);
-  StringVectorPtr *pk;
-  int len, n;
 
   for (it = df.begin(); it != df.end(); it++) {
-
     len = it->length();
-    for (pk = k.get(), n = 1, i = 0; i < len; i++, pk++) {
+    for (n = 1, i = 0; i < len; i++) {
       j = indexOf((*it)[i], alphabetFrom);
       assert(j >= 0);
       // Check whether char has no correspondence in config file.
       // For example symbol '-' in russian alphabet, has no correspondence in
       // english alphabet
-      *pk = &(to[j]);
-      l = (*pk)->size();
+      k[i] = to[j];
+      l = k[i].size();
       if (l == 0) {
         goto l1531;
         // faster then use break and check i<int(it->length()) after cycle
@@ -879,9 +873,9 @@ bool WordsBase::twoDictionaries(bool translit) {
     for (j = 0; j < n; j++) {
       s.clear();
       l = j;
-      for (pk = k.get(), i = 0; i < len; i++, pk++) {
-        m=id[i];
-        s += (**pk)[l % m];
+      for (i = 0; i < len; i++) {
+        m = id[i];
+        s += k[i][l % m];
         l /= m;
       }
       if (dt.find(s) != dt.end()) {
