@@ -63,7 +63,7 @@ async function main() {
     start = performance.now();
 
     try {
-        const text = dic[0].join('\n') + '\n';
+        const text = dic[0].slice(0,3).join('\n');
         const buffer = ENGLISH ? Buffer.from(text) : iconv.encode(text, 'windows-1251');
         await fs.writeFile('words.txt', buffer);
     } catch (err) {

@@ -83,12 +83,6 @@ protected:
   std::string m_programVersion;
 #endif
 
-  /* some helper strings in language.txt file are very long. String
-   * EVERY_MODIFICATION_CHANGE_WORD length > 1024 (in russain), files
-   * language.txt is loaded in two function so use one constant
-   */
-  static const int MAX_BUFF_LEN = 2048;
-
   std::string getStatusString();
   std::string getTimeString();
 
@@ -102,7 +96,6 @@ protected:
   int getDictionaryIndex() const { return m_comboValue[COMBOBOX_DICTIONARY]; }
 
   static std::string path(int i, std::string s);
-  static FILE *open(int i, std::string s, int mode = 0);
   static VString readFile(int i, std::string s);
 
 #ifdef CGI
@@ -194,10 +187,6 @@ public:
   bool isAlphabetChar(const char p) {
     return getAlphabet().find(p) != std::string::npos;
   }
-
-  /* remove '\n' or '\r\n' under unix at the end of string
-   */
-  static void removeLastCRLF(char *p);
 
   std::string intToStringLocaled(int v);
   void sortFilterResults();

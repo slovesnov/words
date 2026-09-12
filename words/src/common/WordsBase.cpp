@@ -807,6 +807,22 @@ void WordsBase::fillResultFromMap(const MapStringTwoStringVectors &map,
   }
 }
 
+void removeLastCRLF(char *p) {
+  int i = strlen(p);
+  if (i == 0) {
+    return;
+  }
+  p += i - 1;
+  if (*p == '\n') {
+#ifdef __unix__
+    if (i > 1 && p[-1] == '\r') {
+      p--;
+    }
+#endif
+    *p = 0;
+  }
+}
+
 bool WordsBase::twoDictionaries(bool translit) {
   /*
    * Note time difference with same code java & c++ (c++ just took from java,
@@ -862,18 +878,6 @@ bool WordsBase::twoDictionaries(bool translit) {
       assert(fromIndex < LANGUAGES);
       const std::string &af = m_settings[fromIndex][SETTINGS_ALPHABET];
       alphabetFrom = af;
-      // to[.] is vector of transformation fromAlphabet->symbols n toAlphabet
-      // //fixed 4.3
-
-      // to=new VString[af.length()];
-      // to=std::make_unique<VString[]>(af.length());
-
-      /* NOTE next two strings of code are the same
-       * to=std::make_unique<VString[]>(af.length()); since gcc 4.9
-       * to=std::unique_ptr<VString[]>(new VString[af.length()]);
-       * but the first one is not supported by old gcc on sourceforge
-       */
-      // to=std::make_unique<VString[]>(af.length()); since gcc 4.9
       to = std::unique_ptr<VString[]>(new VString[af.length()]);
     }
   }
@@ -1026,33 +1030,21 @@ bool WordsBase::wordFrequency() {
 bool WordsBase::checkDictionary() {
   // NOTE!!! SHOULD CHECK DICTIONARY FILE NOT!!! DICTIONARY SET. Check for
   // duplicates and valid line numbers
-  int i, line;
   ENUM_STRING error;
   std::string s;
-  FILE *f;
-  const int BUFF_LEN = 1024;
-  char buff[BUFF_LEN];
+  int line = 0;
 
-  // open in binary mode to check whether line ended by \r\n, should be always
-  // \n only
-  f = open(getDictionaryIndex(), "words", 1);
-  assert(f != NULL);
-  for (line = 1; fgets(buff, BUFF_LEN, f) != NULL; line++) {
+  for (auto &a : readFile(getDictionaryIndex(), "words")) {
+    line++;
     error = STRING_SIZE;
-
-    i = strlen(buff);
-    if (i < 2 || buff[i - 1] != '\n' ||
-        buff[i - 2] == '\r') { // buff should ended only with "\n", not "\r\n"
+    if (a.empty()) {
       error = INVALID_WORD_FOUND;
     } else {
-      // after preliminary check
-      removeLastCRLF(buff);
-
-      if (spanIncluding(buff, getAlphabet())) {
-        if (std::string(buff) <= s) { // as well check duplicate words
+      if (spanIncluding(a.c_str(), getAlphabet())) {
+        if (a <= s) { // as well check duplicate words
           error = WORDS_NOT_IN_ALPHABET_ORDER;
         } else {
-          s = buff;
+          s = a;
         }
       } else {
         error = FOUND_SYMBOL_OUT_OF_ALPHABET;
@@ -1067,8 +1059,6 @@ bool WordsBase::checkDictionary() {
                m_language[LINE] + " " + intToStringLocaled(line);
     }
   }
-  fclose(f);
-
   if (m_out.empty()) {
     m_out = m_language[DICTIONARY_CHECK_FINISHED_SUCCESSFULLY];
   }
@@ -1489,22 +1479,6 @@ std::string WordsBase::getTimeString() {
   return format("%.2lf", double(m_end - m_begin) / CLOCKS_PER_SEC);
 }
 
-void WordsBase::removeLastCRLF(char *p) {
-  int i = strlen(p);
-  if (i == 0) {
-    return;
-  }
-  p += i - 1;
-  if (*p == '\n') {
-#ifdef __unix__
-    if (i > 1 && p[-1] == '\r') {
-      p--;
-    }
-#endif
-    *p = 0;
-  }
-}
-
 bool WordsBase::run() {
   StringSet const &r = getDictionary();
   int i;
@@ -1574,10 +1548,6 @@ std::string WordsBase::intToStringLocaled(int v) {
 
 std::string WordsBase::path(int i, std::string s) {
   return getResourcePath(getShortLanguageString(i) + "/" + s + ".txt");
-}
-
-FILE *WordsBase::open(int i, std::string s, int mode /*=0*/) {
-  return ::open(path(i, s), mode ? "rb" : "r");
 }
 
 VString WordsBase::readFile(int i, std::string s) {

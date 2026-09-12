@@ -2,7 +2,7 @@
 
 4.5.0 ??
 [ru]
-увеличены русский и английcкий словари
+увеличены русский 2 415 400 и английcкий словари 390 051
 исправлен баг MENU_LETTER_GROUP_SPLIT
 добавлена многозадачность? (для некоторых операций7)
 рефакторинг упрощено чтение файлов
@@ -19,13 +19,13 @@ copy dictionary.js
 open mode=2
 add load file to VString
 template нормальные файлы
+open() remove
+MAX_BUFF_LEN remove
+parseString remove
 
-TODO 
-open()
+TODO
+twoDictionaries
 remove removeLastCRLF(char *p)
-open() may be remove?
-MAX_BUFF_LEN remove?
-parseString remove?
 dictionary.js without last '\n'
 -wall
 иконка в make
