@@ -15,40 +15,19 @@ ru 'ru_RU.txt' https://github.com/Goudron/ru-spelling-dictionary/tree/main/cspel
 ru 'index.dic' https://github.com/wooorm/dictionaries/tree/main/dictionaries/ru
 en 'enindex.dic' https://github.com/wooorm/dictionaries/tree/main/dictionaries/da
 en 'words_alpha.txt' https://github.com/dwyl/english-words/blob/master/words_alpha.txt
-/////////////////////////////////////
-DONE 
-copy dictionary.js
-open mode=2
-add load file to VString
-template нормальные файлы
-open() remove
-MAX_BUFF_LEN remove
-parseString remove
-dictionary.js without last '\n'
-иконка в make
-remove removeLastCRLF(char *p)
-поиск... (думаю...)
-check new version
--wall
 
 TODO
 ??добавлена многозадачность для некоторых операций
 makefile зависимости??
 после выпуска новой версии обновить файл "https://slovesnov.github.io/wordsversion.txt"
+после выпуска новой версии words site{
+    en,ru содержит ... слов
+}
 
 cd E:/slovesno/words/words
 mingw32-make
 mingw32-make clean
 
-update site
-DONE aslov {
-    changed create2darray, removed delete2darray
-    changed checknewversion remove 1st parameter;double m_version;
-    added pr pri pr1 prv
-}
-words{
-    en,ru содержит ... слов
-}
 ============================================================================================================
 4.44 17oct2025
 changed links
