@@ -203,7 +203,6 @@ public:
   void sortFilterResults();
 
   void loadLanguage();
-  static const std::string parseString(const char *buff);
 };
 
 #endif /* COMMON_WORDSBASE_H_ */

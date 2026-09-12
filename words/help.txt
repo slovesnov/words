@@ -5,7 +5,7 @@
 увеличены русский и английcкий словари
 исправлен баг MENU_LETTER_GROUP_SPLIT
 добавлена многозадачность? (для некоторых операций7)
-упрощено чтение файлов
+рефакторинг упрощено чтение файлов
 в связи с прекращением поддержки php на сайте sourceforge изменена проверка новой версии
 
 ru 'Russian.dic' https://github.com/titoBouzout/Dictionaries
@@ -25,9 +25,11 @@ open()
 remove removeLastCRLF(char *p)
 open() may be remove?
 MAX_BUFF_LEN remove?
+parseString remove?
 dictionary.js without last '\n'
+-wall
 иконка в make
-зависимости??
+makefile зависимости??
 ??words2.txt неправильное количество слов
 
 cd E:/slovesno/words/words

@@ -21,7 +21,6 @@ typedef unsigned char uchar;
   }
 #endif
 
-const char EL = '\n';
 std::string LNG[LANGUAGES];
 
 #ifdef CGI
@@ -89,7 +88,6 @@ WordsBase::WordsBase() {
       }
     }
     file.close();
-    pr(m_longestWordLength[i]);
   }
 
 #ifdef CGI
@@ -1294,22 +1292,19 @@ void WordsBase::sortFilterResults() {
 }
 
 void WordsBase::loadLanguage() {
-  FILE *f;
-  int i;
-  char buff[MAX_BUFF_LEN];
   std::string s;
-  m_language.clear(); // Note first menu item -> m_language[SEARCH]
-
-  f = open(m_languageIndex, "language");
-  assert(f != NULL);
-
-  for (i = 0; fgets(buff, MAX_BUFF_LEN, f) != NULL && strlen(buff) > 1;) {
-    if (startsWith(buff, SEPARATOR) || strchr(buff, '}') != NULL) {
+  VString::const_iterator it;
+  int i = 0;
+  auto v = readFile(m_languageIndex, "language");
+  m_language.clear();
+  for (it = v.begin(); it != v.end() && !it->empty(); it++) {
+    if (it->starts_with(SEPARATOR) || it->find('}') != std::string::npos) {
       continue;
     }
-
-    s = parseString(buff); // Note should use immediately std::string in
-                           // gcc5.4.0
+    s = localeToUtf8(*it);
+    if (s.back() == '{') {
+      s.pop_back();
+    }
 #ifndef CGI
     setMenuLabel(ENUM_MENU(i), s);
 #endif
@@ -1318,15 +1313,16 @@ void WordsBase::loadLanguage() {
     }
     i++;
   }
-
-  while (fgets(buff, MAX_BUFF_LEN, f) != NULL) {
-    m_language.push_back(parseString(buff));
+  for (it++; it != v.end(); it++) {
+    m_language.push_back(localeToUtf8(*it));
   }
-  fclose(f);
   assert(m_language.size() == STRING_SIZE);
 
-#ifndef CGI
-  // forma("4.4") -> "4.4", "4.41" -> "4.31" no zeros after
+#ifdef CGI
+  for (auto &s : readFile(m_languageIndex, "cgi_language"))
+    m_cgiLanguage.push_back(localeToUtf8(s));
+  assert(m_cgiLanguage.size() == CGI_STRING_SIZE);
+#else
   m_programVersion = m_language[PROGRAM] + " " + m_language[VERSION] + " " +
                      forma(WORDS_VERSION);
 #endif
@@ -1338,31 +1334,6 @@ void WordsBase::loadLanguage() {
    * because otherwise it'll we empty string and looks like a bug
    */
   m_language[SEPARATOR_SYMBOL] = m_language[SEPARATOR_SYMBOL].substr(0, 1);
-
-#ifdef CGI
-  f = open(m_languageIndex, "cgi_language");
-  assert(f != NULL);
-  for (; fgets(buff, MAX_BUFF_LEN, f) != NULL;) {
-    removeLastCRLF(buff);
-    s = buff;
-    m_cgiLanguage.push_back(localeToUtf8(s));
-  }
-  assert(m_cgiLanguage.size() == CGI_STRING_SIZE);
-  fclose(f);
-#endif
-}
-
-const std::string WordsBase::parseString(const char *buff) {
-  std::string s = localeToUtf8(buff);
-  const char *b = s.c_str();
-  const char *p = strchr(b, '{');
-  if (p == NULL) {
-    p = strchr(b, EL);
-    if (p == NULL) { // last string in file
-      return b;
-    }
-  }
-  return std::string(b, p - b);
 }
 
 bool WordsBase::prepare() {

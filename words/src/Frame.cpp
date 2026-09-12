@@ -353,76 +353,6 @@ Frame::Frame() : WordsBase() {
 
     i++;
   }
-  /*
-    // load menu
-    f = open(m_languageIndex, "language");
-    assert(f != NULL);
-    i = 0;
-    while (fgets(buff, MAX_BUFF_LEN, f) != NULL) {
-      if (subMenu.empty() && strlen(buff) == 1) {
-        break;
-      }
-
-      if (startsWith(buff, SEPARATOR)) {
-        gtk_menu_shell_append(
-            GTK_MENU_SHELL(gtk_menu_item_get_submenu(subMenu.back())),
-            gtk_separator_menu_item_new());
-        continue;
-      }
-
-      if (strchr(buff, '}') != NULL) {
-        subMenu.pop_back();
-        continue;
-      }
-
-      bSubMenu = strchr(buff, '{') != NULL;
-
-      if ((j = INDEX_OF(ENUM_MENU(i), ICON_MENU)) != -1) {
-        item = gtk_menu_item_new();
-
-        w = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
-        w1 = gtk_accel_label_new("");
-
-        gtk_container_add(GTK_CONTAINER(w), image(ICON_MENU_FILE_NAME[j]));
-
-        gtk_label_set_use_underline(GTK_LABEL(w1), TRUE);
-        gtk_label_set_xalign(GTK_LABEL(w1), 0.0);
-
-        gtk_accel_label_set_accel_widget(GTK_ACCEL_LABEL(w1), item);
-
-        gtk_box_pack_end(GTK_BOX(w), w1, TRUE, TRUE, 0);
-
-        gtk_container_add(GTK_CONTAINER(item), w);
-
-      } else {
-        item = gtk_menu_item_new_with_label("");
-      }
-
-      gtk_menu_shell_append(
-          GTK_MENU_SHELL(subMenu.size() == 0 && bSubMenu
-                             ? m_menu
-                             : gtk_menu_item_get_submenu(subMenu.back())),
-          item);
-
-      if ((j = INDEX_OF(ENUM_MENU(i), MENU_ACCEL)) != -1) {
-        gtk_widget_add_accelerator(item, "activate", m_accelGroup[j],
-                                   ACCEL_KEY[j], GDK_CONTROL_MASK,
-                                   GTK_ACCEL_VISIBLE);
-      }
-
-      m_menuMap[ENUM_MENU(i)] = item;
-      if (bSubMenu) {
-        gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), gtk_menu_new());
-        subMenu.push_back(GTK_MENU_ITEM(item));
-      } else {
-        g_signal_connect(item, "activate", G_CALLBACK(menu_activate), GP(i));
-      }
-
-      i++;
-    }
-
-    fclose(f);
-  */
 
   loadAndUpdateCurrentLanguage();
   // update menu enables/disables, after language[] is filled
@@ -616,7 +546,7 @@ void Frame::aboutDialog() {
     if (id == PROGRAM) {
       s = m_programVersion;
     } else if (id == STRING_SIZE) {
-      s = getBuildVersionString(true);
+      s = getBuildVersionString(false);
     } else {
       s = m_language[id];
 
