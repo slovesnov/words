@@ -26,9 +26,10 @@ parseString remove
 dictionary.js without last '\n'
 иконка в make
 remove removeLastCRLF(char *p)
+поиск... (думаю...)
 
 TODO
-поиск... (думаю...)
+check new version
 -wall
 makefile зависимости??
 

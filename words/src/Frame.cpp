@@ -1067,7 +1067,8 @@ void Frame::startJob(bool clearResult) {
 
   // For long jobs show status & view. Long jobs when whole dictionary is added
   // to m_result
-  setStatus(m_language[SEARCH] + "...");
+  setStatus(m_language[ONE_OF(m_menuClick, MENU_WAITING) ? WAITING : SEARCH] +
+            "...");
   updateTextView();
 }
 
