@@ -1261,7 +1261,7 @@ void WordsBase::loadLanguage() {
   assert(m_cgiLanguage.size() == CGI_STRING_SIZE);
 #else
   m_programVersion = m_language[PROGRAM] + " " + m_language[VERSION] + " " +
-                     forma(WORDS_VERSION);
+                     WORDS_VERSION;
 #endif
   m_language[MODIFICATION_HELP] =
       format(m_language[MODIFICATION_HELP].c_str(),
