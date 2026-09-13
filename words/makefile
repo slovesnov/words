@@ -9,6 +9,10 @@ LIBS     := $(shell pkg-config --libs gtk+-3.0) -lcurl
 # have to be words
 TARGET   := words
 
+ifeq ($(OS),Windows_NT)
+    LDFLAGS += -mwindows
+endif
+
 # 2. Автоматический поиск файлов
 # Находит все файлы .cpp в текущей директории
 SRCS     := $(wildcard src/*.cpp) $(wildcard src/*/*.cpp) $(wildcard $(ASLOV)/*.cpp)
@@ -22,7 +26,7 @@ all: $(TARGET)
 
 # Сборка исполняемого файла из объектных
 $(TARGET): $(OBJS) $(EXTRA_OBJS)
-	$(CXX) $(CXXFLAGS) -o $(TARGET) $(OBJS) $(EXTRA_OBJS) $(LIBS)
+	$(CXX) $(CXXFLAGS) -o $(TARGET) $(OBJS) $(EXTRA_OBJS) $(LDFLAGS) $(LIBS)
 
 # Правило для компиляции каждого файла .cpp в .o
 %.o: %.cpp
