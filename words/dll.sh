@@ -1,13 +1,19 @@
 #!/bin/bash
 
-# 1. Проверяем, передан ли аргумент
+SCRIPT_NAME=$(basename "$0")
+
+# 1. Проверяем, передан ли аргумент командной строки
 if [ -z "$1" ]; then
     echo "Ошибка: Не указан исполняемый файл!"
-    echo "Использование: $0 <имя_файла.exe>"
+    echo "Использование: $SCRIPT_NAME <имя_файла> или <имя_файла.exe>"
     exit 1
 fi
 
 TARGET_EXE="$1"
+
+if [[ "$TARGET_EXE" != *.exe ]]; then
+    TARGET_EXE="${TARGET_EXE}.exe"
+fi
 
 # 2. Проверяем, существует ли файл
 if [ ! -f "$TARGET_EXE" ]; then
