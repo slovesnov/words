@@ -1,5 +1,5 @@
 4.5.0 ??
-russian dictionary now contains 2,415,400 words (previously 445,342)
+russian dictionary now contains 2,415,399 words (previously 445,342)
 english dictionary now contains 393,167 words (previously 134,511)
 ??added multitasking for certain operations due to the expanded dictionary size
 reduced installer size; only necessary libraries are now used
@@ -9,7 +9,7 @@ fixed MENU_LETTER_GROUP_SPLIT bug (in debug mode)
 changed line endings in all text files from CRLF to LF
 
 [ru]
-русский словарь содержит 2,415,400 слов, раньше было 445,342
+русский словарь содержит 2,415,399 слов, раньше было 445,342
 английcкий словарь содержит 393,167 слов, раньше было 134,511
 ??добавлена многозадачность для некоторых операций в связи с увеличением словаря
 уменьшен размер установочного файла, теперь используются только нужные библиотеки
@@ -23,6 +23,7 @@ ru 'ru_RU.txt' https://github.com/Goudron/ru-spelling-dictionary/tree/main/cspel
 ru 'index.dic' https://github.com/wooorm/dictionaries/tree/main/dictionaries/ru
 en 'enindex.dic' https://github.com/wooorm/dictionaries/tree/main/dictionaries/da
 en 'words_alpha.txt' https://github.com/dwyl/english-words/blob/master/words_alpha.txt
+удалено учебно-научно-произ-водственный
 
 TODO
 ??добавлена многозадачность для некоторых операций
