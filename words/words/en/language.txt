@@ -59,7 +59,7 @@ copyright (C/C++/gtk) 2000 - doomsday
 homepage
 online version
 email
-Invalid word found
+empty word found
 symbol out of alphabet found
 error
 line
@@ -138,3 +138,4 @@ pairs
 triplets
 any
 waiting
+cr symbol found

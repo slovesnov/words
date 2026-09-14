@@ -808,7 +808,7 @@ void WordsBase::fillResultFromMap(const MapStringTwoStringVectors &map,
 bool WordsBase::twoDictionaries(bool translit) {
   std::vector<VString> to;
   StringSetCI it;
-  int i, j, m, l, len, n, fromIndex=-1;
+  int i, j, m, l, len, n, fromIndex = -1;
   std::string s, alphabetFrom;
   VString v;
   const int di = getDictionaryIndex();
@@ -977,37 +977,53 @@ bool WordsBase::wordFrequency() {
 bool WordsBase::checkDictionary() {
   // NOTE!!! SHOULD CHECK DICTIONARY FILE NOT!!! DICTIONARY SET. Check for
   // duplicates and valid line numbers
-  ENUM_STRING error;
-  std::string s;
-  int line = 0;
+  std::string s, p = path(getDictionaryIndex(), "words");
+  int line = 1, byte, errors = 0;
+  const int MAX_ERRORS = 100;
 
-  for (auto &a : readFile(getDictionaryIndex(), "words")) {
-    line++;
-    error = STRING_SIZE;
-    if (a.empty()) {
-      error = INVALID_WORD_FOUND;
-    } else {
-      if (spanIncluding(a.c_str(), getAlphabet())) {
-        if (a <= s) { // as well check duplicate words
-          error = WORDS_NOT_IN_ALPHABET_ORDER;
-        } else {
-          s = a;
+  auto addError = [&line, &errors, this](ENUM_STRING error) {
+    m_out += (m_out.empty() ? "" : "\n") + m_language[STRING_ERROR] + ", " +
+             m_language[error] + " " + m_language[LINE] + " " +
+             intToStringLocaled(line);
+    if (++errors == MAX_ERRORS) {
+      throw std::runtime_error("");
+    }
+  };
+
+  try {
+    std::ifstream file(p, std::ios::binary);
+    if (file) {
+      while ((byte = file.get()) != EOF) {
+        if (byte == 13) {
+          addError(CR_SYMBOL_FOUND);
+        } else if (byte == 10) {
+          line++;
         }
-      } else {
-        error = FOUND_SYMBOL_OUT_OF_ALPHABET;
       }
+      file.close();
     }
 
-    if (error != STRING_SIZE) {
-      if (!m_out.empty()) {
-        m_out += "\n";
+    line = 0;
+    for (auto &a : readFile(p)) {
+      line++;
+      if (a.empty()) {
+        addError(EMPTY_WORD_FOUND);
+      } else {
+        if (spanIncluding(a.c_str(), getAlphabet())) {
+          if (a <= s) { // as well check duplicate words
+            addError(WORDS_NOT_IN_ALPHABET_ORDER);
+          } else {
+            s = a;
+          }
+        } else {
+          addError(FOUND_SYMBOL_OUT_OF_ALPHABET);
+        }
       }
-      m_out += m_language[STRING_ERROR] + ". " + m_language[error] + " " +
-               m_language[LINE] + " " + intToStringLocaled(line);
     }
-  }
-  if (m_out.empty()) {
-    m_out = m_language[DICTIONARY_CHECK_FINISHED_SUCCESSFULLY];
+    if (m_out.empty()) {
+      m_out = m_language[DICTIONARY_CHECK_FINISHED_SUCCESSFULLY];
+    }
+  } catch (const std::runtime_error &) {
   }
   return false;
 }
@@ -1260,8 +1276,8 @@ void WordsBase::loadLanguage() {
     m_cgiLanguage.push_back(localeToUtf8(s));
   assert(m_cgiLanguage.size() == CGI_STRING_SIZE);
 #else
-  m_programVersion = m_language[PROGRAM] + " " + m_language[VERSION] + " " +
-                     WORDS_VERSION;
+  m_programVersion =
+      m_language[PROGRAM] + " " + m_language[VERSION] + " " + WORDS_VERSION;
 #endif
   m_language[MODIFICATION_HELP] =
       format(m_language[MODIFICATION_HELP].c_str(),
