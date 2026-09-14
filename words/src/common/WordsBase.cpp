@@ -978,7 +978,8 @@ bool WordsBase::checkDictionary() {
   // NOTE!!! SHOULD CHECK DICTIONARY FILE NOT!!! DICTIONARY SET. Check for
   // duplicates and valid line numbers
   std::string s, p = path(getDictionaryIndex(), "words");
-  int line = 1, byte, errors = 0;
+  int line = 0, errors = 0;
+  char buffer[256];
   const int MAX_ERRORS = 100;
 
   auto addError = [&line, &errors, this](ENUM_STRING error) {
@@ -990,40 +991,46 @@ bool WordsBase::checkDictionary() {
     }
   };
 
+  FILE *file = std::fopen(p.c_str(), "rb");
+  if (!file) {
+    m_out = m_language[STRING_ERROR];
+    return false;
+  }
   try {
-    std::ifstream file(p, std::ios::binary);
-    if (file) {
-      while ((byte = file.get()) != EOF) {
-        if (byte == 13) {
-          addError(CR_SYMBOL_FOUND);
-        } else if (byte == 10) {
-          line++;
-        }
-      }
-      file.close();
-    }
-
-    line = 0;
-    for (auto &a : readFile(p)) {
+    while (std::fgets(buffer, sizeof(buffer), file) != nullptr) {
       line++;
+      std::string a(buffer);
       if (a.empty()) {
         addError(EMPTY_WORD_FOUND);
       } else {
-        if (spanIncluding(a.c_str(), getAlphabet())) {
-          if (a <= s) { // as well check duplicate words
-            addError(WORDS_NOT_IN_ALPHABET_ORDER);
-          } else {
-            s = a;
-          }
+        if (a.back() == '\n') { // last line can be ended with \n or not
+          a.pop_back();
+        }
+        if (a.empty()) {
+          addError(EMPTY_WORD_FOUND);
         } else {
-          addError(FOUND_SYMBOL_OUT_OF_ALPHABET);
+          if (a.back() == '\r') {
+            addError(CR_SYMBOL_FOUND);
+          } else {
+            if (spanIncluding(a.c_str(), getAlphabet())) {
+              if (a <= s) { // as well check duplicate words
+                addError(WORDS_NOT_IN_ALPHABET_ORDER);
+              } else {
+                s = a;
+              }
+            } else {
+              addError(FOUND_SYMBOL_OUT_OF_ALPHABET);
+            }
+          }
         }
       }
     }
+    std::fclose(file);
     if (m_out.empty()) {
       m_out = m_language[DICTIONARY_CHECK_FINISHED_SUCCESSFULLY];
     }
   } catch (const std::runtime_error &) {
+    std::fclose(file);
   }
   return false;
 }
