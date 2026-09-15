@@ -1,5 +1,7 @@
 #!/bin/bash
 
+#use ntdll instead of ldd
+
 SCRIPT_NAME=$(basename "$0")
 
 # 1. Check if the command line argument is provided
@@ -23,17 +25,24 @@ fi
 
 dll_list=()
 
-# Collect unique full paths
-while read -r file; do
-    if [ -f "$file" ]; then
-        dll_name=$(basename "$file")
-        name_without_ext=${dll_name%.*}
-        dll_list+=("$name_without_ext")
+# Collect unique full paths using ntldd
+# 1. ntldd -R gets all dependencies recursively
+# 2. sed cleans up any square brackets [ ] or "=>" signs, leaving only the raw Windows path
+# 3. grep filters for MinGW64/UCRT64 libraries
+while read -r win_file; do
+    if [ -n "$win_file" ]; then
+        # Convert Windows path (e.g. C:\msys64\...) to POSIX path (/mingw64/...)
+        file=$(cygpath -u "$win_file")
+        
+        if [ -f "$file" ]; then
+            dll_name=$(basename "$file")
+            name_without_ext=${dll_name%.*}
+            dll_list+=("$name_without_ext")
+        fi
     fi
-done < <(ldd "$TARGET_EXE" | awk -F '=> ' '{print $2}' | awk '{print $1}' | grep "/mingw64/" | sort | uniq)
+done < <(ntldd -R "$TARGET_EXE" | sed -E 's/.*(=>|\[| )([a-zA-Z]:\\[^] \t]*).*/\2/' | grep -i "mingw64" | sort | uniq)
 
-# 3. SORT FILE NAMES ALPHABETICALLY
-# Rebuild the array by sorting its elements using built-in bash features + sort
+# 3. Sort DLL names alphabetically
 IFS=$'\n' sorted_dll_list=($(sort <<<"${dll_list[*]}"))
 unset IFS
 
