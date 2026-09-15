@@ -89,12 +89,16 @@ WordsBase::WordsBase() {
     }
     file.close();
   }
-  pr(m_longestWordLength[0], m_longestWordLength[1]);
 
 #ifdef NOGTK
-  // cgi();TODO
+  // cgi();TODO uncomment on real cgi query
+
+  // count lonsest constants
+  system("chcp 1251>nul");
   showLongestAnagram();
-  pri;
+  showLongestPangram();
+  showLongestSimpleWordSequence();
+  showLongestDoubleWordSequence();
 #endif
 }
 
@@ -132,12 +136,7 @@ bool WordsBase::checkKeyboardWordComplex(const std::string &s) {
 }
 
 bool WordsBase::checkPangram(const std::string &s) {
-  const char *p;
-  std::set<char> set;
-  for (p = s.c_str(); *p != 0; p++) {
-    set.insert(*p);
-  }
-  return int(set.size()) >= m_comboValue[COMBOBOX_HELPER0];
+  return differentChars(s) >= m_comboValue[COMBOBOX_HELPER0];
 }
 
 bool WordsBase::checkTemplate(const std::string &s) {
@@ -374,37 +373,38 @@ void WordsBase::setKeyboardRowDiagonals() {
   }
   delete[] pu;
 }
-
+#ifdef NOGTK
 void WordsBase::showLongestAnagram() {
-  StringSetCI it;
-  int i, w;
-  std::string s;
+  int i, j, w;
+  std::string s, so;
   MapStringStringVector map;
   MapStringStringVectorI cit;
 
   for (j = 0; j < 2; j++) {
-    setDictionaryIndex(0);
+    setDictionaryIndex(j);
+    map.clear();
     StringSet const &r = getDictionary();
     for (i = m_longestWordLength[getDictionaryIndex()]; i > 0; i--) {
       w = 0;
-      for (it = r.begin(); it != r.end(); it++) {
-        if (int(it->length()) != i) {
+      for (auto const &e : r) {
+        if (int(e.length()) != i) {
           continue;
         }
         w++;
-        s = *it;
+        s = e;
         std::sort(s.begin(), s.end());
         cit = map.find(s);
         if (cit == map.end()) {
           VString v;
-          v.push_back(*it);
+          v.push_back(e);
           map[s] = v;
         } else {
-          cit->second.push_back(*it);
+          cit->second.push_back(e);
         }
       }
       if (w) {
-        pr1("length {} words {}", i, w);
+        // std::cout << std::format("length {} words {}\n", i, w);
+        // pr1("length {} words {}", i, w);
       }
 
       for (cit = map.begin(); cit != map.end(); cit++) {
@@ -419,12 +419,55 @@ void WordsBase::showLongestAnagram() {
           }
           s += svi;
         }
-        pr1("MAX_ANAGRAM_LENGTH={}; {}", i, s);
-        return;
+        so += (j ? ", " : "") + std::to_string(i);
+        std::cout << std::format("length{} {}\n", i, s);
+        // pr1("MAX_ANAGRAM_LENGTH={}; {}", i, s);
+        goto l425;
       }
     }
+  l425:
   }
+  std::cout << std::format("{{{}}}\n", so);
 }
+
+int WordsBase::differentChars(std::string_view s) {
+  bool seen[256] = {false};
+  int unique_count = 0;
+  for (const char ch : s) {
+    const unsigned char byte_idx = static_cast<unsigned char>(ch);
+    if (!seen[byte_idx]) {
+      seen[byte_idx] = true;
+      unique_count++;
+    }
+  }
+  return unique_count;
+}
+
+void WordsBase::showLongestPangram() {
+  int i, j, l;
+  std::string so;
+  for (j = 0; j < 2; j++) {
+    i = 10;
+    setDictionaryIndex(j);
+    StringSet const &r = getDictionary();
+    for (auto &e : r) {
+      if (int(e.length()) > i) {
+        l = differentChars(e);
+        if (l > i) {
+          i = l;
+          std::cout << std::format("pangram diff chars{} {}\n", i, e);
+        }
+      }
+    }
+    so += (j ? ", " : "") + std::to_string(i);
+  }
+  std::cout << std::format("{{{}}}\n", so);
+}
+
+void WordsBase::showLongestSimpleWordSequence() {}
+
+void WordsBase::showLongestDoubleWordSequence() {}
+#endif
 
 bool WordsBase::findAnagram() {
   StringSet const &r = getDictionary();
@@ -434,6 +477,7 @@ bool WordsBase::findAnagram() {
   MapStringStringVector map;
   MapStringStringVectorI cit;
 
+  // TODO
   for (i = m_comboValue[COMBOBOX_HELPER0]; i <= m_comboValue[COMBOBOX_HELPER1];
        i++) {
     for (it = r.begin(); it != r.end(); it++) {

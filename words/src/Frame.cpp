@@ -5,7 +5,7 @@
  *      Author: alexey slovesnov
  */
 
- /*
+/*
  * WINDOW_SIZE_TYPE=0 default
  * WINDOW_SIZE_TYPE=1 for youtube helper clip writing
  * WINDOW_SIZE_TYPE=2 for site screenshots
@@ -33,14 +33,15 @@ const char CERROR[] = "cerror";
 const char DOWNLOAD_URL[] =
     "http://sourceforge.net/projects/javawords/files/latest/download";
 
-
 /* too many items in combobox, so set maximum bound.
- * values counted from dictionary
- * makes the same for all dictionaries to avoid refill after
- * dictionary changes
+  constants calculated in functions
+  showLongestAnagram();
+  showLongestPangram();
+  showLongestSimpleWordSequence();
+  showLongestDoubleWordSequence();
  */
 const int MAX_ANAGRAM_LENGTH = 31;              // counted {18,31}
-const int MAX_PANGRAM_LENGTH = 20;              // counted {16,20}
+const int MAX_PANGRAM_LENGTH = 21;              // counted {16,21}
 const int MAX_WORD_SEQUENCE_LENGTH = 21;        // counted {20,21}
 const int MAX_DOUBLE_WORD_SEQUENCE_LENGTH = 14; // counted {6,14}
 

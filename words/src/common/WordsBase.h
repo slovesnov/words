@@ -131,13 +131,13 @@ protected:
 
   void fillResultFromMap(const MapStringTwoStringVectors &map, size_t len);
 
-  // TODO
-  //  const int MAX_ANAGRAM_LENGTH = 31;              // counted {18,31}
-  // const int MAX_PANGRAM_LENGTH = 20;              // counted {16,20}
-  // const int MAX_WORD_SEQUENCE_LENGTH = 21;        // counted {20,21}
-  // const int MAX_DOUBLE_WORD_SEQUENCE_LENGTH = 14; // counted {6,14}
-
+#ifdef NOGTK
   void showLongestAnagram(); // for MAX_ANAGRAM_LENGTH
+  void showLongestPangram(); // for MAX_PANGRAM_LENGTH
+  void showLongestSimpleWordSequence();// for MAX_WORD_SEQUENCE_LENGTH
+  void showLongestDoubleWordSequence();// for MAX_DOUBLE_WORD_SEQUENCE_LENGTH
+#endif
+  int differentChars(std::string_view s);
 
 public:
   WordsBase();
