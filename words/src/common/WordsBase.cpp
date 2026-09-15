@@ -11,7 +11,7 @@
 
 typedef unsigned char uchar;
 
-#ifdef CGI
+#ifdef NOGTK
 #define RETURN_ON_USER_BREAK(a)
 #else
 #define RETURN_ON_USER_BREAK(a)                                                \
@@ -22,7 +22,8 @@ typedef unsigned char uchar;
 
 std::string LNG[LANGUAGES];
 
-#ifdef CGI
+#ifdef NOGTK
+// use cgi project
 #include "cgi.h"
 
 // should match with POST_ENUM
@@ -62,14 +63,14 @@ WordsBase *wordsBase;
 WordsBase::WordsBase() {
   int i, j;
   wordsBase = this;
-#ifndef CGI
+#ifndef NOGTK
   m_filterRegex = nullptr;
 #endif
 
   for (i = 0; i < LANGUAGES; i++) {
     LNG[i] = LANGUAGE[i].substr(0, 2);
     m_settings[i] = readFile(i, "settings");
-#ifndef CGI
+#ifndef NOGTK
     m_template[i] = readFile(i, "template");
     assert(m_template[i].size() == SIZE(TEMPLATE_MENU));
 #endif
@@ -88,14 +89,17 @@ WordsBase::WordsBase() {
     }
     file.close();
   }
+  pr(m_longestWordLength[0], m_longestWordLength[1]);
 
-#ifdef CGI
-  cgi();
+#ifdef NOGTK
+  // cgi();TODO
+  showLongestAnagram();
+  pri;
 #endif
 }
 
 WordsBase::~WordsBase() {
-#ifndef CGI
+#ifndef NOGTK
   if (m_filterRegex) {
     g_regex_unref(m_filterRegex);
   }
@@ -296,7 +300,13 @@ bool WordsBase::checkPalindrome(const std::string &s) {
 }
 
 bool WordsBase::checkRegularExpression(const std::string &s) {
-#ifdef _WIN32
+#ifdef USE_STANDARD_REGEX
+  std::ptrdiff_t const matches(
+      std::distance(std::sregex_iterator(s.begin(), s.end(), m_regex),
+                    std::sregex_iterator()));
+  return matches >= m_comboValue[COMBOBOX_HELPER0] &&
+         matches <= m_comboValue[COMBOBOX_HELPER1];
+#else
   if (!m_radioValue) {
     return g_regex_match(m_regex, s.c_str(), GRegexMatchFlags(0), NULL);
   }
@@ -310,13 +320,6 @@ bool WordsBase::checkRegularExpression(const std::string &s) {
   g_match_info_free(matchInfo);
 
   return (i >= m_comboValue[COMBOBOX_HELPER0] && i <= max);
-#else
-  // gcc on sourceforge 4.8.5 doesn't support std::sregex_iterator
-  std::ptrdiff_t const matches(
-      std::distance(std::sregex_iterator(s.begin(), s.end(), m_regex),
-                    std::sregex_iterator()));
-  return matches >= m_comboValue[COMBOBOX_HELPER0] &&
-         matches <= m_comboValue[COMBOBOX_HELPER1];
 #endif
 }
 
@@ -370,6 +373,57 @@ void WordsBase::setKeyboardRowDiagonals() {
     }
   }
   delete[] pu;
+}
+
+void WordsBase::showLongestAnagram() {
+  StringSetCI it;
+  int i, w;
+  std::string s;
+  MapStringStringVector map;
+  MapStringStringVectorI cit;
+
+  for (j = 0; j < 2; j++) {
+    setDictionaryIndex(0);
+    StringSet const &r = getDictionary();
+    for (i = m_longestWordLength[getDictionaryIndex()]; i > 0; i--) {
+      w = 0;
+      for (it = r.begin(); it != r.end(); it++) {
+        if (int(it->length()) != i) {
+          continue;
+        }
+        w++;
+        s = *it;
+        std::sort(s.begin(), s.end());
+        cit = map.find(s);
+        if (cit == map.end()) {
+          VString v;
+          v.push_back(*it);
+          map[s] = v;
+        } else {
+          cit->second.push_back(*it);
+        }
+      }
+      if (w) {
+        pr1("length {} words {}", i, w);
+      }
+
+      for (cit = map.begin(); cit != map.end(); cit++) {
+        VString &rv = cit->second;
+        if (rv.size() < 2) {
+          continue;
+        }
+        s = "";
+        for (auto svi : rv) {
+          if (!s.empty()) {
+            s += " ";
+          }
+          s += svi;
+        }
+        pr1("MAX_ANAGRAM_LENGTH={}; {}", i, s);
+        return;
+      }
+    }
+  }
 }
 
 bool WordsBase::findAnagram() {
@@ -1204,7 +1258,7 @@ void WordsBase::sortFilterResults() {
   SearchResultVectorCI it;
   std::string s;
 
-#ifndef CGI
+#ifndef NOGTK
   bool find = m_comboValue[COMBOBOX_FILTER] == 0;
 #endif
 
@@ -1217,7 +1271,7 @@ void WordsBase::sortFilterResults() {
 
   for (it = m_result.begin(); it != m_result.end(); it++) {
     s = localeToUtf8(it->s);
-#ifndef CGI
+#ifndef NOGTK
     if (find != testFilterRegex(s)) {
       continue;
     }
@@ -1265,7 +1319,7 @@ void WordsBase::loadLanguage() {
     if (s.back() == '{') {
       s.pop_back();
     }
-#ifndef CGI
+#ifndef NOGTK
     setMenuLabel(ENUM_MENU(i), s);
 #endif
     if (i == 0) {
@@ -1278,7 +1332,7 @@ void WordsBase::loadLanguage() {
   }
   assert(m_language.size() == STRING_SIZE);
 
-#ifdef CGI
+#ifdef NOGTK
   for (auto &s : readFile(m_languageIndex, "cgi_language"))
     m_cgiLanguage.push_back(localeToUtf8(s));
   assert(m_cgiLanguage.size() == CGI_STRING_SIZE);
@@ -1324,21 +1378,21 @@ bool WordsBase::prepare() {
     // russain char to lowercase, other ignorecase options in
     // regcomp/g_regex_new functions
     m_entryText = localeToLowerCase(m_entryText, true);
-#ifdef _WIN32
+#ifdef USE_STANDARD_REGEX
+    try {
+      m_regex =
+          std::regex(m_entryText.c_str(), std::regex_constants::icase |
+                                              std::regex_constants::extended);
+    } catch (std::regex_error &) {
+      return false;
+    }
+#else
     // Note G_REGEX_RAW support 's' in locale, otherwise 's' should be a utf8
     // string
     m_regex = g_regex_new(m_entryText.c_str(),
                           GRegexCompileFlags(G_REGEX_RAW | G_REGEX_CASELESS),
                           GRegexMatchFlags(0), NULL);
     if (m_regex == NULL) {
-      return false;
-    }
-#else
-    try {
-      m_regex =
-          std::regex(m_entryText.c_str(), std::regex_constants::icase |
-                                              std::regex_constants::extended);
-    } catch (std::regex_error &) {
       return false;
     }
 #endif
@@ -1352,7 +1406,7 @@ bool WordsBase::prepare() {
 
   if (m_menuClick == MENU_MODIFICATION) { // finish with MENU_MODIFICATION
     if (!m_modifications.parse(m_entryText)) {
-#ifdef CGI
+#ifdef NOGTK
       printf(
           m_cgiLanguage[CGI_STRING_ERROR_INVALID_MODIFICATION_STRING].c_str());
 #endif
@@ -1437,7 +1491,7 @@ std::string WordsBase::getStatusString() {
   if (!m_outSplitted) {
     s = m_language[NUMBER_OF_WORDS] + " " +
         intToStringLocaled(m_result.size()) + ", ";
-#ifndef CGI
+#ifndef NOGTK
     s += m_language[WITH_FILTER] + " " +
          intToStringLocaled(m_filteredWordsCount) + ", ";
 #endif
@@ -1470,7 +1524,7 @@ bool WordsBase::run() {
   }
 
   if (m_menuClick == MENU_REGULAR_EXPRESSIONS) {
-#ifndef CGI
+#ifndef NOGTK
     g_regex_unref(m_regex);
 #endif
   }
@@ -1493,13 +1547,12 @@ bool WordsBase::differenceOnlyOneChar(const std::string &a,
   return i == 1;
 }
 
-#ifndef CGI
+#ifndef NOGTK
 bool WordsBase::setCheckFilterRegex() {
   if (m_filterText.empty()) {
     return true;
   }
-  // need case insensitive filter (??????? ????), work ok in russian only for
-  // utf8
+  // need case insensitive filter, work ok in russian only for utf8
   auto s = localeToUtf8(m_filterText);
   m_filterRegex = g_regex_new(s.c_str(), GRegexCompileFlags(G_REGEX_CASELESS),
                               GRegexMatchFlags(0), NULL);
@@ -1539,16 +1592,10 @@ VString WordsBase::readFile(std::string path) {
   return lines;
 }
 
-#ifdef CGI
+#ifdef NOGTK
 std::string WordsBase::getResourcePath(std::string name) {
-  return
-
-#ifdef _WIN32
-      "C:/Users/user/git/words"
-#else
-      "../htdocs"
-#endif
-      + std::string("/words/words/") + name;
+  return "words/" + name;
+  // return "../htdocs/words/words/" + name;
 }
 
 void WordsBase::cgi() {
@@ -1722,9 +1769,6 @@ bool WordsBase::findLetterGroupSplit() {
   auto charset = getOrderedString(m_entryText);
 
   const size_t size = m_entryText.length();
-  // #ifndef CGI
-  //	size_t sz[size];
-  // #endif
   eqmap.clear();
   eqmap.resize(size);
 

@@ -4,8 +4,8 @@
  *  Created on: 14.09.2015
  *      Author: alexey slovesnov
  */
-#ifndef CGI
-/*
+
+ /*
  * WINDOW_SIZE_TYPE=0 default
  * WINDOW_SIZE_TYPE=1 for youtube helper clip writing
  * WINDOW_SIZE_TYPE=2 for site screenshots
@@ -1272,5 +1272,3 @@ void Frame::radioChanged(GtkWidget *w) {
     stopThreadAndNewRoutine();
   }
 }
-
-#endif

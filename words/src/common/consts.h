@@ -9,7 +9,7 @@
 #define CONSTS_H_
 
 #include "WordsBase.h"
-#ifndef CGI
+#ifndef NOGTK
 #include <gtk/gtk.h> //for GDK_KEY_...
 #endif
 
@@ -135,7 +135,7 @@ const ENUM_SETTINGS KEYBOARD_ROW[] = {
 };
 const int KEYBOARD_ROW_SIZE = SIZE(KEYBOARD_ROW);
 
-#ifndef CGI
+#ifndef NOGTK
 
 // BEGIN ENCODE ARRAYS
 // Note encode arrays, size assert() checking in Frame::Frame()
@@ -227,6 +227,6 @@ const ENUM_MENU MENU_WAITING[] = {MENU_DICTIONARY_STATISTICS,
                                   MENU_TWO_CHARACTERS_DISTRIBUTION,
                                   MENU_TWO_CHARACTERS_DISTRIBUTION_START,
                                   MENU_TWO_CHARACTERS_DISTRIBUTION_END};
-#endif /*#ifndef CGI*/
+#endif /*#ifndef NOGTK*/
 
 #endif /* CONSTS_H_ */

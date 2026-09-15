@@ -5,17 +5,7 @@
  *      Author: alexey slovesnov
  */
 
-/*for compile cgi under windows
- * define NDEBUG CGI
- * lib iconv for cgi
- * i guess not need -mwindows option under cgi
- *
- * under linux old gcc cann't compile too old compiler
- * under linux may be NOGTK=0?1
- * define NDEBUG CGI NOGTK=1
- *
- */
-#ifdef CGI
+#ifdef NOGTK
 	#include "common/WordsBase.h"
 #else
 #include "Frame.h"
@@ -23,7 +13,7 @@
 #endif
 
 int main(int argc, char **argv) {
-#ifdef CGI
+#ifdef NOGTK
 	WordsBase w;
 #else
 	gtk_init(&argc, &argv);

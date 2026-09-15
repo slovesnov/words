@@ -13,12 +13,14 @@
 #include "SearchResult.h"
 #include "aslov.h"
 #include <algorithm>
+#include <array>
 #include <cassert>
 #include <cstring>
 #include <ctime>
-#include <array>
 
-#ifdef CGI
+#ifdef NOGTK
+#define USE_STANDARD_REGEX
+#include <regex>
 #endif
 
 const char SEPARATOR[] = "SEPARATOR";
@@ -42,7 +44,7 @@ protected:
   StringSet m_dictionary[LANGUAGES];
   VString m_settings[LANGUAGES]; // m_settings[i] see ENUM_SETTINGS
                                  // {encoding=locale}
-#ifndef CGI
+#ifndef NOGTK
   VString m_template[LANGUAGES]; //{encoding=locale}
 #endif
   std::string m_keyboardOneRow[256][2];
@@ -53,14 +55,14 @@ protected:
   int m_longestWordLength[LANGUAGES];
   clock_t m_begin, m_end;
   bool m_outSplitted;
-#ifdef _WIN32
-  // under windows use powerful regex from gtk even in cgi mode
+  //need fast compile so not include gtk files and use std::regex in console mode
+#ifdef USE_STANDARD_REGEX
+  std::regex m_regex;
+#else
   GRegex *m_regex;
   GRegex *m_filterRegex;
   std::string m_filterText; // locale
   int m_filteredWordsCount;
-#else
-  std::regex m_regex;
 #endif
 
   int m_languageIndex;
@@ -73,11 +75,11 @@ protected:
   int m_comboValue
       [COMBOBOX_SIZE]; // Note use helper value is faster and thread safe, note
                        // m_comboValue[COMBOBOX_DICTIONARY] is not used
-  int m_radioValue; // todo in cgi mode
+  int m_radioValue;    // todo in cgi mode
   bool m_checkValue;
   VString m_language; // utf8
   std::string m_addstatus;
-#ifdef CGI
+#ifdef NOGTK
   VString m_cgiLanguage; // utf8
 #else
   std::string m_programVersion;
@@ -93,14 +95,15 @@ protected:
   static std::string getShortLanguageString(int i);
 
   bool prepare();
+  void setDictionaryIndex(int i) { m_comboValue[COMBOBOX_DICTIONARY] = i; }
   int getDictionaryIndex() const { return m_comboValue[COMBOBOX_DICTIONARY]; }
 
   static std::string path(int i, std::string s);
   static VString readFile(int i, std::string s);
   static VString readFile(std::string path);
 
-#ifdef CGI
-  std::string getResourcePath(std::string name);
+#ifdef NOGTK
+  static std::string getResourcePath(std::string name);
   void cgi();
 #else
   inline const std::string &getTemplate(int i) const {
@@ -127,6 +130,14 @@ protected:
   bool run();
 
   void fillResultFromMap(const MapStringTwoStringVectors &map, size_t len);
+
+  // TODO
+  //  const int MAX_ANAGRAM_LENGTH = 31;              // counted {18,31}
+  // const int MAX_PANGRAM_LENGTH = 20;              // counted {16,20}
+  // const int MAX_WORD_SEQUENCE_LENGTH = 21;        // counted {20,21}
+  // const int MAX_DOUBLE_WORD_SEQUENCE_LENGTH = 14; // counted {6,14}
+
+  void showLongestAnagram(); // for MAX_ANAGRAM_LENGTH
 
 public:
   WordsBase();

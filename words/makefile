@@ -1,25 +1,34 @@
 # mingw32-make -j $(nproc)
+# mingw32-make CONFIG=console -j$(nproc)
+
+CONFIG ?= release
 
 # 1. Compiler and flags settings
 ASLOV    := ../../aslov/aslov/src/aslov
+CGI    	 := ../../cgi/cgi/src/cgi
 CXX      := g++
 #-O2 -Wall -Wextra -Wpedantic
-CXXFLAGS := -O3 -DNDEBUG -Wall -std=c++23 -I$(ASLOV) -Isrc/common $(shell pkg-config --cflags gtk+-3.0)
-LIBS     := $(shell pkg-config --libs gtk+-3.0) -lcurl
-# have to be words
-TARGET   := words
+CXXFLAGS := -O3 -DNDEBUG -Wall -std=c++23 -Isrc/common -I$(ASLOV)
+SRCS     := src/main.cpp $(wildcard src/*/*.cpp) $(ASLOV)/aslov.cpp
 
-ifeq ($(OS),Windows_NT)
-    LDFLAGS += -mwindows
+ifeq ($(CONFIG), release)
+	CXXFLAGS += $(shell pkg-config --cflags gtk+-3.0) src/Frame.cpp
+	LIBS     := $(shell pkg-config --libs gtk+-3.0) -lcurl
+	SRCS     += $(ASLOV)/CheckNewVersion.cpp
+	ifeq ($(OS),Windows_NT)
+		LDFLAGS += -mwindows
+	endif
+	EXTRA_OBJS := $(TARGET)/icon/app.o
+else ifeq ($(CONFIG), console)
+	CXXFLAGS += -DNOGTK=0 -I$(CGI)
+	SRCS     += $(CGI)/cgi.cpp
+	LDFLAGS = -liconv
 endif
 
-# 2. Automatic file discovery
-# Finds all .cpp files in the src directory, its subdirectories, and the ASLOV path
-SRCS     := $(wildcard src/*.cpp) $(wildcard src/*/*.cpp) $(ASLOV)/aslov.cpp $(ASLOV)/CheckNewVersion.cpp
+TARGET   := words
+
 # Replaces .cpp extensions with .o to generate the object files list
 OBJS     := $(SRCS:.cpp=.o)
-
-EXTRA_OBJS := $(TARGET)/icon/app.o
 
 # 3. Main target (executed by default via `make`)
 all: $(TARGET)
