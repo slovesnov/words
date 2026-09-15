@@ -7,6 +7,7 @@ refactored file reading and certain functions
 updated new version check due to the move to a new website
 fixed MENU_LETTER_GROUP_SPLIT bug (in debug mode)
 changed line endings in all text files from CRLF to LF
+а limit on the maximum number of errors during dictionary checking has been added
 
 [ru]
 русский словарь содержит 2,415,399 слов, раньше было 445,342
@@ -17,6 +18,7 @@ changed line endings in all text files from CRLF to LF
 изменена проверка новой версии в связи с переездом на новый сайт
 исправлен баг MENU_LETTER_GROUP_SPLIT (в режиме отладки)
 перевод строки во всех текстовых файлах изменён на LF вместо CRLF
+добавлено ограничение на максимальное число ошибок при проверке словаря
 
 ru 'Russian.dic' https://github.com/titoBouzout/Dictionaries
 ru 'ru_RU.txt' https://github.com/Goudron/ru-spelling-dictionary/tree/main/cspell/dictionaries
