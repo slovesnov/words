@@ -38,7 +38,7 @@ using MapStringIntI         = MapStringInt::iterator;
 using StringSet   = std::set<std::string>;
 using StringSetCI = std::set<std::string>::const_iterator;
 
-using TwoStringVectors = std::array<std::vector<std::string>, 2>;
+using TwoStringVectors = std::array<VString, 2>;
 
 using MapStringTwoStringVectors   = std::map<std::string, TwoStringVectors>;
 using MapStringTwoStringVectorsI  = MapStringTwoStringVectors::iterator;
