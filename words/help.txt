@@ -4,6 +4,7 @@ english dictionary now contains 393,167 words (previously 134,511)
 ??added multitasking for certain operations due to the expanded dictionary size
 reduced installer size; only necessary libraries are now used
 refactored file reading and certain functions
+optimized several functions
 updated new version check due to the move to a new website
 fixed MENU_LETTER_GROUP_SPLIT bug (in debug mode)
 changed line endings in all text files from CRLF to LF
@@ -15,6 +16,7 @@ changed line endings in all text files from CRLF to LF
 ??добавлена многозадачность для некоторых операций в связи с увеличением словаря
 уменьшен размер установочного файла, теперь используются только нужные библиотеки
 рефакторинг чтения файлов и некоторых функций
+ускорены некоторые функции
 изменена проверка новой версии в связи с переездом на новый сайт
 исправлен баг MENU_LETTER_GROUP_SPLIT (в режиме отладки)
 перевод строки во всех текстовых файлах изменён на LF вместо CRLF
