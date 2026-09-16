@@ -561,7 +561,7 @@ void Frame::aboutDialog() {
 
     if (id == HOMEPAGE_STRING || id == HOMEPAGE_ONLINE_STRING) {
       s1 = (id == HOMEPAGE_STRING ? HOMEPAGE : HOMEPAGE_ONLINE) +
-           (m_languageIndex ? ',' + LANGUAGE[m_languageIndex].substr(0,1) : "");
+           (m_languageIndex ? ',' + getShortLanguageString(m_languageIndex) : "");
       label = gtk_label_new(NULL);
       markup = g_markup_printf_escaped("%s <a href=\"%s\">\%s</a>",
                                        m_language[id].c_str(), s1.c_str(),
