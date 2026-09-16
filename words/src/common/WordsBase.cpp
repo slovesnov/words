@@ -111,16 +111,14 @@ WordsBase::~WordsBase() {
 }
 
 bool WordsBase::checkKeyboardWordSimple(const std::string &s) {
-  exit(1);
-  const char *p = s.c_str();
-  std::string *ps = m_keyboardOneRow[uchar(*p)];
+  std::string *ps = m_keyboardOneRow[uchar(s[0])];
   return spanIncluding(s, ps[0]) || spanIncluding(s, ps[1]);
 }
 
 bool WordsBase::checkKeyboardWordComplex(const std::string &s) {
-  const char *p = s.c_str();
+  const char *p = s.c_str();  
   for (; p[1] != 0; p++) {
-    if (m_keyboardRowDiagonals[uchar(*p)].find(p[1]) == std::string::npos) {
+    if (!m_keyboardRowDiagonals[uchar(*p)].contains(p[1])) {
       return false;
     }
   }
@@ -135,12 +133,11 @@ bool WordsBase::checkTemplate(const std::string &s) {
   const char *p = s.c_str();
   int param = m_comboValue[COMBOBOX_HELPER0];
   if (param == 0) {
-    if (strlen(p) < m_entryText.length()) {
+    if (s.length() < m_entryText.length()) {
       return false;
     }
 
-    char a[256];
-    memset(a, 0, 256);
+    char a[256] = {0};
     for (; *p != 0; p++) {
       a[uchar(*p)]++;
     }
@@ -152,11 +149,10 @@ bool WordsBase::checkTemplate(const std::string &s) {
     }
     return true;
   } else if (param == 1) {
-    if (strlen(p) > m_entryText.length()) {
+    if (s.length() > m_entryText.length()) {
       return false;
     }
-    char a[256];
-    memset(a, 0, 256);
+    char a[256] = {0};
     uchar u;
     for (; *p != 0; p++) {
       u = *p;
@@ -281,7 +277,7 @@ bool WordsBase::checkDensity(const std::string &s) {
 
 bool WordsBase::checkPalindrome(const std::string &s) {
   const char *p = s.c_str();
-  const char *p1 = p + strlen(p) - 1;
+  const char *p1 = p + s.length() - 1;
   for (; p < p1; p++, p1--) {
     if (*p != *p1) {
       return false;
@@ -310,7 +306,7 @@ bool WordsBase::checkRegularExpression(const std::string &s) {
   }
   g_match_info_free(matchInfo);
 
-  return (i >= m_comboValue[COMBOBOX_HELPER0] && i <= max);
+  return i >= m_comboValue[COMBOBOX_HELPER0] && i <= max;
 #endif
 }
 
@@ -597,8 +593,8 @@ bool WordsBase::findAnagram() {
   const int min = m_comboValue[COMBOBOX_HELPER0];
   const int max = m_comboValue[COMBOBOX_HELPER1];
 
-  #define SEARCH_TYPE 1
-  #if SEARCH_TYPE==0
+#define SEARCH_TYPE 1
+#if SEARCH_TYPE == 0
   clock_t start = std::clock();
   std::vector<V> vs(max - min + 1);
   for (auto const &e : getDictionary()) {
