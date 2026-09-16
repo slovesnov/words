@@ -1148,23 +1148,17 @@ bool WordsBase::keyboardWords() {
 bool WordsBase::wordFrequency() {
   int i;
   const int MAX = getMaximumWordLength();
-  IntVector m(MAX);
+  IntVector m(MAX,0);
   StringSet const &r = getDictionary();
-  StringSetCI it;
   IntIntVector v;
-  IntIntVectorCI itv;
 
-  for (i = 0; i < MAX; ++i) {
-    m[i] = 0;
-  }
-
-  for (it = r.begin(); it != r.end(); it++) {
-    m[it->length() - 1]++; // use length-1
+  for (auto&e:r) {
+    m[e.length() - 1]++; // use length-1
   }
 
   for (i = 0; i < MAX; ++i) {
     if (m[i] > 0) {
-      v.push_back(std::make_pair(m[i], i + 1)); // store actual word length
+      v.push_back({m[i], i + 1}); // store actual word length
     }
   }
 
@@ -1172,11 +1166,11 @@ bool WordsBase::wordFrequency() {
 
   std::sort(v.begin(), v.end(), sortIntInt);
 
-  for (itv = v.begin(); itv != v.end(); itv++) {
+  for (auto&e: v) {
     // use separator for intToString for understandable view
     m_out += format(
-        "\n%2d %6.3lf%% %6s/%s", itv->second, 100. * itv->first / r.size(),
-        toString(itv->first, ',').c_str(), toString(r.size(), ',').c_str());
+        "\n%2d %6.3lf%% %6s/%s", e.second, 100. * e.first / r.size(),
+        toString(e.first, ',').c_str(), toString(r.size(), ',').c_str());
   }
 
   return false;
