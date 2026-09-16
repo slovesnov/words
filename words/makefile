@@ -4,6 +4,7 @@
 CONFIG ?= release
 
 # 1. Compiler and flags settings
+TARGET   := words
 ASLOV    := ../../aslov/aslov/src/aslov
 CGI    	 := ../../cgi/cgi/src/cgi
 CXX      := g++
@@ -12,9 +13,9 @@ CXXFLAGS := -O3 -DNDEBUG -Wall -std=c++23 -Isrc/common -I$(ASLOV)
 SRCS     := src/main.cpp $(wildcard src/*/*.cpp) $(ASLOV)/aslov.cpp
 
 ifeq ($(CONFIG), release)
-	CXXFLAGS += $(shell pkg-config --cflags gtk+-3.0) src/Frame.cpp
+	CXXFLAGS += $(shell pkg-config --cflags gtk+-3.0)
 	LIBS     := $(shell pkg-config --libs gtk+-3.0) -lcurl
-	SRCS     += $(ASLOV)/CheckNewVersion.cpp
+	SRCS     += $(ASLOV)/CheckNewVersion.cpp src/Frame.cpp
 	ifeq ($(OS),Windows_NT)
 		LDFLAGS += -mwindows
 	endif
@@ -23,9 +24,9 @@ else ifeq ($(CONFIG), console)
 	CXXFLAGS += -DNOGTK=0 -I$(CGI)
 	SRCS     += $(CGI)/cgi.cpp
 	LDFLAGS = -liconv
+else
+	$(error Invalid CONFIG="$(CONFIG)". Valid options are 'release' or 'console')
 endif
-
-TARGET   := words
 
 # Replaces .cpp extensions with .o to generate the object files list
 OBJS     := $(SRCS:.cpp=.o)

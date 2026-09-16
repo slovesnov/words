@@ -373,6 +373,20 @@ void WordsBase::setKeyboardRowDiagonals() {
   }
   delete[] pu;
 }
+
+int WordsBase::differentChars(std::string_view s) {
+  bool seen[256] = {false};
+  int unique_count = 0;
+  for (const char ch : s) {
+    const unsigned char byte_idx = static_cast<unsigned char>(ch);
+    if (!seen[byte_idx]) {
+      seen[byte_idx] = true;
+      unique_count++;
+    }
+  }
+  return unique_count;
+}
+
 #ifdef NOGTK
 void WordsBase::showLongestAnagram() {
   int i, j;
@@ -426,23 +440,11 @@ void WordsBase::showLongestAnagram() {
       i--;
     }
 
-    l425:
+  l425:
   }
   std::cout << std::format("{{{}}}\n", so);
 }
 
-int WordsBase::differentChars(std::string_view s) {
-  bool seen[256] = {false};
-  int unique_count = 0;
-  for (const char ch : s) {
-    const unsigned char byte_idx = static_cast<unsigned char>(ch);
-    if (!seen[byte_idx]) {
-      seen[byte_idx] = true;
-      unique_count++;
-    }
-  }
-  return unique_count;
-}
 
 void WordsBase::showLongestPangram() {
   int i, j, l;
@@ -465,7 +467,63 @@ void WordsBase::showLongestPangram() {
   std::cout << std::format("{{{}}}\n", so);
 }
 
-void WordsBase::showLongestSimpleWordSequence() {}
+void WordsBase::showLongestSimpleWordSequence() {
+  int i, j, k, n;
+  std::string s, so;
+  MapStringTwoStringVectors map;
+  MapStringTwoStringVectorsI mit;
+  for (n = 0; n < 2; n++) {
+    setDictionaryIndex(n);
+    for (i = m_longestWordLength[n]; i > 0; i--) {
+      for (auto const &e : getDictionary()) {
+        if (int(e.length()) >= i) {
+          for (j = 0; j < 2; j++) {
+            s = j ? e.substr(0, i) : e.substr(e.length() - i);
+            if ((mit = map.find(s)) == map.end()) {
+              TwoStringVectors v;
+              v.add(j, e);
+              map[s] = v;
+            } else {
+              mit->second.add(j, e);
+            }
+          }
+        }
+      }
+
+      for (mit = map.begin(); mit != map.end(); mit++) {
+        const TwoStringVectors &v = mit->second;
+        VString const &v1 = v.v1;
+        VString const &v2 = v.v2;
+        j = v1.size();
+        k = v2.size();
+
+        if (j != 0 && k != 0) {
+          if (j == 1 && k == 1 && v1[0] == v2[0] &&
+              v1[0].length() == size_t(i)) {
+            continue;
+          }
+
+          s = "";
+          for (auto svi : v1) {
+            s += svi + " ";
+          }
+          s += "-";
+          for (auto svi : v2) {
+            s += " " + svi;
+          }
+          std::cout << std::format("{} {}\n", s, i);
+          so += (n ? ", " : "") + std::to_string(i);
+          map.clear();
+          goto l519;
+        }
+      }
+
+      map.clear();
+    }
+  l519:
+  }
+  std::cout << std::format("{{{}}}\n", so);
+}
 
 void WordsBase::showLongestDoubleWordSequence() {}
 #endif
@@ -873,7 +931,6 @@ l210:
 void WordsBase::fillResultFromMap(const MapStringTwoStringVectors &map,
                                   size_t len) {
   MapStringTwoStringVectorsCI mit;
-  std::string svi;
   int j, k;
   std::string s;
 
@@ -885,7 +942,6 @@ void WordsBase::fillResultFromMap(const MapStringTwoStringVectors &map,
     k = v2.size();
 
     if (j != 0 && k != 0) {
-      // 21nov2017 fixed only one same word found
       if (j == 1 && k == 1 && v1[0] == v2[0] && v1[0].length() == len) {
         continue;
       }
