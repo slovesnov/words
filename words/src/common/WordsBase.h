@@ -137,7 +137,7 @@ protected:
   void showLongestSimpleWordSequence();// for MAX_WORD_SEQUENCE_LENGTH
   void showLongestDoubleWordSequence();// for MAX_DOUBLE_WORD_SEQUENCE_LENGTH
 #endif
-  int differentChars(std::string_view s);
+  static int differentChars(std::string_view s);
 
 public:
   WordsBase();

@@ -375,22 +375,24 @@ void WordsBase::setKeyboardRowDiagonals() {
 }
 #ifdef NOGTK
 void WordsBase::showLongestAnagram() {
-  int i, j, w;
+  int i, j;
   std::string s, so;
   MapStringStringVector map;
   MapStringStringVectorI cit;
+  std::vector<VString> vvs;
 
   for (j = 0; j < 2; j++) {
     setDictionaryIndex(j);
     map.clear();
     StringSet const &r = getDictionary();
-    for (i = m_longestWordLength[getDictionaryIndex()]; i > 0; i--) {
-      w = 0;
-      for (auto const &e : r) {
-        if (int(e.length()) != i) {
-          continue;
-        }
-        w++;
+    vvs.clear();
+    vvs.resize(m_longestWordLength[j]);
+    for (const auto &e : r) {
+      vvs[m_longestWordLength[j] - e.length()].push_back(e);
+    }
+    i = m_longestWordLength[j];
+    for (auto &v : vvs) {
+      for (auto const &e : v) {
         s = e;
         std::sort(s.begin(), s.end());
         cit = map.find(s);
@@ -401,31 +403,30 @@ void WordsBase::showLongestAnagram() {
         } else {
           cit->second.push_back(e);
         }
-      }
-      if (w) {
-        // std::cout << std::format("length {} words {}\n", i, w);
-        // pr1("length {} words {}", i, w);
-      }
 
-      for (cit = map.begin(); cit != map.end(); cit++) {
-        VString &rv = cit->second;
-        if (rv.size() < 2) {
-          continue;
-        }
-        s = "";
-        for (auto svi : rv) {
-          if (!s.empty()) {
-            s += " ";
+        for (cit = map.begin(); cit != map.end(); cit++) {
+          VString &rv = cit->second;
+          if (rv.size() < 2) {
+            continue;
           }
-          s += svi;
+          s = "";
+          for (auto svi : rv) {
+            if (!s.empty()) {
+              s += " ";
+            }
+            s += svi;
+          }
+          so += (j ? ", " : "") + std::to_string(i);
+
+          std::cout << std::format("length{} {}\n", i, s);
+          // pr1("MAX_ANAGRAM_LENGTH={}; {}", i, s);
+          goto l425;
         }
-        so += (j ? ", " : "") + std::to_string(i);
-        std::cout << std::format("length{} {}\n", i, s);
-        // pr1("MAX_ANAGRAM_LENGTH={}; {}", i, s);
-        goto l425;
       }
+      i--;
     }
-  l425:
+
+    l425:
   }
   std::cout << std::format("{{{}}}\n", so);
 }
