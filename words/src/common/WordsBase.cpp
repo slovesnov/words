@@ -93,7 +93,7 @@ WordsBase::WordsBase() {
 #ifdef NOGTK
   // cgi();TODO uncomment on real cgi query
 
-  // count longest constants
+  // count longest constants needs when dictinary changed
   system("chcp 1251>nul");
   showLongestAnagram();
   showLongestPangram();
@@ -596,11 +596,57 @@ void WordsBase::showLongestDoubleWordSequence() {
 bool WordsBase::findAnagram() {
   int i;
   std::string s;
-  MapStringStringVector map;
-  MapStringStringVectorI cit;
+  // can use string or string_view
+  using V = std::vector<std::string_view>;
+  using MapStringV = std::map<std::string, V>;
 
-  for (i = m_comboValue[COMBOBOX_HELPER0]; i <= m_comboValue[COMBOBOX_HELPER1];
-       i++) {
+  MapStringV map;
+  MapStringV::iterator cit;
+  const int min = m_comboValue[COMBOBOX_HELPER0];
+  const int max = m_comboValue[COMBOBOX_HELPER1];
+
+  /*
+  std::vector<V> vs(max - min + 1);
+  for (auto const &e : getDictionary()) {
+    i = int(e.length());
+    if (i >= min && i <= max) {
+      vs[i - min].push_back(e);
+    }
+    RETURN_ON_USER_BREAK(true)
+  }
+
+  for (auto const &a : vs) {
+    for (auto const &e : a) {
+      s = e;
+      std::sort(s.begin(), s.end());
+      cit = map.find(s);
+      if (cit == map.end()) {
+        map[s] = {e};
+      } else {
+        cit->second.push_back(e);
+      }
+    }
+    for (auto const &e : map) {
+      V const &rv = e.second;
+      if (rv.size() < 2) {
+        continue;
+      }
+      s = "";
+      for (auto svi : rv) {
+        if (!s.empty()) {
+          s += " ";
+        }
+        s += svi;
+      }
+      m_result.push_back(SearchResult(s, rv.begin()->length(), rv.size()));
+    }
+
+    map.clear();
+
+    RETURN_ON_USER_BREAK(true)
+  }*/
+
+  for (i = min; i <= max; i++) {
     for (auto const &e : getDictionary()) {
       if (int(e.length()) != i) {
         continue;
@@ -609,15 +655,13 @@ bool WordsBase::findAnagram() {
       std::sort(s.begin(), s.end());
       cit = map.find(s);
       if (cit == map.end()) {
-        VString v;
-        v.push_back(e);
-        map[s] = v;
+        map[s] = {e};
       } else {
         cit->second.push_back(e);
       }
     }
     for (auto const &e : map) {
-      VString const &rv = e.second;
+      V const &rv = e.second;
       if (rv.size() < 2) {
         continue;
       }
@@ -721,38 +765,27 @@ bool WordsBase::findDoubleWordSequence() {
 }
 
 bool WordsBase::findWordSequenceFull() {
-  StringSet const &r = getDictionary();
-  StringSetCI it;
-  int i;
   std::string s;
-
-  for (it = r.begin(); it != r.end(); it++) {
-    if (checkPalindrome(*it)) {
+  for (auto const &e : getDictionary()) {
+    if (checkPalindrome(e)) {
       continue;
     }
-    s.clear();
-    for (i = it->length() - 1; i >= 0; i--) {
-      s += (*it)[i];
-    }
-    if (s > *it && getDictionary().find(s) != getDictionary().end()) {
-      m_result.push_back(SearchResult(*it + " " + s, it->length(), 2));
+    s = e;
+    std::reverse(s.begin(), s.end());
+    if (s > e && getDictionary().contains(s)) {
+      m_result.push_back(SearchResult(e + " " + s, e.length(), 2));
     }
   }
   return false;
 }
 
 bool WordsBase::findModification() {
-  StringSet const &r = getDictionary();
-  StringSetCI it;
   std::string s;
-  for (it = r.begin(); it != r.end(); it++) {
-    s = m_modifications.apply(*it, m_checkValue);
-
-    if (!s.empty() && s != *it &&
-        getDictionary().find(s) != getDictionary().end()) {
-      m_result.push_back(SearchResult(*it + " " + s, it->length(), 1));
+  for (auto const &e : getDictionary()) {
+    s = m_modifications.apply(e, m_checkValue);
+    if (!s.empty() && s != e && getDictionary().contains(s)) {
+      m_result.push_back(SearchResult(e + " " + s, e.length(), 1));
     }
-
     RETURN_ON_USER_BREAK(true)
   }
   return false;
