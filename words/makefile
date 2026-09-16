@@ -17,7 +17,7 @@ ifeq ($(CONFIG), release)
 	LIBS     := $(shell pkg-config --libs gtk+-3.0) -lcurl
 	SRCS     += $(ASLOV)/CheckNewVersion.cpp src/Frame.cpp
 	ifeq ($(OS),Windows_NT)
-		LDFLAGS += -mwindows
+	#	LDFLAGS += -mwindows
 	endif
 	EXTRA_OBJS := $(TARGET)/icon/app.o
 else ifeq ($(CONFIG), console)

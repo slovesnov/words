@@ -348,8 +348,7 @@ void WordsBase::setKeyboardRowDiagonals() {
   char c;
   const int ROW_LEN = getSettings(SETTINGS_KEYBOARD_ROW1).length() + 1;
   const int SZ = ROW_LEN * 5;
-  char *pu = new char[SZ];
-  memset(pu, 0, SZ);
+  std::vector<char>pu(SZ,0);
   for (i = 0; i < KEYBOARD_ROW_SIZE; i++) {
     std::string const &rs = getSettings(KEYBOARD_ROW[i]);
     for (j = 0; j < rs.length(); j++) {
@@ -371,7 +370,6 @@ void WordsBase::setKeyboardRowDiagonals() {
       }
     }
   }
-  delete[] pu;
 }
 
 int WordsBase::differentChars(std::string_view s) {
@@ -535,16 +533,13 @@ void WordsBase::showLongestSimpleWordSequence() {
         map.clear();
         break;
       }
-
       map.clear();
     }
   }
-
   outMax(__func__, r);
 }
 
 void WordsBase::showLongestDoubleWordSequence() {
-
   int i, j, n, r[2];
   std::string s, t, q;
   MapStringTwoStringVectors map;
@@ -769,7 +764,7 @@ bool WordsBase::findModification() {
 bool WordsBase::findChain() {
   StringSet const &r = getDictionary();
   StringSetCI dci;
-  int i, j, k, l, mx[2], *ni, *nis;
+  int i, j, k, l, mx[2];
   MapStringInt dl;
   VString v, w[2];
   StringI ic;
@@ -778,8 +773,6 @@ bool WordsBase::findChain() {
   char c;
   std::string s;
   StringSet vs[2];
-  VString *vl;
-  ChainNodeVector *ch;
   ChainNodeVectorI cni;
   ChainNodeVectorCI cni1;
   ChainNode *cp;
@@ -867,11 +860,9 @@ l210:
   // so j-=2;
   j -= 2;
 
-  // todo
-  vl = new VString[j];
-  ch = new ChainNodeVector[j];
-  ni = new int[j];
-  nis = new int[j];
+    std::vector<VString> vl(j);
+    std::vector<ChainNodeVector> ch(j);
+  IntVector ni(j),nis(j);
 
   if (j == 1) { // special proceeding for j==1 on change check check
                 // [????->????]
@@ -983,10 +974,6 @@ l210:
       }
     }
   }
-  delete[] ch;
-  delete[] vl;
-  delete[] ni;
-  delete[] nis;
 
   for (auto &e : v) {
     m_result.push_back(SearchResult(e, m_chainHelper[0].length(), j + 2));
@@ -1161,7 +1148,7 @@ bool WordsBase::keyboardWords() {
 bool WordsBase::wordFrequency() {
   int i;
   const int MAX = getMaximumWordLength();
-  int *m = new int[MAX];
+  IntVector m(MAX);
   StringSet const &r = getDictionary();
   StringSetCI it;
   IntIntVector v;
@@ -1192,7 +1179,6 @@ bool WordsBase::wordFrequency() {
         toString(itv->first, ',').c_str(), toString(r.size(), ',').c_str());
   }
 
-  delete[] m;
   return false;
 }
 
