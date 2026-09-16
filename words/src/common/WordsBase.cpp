@@ -594,33 +594,30 @@ void WordsBase::showLongestDoubleWordSequence() {
 #endif
 
 bool WordsBase::findAnagram() {
-  StringSet const &r = getDictionary();
-  StringSetCI it;
   int i;
   std::string s;
   MapStringStringVector map;
   MapStringStringVectorI cit;
 
-  // TODO
   for (i = m_comboValue[COMBOBOX_HELPER0]; i <= m_comboValue[COMBOBOX_HELPER1];
        i++) {
-    for (it = r.begin(); it != r.end(); it++) {
-      if (int(it->length()) != i) {
+    for (auto const &e : getDictionary()) {
+      if (int(e.length()) != i) {
         continue;
       }
-      s = *it;
+      s = e;
       std::sort(s.begin(), s.end());
       cit = map.find(s);
       if (cit == map.end()) {
         VString v;
-        v.push_back(*it);
+        v.push_back(e);
         map[s] = v;
       } else {
-        cit->second.push_back(*it);
+        cit->second.push_back(e);
       }
     }
-    for (cit = map.begin(); cit != map.end(); cit++) {
-      VString &rv = cit->second;
+    for (auto const &e : map) {
+      VString const &rv = e.second;
       if (rv.size() < 2) {
         continue;
       }
@@ -762,7 +759,7 @@ bool WordsBase::findModification() {
 }
 
 bool WordsBase::findChain() {
-  int i, j, k, l,n, mx[2];
+  int i, j, k, l, n, mx[2];
   MapStringInt dl;
   VString v, w[2];
   StringI ic;
@@ -781,7 +778,7 @@ bool WordsBase::findChain() {
     return false;
   }
 
-  for (auto&e:r) {
+  for (auto &e : r) {
     if (e.length() == m_chainHelper[0].length()) {
       dl[e] = 0;
     }
@@ -864,7 +861,7 @@ l210:
 
   if (j == 1) { // special proceeding for j==1 on change check check
                 // [????->????]
-    for (auto&e:vs[0]) {
+    for (auto &e : vs[0]) {
       ch[0].push_back(ChainNode(e));
     }
   } else {
@@ -883,14 +880,14 @@ l210:
     mi = dl.find(*vs[0].begin());
     assert(mi != dl.end());
     for (i = 0, l = mi->second - 2; i < 2; i++, l++) {
-      for (auto&e:vs[i]) {
+      for (auto &e : vs[i]) {
         ch[l].push_back(ChainNode(e));
       }
     }
 
     // make links for ch[] in middle
     l -= 2;
-    for (auto&e:ch[l]) {
+    for (auto &e : ch[l]) {
       for (cni1 = ch[l + 1].begin(), k = 0; cni1 != ch[l + 1].end();
            cni1++, k++) {
         if (differenceOnlyOneChar(e.s, cni1->s)) {
@@ -909,8 +906,8 @@ l210:
         for (auto &vci : vl[i]) {
           cp = 0;
           l = i - k;
-          n=-1;
-          for (auto&e:ch[l]) {
+          n = -1;
+          for (auto &e : ch[l]) {
             n++;
             if (differenceOnlyOneChar(vci, e.s)) {
               // find all links, so no break here
