@@ -348,7 +348,7 @@ void WordsBase::setKeyboardRowDiagonals() {
   char c;
   const int ROW_LEN = getSettings(SETTINGS_KEYBOARD_ROW1).length() + 1;
   const int SZ = ROW_LEN * 5;
-  std::vector<char>pu(SZ,0);
+  std::vector<char> pu(SZ, 0);
   for (i = 0; i < KEYBOARD_ROW_SIZE; i++) {
     std::string const &rs = getSettings(KEYBOARD_ROW[i]);
     for (j = 0; j < rs.length(); j++) {
@@ -860,9 +860,9 @@ l210:
   // so j-=2;
   j -= 2;
 
-    std::vector<VString> vl(j);
-    std::vector<ChainNodeVector> ch(j);
-  IntVector ni(j),nis(j);
+  std::vector<VString> vl(j);
+  std::vector<ChainNodeVector> ch(j);
+  IntVector ni(j), nis(j);
 
   if (j == 1) { // special proceeding for j==1 on change check check
                 // [????->????]
@@ -1100,13 +1100,10 @@ bool WordsBase::twoDictionaries(bool translit) {
 bool WordsBase::keyboardWords() {
   StringSet const &df = m_dictionary[0];
   StringSet const &dt = m_dictionary[1];
-  StringSetCI it;
   int i;
-  char b[128];
-  char *p;
+  char a[256], b[128], *p;
   std::string s;
   std::string::size_type j, len;
-  char a[256];
   const int di = getDictionaryIndex();
 
   assert(SETTINGS_KEYBOARD_ROW2 == SETTINGS_KEYBOARD_ROW1 + 1);
@@ -1122,12 +1119,12 @@ bool WordsBase::keyboardWords() {
     }
   }
 
-  for (it = df.begin(); it != df.end(); it++) {
+  for (auto &e : df) {
     p = b;
-    len = it->length();
+    len = e.length();
 
     for (j = 0; j < len; j++) {
-      *p++ = a[uchar((*it)[j])];
+      *p++ = a[uchar(e[j])];
     }
     *p = 0;
 
@@ -1135,9 +1132,9 @@ bool WordsBase::keyboardWords() {
       /* fixed 4.3 first word should be in current dictionary language,
        * for correct sorting vowels/consonant percent*/
       if (di == 0) {
-        s = *it + " " + b;
+        s = e + " " + b;
       } else {
-        s = b + std::string(" ") + *it;
+        s = b + (" " + e);
       }
       m_result.push_back(SearchResult(s, len, 1));
     }
@@ -1148,11 +1145,11 @@ bool WordsBase::keyboardWords() {
 bool WordsBase::wordFrequency() {
   int i;
   const int MAX = getMaximumWordLength();
-  IntVector m(MAX,0);
+  IntVector m(MAX, 0);
   StringSet const &r = getDictionary();
   IntIntVector v;
 
-  for (auto&e:r) {
+  for (auto &e : r) {
     m[e.length() - 1]++; // use length-1
   }
 
@@ -1166,11 +1163,11 @@ bool WordsBase::wordFrequency() {
 
   std::sort(v.begin(), v.end(), sortIntInt);
 
-  for (auto&e: v) {
+  for (auto &e : v) {
     // use separator for intToString for understandable view
-    m_out += format(
-        "\n%2d %6.3lf%% %6s/%s", e.second, 100. * e.first / r.size(),
-        toString(e.first, ',').c_str(), toString(r.size(), ',').c_str());
+    m_out +=
+        format("\n%2d %6.3lf%% %6s/%s", e.second, 100. * e.first / r.size(),
+               toString(e.first, ',').c_str(), toString(r.size(), ',').c_str());
   }
 
   return false;
