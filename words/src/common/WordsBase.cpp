@@ -1268,7 +1268,7 @@ bool WordsBase::twoCharactersDistribution() {
       if (a[i][j] != 0) {
         ss = getAlphabetChar(i);
         ss += getAlphabetChar(j);
-        v.push_back(std::make_pair(ss, a[i][j]));
+        v.push_back({ss, a[i][j]});
       }
     }
   }
@@ -1357,7 +1357,7 @@ bool WordsBase::dictionaryStatistics() {
         s = "";
       }
 
-      ve[i] = std::make_pair(i, v);
+      ve[i] = {i, v};
       frequency[i] = v;
     }
 
