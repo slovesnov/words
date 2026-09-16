@@ -91,7 +91,7 @@ WordsBase::WordsBase() {
   }
 
 #ifdef NOGTK
-  // cgi();TODO uncomment on real cgi query
+  // cgi();TODO uncomment on real cgi query, and comment next lines
 
   // count longest constants needs when dictinary changed
   system("chcp 1251>nul");
@@ -110,19 +110,11 @@ WordsBase::~WordsBase() {
 #endif
 }
 
-bool WordsBase::spanIncluding(const char *p, const std::string &pattern) {
-  for (; *p != 0; p++) {
-    if (pattern.find(*p) == std::string::npos) {
-      return false;
-    }
-  }
-  return true;
-}
-
 bool WordsBase::checkKeyboardWordSimple(const std::string &s) {
+  exit(1);
   const char *p = s.c_str();
   std::string *ps = m_keyboardOneRow[uchar(*p)];
-  return spanIncluding(p, ps[0]) || spanIncluding(p, ps[1]);
+  return spanIncluding(s, ps[0]) || spanIncluding(s, ps[1]);
 }
 
 bool WordsBase::checkKeyboardWordComplex(const std::string &s) {
@@ -183,7 +175,7 @@ bool WordsBase::checkTemplate(const std::string &s) {
     }
     return true;
   } else {
-    return spanIncluding(p, m_entryText);
+    return spanIncluding(s, m_entryText);
   }
 }
 
@@ -605,7 +597,9 @@ bool WordsBase::findAnagram() {
   const int min = m_comboValue[COMBOBOX_HELPER0];
   const int max = m_comboValue[COMBOBOX_HELPER1];
 
-  /*
+  #define SEARCH_TYPE 1
+  #if SEARCH_TYPE==0
+  clock_t start = std::clock();
   std::vector<V> vs(max - min + 1);
   for (auto const &e : getDictionary()) {
     i = int(e.length());
@@ -614,7 +608,8 @@ bool WordsBase::findAnagram() {
     }
     RETURN_ON_USER_BREAK(true)
   }
-
+  pr(timeElapse(start));
+  start = std::clock();
   for (auto const &a : vs) {
     for (auto const &e : a) {
       s = e;
@@ -640,12 +635,11 @@ bool WordsBase::findAnagram() {
       }
       m_result.push_back(SearchResult(s, rv.begin()->length(), rv.size()));
     }
-
     map.clear();
-
     RETURN_ON_USER_BREAK(true)
-  }*/
-
+  }
+  pr(timeElapse(start));
+#else
   for (i = min; i <= max; i++) {
     for (auto const &e : getDictionary()) {
       if (int(e.length()) != i) {
@@ -674,12 +668,10 @@ bool WordsBase::findAnagram() {
       }
       m_result.push_back(SearchResult(s, rv.begin()->length(), rv.size()));
     }
-
     map.clear();
-
     RETURN_ON_USER_BREAK(true)
   }
-
+#endif
   return false;
 }
 
@@ -1241,7 +1233,7 @@ bool WordsBase::checkDictionary() {
           if (a.back() == '\r') {
             addError(CR_SYMBOL_FOUND);
           } else {
-            if (spanIncluding(a.c_str(), getAlphabet())) {
+            if (spanIncluding(a, getAlphabet())) {
               if (a <= s) { // as well check duplicate words
                 addError(WORDS_NOT_IN_ALPHABET_ORDER);
               } else {
@@ -1597,7 +1589,7 @@ bool WordsBase::prepare() {
   } else if (m_menuClick == MENU_CHAIN) {
     s += ' ';
   }
-  if (!spanIncluding(m_entryText.c_str(), s)) {
+  if (!spanIncluding(m_entryText, s)) {
     return false;
   }
 
