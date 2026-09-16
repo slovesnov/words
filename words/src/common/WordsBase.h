@@ -55,7 +55,8 @@ protected:
   int m_longestWordLength[LANGUAGES];
   clock_t m_begin, m_end;
   bool m_outSplitted;
-  //need fast compile so not include gtk files and use std::regex in console mode
+  // need fast compile so not include gtk files and use std::regex in console
+  // mode
 #ifdef USE_STANDARD_REGEX
   std::regex m_regex;
 #else
@@ -132,12 +133,11 @@ protected:
   void fillResultFromMap(const MapStringTwoStringVectors &map, size_t len);
 
 #ifdef NOGTK
-  void showLongestAnagram(); // for MAX_ANAGRAM_LENGTH
-  void showLongestPangram(); // for MAX_PANGRAM_LENGTH
-  void showLongestSimpleWordSequence();// for MAX_WORD_SEQUENCE_LENGTH
-  void showLongestDoubleWordSequence();// for MAX_DOUBLE_WORD_SEQUENCE_LENGTH
+  void showLongestAnagram();            // for MAX_ANAGRAM_LENGTH
+  void showLongestPangram();            // for MAX_PANGRAM_LENGTH
+  void showLongestSimpleWordSequence(); // for MAX_WORD_SEQUENCE_LENGTH
+  void showLongestDoubleWordSequence(); // for MAX_DOUBLE_WORD_SEQUENCE_LENGTH
 #endif
-  static int differentChars(std::string_view s);
 
 public:
   WordsBase();
@@ -177,6 +177,7 @@ public:
     // helper BOOL_VOID_FUNCTION
   bool twoDictionaries(bool translit);
 
+  static int differentChars(std::string_view s);
   static bool spanIncluding(const char *p, const std::string &pattern);
   static bool differenceOnlyOneChar(std::string const &a, std::string const &b);
 

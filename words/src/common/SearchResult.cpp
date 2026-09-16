@@ -10,13 +10,13 @@
 #include <string.h>
 
 SearchResult::SearchResult(std::string _s, int _length, int _words) {
-	s = _s;
-	length = _length;
-	words = _words;
-	std::set<char> set;
 	unsigned i, l;
 	const char *p[VOWELS_CONSONANTS_SIZE];
 	const char *q;
+	s = _s;
+	length = _length;
+	words = _words;
+	differentCharacters = WordsBase::differentChars(s);
 	for (i = 0; i < VOWELS_CONSONANTS_SIZE; i++) {
 		percent[i] = 0;
 		p[i] =
@@ -24,7 +24,6 @@ SearchResult::SearchResult(std::string _s, int _length, int _words) {
 	}
 
 	for (l = 0, q = s.c_str(); *q != 0 && *q != ' '; q++, l++) { //for many words goes until first space
-		set.insert(*q);
 		for (i = 0; i < VOWELS_CONSONANTS_SIZE; i++) {
 			if (strchr(p[i], *q) != NULL) {
 				percent[i]++;
@@ -37,7 +36,6 @@ SearchResult::SearchResult(std::string _s, int _length, int _words) {
 		percent[i] *= 100. / l;
 	}
 
-	differentCharacters = set.size();
 }
 
 //Note all sort functions sort by alphabet if comparing parameters of search results are equal
