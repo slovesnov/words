@@ -762,9 +762,7 @@ bool WordsBase::findModification() {
 }
 
 bool WordsBase::findChain() {
-  StringSet const &r = getDictionary();
-  StringSetCI dci;
-  int i, j, k, l, mx[2];
+  int i, j, k, l,n, mx[2];
   MapStringInt dl;
   VString v, w[2];
   StringI ic;
@@ -773,9 +771,9 @@ bool WordsBase::findChain() {
   char c;
   std::string s;
   StringSet vs[2];
-  ChainNodeVectorI cni;
   ChainNodeVectorCI cni1;
   ChainNode *cp;
+  StringSet const &r = getDictionary();
 
   if (differenceOnlyOneChar(m_chainHelper[0], m_chainHelper[1])) {
     m_out = localeToUtf8(m_chainHelper[0] + " " + m_chainHelper[1]) + OPEN_S +
@@ -783,9 +781,9 @@ bool WordsBase::findChain() {
     return false;
   }
 
-  for (dci = r.begin(); dci != r.end(); dci++) {
-    if (dci->length() == m_chainHelper[0].length()) {
-      dl[*dci] = 0;
+  for (auto&e:r) {
+    if (e.length() == m_chainHelper[0].length()) {
+      dl[e] = 0;
     }
   }
 
@@ -866,8 +864,8 @@ l210:
 
   if (j == 1) { // special proceeding for j==1 on change check check
                 // [????->????]
-    for (dci = vs[0].begin(); dci != vs[0].end(); dci++) {
-      ch[0].push_back(ChainNode(*dci));
+    for (auto&e:vs[0]) {
+      ch[0].push_back(ChainNode(e));
     }
   } else {
     // fill vl
@@ -885,19 +883,19 @@ l210:
     mi = dl.find(*vs[0].begin());
     assert(mi != dl.end());
     for (i = 0, l = mi->second - 2; i < 2; i++, l++) {
-      for (dci = vs[i].begin(); dci != vs[i].end(); dci++) {
-        ch[l].push_back(ChainNode(*dci));
+      for (auto&e:vs[i]) {
+        ch[l].push_back(ChainNode(e));
       }
     }
 
     // make links for ch[] in middle
     l -= 2;
-    for (cni = ch[l].begin(); cni != ch[l].end(); cni++) {
+    for (auto&e:ch[l]) {
       for (cni1 = ch[l + 1].begin(), k = 0; cni1 != ch[l + 1].end();
            cni1++, k++) {
-        if (differenceOnlyOneChar(cni->s, cni1->s)) {
+        if (differenceOnlyOneChar(e.s, cni1->s)) {
           // find all links, so no break here
-          cni->next.push_back(k);
+          e.next.push_back(k);
         }
       }
     }
@@ -911,17 +909,19 @@ l210:
         for (auto &vci : vl[i]) {
           cp = 0;
           l = i - k;
-          for (cni = ch[l].begin(); cni != ch[l].end(); cni++) {
-            if (differenceOnlyOneChar(vci, cni->s)) {
+          n=-1;
+          for (auto&e:ch[l]) {
+            n++;
+            if (differenceOnlyOneChar(vci, e.s)) {
               // find all links, so no break here
               if (!cp) {
                 ch[i].push_back(ChainNode(vci));
                 cp = &(ch[i].back());
               }
               if (k == -1) {
-                cp->next.push_back(cni - ch[l].begin());
+                cp->next.push_back(n);
               } else {
-                cni->next.push_back(ch[i].size() - 1);
+                e.next.push_back(ch[i].size() - 1);
               }
             }
           }
