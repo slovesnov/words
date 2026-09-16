@@ -40,10 +40,11 @@ const char DOWNLOAD_URL[] =
   showLongestSimpleWordSequence();
   showLongestDoubleWordSequence();
  */
-const int MAX_ANAGRAM_LENGTH = 31;              // counted {22,31}
-const int MAX_PANGRAM_LENGTH = 21;              // counted {16,21}
-const int MAX_WORD_SEQUENCE_LENGTH = 21;        // counted {20,21}
-const int MAX_DOUBLE_WORD_SEQUENCE_LENGTH = 14; // counted {6,14}
+const int MAX_ANAGRAM_LENGTH = 31;              //{22,31}
+const int MAX_PANGRAM_LENGTH = 21;              //{16,21}
+const int MAX_SIMPLE_WORD_SEQUENCE_LENGTH=30;//{25, 30}
+const int MAX_DOUBLE_WORD_SEQUENCE_LENGTH=14;//{7, 14}
+
 
 const std::string CONFIG_TAGS[] = {"version", "language", "dictionary"};
 
@@ -694,7 +695,7 @@ void Frame::setHelperPanel() {
     break;
 
   case MENU_SIMPLE_WORD_SEQUENCE:
-    addComboLineToHelper(SEQUENCE, 8, MAX_WORD_SEQUENCE_LENGTH, 0, CHARACTERS);
+    addComboLineToHelper(SEQUENCE, 8, MAX_SIMPLE_WORD_SEQUENCE_LENGTH, 0, CHARACTERS);
     break;
 
   case MENU_DOUBLE_WORD_SEQUENCE:
