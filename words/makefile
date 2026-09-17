@@ -1,5 +1,5 @@
 # mingw32-make -j $(nproc)
-# mingw32-make CONFIG=console -j$(nproc)
+# mingw32-make -j$(nproc) CONFIG=console RUN=1
 # mingw32-make clean
 # cd e:/slovesno/words/words
 CONFIG ?= release
@@ -17,7 +17,7 @@ ifeq ($(CONFIG), release)
 	LIBS     := $(shell pkg-config --libs gtk+-3.0) -lcurl
 	SRCS     += $(ASLOV)/CheckNewVersion.cpp src/Frame.cpp
 	ifeq ($(OS),Windows_NT)
-		LDFLAGS += -mwindows
+	#	LDFLAGS += -mwindows
 	endif
 	EXTRA_OBJS := $(TARGET)/icon/app.o
 else ifeq ($(CONFIG), console)
@@ -34,6 +34,11 @@ OBJS     := $(SRCS:.cpp=.o)
 
 # 3. Main target (executed by default via `make`)
 all: $(TARGET)
+
+ifneq ($(RUN),)
+	@echo "--- Running application ---"
+	./$(TARGET).exe
+endif
 
 # Links the executable from the object files
 $(TARGET): $(OBJS) $(EXTRA_OBJS)

@@ -93,15 +93,95 @@ WordsBase::WordsBase() {
 #ifdef NOGTK
   // cgi();TODO uncomment on real cgi query, and comment next lines
 
+  // test();
+  setDictionaryIndex(1);
+
+  m_result.clear();
+  twoDictionaries(0);
+
+  m_result.clear();
+  twoDictionaries(1);
   // count longest constants needs when dictinary changed
-  checkLFAllFiles();
-  system("chcp 1251>nul");
-  showLongestAnagram();
-  showLongestPangram();
-  showLongestSimpleWordSequence();
-  showLongestDoubleWordSequence();
+  // checkLFAllFiles();
+  // system("chcp 1251>nul");
+  // showLongestAnagram();
+  // showLongestPangram();
+  // showLongestSimpleWordSequence();
+  // showLongestDoubleWordSequence();
 #endif
 }
+
+#ifdef NOGTK
+void WordsBase::test() {
+  VVString to;
+  int i, j, fromIndex = -1;
+  // int i, j, m, l, len, n, fromIndex = -1;
+  std::string s, alphabetFrom;
+  VString v;
+  const bool translit = 0;
+  // const int di = getDictionaryIndex();
+  s = getTwoDictionariesPath(translit);
+  for (auto &s : readFile(s)) {
+    if (to.empty()) {
+      fromIndex = INDEX_OF(s, LNG);
+      assert(fromIndex != -1);
+      alphabetFrom = m_settings[fromIndex][SETTINGS_ALPHABET];
+      to.resize(alphabetFrom.length());
+    } else {
+      v = split(s, ' ');
+      assert(v.size() > 1);
+      i = 0;
+      for (auto &a : v) {
+        if (i) {
+          to[j].push_back(a == "'" ? "" : a); //"'" = empty string
+        } else {
+          assert(a.size() == 1);
+          j = indexOf(a[0], alphabetFrom);
+          assert(j >= 0);
+        }
+        i++;
+      }
+    }
+  }
+
+  bool seen[256] = {false};
+  s = "";
+  for (auto const &e : to) {
+    for (auto a : e) {
+      for (const char ch : a) {
+        const uchar b = uchar(ch);
+        if (!seen[b]) {
+          seen[b] = true;
+          s += b;
+        }
+      }
+    }
+  }
+  j = 0;
+  for (i = 0; i < 256; i++) {
+    if (seen[i]) {
+      s += char(i);
+      j++;
+    }
+  }
+  pr(s, j);
+
+  // StringSet const &df = m_dictionary[fromIndex];
+  StringSet const &dt = m_dictionary[fromIndex == 1 ? 0 : 1];
+
+  auto begin = clock();
+  i = 0;
+  j = 0;
+  for (auto const &e : dt) {
+    if (spanIncluding(e, s)) {
+      i++;
+    }
+  }
+  pr(dt.size(), i);
+
+  pr(timeElapse(begin));
+}
+#endif
 
 WordsBase::~WordsBase() {
 #ifndef NOGTK
@@ -1024,8 +1104,43 @@ bool WordsBase::twoDictionaries(bool translit) {
     }
   }
 
-  StringSet const &df = m_dictionary[fromIndex];
+#define NEWS
+
+#ifdef NEWS
+  auto begin = clock();
+  bool seen[256] = {false};
+  s = "";
+  for (auto const &e : to) {
+    for (auto a : e) {
+      for (const char ch : a) {
+        const uchar b = uchar(ch);
+        if (!seen[b]) {
+          seen[b] = true;
+          s += b;
+        }
+      }
+    }
+  }
+  j = 0;
+  for (i = 0; i < 256; i++) {
+    if (seen[i]) {
+      s += char(i);
+      j++;
+    }
+  }
+  // pr(s,j);
+
+  std::set<std::string> dt;
+  for (auto const &e : m_dictionary[fromIndex == 1 ? 0 : 1]) {
+    if (spanIncluding(e, s)) {
+      dt.insert(e);
+    }
+  }
+  pr(timeElapse(begin),dt.size());
+#else
   StringSet const &dt = m_dictionary[fromIndex == 1 ? 0 : 1];
+#endif
+  StringSet const &df = m_dictionary[fromIndex];
 
   i = m_longestWordLength[fromIndex];
   VVString k(i);
@@ -1073,6 +1188,10 @@ bool WordsBase::twoDictionaries(bool translit) {
   l1531:
     RETURN_ON_USER_BREAK(true);
   }
+
+  pr(m_result.size())
+  pr(timeElapse(begin), m_result.size(), translit);
+  
   return false;
 }
 

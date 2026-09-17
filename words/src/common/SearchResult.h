@@ -23,7 +23,6 @@ public:
 };
 
 typedef std::vector<SearchResult> SearchResultVector;
-typedef SearchResultVector::const_iterator SearchResultVectorCI;
 typedef bool (*BOOL_SEARCH_RESULT_SEARCH_RESULT_FUNCTION)(const SearchResult&,
 		const SearchResult&);
 extern BOOL_SEARCH_RESULT_SEARCH_RESULT_FUNCTION SORT_FUNCTION[];

@@ -7,7 +7,7 @@
 
 #include "SearchResult.h"
 #include "WordsBase.h"
-#include <string.h>
+#include <cstring>
 
 SearchResult::SearchResult(std::string _s, int _length, int _words) {
 	unsigned i, l;

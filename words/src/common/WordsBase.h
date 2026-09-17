@@ -132,6 +132,7 @@ protected:
   void fillResultFromMap(const MapStringTwoStringVectors &map, size_t len);
 
 #ifdef NOGTK
+  void test();
   void checkLFAllFiles();
   void showLongestAnagram();            // for MAX_ANAGRAM_LENGTH
   void showLongestPangram();            // for MAX_PANGRAM_LENGTH
