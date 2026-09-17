@@ -421,30 +421,19 @@ void outMax(std::string f, int r[2]) {
 }
 
 // like fillResultFromMap
-bool outMap(const MapStringTwoStringVectors &map, size_t i) {
-  int j, k;
+bool outMap(const MapStringTwoStringVectors &map, size_t len) {
+  int i, j;
   std::string s;
-
   for (auto &[_, v] : map) {
-    VString const &v1 = v[0];
-    VString const &v2 = v[1];
+    auto &v0 = v[0];
+    auto &v1 = v[1];
+    i = v0.size();
     j = v1.size();
-    k = v2.size();
-
-    if (j != 0 && k != 0) {
-      if (j == 1 && k == 1 && v1[0] == v2[0] && v1[0].length() == i) {
+    if (i != 0 && j != 0) {
+      if (i == 1 && j == 1 && v0[0] == v1[0] && v0[0].length() == len) {
         continue;
       }
-
-      s = "";
-      for (auto svi : v1) {
-        s += svi + " ";
-      }
-      s += "-";
-      for (auto svi : v2) {
-        s += " " + svi;
-      }
-      std::cout << std::format("{} {}\n", s, i);
+      std::cout << std::format("{} {}\n", s, len);
       return true;
     }
   }
@@ -978,21 +967,19 @@ l210:
 
 void WordsBase::fillResultFromMap(const MapStringTwoStringVectors &map,
                                   size_t len) {
-  int j, k;
+  int i, j;
   std::string s;
   for (auto &[_, v] : map) {
-    VString const &v1 = v[0];
-    VString const &v2 = v[1];
+    auto &v0 = v[0];
+    auto &v1 = v[1];
+    i = v0.size();
     j = v1.size();
-    k = v2.size();
-
-    if (j != 0 && k != 0) {
-      if (j == 1 && k == 1 && v1[0] == v2[0] && v1[0].length() == len) {
+    if (i != 0 && j != 0) {
+      if (i == 1 && j == 1 && v0[0] == v1[0] && v0[0].length() == len) {
         continue;
       }
-
-      s = joinV(v1) + " - " + joinV(v2);
-      m_result.push_back(SearchResult(s, v1.begin()->length(), j + k));
+      s = joinV(v0) + " - " + joinV(v1);
+      m_result.push_back(SearchResult(s, v0.begin()->length(), i + j));
     }
   }
 }
