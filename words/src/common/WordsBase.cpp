@@ -1029,7 +1029,7 @@ bool WordsBase::twoDictionaries(bool translit) {
 
   i = m_longestWordLength[fromIndex];
   VVString k(i);
-  std::vector<int> id(i);
+  IntVector id(i);
 
   for (auto const &e : df) {
     len = e.length();
@@ -1057,9 +1057,9 @@ bool WordsBase::twoDictionaries(bool translit) {
         s += k[i][l % m];
         l /= m;
       }
-      if (dt.find(s) != dt.end()) {
-        /* fixed 4.3 first word should be in current dictionary language,
-         * for correct sorting vowels/consonant percent*/
+      if (dt.contains(s)) {
+        // first word should be in current dictionary language, for correct
+        // sorting vowels/consonant percent
         if (di == fromIndex) {
           s = e + " " + s;
         } else {
@@ -1080,7 +1080,7 @@ bool WordsBase::keyboardWords() {
   StringSet const &df = m_dictionary[0];
   StringSet const &dt = m_dictionary[1];
   int i;
-  char a[256], b[128], *p;
+  char a[256] = {0}, b[128], *p;
   std::string s;
   std::string::size_type j, len;
   const int di = getDictionaryIndex();
@@ -1088,7 +1088,6 @@ bool WordsBase::keyboardWords() {
   assert(SETTINGS_KEYBOARD_ROW2 == SETTINGS_KEYBOARD_ROW1 + 1);
   assert(SETTINGS_KEYBOARD_ROW3 == SETTINGS_KEYBOARD_ROW1 + 2);
 
-  memset(a, 0, 256);
   for (i = SETTINGS_KEYBOARD_ROW1; i <= SETTINGS_KEYBOARD_ROW3; i++) {
     s = m_settings[0][i];
     assert(m_settings[1][i].length() >= s.length());
