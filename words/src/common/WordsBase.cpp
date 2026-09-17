@@ -608,7 +608,7 @@ bool WordsBase::findAnagram() {
   const int min = m_comboValue[COMBOBOX_HELPER0];
   const int max = m_comboValue[COMBOBOX_HELPER1];
 
-  //at first make several sets by length is slower
+  // at first make several sets by length is slower
   for (i = min; i <= max; i++) {
     for (auto const &e : getDictionary()) {
       if (int(e.length()) != i) {
@@ -1421,11 +1421,20 @@ void WordsBase::sortFilterResults() {
 
 void WordsBase::loadLanguage() {
   std::string s;
-  int i = 0;
+  int i=0;
+  bool b = false;
   auto v = readFile(m_languageIndex, "language");
   m_language.clear();
   for (auto const &e : v) {
-    if (e.starts_with(SEPARATOR) || e.find('}') != std::string::npos) {
+    if (b) {
+      m_language.push_back(localeToUtf8(e));
+      continue;
+    }
+    if (e.empty()) {
+      b = true;
+      continue;
+    }
+    if (e==SEPARATOR || e[0]=='}' ) {
       continue;
     }
     s = localeToUtf8(e);
@@ -1435,14 +1444,13 @@ void WordsBase::loadLanguage() {
 #ifndef NOGTK
     setMenuLabel(ENUM_MENU(i), s);
 #endif
-    if (i == 0) {
+    //first item
+    if (!i) {
       m_language.push_back(utf8ToLowerCase(s));
     }
     i++;
   }
-  for (auto const &e : v) {
-    m_language.push_back(localeToUtf8(e));
-  }
+
   assert(m_language.size() == STRING_SIZE);
 
 #ifdef NOGTK
