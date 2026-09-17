@@ -484,13 +484,7 @@ void WordsBase::showLongestAnagram() {
           if (v.size() < 2) {
             continue;
           }
-          s = "";
-          for (auto svi : v) {
-            if (!s.empty()) {
-              s += " ";
-            }
-            s += svi;
-          }
+          s = joinV(v);
           r[n] = i;
           std::cout << std::format("length{} {}\n", i, s);
           // pr1("MAX_ANAGRAM_LENGTH={}; {}", i, s);
@@ -625,49 +619,7 @@ bool WordsBase::findAnagram() {
   const int min = m_comboValue[COMBOBOX_HELPER0];
   const int max = m_comboValue[COMBOBOX_HELPER1];
 
-#define SEARCH_TYPE 1
-#if SEARCH_TYPE == 0
-  clock_t start = std::clock();
-  std::vector<V> vs(max - min + 1);
-  for (auto const &e : getDictionary()) {
-    i = int(e.length());
-    if (i >= min && i <= max) {
-      vs[i - min].push_back(e);
-    }
-    RETURN_ON_USER_BREAK(true)
-  }
-  pr(timeElapse(start));
-  start = std::clock();
-  for (auto const &a : vs) {
-    for (auto const &e : a) {
-      s = e;
-      std::sort(s.begin(), s.end());
-      cit = map.find(s);
-      if (cit == map.end()) {
-        map[s] = {e};
-      } else {
-        cit->second.push_back(e);
-      }
-    }
-    for (auto const &e : map) {
-      V const &rv = e.second;
-      if (rv.size() < 2) {
-        continue;
-      }
-      s = "";
-      for (auto svi : rv) {
-        if (!s.empty()) {
-          s += " ";
-        }
-        s += svi;
-      }
-      m_result.push_back(SearchResult(s, rv.begin()->length(), rv.size()));
-    }
-    map.clear();
-    RETURN_ON_USER_BREAK(true)
-  }
-  pr(timeElapse(start));
-#else
+  //at first make several sets by length is slower
   for (i = min; i <= max; i++) {
     for (auto const &e : getDictionary()) {
       if (int(e.length()) != i) {
@@ -682,24 +634,16 @@ bool WordsBase::findAnagram() {
         cit->second.push_back(e);
       }
     }
-    for (auto const &e : map) {
-      V const &rv = e.second;
-      if (rv.size() < 2) {
+    for (auto &[_, v] : map) {
+      if (v.size() < 2) {
         continue;
       }
-      s = "";
-      for (auto svi : rv) {
-        if (!s.empty()) {
-          s += " ";
-        }
-        s += svi;
-      }
-      m_result.push_back(SearchResult(s, rv.begin()->length(), rv.size()));
+      s = joinV(v);
+      m_result.push_back(SearchResult(s, v.begin()->length(), v.size()));
     }
     map.clear();
     RETURN_ON_USER_BREAK(true)
   }
-#endif
   return false;
 }
 
@@ -1036,7 +980,6 @@ void WordsBase::fillResultFromMap(const MapStringTwoStringVectors &map,
                                   size_t len) {
   int j, k;
   std::string s;
-
   for (auto &[_, v] : map) {
     VString const &v1 = v[0];
     VString const &v2 = v[1];
@@ -1048,16 +991,7 @@ void WordsBase::fillResultFromMap(const MapStringTwoStringVectors &map,
         continue;
       }
 
-      // todo
-      s = "";
-      for (auto svi : v1) {
-        s += svi + " ";
-      }
-      s += "-";
-      for (auto svi : v2) {
-        s += " " + svi;
-      }
-
+      s = joinV(v1) + " - " + joinV(v2);
       m_result.push_back(SearchResult(s, v1.begin()->length(), j + k));
     }
   }
