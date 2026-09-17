@@ -5,8 +5,7 @@
  *      Author: alexey slovesnov
  */
 
-#ifndef CONSTS_H_
-#define CONSTS_H_
+#pragma once
 
 #include "WordsBase.h"
 #ifndef NOGTK
@@ -228,5 +227,3 @@ const ENUM_MENU MENU_WAITING[] = {MENU_DICTIONARY_STATISTICS,
                                   MENU_TWO_CHARACTERS_DISTRIBUTION_START,
                                   MENU_TWO_CHARACTERS_DISTRIBUTION_END};
 #endif /*#ifndef NOGTK*/
-
-#endif /* CONSTS_H_ */

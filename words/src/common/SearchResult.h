@@ -5,8 +5,7 @@
  *      Author: alexey slovesnov
  */
 
-#ifndef SEARCHRESULT_H_
-#define SEARCHRESULT_H_
+#pragma once
 
 #include "enums.h"
 #include <string>
@@ -29,5 +28,3 @@ typedef bool (*BOOL_SEARCH_RESULT_SEARCH_RESULT_FUNCTION)(const SearchResult&,
 		const SearchResult&);
 extern BOOL_SEARCH_RESULT_SEARCH_RESULT_FUNCTION SORT_FUNCTION[];
 extern const int NUMBER_OF_SORTS;
-
-#endif /* SEARCHRESULT_H_ */

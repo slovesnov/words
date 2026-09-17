@@ -5,8 +5,7 @@
  *      Author: alexey slovesnov
  */
 
-#ifndef ENUMS_H_
-#define ENUMS_H_
+#pragma once
 
 enum ENUM_STRING {
 	SEARCH,
@@ -208,5 +207,3 @@ enum CGI_STRING_ENUM{
 	CGI_STRING_SIZE
 };
 #endif
-
-#endif /* ENUMS_H_ */

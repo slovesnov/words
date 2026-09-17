@@ -5,8 +5,7 @@
  *      Author: alexey slovesnov
  */
 
-#ifndef COMMON_WORDSBASE_H_
-#define COMMON_WORDSBASE_H_
+#pragma once
 
 #include "HelperStructs.h"
 #include "Modification.h"
@@ -213,4 +212,3 @@ public:
   void loadLanguage();
 };
 
-#endif /* COMMON_WORDSBASE_H_ */

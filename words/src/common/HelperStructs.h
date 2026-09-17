@@ -5,8 +5,7 @@
  *      Author: alexey slovesnov
  */
 
-#ifndef HELPERSTRUCTS_H_
-#define HELPERSTRUCTS_H_
+#pragma once
 
 #include "aslov.h"
 #include <set>
@@ -59,5 +58,3 @@ using ChainNodeVectorCI = ChainNodeVector::const_iterator;
 bool sortIntDouble(const IntDouble &r1, const IntDouble &r2);
 bool sortIntInt(const IntInt &r1, const IntInt &r2);
 bool sortStringInt(const StringInt &r1, const StringInt &r2);
-
-#endif /* HELPERSTRUCTS_H_ */

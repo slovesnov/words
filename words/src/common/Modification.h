@@ -5,8 +5,7 @@
  *      Author: alexey slovesnov
  */
 
-#ifndef MODIFICATION_H_
-#define MODIFICATION_H_
+#pragma once
 
 #include "ModificationItem.h"
 #include <vector>
@@ -27,5 +26,3 @@ public:
 #endif
 
 };
-
-#endif /* MODIFICATION_H_ */

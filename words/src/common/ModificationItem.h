@@ -5,8 +5,7 @@
  *      Author: alexey slovesnov
  */
 
-#ifndef MODIFICATIONITEM_H_
-#define MODIFICATIONITEM_H_
+#pragma once
 
 #include "enums.h"
 #include <string>
@@ -41,5 +40,3 @@ public:
 	std::string apply(const std::string &s) const;
 
 };
-
-#endif /* MODIFICATIONITEM_H_ */

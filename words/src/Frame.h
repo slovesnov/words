@@ -5,8 +5,7 @@
  *      Author: alexey slovesnov
  */
 
-#ifndef FRAME_H_
-#define FRAME_H_
+#pragma once
 
 #include "common/consts.h"
 #include "common/WordsBase.h"
@@ -176,5 +175,3 @@ public:
 	void refillCombo(ENUM_COMBOBOX e, ENUM_STRING first, int length);
 	void newVersionMessage();
 };
-
-#endif /* FRAME_H_ */

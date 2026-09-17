@@ -40,10 +40,10 @@ const char DOWNLOAD_URL[] =
   showLongestSimpleWordSequence();
   showLongestDoubleWordSequence();
  */
-const int MAX_ANAGRAM_LENGTH = 31;              //{22,31}
-const int MAX_PANGRAM_LENGTH = 21;              //{16,21}
-const int MAX_SIMPLE_WORD_SEQUENCE_LENGTH = 30; //{25, 30}
-const int MAX_DOUBLE_WORD_SEQUENCE_LENGTH = 14; //{7, 14}
+const int MAX_ANAGRAM_LENGTH = 31;              //{22 31}
+const int MAX_PANGRAM_LENGTH = 21;              //{16 21}
+const int MAX_SIMPLE_WORD_SEQUENCE_LENGTH = 30; //{25 30}
+const int MAX_DOUBLE_WORD_SEQUENCE_LENGTH = 14; //{7 14}
 
 const std::string CONFIG_TAGS[] = {"version", "language", "dictionary"};
 
@@ -561,7 +561,8 @@ void Frame::aboutDialog() {
 
     if (id == HOMEPAGE_STRING || id == HOMEPAGE_ONLINE_STRING) {
       s1 = (id == HOMEPAGE_STRING ? HOMEPAGE : HOMEPAGE_ONLINE) +
-           (m_languageIndex ? ',' + getShortLanguageString(m_languageIndex) : "");
+           (m_languageIndex ? ',' + getShortLanguageString(m_languageIndex)
+                            : "");
       label = gtk_label_new(NULL);
       markup = g_markup_printf_escaped("%s <a href=\"%s\">\%s</a>",
                                        m_language[id].c_str(), s1.c_str(),

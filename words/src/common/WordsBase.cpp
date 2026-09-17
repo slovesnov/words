@@ -409,15 +409,15 @@ void WordsBase::checkLFAllFiles() {
   }
 }
 
-void outMax(std::string f, int r[2]) {
+void outMax(std::string f, std::array<int, 2> r) {
   std::string s;
   for (char c : f.substr(strlen("showLongest"))) {
     if (std::isupper(c))
       s += '_';
     s += std::toupper(c);
   }
-  std::cout << std::format("const int MAX{}_LENGTH={};//{{{}, {}}}\n", s,
-                           std::max(r[0], r[1]), r[0], r[1]);
+  std::cout << std::format("const int MAX{}_LENGTH={};//{{{}}}\n", s,
+                           std::max(r[0], r[1]), join(r));
 }
 
 // like fillResultFromMap
@@ -433,6 +433,7 @@ bool outMap(const MapStringTwoStringVectors &map, size_t len) {
       if (i == 1 && j == 1 && v0[0] == v1[0] && v0[0].length() == len) {
         continue;
       }
+      s = joinV(v0) + " - " + joinV(v1);
       std::cout << std::format("{} {}\n", s, len);
       return true;
     }
@@ -441,7 +442,8 @@ bool outMap(const MapStringTwoStringVectors &map, size_t len) {
 }
 
 void WordsBase::showLongestAnagram() {
-  int i, n, r[2];
+  int i, n;
+  std::array<int, 2> r;
   std::string s;
   MapStringStringVector map;
   MapStringStringVectorI cit;
@@ -489,7 +491,8 @@ void WordsBase::showLongestAnagram() {
 }
 
 void WordsBase::showLongestPangram() {
-  int i, n, l, r[2];
+  int i, n, l;
+  std::array<int, 2> r;
   std::string s;
   for (n = 0; n < 2; n++) {
     i = 10;
@@ -510,7 +513,8 @@ void WordsBase::showLongestPangram() {
 }
 
 void WordsBase::showLongestSimpleWordSequence() {
-  int i, j, n, r[2];
+  int i, j, n;
+  std::array<int, 2> r;
   std::string s, s1;
   MapStringTwoStringVectors map;
   for (n = 0; n < 2; n++) {
@@ -543,7 +547,8 @@ void WordsBase::showLongestSimpleWordSequence() {
 }
 
 void WordsBase::showLongestDoubleWordSequence() {
-  int i, j, n, r[2];
+  int i, j, n;
+  std::array<int, 2> r;
   std::string s, t, q;
   MapStringTwoStringVectors map;
   MapStringTwoStringVectorsI mit;
@@ -1421,7 +1426,7 @@ void WordsBase::sortFilterResults() {
 
 void WordsBase::loadLanguage() {
   std::string s;
-  int i=0;
+  int i = 0;
   bool b = false;
   auto v = readFile(m_languageIndex, "language");
   m_language.clear();
@@ -1434,7 +1439,7 @@ void WordsBase::loadLanguage() {
       b = true;
       continue;
     }
-    if (e==SEPARATOR || e[0]=='}' ) {
+    if (e == SEPARATOR || e[0] == '}') {
       continue;
     }
     s = localeToUtf8(e);
@@ -1444,7 +1449,7 @@ void WordsBase::loadLanguage() {
 #ifndef NOGTK
     setMenuLabel(ENUM_MENU(i), s);
 #endif
-    //first item
+    // first item
     if (!i) {
       m_language.push_back(utf8ToLowerCase(s));
     }
