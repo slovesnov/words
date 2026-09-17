@@ -94,6 +94,7 @@ WordsBase::WordsBase() {
   // cgi();TODO uncomment on real cgi query, and comment next lines
 
   // count longest constants needs when dictinary changed
+  checkLFAllFiles();
   system("chcp 1251>nul");
   showLongestAnagram();
   showLongestPangram();
@@ -116,7 +117,7 @@ bool WordsBase::checkKeyboardWordSimple(const std::string &s) {
 }
 
 bool WordsBase::checkKeyboardWordComplex(const std::string &s) {
-  const char *p = s.c_str();  
+  const char *p = s.c_str();
   for (; p[1] != 0; p++) {
     if (!m_keyboardRowDiagonals[uchar(*p)].contains(p[1])) {
       return false;
@@ -362,23 +363,55 @@ void WordsBase::setKeyboardRowDiagonals() {
 
 int WordsBase::differentChars(std::string_view s) {
   bool seen[256] = {false};
-  int unique_count = 0;
+  int c = 0;
   for (const char ch : s) {
-    const unsigned char byte_idx = static_cast<unsigned char>(ch);
-    if (!seen[byte_idx]) {
-      seen[byte_idx] = true;
-      unique_count++;
+    const uchar b = uchar(ch);
+    if (!seen[b]) {
+      seen[b] = true;
+      c++;
     }
   }
-  return unique_count;
+  return c;
 }
 
 #ifdef NOGTK
-
-void outMax(const char *f, int r[2]) {
+std::string readBinaryFileToString(const std::string &filename) {
+  std::ifstream file(filename, std::ios::binary | std::ios::ate);
   std::string s;
-  for (f += strlen("showLongest"); *f; f++) {
-    char c = *f;
+  if (!file.is_open()) {
+    pr("error cann't open file " + filename);
+  } else {
+    s.resize(file.tellg());
+    file.seekg(0, std::ios::beg);
+    file.read(s.data(), s.size());
+  }
+  return s;
+}
+
+void WordsBase::checkLFAllFiles() {
+  auto v = {"cgi_language", "language", "settings", "template"};
+
+  auto checkFile = [this](const std::string &filepath) {
+    std::string s = readBinaryFileToString(filepath);
+    if (s.contains('\r')) {
+      pr("file " + filepath + " has CR symbol");
+    }
+  };
+
+  for (int n = 0; n < 2; n++) {
+    for (const auto &name : v) {
+      checkFile(path(n, name));
+    }
+  }
+
+  for (int n = 0; n < 2; n++) {
+    checkFile(getTwoDictionariesPath(n));
+  }
+}
+
+void outMax(std::string f, int r[2]) {
+  std::string s;
+  for (char c : f.substr(strlen("showLongest"))) {
     if (std::isupper(c))
       s += '_';
     s += std::toupper(c);
@@ -389,12 +422,10 @@ void outMax(const char *f, int r[2]) {
 
 // like fillResultFromMap
 bool outMap(const MapStringTwoStringVectors &map, size_t i) {
-  MapStringTwoStringVectorsCI mit;
   int j, k;
   std::string s;
 
-  for (mit = map.begin(); mit != map.end(); mit++) {
-    const TwoStringVectors &v = mit->second;
+  for (auto &[_, v] : map) {
     VString const &v1 = v[0];
     VString const &v2 = v[1];
     j = v1.size();
@@ -425,7 +456,7 @@ void WordsBase::showLongestAnagram() {
   std::string s;
   MapStringStringVector map;
   MapStringStringVectorI cit;
-  std::vector<VString> vvs;
+  VVString vvs;
 
   for (n = 0; n < 2; n++) {
     setDictionaryIndex(n);
@@ -449,13 +480,12 @@ void WordsBase::showLongestAnagram() {
           cit->second.push_back(e);
         }
 
-        for (cit = map.begin(); cit != map.end(); cit++) {
-          VString &rv = cit->second;
-          if (rv.size() < 2) {
+        for (auto &[_, v] : map) {
+          if (v.size() < 2) {
             continue;
           }
           s = "";
-          for (auto svi : rv) {
+          for (auto svi : v) {
             if (!s.empty()) {
               s += " ";
             }
@@ -477,6 +507,7 @@ void WordsBase::showLongestAnagram() {
 
 void WordsBase::showLongestPangram() {
   int i, n, l, r[2];
+  std::string s;
   for (n = 0; n < 2; n++) {
     i = 10;
     setDictionaryIndex(n);
@@ -486,10 +517,11 @@ void WordsBase::showLongestPangram() {
         if (l > i) {
           i = l;
           r[n] = i;
-          std::cout << std::format("pangram diff chars{} {}\n", i, e);
+          s = std::format("pangram diff chars{} {}\n", i, e);
         }
       }
     }
+    std::cout << s;
   }
   outMax(__func__, r);
 }
@@ -498,7 +530,6 @@ void WordsBase::showLongestSimpleWordSequence() {
   int i, j, n, r[2];
   std::string s, s1;
   MapStringTwoStringVectors map;
-  MapStringTwoStringVectorsI mit;
   for (n = 0; n < 2; n++) {
     setDictionaryIndex(n);
     for (i = m_longestWordLength[n]; i > 0; i--) {
@@ -506,7 +537,8 @@ void WordsBase::showLongestSimpleWordSequence() {
         if (int(e.length()) >= i) {
           for (j = 0; j < 2; j++) {
             s = j ? e.substr(0, i) : e.substr(e.length() - i);
-            if ((mit = map.find(s)) == map.end()) {
+            auto mit = map.find(s);
+            if (mit == map.end()) {
               TwoStringVectors v;
               v[j].push_back(e);
               map[s] = v;
@@ -876,7 +908,7 @@ l210:
   // so j-=2;
   j -= 2;
 
-  std::vector<VString> vl(j);
+  VVString vl(j);
   std::vector<ChainNodeVector> ch(j);
   IntVector ni(j), nis(j);
 
@@ -1002,12 +1034,10 @@ l210:
 
 void WordsBase::fillResultFromMap(const MapStringTwoStringVectors &map,
                                   size_t len) {
-  MapStringTwoStringVectorsCI mit;
   int j, k;
   std::string s;
 
-  for (mit = map.begin(); mit != map.end(); mit++) {
-    const TwoStringVectors &v = mit->second;
+  for (auto &[_, v] : map) {
     VString const &v1 = v[0];
     VString const &v2 = v[1];
     j = v1.size();
@@ -1018,6 +1048,7 @@ void WordsBase::fillResultFromMap(const MapStringTwoStringVectors &map,
         continue;
       }
 
+      // todo
       s = "";
       for (auto svi : v1) {
         s += svi + " ";
@@ -1032,15 +1063,19 @@ void WordsBase::fillResultFromMap(const MapStringTwoStringVectors &map,
   }
 }
 
+std::string WordsBase::getTwoDictionariesPath(bool translit) {
+  return getResourcePath(LNG[0] + LNG[1] + "_" +
+                         (translit ? "translit" : "simple") + ".txt");
+}
+
 bool WordsBase::twoDictionaries(bool translit) {
-  std::vector<VString> to;
-  StringSetCI it;
+  VVString to;
   int i, j, m, l, len, n, fromIndex = -1;
   std::string s, alphabetFrom;
   VString v;
   const int di = getDictionaryIndex();
-  s = LNG[0] + LNG[1] + "_" + (translit ? "translit" : "simple") + ".txt";
-  for (auto &s : readFile(getResourcePath(s))) {
+  s = getTwoDictionariesPath(translit);
+  for (auto &s : readFile(s)) {
     if (to.empty()) {
       fromIndex = INDEX_OF(s, LNG);
       assert(fromIndex != -1);
@@ -1067,13 +1102,13 @@ bool WordsBase::twoDictionaries(bool translit) {
   StringSet const &dt = m_dictionary[fromIndex == 1 ? 0 : 1];
 
   i = m_longestWordLength[fromIndex];
-  std::vector<VString> k(i);
+  VVString k(i);
   std::vector<int> id(i);
 
-  for (it = df.begin(); it != df.end(); it++) {
-    len = it->length();
+  for (auto const &e : df) {
+    len = e.length();
     for (n = 1, i = 0; i < len; i++) {
-      j = indexOf((*it)[i], alphabetFrom);
+      j = indexOf(e[i], alphabetFrom);
       assert(j >= 0);
       // Check whether char has no correspondence in config file.
       // For example symbol '-' in russian alphabet, has no correspondence in
@@ -1082,7 +1117,7 @@ bool WordsBase::twoDictionaries(bool translit) {
       l = k[i].size();
       if (l == 0) {
         goto l1531;
-        // faster then use break and check i<int(it->length()) after cycle
+        // faster then use break and check i<int(e.length()) after cycle
       }
       id[i] = l;
       n *= l;
@@ -1100,11 +1135,11 @@ bool WordsBase::twoDictionaries(bool translit) {
         /* fixed 4.3 first word should be in current dictionary language,
          * for correct sorting vowels/consonant percent*/
         if (di == fromIndex) {
-          s = *it + " " + s;
+          s = e + " " + s;
         } else {
-          s = s + " " + *it;
+          s = s + " " + e;
         }
-        assert(len == int(it->length()));
+        assert(len == int(e.length()));
         m_result.push_back(SearchResult(
             s, len, 1)); // mark as 1 word only to not show number of words
       }
@@ -1254,7 +1289,6 @@ bool WordsBase::checkDictionary() {
 
 bool WordsBase::twoCharactersDistribution() {
   StringSet const &r = getDictionary();
-  StringSetCI it;
   int i, j;
   const int s = getAlphabetSize();
   auto a = create2dArray<int>(s, s, 0);
@@ -1262,20 +1296,20 @@ bool WordsBase::twoCharactersDistribution() {
   StringIntVectorCI p;
 
   int total = 0;
-  for (it = r.begin(); it != r.end(); it++) {
-    if (it->length() < 2) {
+  for (auto const &e : r) {
+    if (e.length() < 2) {
       continue;
     }
     if (m_menuClick == MENU_TWO_CHARACTERS_DISTRIBUTION) {
-      for (i = 0; i < int(it->length()) - 1; i++) {
-        a[alphabetIndex((*it)[i])][alphabetIndex((*it)[i + 1])]++;
+      for (i = 0; i < int(e.length()) - 1; i++) {
+        a[alphabetIndex(e[i])][alphabetIndex(e[i + 1])]++;
         total++;
       }
     } else {
       i = m_menuClick == MENU_TWO_CHARACTERS_DISTRIBUTION_START
               ? 0
-              : it->length() - 2;
-      a[alphabetIndex((*it)[i])][alphabetIndex((*it)[i + 1])]++;
+              : e.length() - 2;
+      a[alphabetIndex(e[i])][alphabetIndex(e[i + 1])]++;
       total++;
     }
   }
@@ -1312,7 +1346,6 @@ bool WordsBase::dictionaryStatistics() {
   int i, j;
   unsigned k;
   double v;
-  StringSetCI it;
   const int SZ_CAPTION = 3;
   std::string caption[SZ_CAPTION];
   std::string additionalCaption[2];
@@ -1417,8 +1450,6 @@ bool WordsBase::dictionaryStatistics() {
 
 void WordsBase::sortFilterResults() {
   int i;
-  // leave SearchResultVectorCI for old gcc compiler under sf.net
-  SearchResultVectorCI it;
   std::string s;
 
 #ifndef NOGTK
@@ -1431,9 +1462,8 @@ void WordsBase::sortFilterResults() {
               SORT_FUNCTION[m_comboValue[COMBOBOX_SORT] * 2 +
                             m_comboValue[COMBOBOX_SORT_ORDER]]);
   }
-
-  for (it = m_result.begin(); it != m_result.end(); it++) {
-    s = localeToUtf8(it->s);
+  for (auto const &e : m_result) {
+    s = localeToUtf8(e.s);
 #ifndef NOGTK
     if (find != testFilterRegex(s)) {
       continue;
@@ -1446,20 +1476,20 @@ void WordsBase::sortFilterResults() {
 
     m_out += s;
     if (!m_outSplitted) {
-      m_out += OPEN_S + m_language[CHARACTERS] + format(" %d", it->length);
+      m_out += OPEN_S + m_language[CHARACTERS] + format(" %d", e.length);
 
-      if (it->words > 1) {
-        m_out += format(" %s %d", m_language[WORDS].c_str(), it->words);
+      if (e.words > 1) {
+        m_out += format(" %s %d", m_language[WORDS].c_str(), e.words);
       }
 
       i = m_comboValue[COMBOBOX_SORT] - (NUMBER_OF_SORTS - 3);
       if (i == 0 || i == 1) { // sort by vowels, consonants
         m_out += " " + m_language[VOWELS + i] +
                  format(" %.1lf%%",
-                        it->percent[i]); // show percent of vowels or consonants
+                        e.percent[i]); // show percent of vowels or consonants
       } else if (i == 2) {
         m_out += " " + m_language[DIFFERENT_CHARACTERS] +
-                 format(" %d", it->differentCharacters);
+                 format(" %d", e.differentCharacters);
       }
 
       m_out += ")";
@@ -1470,15 +1500,14 @@ void WordsBase::sortFilterResults() {
 
 void WordsBase::loadLanguage() {
   std::string s;
-  VString::const_iterator it;
   int i = 0;
   auto v = readFile(m_languageIndex, "language");
   m_language.clear();
-  for (it = v.begin(); it != v.end() && !it->empty(); it++) {
-    if (it->starts_with(SEPARATOR) || it->find('}') != std::string::npos) {
+  for (auto const &e : v) {
+    if (e.starts_with(SEPARATOR) || e.find('}') != std::string::npos) {
       continue;
     }
-    s = localeToUtf8(*it);
+    s = localeToUtf8(e);
     if (s.back() == '{') {
       s.pop_back();
     }
@@ -1490,8 +1519,8 @@ void WordsBase::loadLanguage() {
     }
     i++;
   }
-  for (it++; it != v.end(); it++) {
-    m_language.push_back(localeToUtf8(*it));
+  for (auto const &e : v) {
+    m_language.push_back(localeToUtf8(e));
   }
   assert(m_language.size() == STRING_SIZE);
 
@@ -1830,7 +1859,7 @@ void WordsBase::cgi() {
 #endif
 
 const std::string invalidDifference = "$";
-std::vector<std::map<std::string, std::vector<std::string>>> eqmap;
+std::vector<MapStringStringVector> eqmap;
 
 std::string sub(std::string const &minuend, std::string const &subtrahend) {
   if (minuend.length() < subtrahend.length()) {
@@ -1882,9 +1911,9 @@ std::string getUserString(std::string const &s) {
   return o;
 }
 
-std::vector<std::pair<std::string, std::string>>
-getAllPairs(std::string const &s, std::string const &low = invalidDifference) {
-  std::vector<std::pair<std::string, std::string>> v;
+StringStringVector getAllPairs(std::string const &s,
+                               std::string const &low = invalidDifference) {
+  StringStringVector v;
   for (size_t i = 1; i < s.size(); i++) {
     for (auto &e : eqmap[i]) {
       if (low == invalidDifference || low <= e.first) {
@@ -1902,9 +1931,7 @@ getAllPairs(std::string const &s, std::string const &low = invalidDifference) {
 }
 
 // output all pairs to string
-std::string
-pairsToString(std::vector<std::pair<std::string, std::string>> const &v,
-              bool p = 0) {
+std::string pairsToString(StringStringVector const &v, bool p = 0) {
   std::string sout = "";
   bool first = true;
   if (p) {

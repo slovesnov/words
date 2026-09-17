@@ -133,6 +133,7 @@ protected:
   void fillResultFromMap(const MapStringTwoStringVectors &map, size_t len);
 
 #ifdef NOGTK
+  void checkLFAllFiles();
   void showLongestAnagram();            // for MAX_ANAGRAM_LENGTH
   void showLongestPangram();            // for MAX_PANGRAM_LENGTH
   void showLongestSimpleWordSequence(); // for MAX_WORD_SEQUENCE_LENGTH
@@ -173,8 +174,11 @@ public:
   bool twoCharactersDistribution();
   bool dummy() {
     return false;
-  } // Helper wrapper function for language change menu
-    // helper BOOL_VOID_FUNCTION
+  } 
+  
+  static std::string getTwoDictionariesPath(bool translit);
+  // Helper wrapper function for language change menu
+  // helper BOOL_VOID_FUNCTION
   bool twoDictionaries(bool translit);
 
   static int differentChars(std::string_view s);
