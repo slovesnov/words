@@ -1059,12 +1059,6 @@ void Frame::setMenuLabel(ENUM_MENU e, std::string const &text) {
   }
 }
 
-void Frame::setSortCombosState(bool enable) {
-  for (auto &e : {COMBOBOX_SORT, COMBOBOX_SORT_ORDER}) {
-    gtk_widget_set_sensitive(m_combo[e], !m_outSplitted);
-  }
-}
-
 void Frame::endJobThread() { gdk_threads_add_idle(end_job, NULL); }
 
 std::string Frame::getMenuLabel(ENUM_MENU e) {

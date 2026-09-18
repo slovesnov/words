@@ -133,7 +133,6 @@ public:
 
   virtual bool userBreakThread();
   virtual void setMenuLabel(ENUM_MENU e, std::string const &text) override;
-  virtual void setSortCombosState(bool enable) override;
   virtual void endJobThread()override;
   std::string getMenuLabel(ENUM_MENU e);
 

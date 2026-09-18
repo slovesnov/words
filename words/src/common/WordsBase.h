@@ -119,7 +119,6 @@ std::vector<StringSetCI> m_it[LANGUAGES];
   }
   virtual bool userBreakThread() = 0;
   virtual void setMenuLabel(ENUM_MENU e, std::string const &text) = 0;
-  virtual void setSortCombosState(bool enable)=0;
   virtual void endJobThread()=0;
   bool setCheckFilterRegex();
   bool testFilterRegex(const std::string &s);
@@ -154,7 +153,7 @@ public:
 
   void run();
   void run_thread(int nthread);
-  
+
   bool checkPangram(const std::string &s);
   bool checkTemplate(const std::string &s);
   bool checkPalindrome(const std::string &s);

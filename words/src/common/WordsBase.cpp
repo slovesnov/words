@@ -1803,10 +1803,6 @@ void WordsBase::run() {
     }
   }
 
-#ifndef NOGTK
-  setSortCombosState(!m_outSplitted);
-#endif
-
   if (b) { // was user break
     //		printl("end set")
     m_end = clock();
