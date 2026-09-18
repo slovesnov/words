@@ -13,18 +13,24 @@
 using uchar = unsigned char;
 
 #ifdef NOGTK
-#define RETURN_ON_USER_BREAK(a)
+#define RETURN_ON_USER_BREAK
 #else
-#define RETURN_ON_USER_BREAK(a)                                                \
+#define RETURN_ON_USER_BREAK                                                   \
   if (userBreakThread()) {                                                     \
-    return a;                                                                  \
+    pr("user break", nthread);                                                 \
+    return;                                                                    \
+  }
+#define RETURN_ON_USER_BREAK1                                                  \
+  if (userBreakThread()) {                                                     \
+    pr("user break sort");                                                     \
+    return;                                                                    \
   }
 #endif
 
 std::string LNG[LANGUAGES];
 std::vector<MapStringStringVector> eqmap;
 
-const std::unordered_map<ENUM_MENU, bool (WordsBase::*)(int)> menu2BoolVoid = {
+const std::unordered_map<ENUM_MENU, void (WordsBase::*)(int)> menu2BoolVoid = {
     {MENU_ANAGRAM, &WordsBase::findAnagram}, // break implemented
     {MENU_SIMPLE_WORD_SEQUENCE,
      &WordsBase::findSimpleWordSequence}, // break implemented
@@ -684,7 +690,7 @@ void WordsBase::showLongestDoubleWordSequence() {
 }
 #endif
 
-bool WordsBase::findAnagram(int nthread) {
+void WordsBase::findAnagram(int nthread) {
   int i;
   std::string s;
   // can use string or string_view
@@ -719,12 +725,11 @@ bool WordsBase::findAnagram(int nthread) {
       m_result.push_back(SearchResult(s, v.begin()->length(), v.size()));
     }
     map.clear();
-    RETURN_ON_USER_BREAK(true)
+    RETURN_ON_USER_BREAK
   }
-  return false;
 }
 
-bool WordsBase::findSimpleWordSequence(int nthread) {
+void WordsBase::findSimpleWordSequence(int nthread) {
   int i, j;
   std::string s;
   MapStringTwoStringVectors map;
@@ -745,16 +750,15 @@ bool WordsBase::findSimpleWordSequence(int nthread) {
         }
       }
 
-      RETURN_ON_USER_BREAK(true)
+      RETURN_ON_USER_BREAK
     }
 
     fillResultFromMap(map, i);
     map.clear();
   }
-  return false;
 }
 
-bool WordsBase::findDoubleWordSequence(int nthread) {
+void WordsBase::findDoubleWordSequence(int nthread) {
   int i, j;
   std::string s, t, q;
   MapStringTwoStringVectors map;
@@ -795,16 +799,15 @@ bool WordsBase::findDoubleWordSequence(int nthread) {
         }
       }
 
-      RETURN_ON_USER_BREAK(true)
+      RETURN_ON_USER_BREAK
     }
 
     fillResultFromMap(map, i);
     map.clear();
   }
-  return false;
 }
 
-bool WordsBase::findWordSequenceFull(int nthread) {
+void WordsBase::findWordSequenceFull(int nthread) {
   std::string s;
   for (auto const &e : getDictionary()) {
     if (checkPalindrome(e)) {
@@ -816,22 +819,20 @@ bool WordsBase::findWordSequenceFull(int nthread) {
       m_result.push_back(SearchResult(e + " " + s, e.length(), 2));
     }
   }
-  return false;
 }
 
-bool WordsBase::findModification(int nthread) {
+void WordsBase::findModification(int nthread) {
   std::string s;
   for (auto const &e : getDictionary()) {
     s = m_modifications.apply(e, m_checkValue);
     if (!s.empty() && s != e && getDictionary().contains(s)) {
       m_result.push_back(SearchResult(e + " " + s, e.length(), 1));
     }
-    RETURN_ON_USER_BREAK(true)
+    RETURN_ON_USER_BREAK
   }
-  return false;
 }
 
-bool WordsBase::findChain(int nthread) {
+void WordsBase::findChain(int nthread) {
   int i, j, k, l, n, mx[2];
   MapStringInt dl;
   VString v, w[2];
@@ -846,7 +847,7 @@ bool WordsBase::findChain(int nthread) {
   if (differenceOnlyOneChar(m_chainHelper[0], m_chainHelper[1])) {
     m_out = localeToUtf8(m_chainHelper[0] + " " + m_chainHelper[1]) + OPEN_S +
             m_language[WORDS] + "2)";
-    return false;
+    return;
   }
 
   for (auto &e : r) {
@@ -911,7 +912,7 @@ bool WordsBase::findChain(int nthread) {
 l210:
   if (vs[0].empty()) {
     m_out = m_language[NO_CHAINS_FOUND];
-    return false;
+    return;
   }
 
   j = 0;
@@ -1046,11 +1047,9 @@ l210:
   for (auto &e : v) {
     m_result.push_back(SearchResult(e, m_chainHelper[0].length(), j + 2));
   }
-
-  return false;
 }
 
-bool WordsBase::findLetterGroupSplit(int nthread) {
+void WordsBase::findLetterGroupSplit(int nthread) {
   std::string s, s1, t, lng;
   size_t i, j;
   StringSet const &r = getDictionary();
@@ -1106,8 +1105,6 @@ bool WordsBase::findLetterGroupSplit(int nthread) {
                      intToStringLocaled(n[i]) + (i ? "" : ", ");
     }
   }
-
-  return false;
 }
 
 void WordsBase::fillResultFromMap(const MapStringTwoStringVectors &map,
@@ -1134,7 +1131,7 @@ std::string WordsBase::getTwoDictionariesPath(bool translit) {
                          (translit ? "translit" : "simple") + ".txt");
 }
 
-bool WordsBase::twoDictionaries(int nthread, bool translit) {
+void WordsBase::twoDictionaries(int nthread, bool translit) {
   VVString to;
   int i, j, m, l, len, n, fromIndex = -1;
   std::string s, alphabetFrom;
@@ -1211,13 +1208,11 @@ bool WordsBase::twoDictionaries(int nthread, bool translit) {
       }
     }
   l1531:
-    RETURN_ON_USER_BREAK(true);
+    RETURN_ON_USER_BREAK
   }
-
-  return false;
 }
 
-bool WordsBase::keyboardWords(int nthread) {
+void WordsBase::keyboardWords(int nthread) {
   StringSet const &df = m_dictionary[0];
   StringSet const &dt = m_dictionary[1];
   int i;
@@ -1258,10 +1253,9 @@ bool WordsBase::keyboardWords(int nthread) {
       m_result.push_back(SearchResult(s, len, 1));
     }
   }
-  return false;
 }
 
-bool WordsBase::wordFrequency(int nthread) {
+void WordsBase::wordFrequency(int nthread) {
   int i;
   const int MAX = getMaximumWordLength();
   IntVector m(MAX, 0);
@@ -1288,11 +1282,9 @@ bool WordsBase::wordFrequency(int nthread) {
         format("\n%2d %6.3lf%% %6s/%s", e.second, 100. * e.first / r.size(),
                toString(e.first, ',').c_str(), toString(r.size(), ',').c_str());
   }
-
-  return false;
 }
 
-bool WordsBase::checkDictionary(int nthread) {
+void WordsBase::checkDictionary(int nthread) {
   // NOTE!!! SHOULD CHECK DICTIONARY FILE NOT!!! DICTIONARY SET. Check for
   // duplicates and valid line numbers
   std::string s, p = path(getDictionaryIndex(), "words");
@@ -1312,7 +1304,7 @@ bool WordsBase::checkDictionary(int nthread) {
   FILE *file = std::fopen(p.c_str(), "rb");
   if (!file) {
     m_out = m_language[STRING_ERROR];
-    return false;
+    return;
   }
   try {
     while (std::fgets(buffer, sizeof(buffer), file) != nullptr) {
@@ -1350,10 +1342,9 @@ bool WordsBase::checkDictionary(int nthread) {
   } catch (const std::runtime_error &) {
     std::fclose(file);
   }
-  return false;
 }
 
-bool WordsBase::twoCharactersDistribution(int nthread) {
+void WordsBase::twoCharactersDistribution(int nthread) {
   int i, j;
   const int s = getAlphabetSize();
   auto a = create2dArray<int>(s, s, 0);
@@ -1404,10 +1395,9 @@ bool WordsBase::twoCharactersDistribution(int nthread) {
                                  intToStringLocaled(total).c_str()));
   }
   m_addstatus = m_language[PAIRS] + " " + intToStringLocaled(v.size());
-  return false;
 }
 
-bool WordsBase::dictionaryStatistics(int nthread) {
+void WordsBase::dictionaryStatistics(int nthread) {
   int i, j;
   unsigned k;
   double v;
@@ -1509,8 +1499,6 @@ bool WordsBase::dictionaryStatistics(int nthread) {
   m_out += "\n\n" + m_language[THE_LONGEST_WORD_IS] +
            format(" - %s (%s %d).", localeToUtf8(longestWord).c_str(),
                   m_language[LENGTH].c_str(), longestWord.length());
-
-  return false;
 }
 
 void WordsBase::sortFilterResults() {
@@ -1559,7 +1547,7 @@ void WordsBase::sortFilterResults() {
 
       m_out += ")";
     }
-    RETURN_ON_USER_BREAK()
+    RETURN_ON_USER_BREAK1
   }
 }
 
@@ -1786,10 +1774,10 @@ void WordsBase::run_thread(int nthread) {
       if ((this->*f)(e)) {
         m_result.push_back(SearchResult(e, e.length(), 1));
       }
-      RETURN_ON_USER_BREAK()
+      RETURN_ON_USER_BREAK
     }
   }
-  pr(nthread,"finished");
+  pr(nthread, "finished");
 }
 
 void WordsBase::run() {

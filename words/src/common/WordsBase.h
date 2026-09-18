@@ -136,9 +136,6 @@ std::vector<StringSetCI> m_it[LANGUAGES];
     return k == std::string::npos ? -1 : k;
   }
 
-  void run();
-  void run_thread(int nthread);
-
   void fillResultFromMap(const MapStringTwoStringVectors &map, size_t len);
 
   // todo
@@ -155,6 +152,9 @@ public:
   WordsBase();
   virtual ~WordsBase();
 
+  void run();
+  void run_thread(int nthread);
+  
   bool checkPangram(const std::string &s);
   bool checkTemplate(const std::string &s);
   bool checkPalindrome(const std::string &s);
@@ -167,28 +167,27 @@ public:
   bool checkKeyboardWordSimple(const std::string &s);
   bool checkKeyboardWordComplex(const std::string &s);
 
-  // return true if was user break like run() function, order is the same with
-  bool findAnagram(int nthread);
-  bool findSimpleWordSequence(int nthread);
-  bool findDoubleWordSequence(int nthread);
-  bool findWordSequenceFull(int nthread);
-  bool findModification(int nthread);
-  bool findChain(int nthread);
-  bool findLetterGroupSplit(int nthread);
-  bool twoDictionariesSimple(int nthread) {
-    return twoDictionaries(nthread, false);
+  void findAnagram(int nthread);
+  void findSimpleWordSequence(int nthread);
+  void findDoubleWordSequence(int nthread);
+  void findWordSequenceFull(int nthread);
+  void findModification(int nthread);
+  void findChain(int nthread);
+  void findLetterGroupSplit(int nthread);
+  void twoDictionariesSimple(int nthread) {
+    twoDictionaries(nthread, false);
   }
-  bool twoDictionariesTranslit(int nthread) {
-    return twoDictionaries(nthread, true);
+  void twoDictionariesTranslit(int nthread) {
+    twoDictionaries(nthread, true);
   }
-  bool keyboardWords(int nthread);
-  bool dictionaryStatistics(int nthread);
-  bool wordFrequency(int nthread);
-  bool checkDictionary(int nthread);
-  bool twoCharactersDistribution(int nthread);
+  void keyboardWords(int nthread);
+  void dictionaryStatistics(int nthread);
+  void wordFrequency(int nthread);
+  void checkDictionary(int nthread);
+  void twoCharactersDistribution(int nthread);
 
   static std::string getTwoDictionariesPath(bool translit);
-  bool twoDictionaries(int nthread, bool translit);
+  void twoDictionaries(int nthread, bool translit);
 
   static int differentChars(std::string_view s);
   static bool spanIncluding(std::string_view p, std::string_view pattern) {

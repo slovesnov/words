@@ -530,7 +530,9 @@ void Frame::destroy() {
   WRITE_CONFIG(CONFIG_TAGS, WORDS_VERSION,
                getShortLanguageString(m_languageIndex),
                getShortLanguageString(getDictionaryIndex()));
-
+#ifndef STD_THREAD
+  g_mutex_clear(&m_mutex);
+#endif
   stopThread();
   gtk_main_quit();
 }
@@ -662,7 +664,7 @@ void Frame::routine() {
   startJob(true);
 
   if (prepare()) {
-    run();
+    m_thread = std::jthread([this]() { this->run(); });
   } else { // wrapper to call endJob() if prepare() returns false
     m_end = clock();
     endJob();

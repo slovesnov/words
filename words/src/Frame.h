@@ -89,7 +89,6 @@ class Frame : WordsBase {
 
   /*make non static because other createLabel() functions is not static*/
   GtkWidget *createLabel(std::string s) { return gtk_label_new(s.c_str()); }
-
   GtkWidget *createLabel(ENUM_STRING e) { return createLabel(m_language[e]); }
 
   /*make non static because other add() functions are not static*/
@@ -98,16 +97,10 @@ class Frame : WordsBase {
   }
 
   void add(GtkWidget *w, std::string s) { add(w, createLabel(s)); }
-
   void add(GtkWidget *w, ENUM_STRING e) { add(w, createLabel(e)); }
 
 public:
   Frame();
-  virtual ~Frame() {
-#ifndef STD_THREAD
-    g_mutex_clear(&m_mutex);
-#endif
-  }
 
   void destroy();
 
