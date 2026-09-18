@@ -9,7 +9,7 @@
 #include "consts.h"
 #include <cassert>
 
-typedef unsigned char uchar;
+using uchar = unsigned char;
 
 #ifdef NOGTK
 #define RETURN_ON_USER_BREAK(a)
@@ -1185,7 +1185,7 @@ bool WordsBase::keyboardWords() {
     }
     *p = 0;
 
-    if (dt.find(b) != dt.end()) {
+    if (dt.contains(b)) {
       /* fixed 4.3 first word should be in current dictionary language,
        * for correct sorting vowels/consonant percent*/
       if (di == 0) {
