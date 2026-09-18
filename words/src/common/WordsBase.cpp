@@ -1764,7 +1764,7 @@ bool WordsBase::setCheckFilterRegex() {
   m_regex[1] = g_regex_new(s.c_str(), GRegexCompileFlags(G_REGEX_CASELESS),
                            GRegexMatchFlags(0), NULL);
   if (m_regex[1]) {
-    pr2("set regex1")
+    pr2("set regex1");
   }
   return m_regex[1] != nullptr;
 }
