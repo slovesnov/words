@@ -23,10 +23,7 @@ using uchar = unsigned char;
 
 std::string LNG[LANGUAGES];
 
-using BOOL_STRING_WORDSBASE_FUNCTION = bool (WordsBase::*)(const std::string &);
-using BOOL_VOID_WORDSBASE_FUNCTION = bool (WordsBase::*)();
-
-const std::unordered_map<ENUM_MENU, BOOL_VOID_WORDSBASE_FUNCTION>
+const std::unordered_map<ENUM_MENU, bool (WordsBase::*)()>
     menu2BoolVoid = {
         {MENU_ANAGRAM, &WordsBase::findAnagram}, // break implemented
         {MENU_SIMPLE_WORD_SEQUENCE,
@@ -57,7 +54,7 @@ const std::unordered_map<ENUM_MENU, BOOL_VOID_WORDSBASE_FUNCTION>
          &WordsBase::twoCharactersDistribution} // not implemented
 };
 
-const std::map<ENUM_MENU, BOOL_STRING_WORDSBASE_FUNCTION> menu2BoolString = {
+const std::map<ENUM_MENU, bool (WordsBase::*)(const std::string &)> menu2BoolString = {
     {MENU_PANGRAM, &WordsBase::checkPangram},
     {MENU_TEMPLATE, &WordsBase::checkTemplate},
     {MENU_PALINDROME, &WordsBase::checkPalindrome},
