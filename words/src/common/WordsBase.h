@@ -65,9 +65,6 @@ protected:
   std::regex m_regex;
 #else
   GRegex *m_regex;
-  GRegex *m_filterRegex;
-  std::string m_filterText; // locale
-  int m_filteredWordsCount;
 #endif
 
   int m_languageIndex;
@@ -87,6 +84,9 @@ protected:
 #ifdef NOGTK
   VString m_cgiLanguage; // utf8
 #else
+  GRegex *m_filterRegex;
+  std::string m_filterText; // locale
+  int m_filteredWordsCount;
   std::string m_programVersion;
 #endif
 
