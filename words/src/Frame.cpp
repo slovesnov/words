@@ -19,6 +19,8 @@
 #endif
 
 #include <format>
+#include <unordered_map>
+
 
 // Note WORDS_VERSION defined in consts.h
 const char MAIL[] = "slovesnov@yandex.ru";
@@ -47,6 +49,47 @@ const int MAX_SIMPLE_WORD_SEQUENCE_LENGTH = 30; //{25 30}
 const int MAX_DOUBLE_WORD_SEQUENCE_LENGTH = 14; //{7 14}
 
 const std::string CONFIG_TAGS[] = {"version", "language", "dictionary"};
+
+const std::unordered_map<ENUM_MENU, ENUM_STRING> MENU_TO_HELP_STRING = {
+    {MENU_ANAGRAM, ANAGRAM_HELP},
+    {MENU_PANGRAM, PANGRAM_HELP},
+    {MENU_TEMPLATE, TEMPLATE_HELP},
+    {MENU_PALINDROME, PALINDROME_HELP},
+    {MENU_CROSSWORD, CROSSWORD_HELP},
+    {MENU_REGULAR_EXPRESSIONS, REGULAR_EXPRESSION_HELP},
+    {MENU_MODIFICATION, MODIFICATION_HELP},
+    {MENU_CHAIN, CHAIN_HELP},
+    {MENU_CHARACTER_SEQUENCE, CHARACTERS_SEQUENCE_HELP},
+    {MENU_LETTER_GROUP_SPLIT, LETTER_GROUP_SPLIT_HELP},
+    {MENU_SIMPLE_WORD_SEQUENCE, WORD_SEQUENCE_HELP},
+    {MENU_DOUBLE_WORD_SEQUENCE, DOUBLE_WORD_SEQUENCE_HELP},
+    {MENU_WORD_SEQUENCE_FULL, WORD_SEQUENCE_FULL_HELP},
+    {MENU_KEYBOARD_WORD_SIMPLE, KEYBOARD_WORD_SIMPLE_HELP},
+    {MENU_KEYBOARD_WORD_COMPLEX, KEYBOARD_WORD_DIAGONAL_HELP},
+    {MENU_CONSONANT_VOWEL_SEQUENCE, CONSONANT_VOWEL_CHARACTER_SEQUENCE_HELP},
+    {MENU_DENSITY, DENSITY_HELP},
+    {MENU_TWO_DICTIONARIES_SIMPLE, TWO_DICTIONARIES_SIMPLE_HELP},
+    {MENU_TWO_DICTIONARIES_TRANSLIT, TWO_DICTIONARIES_TRANSLIT_HELP},
+    {MENU_TWO_DICTIONARIES_KEYBOARD_WORD, TWO_DICTIONARIES_KEYBOARD_WORD_HELP},
+    {MENU_TWO_CHARACTERS_DISTRIBUTION, TWO_CHARACTERS_DISTRIBUTION_HELP},
+    {MENU_TWO_CHARACTERS_DISTRIBUTION_START, TWO_CHARACTERS_DISTRIBUTION_HELP},
+    {MENU_TWO_CHARACTERS_DISTRIBUTION_END, TWO_CHARACTERS_DISTRIBUTION_HELP}};
+
+const std::unordered_map<ENUM_MENU, std::string> MENU_TO_ICON_FILE = {
+    {MENU_SEARCH, "search.png"},
+    {MENU_EDIT, "edit.png"},
+    {MENU_ADDITIONS, "add.png"},
+    {MENU_LANGUAGE, "language.png"},
+    {MENU_HELP, "help.png"},
+    {MENU_EDIT_SELECT_ALL_AND_COPY_TO_CLIPBOARD, "select_all_copy.png"},
+    {MENU_EDIT_SELECT_ALL, "select_all.png"},
+    {MENU_EDIT_COPY_TO_CLIPBOARD, "copy.png"},
+    {MENU_LOAD_ENGLISH_DICTIONARY, "en.gif"},
+    {MENU_ENGLISH_LANGUAGE, "en.gif"},
+    {MENU_LOAD_RUSSIAN_DICTIONARY, "ru.gif"},
+    {MENU_RUSSIAN_LANGUAGE, "ru.gif"},
+    {MENU_ABOUT, "word16.png"},
+    {MENU_HOMEPAGE, "web.png"}};
 
 Frame *frame;
 
@@ -128,10 +171,6 @@ Frame::Frame() : WordsBase() {
   std::vector<GtkMenuItem *> subMenu;
   std::string s;
 
-  static_assert(SIZE(ICON_MENU) == SIZE(ICON_MENU_FILE_NAME));
-  static_assert(SIZE(HELPER_MENU) == SIZE(HELPER_STRING));
-  static_assert(SIZE(FUNCTION_MENU) == SIZE(FUNCTION_ID));
-  static_assert(SIZE(BOOL_VOID_MENU) == SIZE(BOOL_VOID_FUNCTION));
   static_assert(MENU_ACCEL_SIZE == SIZE(ACCEL_KEY));
 
 #ifndef NDEBUG
@@ -309,25 +348,19 @@ Frame::Frame() : WordsBase() {
 
     bSubMenu = s.find('{') != std::string::npos;
 
-    if ((j = INDEX_OF(ENUM_MENU(i), ICON_MENU)) != -1) {
+    auto it = MENU_TO_ICON_FILE.find(ENUM_MENU(i));
+    if (it == MENU_TO_ICON_FILE.end()) {
+      item = gtk_menu_item_new_with_label("");
+    } else {
       item = gtk_menu_item_new();
-
       w = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
       w1 = gtk_accel_label_new("");
-
-      gtk_container_add(GTK_CONTAINER(w), image(ICON_MENU_FILE_NAME[j]));
-
+      gtk_container_add(GTK_CONTAINER(w), image(it->second));
       gtk_label_set_use_underline(GTK_LABEL(w1), TRUE);
       gtk_label_set_xalign(GTK_LABEL(w1), 0.0);
-
       gtk_accel_label_set_accel_widget(GTK_ACCEL_LABEL(w1), item);
-
       gtk_box_pack_end(GTK_BOX(w), w1, TRUE, TRUE, 0);
-
       gtk_container_add(GTK_CONTAINER(item), w);
-
-    } else {
-      item = gtk_menu_item_new_with_label("");
     }
 
     gtk_menu_shell_append(
@@ -643,15 +676,17 @@ void Frame::setHelperPanel() {
   clearContainer(m_helperUp);
 
   // set label
-  if ((i = INDEX_OF(m_menuClick, HELPER_MENU)) !=
-      -1) { // for some of menu items only needs clear helper panel
+  auto it = MENU_TO_HELP_STRING.find(m_menuClick);
+  if (it !=
+      MENU_TO_HELP_STRING
+          .end()) { // for some of menu items only needs clear helper panel
     w = gtk_label_new("");
     gtk_container_add(GTK_CONTAINER(m_helperUp), w);
     gtk_label_set_justify(GTK_LABEL(w), GTK_JUSTIFY_FILL);
     gtk_label_set_line_wrap(GTK_LABEL(w), TRUE);
     gtk_label_set_max_width_chars(GTK_LABEL(w), 40);
 
-    s = replaceAll(m_language[HELPER_STRING[i]], "<br>", "\n");
+    s = replaceAll(m_language[it->second], "<br>", "\n");
     p = g_markup_printf_escaped(s.c_str());
     gtk_label_set_markup(GTK_LABEL(w), p);
     g_free(p);
@@ -1011,7 +1046,7 @@ void Frame::clickButton(GtkWidget *button) {
 
 void Frame::setMenuLabel(ENUM_MENU e, std::string const &text) {
   GtkWidget *w = m_menuMap[e];
-  if (ONE_OF(e, ICON_MENU)) {
+  if (MENU_TO_ICON_FILE.contains(e)) {
     w = gtk_bin_get_child(GTK_BIN(w));
     GList *list = gtk_container_get_children(GTK_CONTAINER(w));
     assert(g_list_length(list) == 2);
@@ -1024,7 +1059,7 @@ void Frame::setMenuLabel(ENUM_MENU e, std::string const &text) {
 
 std::string Frame::getMenuLabel(ENUM_MENU e) {
   GtkWidget *w = m_menuMap[e];
-  if (ONE_OF(e, ICON_MENU)) {
+  if (MENU_TO_ICON_FILE.contains(e)) {
     w = gtk_bin_get_child(GTK_BIN(w));
     GList *list = gtk_container_get_children(GTK_CONTAINER(w));
     assert(g_list_length(list) == 2);
@@ -1087,9 +1122,9 @@ void Frame::endJob() {
  */
 void Frame::stopThread() {
 #ifdef STD_THREAD
-  pr("try stop",m_thread.joinable());
+  pr("try stop", m_thread.joinable());
   m_thread.request_stop();
-  if (m_thread.joinable()){
+  if (m_thread.joinable()) {
     m_thread.join();
   }
   pr("stopped")
@@ -1107,11 +1142,15 @@ bool Frame::userBreakThread() {
     pr("thread exit");
     m_result.clear();
     m_out = "";
+#ifndef USE_STANDARD_REGEX
+    if (m_menuClick == MENU_REGULAR_EXPRESSIONS) {
+      g_regex_unref(m_regex);
+    }
+#endif
     return true;
   } else {
     return false;
   }
-
 #else
   if (g_mutex_trylock(&m_mutex)) {
     g_mutex_unlock(&m_mutex);
@@ -1119,6 +1158,11 @@ bool Frame::userBreakThread() {
   } else {
     m_result.clear();
     m_out = "";
+#ifndef USE_STANDARD_REGEX
+    if (m_menuClick == MENU_REGULAR_EXPRESSIONS) {
+      g_regex_unref(m_regex);
+    }
+#endif
     return true;
   }
 #endif
@@ -1153,7 +1197,7 @@ void Frame::startThread(GThreadFunc f) {
 #ifdef STD_THREAD
   if (!m_thread.joinable()) {
     // GCC bug #100612 so use lambda if call class member
-    m_thread = std::jthread([this,f](std::stop_token token) {
+    m_thread = std::jthread([this, f](std::stop_token token) {
       m_token = token;
       f(nullptr);
     });

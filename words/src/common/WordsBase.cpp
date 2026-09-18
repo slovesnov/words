@@ -8,6 +8,7 @@
 #include "WordsBase.h"
 #include "consts.h"
 #include <cassert>
+#include <unordered_map>
 
 using uchar = unsigned char;
 
@@ -22,6 +23,37 @@ using uchar = unsigned char;
 
 std::string LNG[LANGUAGES];
 
+const std::unordered_map<ENUM_MENU, BOOL_VOID_WORDSBASE_FUNCTION> menu2BoolVoid = {
+    {MENU_ANAGRAM, &WordsBase::findAnagram},
+    {MENU_SIMPLE_WORD_SEQUENCE, &WordsBase::findSimpleWordSequence},
+    {MENU_DOUBLE_WORD_SEQUENCE, &WordsBase::findDoubleWordSequence},
+    {MENU_WORD_SEQUENCE_FULL, &WordsBase::findWordSequenceFull},
+    {MENU_MODIFICATION, &WordsBase::findModification},
+    {MENU_CHAIN, &WordsBase::findChain},
+    {MENU_LETTER_GROUP_SPLIT, &WordsBase::findLetterGroupSplit},
+    {MENU_TWO_DICTIONARIES_SIMPLE, &WordsBase::twoDictionariesSimple},
+    {MENU_TWO_DICTIONARIES_TRANSLIT, &WordsBase::twoDictionariesTranslit},
+    {MENU_TWO_DICTIONARIES_KEYBOARD_WORD, &WordsBase::keyboardWords},
+    {MENU_DICTIONARY_STATISTICS, &WordsBase::dictionaryStatistics},
+    {MENU_WORD_FREQUENCY, &WordsBase::wordFrequency},
+    {MENU_CHECK_DICTIONARY, &WordsBase::checkDictionary},
+    {MENU_TWO_CHARACTERS_DISTRIBUTION, &WordsBase::twoCharactersDistribution},
+    {MENU_TWO_CHARACTERS_DISTRIBUTION_START,
+     &WordsBase::twoCharactersDistribution},
+    {MENU_TWO_CHARACTERS_DISTRIBUTION_END,
+     &WordsBase::twoCharactersDistribution}};
+
+const std::map<ENUM_MENU, BOOL_STRING_WORDSBASE_FUNCTION> menu2BoolString = {
+    {MENU_PANGRAM, &WordsBase::checkPangram},
+    {MENU_TEMPLATE, &WordsBase::checkTemplate},
+    {MENU_PALINDROME, &WordsBase::checkPalindrome},
+    {MENU_CROSSWORD, &WordsBase::checkCrossword},
+    {MENU_REGULAR_EXPRESSIONS, &WordsBase::checkRegularExpression},
+    {MENU_CHARACTER_SEQUENCE, &WordsBase::checkCharacterSequence},
+    {MENU_KEYBOARD_WORD_SIMPLE, &WordsBase::checkKeyboardWordSimple},
+    {MENU_KEYBOARD_WORD_COMPLEX, &WordsBase::checkKeyboardWordComplex},
+    {MENU_CONSONANT_VOWEL_SEQUENCE, &WordsBase::checkConsonantVowelSequence},
+    {MENU_DENSITY, &WordsBase::checkDensity}};
 #ifdef NOGTK
 // use cgi project
 #include "cgi.h"
@@ -90,7 +122,7 @@ WordsBase::WordsBase() {
     file.close();
   }
 
-  //test();
+  // test();
 #ifdef NOGTK
   // cgi();TODO uncomment on real cgi query, and comment next lines
 
@@ -1675,29 +1707,21 @@ std::string WordsBase::getTimeString() {
 }
 
 bool WordsBase::run() {
-  StringSet const &r = getDictionary();
-  int i;
-
-  if ((i = INDEX_OF(m_menuClick, BOOL_VOID_MENU)) != -1) {
-    return (this->*BOOL_VOID_FUNCTION[i])();
+  auto it = menu2BoolVoid.find(m_menuClick);
+  if (it != menu2BoolVoid.end()) {
+    auto f = it->second;
+    return (this->*f)();
   }
 
-  i = INDEX_OF(m_menuClick, FUNCTION_MENU);
-  assert(i != -1);
-  BOOL_STRING_WORDSBASE_FUNCTION searchFunction = FUNCTION_ID[i];
-
-  for (auto &e : r) {
-    if ((this->*searchFunction)(e)) {
-      m_result.push_back(SearchResult(e, e.length(), 1));
+  auto it1 = menu2BoolString.find(m_menuClick);
+  if (it1 != menu2BoolString.end()) {
+    auto f = it1->second;
+    for (auto &e : getDictionary()) {
+      if ((this->*f)(e)) {
+        m_result.push_back(SearchResult(e, e.length(), 1));
+      }
+      RETURN_ON_USER_BREAK(true)
     }
-
-    RETURN_ON_USER_BREAK(true)
-  }
-
-  if (m_menuClick == MENU_REGULAR_EXPRESSIONS) {
-#ifndef USE_STANDARD_REGEX
-    g_regex_unref(m_regex);
-#endif
   }
 
   return false;

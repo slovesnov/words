@@ -177,7 +177,6 @@ public:
   bool wordFrequency();
   bool checkDictionary();
   bool twoCharactersDistribution();
-  bool dummy() { return false; }
 
   static std::string getTwoDictionariesPath(bool translit);
   // Helper wrapper function for language change menu
