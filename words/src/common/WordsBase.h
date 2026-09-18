@@ -7,7 +7,7 @@
 
 #pragma once
 
-//#define STD_THREAD
+#define STD_THREAD
 
 #include "HelperStructs.h"
 #include "Modification.h"
@@ -27,7 +27,7 @@
 #include <thread>
 #endif
 
-#define pr2(...) print_variables(__VA_ARGS__);std::cout  << "\n";
+#define pr2(...) print_variables(__VA_ARGS__);std::cout << "\n";
 
 const char SEPARATOR[] = "SEPARATOR";
 constexpr std::string LANGUAGE[] = {"english", "russian"};
