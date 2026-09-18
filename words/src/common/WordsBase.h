@@ -27,11 +27,14 @@
 #include <thread>
 #endif
 
-#define pr2(...) print_variables(__VA_ARGS__);std::cout << "\n";
+#define pr2(...)                                                               \
+  print_variables(__VA_ARGS__);                                                \
+  std::cout << "\n";
 
 const char SEPARATOR[] = "SEPARATOR";
 constexpr std::string LANGUAGE[] = {"english", "russian"};
 constexpr int LANGUAGES = SIZEI(LANGUAGE);
+const std::string invalidDifference = "$";
 
 class WordsBase;
 extern WordsBase *wordsBase;
@@ -85,6 +88,7 @@ protected:
   std::string m_programVersion;
   void freeRegex(int i);
 #endif
+std::vector<StringSetCI> m_it[LANGUAGES];
 
   std::string getStatusString();
   std::string getTimeString();
@@ -131,7 +135,7 @@ protected:
 
   void fillResultFromMap(const MapStringTwoStringVectors &map, size_t len);
 
-  //todo
+  // todo
   void test();
 #ifdef NOGTK
   void checkLFAllFiles();
@@ -158,26 +162,27 @@ public:
   bool checkKeyboardWordComplex(const std::string &s);
 
   // return true if was user break like run() function, order is the same with
-  // BOOL_VOID_FUNCTION
-  bool findAnagram();
-  bool findSimpleWordSequence();
-  bool findDoubleWordSequence();
-  bool findWordSequenceFull();
-  bool findModification();
-  bool findChain();
-  bool findLetterGroupSplit();
-  bool twoDictionariesSimple() { return twoDictionaries(false); }
-  bool twoDictionariesTranslit() { return twoDictionaries(true); }
-  bool keyboardWords();
-  bool dictionaryStatistics();
-  bool wordFrequency();
-  bool checkDictionary();
-  bool twoCharactersDistribution();
+  bool findAnagram(int nthread);
+  bool findSimpleWordSequence(int nthread);
+  bool findDoubleWordSequence(int nthread);
+  bool findWordSequenceFull(int nthread);
+  bool findModification(int nthread);
+  bool findChain(int nthread);
+  bool findLetterGroupSplit(int nthread);
+  bool twoDictionariesSimple(int nthread) {
+    return twoDictionaries(nthread, false);
+  }
+  bool twoDictionariesTranslit(int nthread) {
+    return twoDictionaries(nthread, true);
+  }
+  bool keyboardWords(int nthread);
+  bool dictionaryStatistics(int nthread);
+  bool wordFrequency(int nthread);
+  bool checkDictionary(int nthread);
+  bool twoCharactersDistribution(int nthread);
 
   static std::string getTwoDictionariesPath(bool translit);
-  // Helper wrapper function for language change menu
-  // helper BOOL_VOID_FUNCTION
-  bool twoDictionaries(bool translit);
+  bool twoDictionaries(int nthread, bool translit);
 
   static int differentChars(std::string_view s);
   static bool spanIncluding(std::string_view p, std::string_view pattern) {
@@ -209,4 +214,13 @@ public:
   void sortFilterResults();
 
   void loadLanguage();
+
+  static std::string sub(std::string const &minuend,
+                         std::string const &subtrahend);
+  static std::string getOrderedString(std::string const &s);
+  static std::string getUserString(std::string const &s);
+  static StringStringVector
+  getAllPairs(std::string const &s, std::string const &low = invalidDifference);
+  static std::string pairsToString(StringStringVector const &v, bool p = 0);
+
 };

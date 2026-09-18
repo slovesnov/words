@@ -22,49 +22,51 @@ using uchar = unsigned char;
 #endif
 
 std::string LNG[LANGUAGES];
+std::vector<MapStringStringVector> eqmap;
 
-const std::unordered_map<ENUM_MENU, bool (WordsBase::*)()>
-    menu2BoolVoid = {
-        {MENU_ANAGRAM, &WordsBase::findAnagram}, // break implemented
-        {MENU_SIMPLE_WORD_SEQUENCE,
-         &WordsBase::findSimpleWordSequence}, // break implemented
-        {MENU_DOUBLE_WORD_SEQUENCE,
-         &WordsBase::findDoubleWordSequence}, // break implemented
-        {MENU_WORD_SEQUENCE_FULL,
-         &WordsBase::findWordSequenceFull},                // not implemented
-        {MENU_MODIFICATION, &WordsBase::findModification}, // break implemented
-        {MENU_CHAIN, &WordsBase::findChain},               // not implemented
-        {MENU_LETTER_GROUP_SPLIT,
-         &WordsBase::findLetterGroupSplit}, // not implemented
-        {MENU_TWO_DICTIONARIES_SIMPLE,
-         &WordsBase::twoDictionariesSimple}, // break implemented
-        {MENU_TWO_DICTIONARIES_TRANSLIT,
-         &WordsBase::twoDictionariesTranslit}, // break implemented
-        {MENU_TWO_DICTIONARIES_KEYBOARD_WORD,
-         &WordsBase::keyboardWords}, // not implemented
-        {MENU_DICTIONARY_STATISTICS,
-         &WordsBase::dictionaryStatistics},                   // not implemented
-        {MENU_WORD_FREQUENCY, &WordsBase::wordFrequency},     // not implemented
-        {MENU_CHECK_DICTIONARY, &WordsBase::checkDictionary}, // not implemented
-        {MENU_TWO_CHARACTERS_DISTRIBUTION,
-         &WordsBase::twoCharactersDistribution}, // not implemented
-        {MENU_TWO_CHARACTERS_DISTRIBUTION_START,
-         &WordsBase::twoCharactersDistribution}, // not implemented
-        {MENU_TWO_CHARACTERS_DISTRIBUTION_END,
-         &WordsBase::twoCharactersDistribution} // not implemented
+const std::unordered_map<ENUM_MENU, bool (WordsBase::*)(int)> menu2BoolVoid = {
+    {MENU_ANAGRAM, &WordsBase::findAnagram}, // break implemented
+    {MENU_SIMPLE_WORD_SEQUENCE,
+     &WordsBase::findSimpleWordSequence}, // break implemented
+    {MENU_DOUBLE_WORD_SEQUENCE,
+     &WordsBase::findDoubleWordSequence}, // break implemented
+    {MENU_WORD_SEQUENCE_FULL,
+     &WordsBase::findWordSequenceFull},                // not implemented
+    {MENU_MODIFICATION, &WordsBase::findModification}, // break implemented
+    {MENU_CHAIN, &WordsBase::findChain},               // not implemented
+    {MENU_LETTER_GROUP_SPLIT,
+     &WordsBase::findLetterGroupSplit}, // not implemented
+    {MENU_TWO_DICTIONARIES_SIMPLE,
+     &WordsBase::twoDictionariesSimple}, // break implemented
+    {MENU_TWO_DICTIONARIES_TRANSLIT,
+     &WordsBase::twoDictionariesTranslit}, // break implemented
+    {MENU_TWO_DICTIONARIES_KEYBOARD_WORD,
+     &WordsBase::keyboardWords}, // not implemented
+    {MENU_DICTIONARY_STATISTICS,
+     &WordsBase::dictionaryStatistics},                   // not implemented
+    {MENU_WORD_FREQUENCY, &WordsBase::wordFrequency},     // not implemented
+    {MENU_CHECK_DICTIONARY, &WordsBase::checkDictionary}, // not implemented
+    {MENU_TWO_CHARACTERS_DISTRIBUTION,
+     &WordsBase::twoCharactersDistribution}, // not implemented
+    {MENU_TWO_CHARACTERS_DISTRIBUTION_START,
+     &WordsBase::twoCharactersDistribution}, // not implemented
+    {MENU_TWO_CHARACTERS_DISTRIBUTION_END,
+     &WordsBase::twoCharactersDistribution} // not implemented
 };
 
-const std::map<ENUM_MENU, bool (WordsBase::*)(const std::string &)> menu2BoolString = {
-    {MENU_PANGRAM, &WordsBase::checkPangram},
-    {MENU_TEMPLATE, &WordsBase::checkTemplate},
-    {MENU_PALINDROME, &WordsBase::checkPalindrome},
-    {MENU_CROSSWORD, &WordsBase::checkCrossword},
-    {MENU_REGULAR_EXPRESSIONS, &WordsBase::checkRegularExpression},
-    {MENU_CHARACTER_SEQUENCE, &WordsBase::checkCharacterSequence},
-    {MENU_KEYBOARD_WORD_SIMPLE, &WordsBase::checkKeyboardWordSimple},
-    {MENU_KEYBOARD_WORD_COMPLEX, &WordsBase::checkKeyboardWordComplex},
-    {MENU_CONSONANT_VOWEL_SEQUENCE, &WordsBase::checkConsonantVowelSequence},
-    {MENU_DENSITY, &WordsBase::checkDensity}};
+const std::map<ENUM_MENU, bool (WordsBase::*)(const std::string &)>
+    menu2BoolString = {
+        {MENU_PANGRAM, &WordsBase::checkPangram},
+        {MENU_TEMPLATE, &WordsBase::checkTemplate},
+        {MENU_PALINDROME, &WordsBase::checkPalindrome},
+        {MENU_CROSSWORD, &WordsBase::checkCrossword},
+        {MENU_REGULAR_EXPRESSIONS, &WordsBase::checkRegularExpression},
+        {MENU_CHARACTER_SEQUENCE, &WordsBase::checkCharacterSequence},
+        {MENU_KEYBOARD_WORD_SIMPLE, &WordsBase::checkKeyboardWordSimple},
+        {MENU_KEYBOARD_WORD_COMPLEX, &WordsBase::checkKeyboardWordComplex},
+        {MENU_CONSONANT_VOWEL_SEQUENCE,
+         &WordsBase::checkConsonantVowelSequence},
+        {MENU_DENSITY, &WordsBase::checkDensity}};
 #ifdef NOGTK
 // use cgi project
 #include "cgi.h"
@@ -133,6 +135,32 @@ WordsBase::WordsBase() {
       }
     }
     file.close();
+  }
+
+  int num_threads = g_get_num_processors(); // std::hardware_concurrency();
+
+  for (i = 0; i < LANGUAGES; i++) {
+    auto begin = clock();
+    StringSet const &main_set = m_dictionary[i];
+    size_t total_size = main_set.size();
+    size_t chunk_size = total_size / num_threads;
+    size_t remainder = total_size % num_threads;
+    auto current_it = main_set.begin();
+
+    for (j = 0; j < num_threads; ++j) {
+      size_t current_chunk =
+          chunk_size + (j == num_threads - 1 ? remainder : 0);
+      if (current_chunk == 0)
+        break;
+
+      m_it[i].push_back(current_it);
+      current_it = std::next(current_it, current_chunk);
+    }
+    //pr(current_it==main_set.end());
+      m_it[i].push_back(current_it);
+
+      //m_it[i].size()=threads+1
+    //pr(total_size, timeElapse(begin), m_it[i].size());
   }
 
   // test();
@@ -693,7 +721,7 @@ void WordsBase::showLongestDoubleWordSequence() {
 }
 #endif
 
-bool WordsBase::findAnagram() {
+bool WordsBase::findAnagram(int nthread) {
   int i;
   std::string s;
   // can use string or string_view
@@ -733,15 +761,14 @@ bool WordsBase::findAnagram() {
   return false;
 }
 
-bool WordsBase::findSimpleWordSequence() {
-  StringSet const &r = getDictionary();
+bool WordsBase::findSimpleWordSequence(int nthread) {
   int i, j;
   std::string s;
   MapStringTwoStringVectors map;
   MapStringTwoStringVectorsI mit;
   for (i = m_comboValue[COMBOBOX_HELPER0]; i <= m_comboValue[COMBOBOX_HELPER1];
        i++) {
-    for (auto const &e : r) {
+    for (auto const &e : getDictionary()) {
       if (int(e.length()) >= i) {
         for (j = 0; j < 2; j++) {
           s = j ? e.substr(0, i) : e.substr(e.length() - i);
@@ -764,7 +791,7 @@ bool WordsBase::findSimpleWordSequence() {
   return false;
 }
 
-bool WordsBase::findDoubleWordSequence() {
+bool WordsBase::findDoubleWordSequence(int nthread) {
   int i, j;
   std::string s, t, q;
   MapStringTwoStringVectors map;
@@ -814,7 +841,7 @@ bool WordsBase::findDoubleWordSequence() {
   return false;
 }
 
-bool WordsBase::findWordSequenceFull() {
+bool WordsBase::findWordSequenceFull(int nthread) {
   std::string s;
   for (auto const &e : getDictionary()) {
     if (checkPalindrome(e)) {
@@ -829,7 +856,7 @@ bool WordsBase::findWordSequenceFull() {
   return false;
 }
 
-bool WordsBase::findModification() {
+bool WordsBase::findModification(int nthread) {
   std::string s;
   for (auto const &e : getDictionary()) {
     s = m_modifications.apply(e, m_checkValue);
@@ -841,7 +868,7 @@ bool WordsBase::findModification() {
   return false;
 }
 
-bool WordsBase::findChain() {
+bool WordsBase::findChain(int nthread) {
   int i, j, k, l, n, mx[2];
   MapStringInt dl;
   VString v, w[2];
@@ -1060,6 +1087,66 @@ l210:
   return false;
 }
 
+bool WordsBase::findLetterGroupSplit(int nthread) {
+  std::string s, s1, t, lng;
+  size_t i, j;
+  StringSet const &r = getDictionary();
+  auto charset = getOrderedString(m_entryText);
+
+  const size_t size = m_entryText.length();
+  eqmap.clear();
+  eqmap.resize(size);
+
+  for (auto &s : r) {
+    j = s.length();
+    if (j < size) {
+      s1 = getOrderedString(s);
+      auto &m = eqmap[j];
+      auto it = m.find(s1);
+      if (it == m.end()) {
+        t = sub(charset, s1);
+        if (t != invalidDifference) {
+          m.insert({s1, {s}});
+        }
+      } else {
+        it->second.push_back(s);
+      }
+    }
+  }
+
+  auto v = getAllPairs(charset);
+  size_t n[] = {v.size(), 0};
+
+  if (!v.empty()) {
+    m_out = localeToUtf8(pairsToString(v)) + "----------------\n";
+  }
+
+  for (i = 1; i < size; i++) {
+    auto &m = eqmap[i];
+    for (auto &e : m) {
+      t = sub(charset, e.first);
+      if (t != invalidDifference) {
+        auto v = getAllPairs(t, e.first);
+        if (!v.empty()) {
+          n[1]++;
+          m_out += localeToUtf8(getUserString(e.first) + " " +
+                                pairsToString(v, v.size() != 1));
+        }
+      }
+    }
+  }
+  if (m_out.empty()) {
+    m_out = m_language[SPLITS_NOT_FOUND];
+  } else {
+    for (i = 0; i < 2; i++) {
+      m_addstatus += m_language[i ? TRIPLETS : PAIRS] + " " +
+                     intToStringLocaled(n[i]) + (i ? "" : ", ");
+    }
+  }
+
+  return false;
+}
+
 void WordsBase::fillResultFromMap(const MapStringTwoStringVectors &map,
                                   size_t len) {
   int i, j;
@@ -1084,7 +1171,7 @@ std::string WordsBase::getTwoDictionariesPath(bool translit) {
                          (translit ? "translit" : "simple") + ".txt");
 }
 
-bool WordsBase::twoDictionaries(bool translit) {
+bool WordsBase::twoDictionaries(int nthread, bool translit) {
   VVString to;
   int i, j, m, l, len, n, fromIndex = -1;
   std::string s, alphabetFrom;
@@ -1167,7 +1254,7 @@ bool WordsBase::twoDictionaries(bool translit) {
   return false;
 }
 
-bool WordsBase::keyboardWords() {
+bool WordsBase::keyboardWords(int nthread) {
   StringSet const &df = m_dictionary[0];
   StringSet const &dt = m_dictionary[1];
   int i;
@@ -1211,7 +1298,7 @@ bool WordsBase::keyboardWords() {
   return false;
 }
 
-bool WordsBase::wordFrequency() {
+bool WordsBase::wordFrequency(int nthread) {
   int i;
   const int MAX = getMaximumWordLength();
   IntVector m(MAX, 0);
@@ -1242,7 +1329,7 @@ bool WordsBase::wordFrequency() {
   return false;
 }
 
-bool WordsBase::checkDictionary() {
+bool WordsBase::checkDictionary(int nthread) {
   // NOTE!!! SHOULD CHECK DICTIONARY FILE NOT!!! DICTIONARY SET. Check for
   // duplicates and valid line numbers
   std::string s, p = path(getDictionaryIndex(), "words");
@@ -1303,8 +1390,7 @@ bool WordsBase::checkDictionary() {
   return false;
 }
 
-bool WordsBase::twoCharactersDistribution() {
-  StringSet const &r = getDictionary();
+bool WordsBase::twoCharactersDistribution(int nthread) {
   int i, j;
   const int s = getAlphabetSize();
   auto a = create2dArray<int>(s, s, 0);
@@ -1312,7 +1398,7 @@ bool WordsBase::twoCharactersDistribution() {
   StringIntVectorCI p;
 
   int total = 0;
-  for (auto const &e : r) {
+  for (auto const &e : getDictionary()) {
     if (e.length() < 2) {
       continue;
     }
@@ -1358,7 +1444,7 @@ bool WordsBase::twoCharactersDistribution() {
   return false;
 }
 
-bool WordsBase::dictionaryStatistics() {
+bool WordsBase::dictionaryStatistics(int nthread) {
   int i, j;
   unsigned k;
   double v;
@@ -1727,7 +1813,7 @@ bool WordsBase::run() {
   auto it = menu2BoolVoid.find(m_menuClick);
   if (it != menu2BoolVoid.end()) {
     auto f = it->second;
-    return (this->*f)();
+    return (this->*f)(0);
   }
 
   auto it1 = menu2BoolString.find(m_menuClick);
@@ -1882,10 +1968,8 @@ void WordsBase::cgi() {
 
 #endif
 
-const std::string invalidDifference = "$";
-std::vector<MapStringStringVector> eqmap;
-
-std::string sub(std::string const &minuend, std::string const &subtrahend) {
+std::string WordsBase::sub(std::string const &minuend,
+                           std::string const &subtrahend) {
   if (minuend.length() < subtrahend.length()) {
     return invalidDifference;
   }
@@ -1911,14 +1995,14 @@ std::string sub(std::string const &minuend, std::string const &subtrahend) {
   return invalidDifference;
 }
 
-std::string getOrderedString(std::string const &s) {
+std::string WordsBase::getOrderedString(std::string const &s) {
   auto o = s;
   std::sort(o.begin(), o.end());
   return o;
 }
 
 // get list of dictionary words from ordered string
-std::string getUserString(std::string const &s) {
+std::string WordsBase::getUserString(std::string const &s) {
   auto &a = eqmap[s.length()].find(s)->second;
   bool f = true;
   std::string o;
@@ -1935,8 +2019,8 @@ std::string getUserString(std::string const &s) {
   return o;
 }
 
-StringStringVector getAllPairs(std::string const &s,
-                               std::string const &low = invalidDifference) {
+StringStringVector WordsBase::getAllPairs(std::string const &s,
+                                          std::string const &low) {
   StringStringVector v;
   for (size_t i = 1; i < s.size(); i++) {
     for (auto &e : eqmap[i]) {
@@ -1954,7 +2038,7 @@ StringStringVector getAllPairs(std::string const &s,
 }
 
 // output all pairs to string
-std::string pairsToString(StringStringVector const &v, bool p = 0) {
+std::string WordsBase::pairsToString(StringStringVector const &v, bool p) {
   std::string sout = "";
   bool first = true;
   if (p) {
@@ -1973,66 +2057,6 @@ std::string pairsToString(StringStringVector const &v, bool p = 0) {
   }
   sout += "\n";
   return sout;
-}
-
-bool WordsBase::findLetterGroupSplit() {
-  std::string s, s1, t, lng;
-  size_t i, j;
-  StringSet const &r = getDictionary();
-  auto charset = getOrderedString(m_entryText);
-
-  const size_t size = m_entryText.length();
-  eqmap.clear();
-  eqmap.resize(size);
-
-  for (auto &s : r) {
-    j = s.length();
-    if (j < size) {
-      s1 = getOrderedString(s);
-      auto &m = eqmap[j];
-      auto it = m.find(s1);
-      if (it == m.end()) {
-        t = sub(charset, s1);
-        if (t != invalidDifference) {
-          m.insert({s1, {s}});
-        }
-      } else {
-        it->second.push_back(s);
-      }
-    }
-  }
-
-  auto v = getAllPairs(charset);
-  size_t n[] = {v.size(), 0};
-
-  if (!v.empty()) {
-    m_out = localeToUtf8(pairsToString(v)) + "----------------\n";
-  }
-
-  for (i = 1; i < size; i++) {
-    auto &m = eqmap[i];
-    for (auto &e : m) {
-      t = sub(charset, e.first);
-      if (t != invalidDifference) {
-        auto v = getAllPairs(t, e.first);
-        if (!v.empty()) {
-          n[1]++;
-          m_out += localeToUtf8(getUserString(e.first) + " " +
-                                pairsToString(v, v.size() != 1));
-        }
-      }
-    }
-  }
-  if (m_out.empty()) {
-    m_out = m_language[SPLITS_NOT_FOUND];
-  } else {
-    for (i = 0; i < 2; i++) {
-      m_addstatus += m_language[i ? TRIPLETS : PAIRS] + " " +
-                     intToStringLocaled(n[i]) + (i ? "" : ", ");
-    }
-  }
-
-  return false;
 }
 
 std::string WordsBase::getShortLanguageString(int i) {
