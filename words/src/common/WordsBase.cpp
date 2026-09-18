@@ -23,25 +23,30 @@ using uchar = unsigned char;
 
 std::string LNG[LANGUAGES];
 
-const std::unordered_map<ENUM_MENU, BOOL_VOID_WORDSBASE_FUNCTION> menu2BoolVoid = {
-    {MENU_ANAGRAM, &WordsBase::findAnagram},
-    {MENU_SIMPLE_WORD_SEQUENCE, &WordsBase::findSimpleWordSequence},
-    {MENU_DOUBLE_WORD_SEQUENCE, &WordsBase::findDoubleWordSequence},
-    {MENU_WORD_SEQUENCE_FULL, &WordsBase::findWordSequenceFull},
-    {MENU_MODIFICATION, &WordsBase::findModification},
-    {MENU_CHAIN, &WordsBase::findChain},
-    {MENU_LETTER_GROUP_SPLIT, &WordsBase::findLetterGroupSplit},
-    {MENU_TWO_DICTIONARIES_SIMPLE, &WordsBase::twoDictionariesSimple},
-    {MENU_TWO_DICTIONARIES_TRANSLIT, &WordsBase::twoDictionariesTranslit},
-    {MENU_TWO_DICTIONARIES_KEYBOARD_WORD, &WordsBase::keyboardWords},
-    {MENU_DICTIONARY_STATISTICS, &WordsBase::dictionaryStatistics},
-    {MENU_WORD_FREQUENCY, &WordsBase::wordFrequency},
-    {MENU_CHECK_DICTIONARY, &WordsBase::checkDictionary},
-    {MENU_TWO_CHARACTERS_DISTRIBUTION, &WordsBase::twoCharactersDistribution},
-    {MENU_TWO_CHARACTERS_DISTRIBUTION_START,
-     &WordsBase::twoCharactersDistribution},
-    {MENU_TWO_CHARACTERS_DISTRIBUTION_END,
-     &WordsBase::twoCharactersDistribution}};
+using BOOL_STRING_WORDSBASE_FUNCTION = bool (WordsBase::*)(const std::string&);
+using BOOL_VOID_WORDSBASE_FUNCTION = bool (WordsBase::*)();
+
+const std::unordered_map<ENUM_MENU, BOOL_VOID_WORDSBASE_FUNCTION>
+    menu2BoolVoid = {
+        {MENU_ANAGRAM, &WordsBase::findAnagram},
+        {MENU_SIMPLE_WORD_SEQUENCE, &WordsBase::findSimpleWordSequence},
+        {MENU_DOUBLE_WORD_SEQUENCE, &WordsBase::findDoubleWordSequence},
+        {MENU_WORD_SEQUENCE_FULL, &WordsBase::findWordSequenceFull},
+        {MENU_MODIFICATION, &WordsBase::findModification},
+        {MENU_CHAIN, &WordsBase::findChain},
+        {MENU_LETTER_GROUP_SPLIT, &WordsBase::findLetterGroupSplit},
+        {MENU_TWO_DICTIONARIES_SIMPLE, &WordsBase::twoDictionariesSimple},
+        {MENU_TWO_DICTIONARIES_TRANSLIT, &WordsBase::twoDictionariesTranslit},
+        {MENU_TWO_DICTIONARIES_KEYBOARD_WORD, &WordsBase::keyboardWords},
+        {MENU_DICTIONARY_STATISTICS, &WordsBase::dictionaryStatistics},
+        {MENU_WORD_FREQUENCY, &WordsBase::wordFrequency},
+        {MENU_CHECK_DICTIONARY, &WordsBase::checkDictionary},
+        {MENU_TWO_CHARACTERS_DISTRIBUTION,
+         &WordsBase::twoCharactersDistribution},
+        {MENU_TWO_CHARACTERS_DISTRIBUTION_START,
+         &WordsBase::twoCharactersDistribution},
+        {MENU_TWO_CHARACTERS_DISTRIBUTION_END,
+         &WordsBase::twoCharactersDistribution}};
 
 const std::map<ENUM_MENU, BOOL_STRING_WORDSBASE_FUNCTION> menu2BoolString = {
     {MENU_PANGRAM, &WordsBase::checkPangram},
@@ -95,8 +100,10 @@ WordsBase *wordsBase;
 WordsBase::WordsBase() {
   int i, j;
   wordsBase = this;
-#ifndef NOGTK
-  m_filterRegex = nullptr;
+#ifndef USE_STANDARD_REGEX
+  for (auto &a : m_regex) {
+    a = nullptr;
+  }
 #endif
 
   for (i = 0; i < LANGUAGES; i++) {
@@ -184,8 +191,8 @@ void WordsBase::test() {
 
 WordsBase::~WordsBase() {
 #ifndef NOGTK
-  if (m_filterRegex) {
-    g_regex_unref(m_filterRegex);
+  for (int i = 0; i < SIZEI(m_regex); i++) {
+    freeRegex(i);
   }
 #endif
 }
@@ -375,10 +382,10 @@ bool WordsBase::checkRegularExpression(const std::string &s) {
          matches <= m_comboValue[COMBOBOX_HELPER1];
 #else
   if (!m_radioValue) {
-    return g_regex_match(m_regex, s.c_str(), GRegexMatchFlags(0), NULL);
+    return g_regex_match(m_regex[0], s.c_str(), GRegexMatchFlags(0), NULL);
   }
   GMatchInfo *matchInfo;
-  g_regex_match(m_regex, s.c_str(), GRegexMatchFlags(0), &matchInfo);
+  g_regex_match(m_regex[0], s.c_str(), GRegexMatchFlags(0), &matchInfo);
   int i;
   const int max = m_comboValue[COMBOBOX_HELPER1];
   for (i = 0; g_match_info_matches(matchInfo) && i <= max; i++) {
@@ -1592,11 +1599,15 @@ bool WordsBase::prepare() {
 #else
     // Note G_REGEX_RAW support 's' in locale, otherwise 's' should be a utf8
     // string
-    m_regex = g_regex_new(m_entryText.c_str(),
-                          GRegexCompileFlags(G_REGEX_RAW | G_REGEX_CASELESS),
-                          GRegexMatchFlags(0), NULL);
-    if (m_regex == NULL) {
+    freeRegex(0);
+    m_regex[0] = g_regex_new(m_entryText.c_str(),
+                             GRegexCompileFlags(G_REGEX_RAW | G_REGEX_CASELESS),
+                             GRegexMatchFlags(0), NULL);
+    if (!m_regex[0]) {
+      pr2("invalid regex0");
       return false;
+    } else {
+      pr2("new regex0");
     }
 #endif
 
@@ -1749,14 +1760,18 @@ bool WordsBase::setCheckFilterRegex() {
   }
   // need case insensitive filter, work ok in russian only for utf8
   auto s = localeToUtf8(m_filterText);
-  m_filterRegex = g_regex_new(s.c_str(), GRegexCompileFlags(G_REGEX_CASELESS),
-                              GRegexMatchFlags(0), NULL);
-  return m_filterRegex != nullptr;
+  freeRegex(1);
+  m_regex[1] = g_regex_new(s.c_str(), GRegexCompileFlags(G_REGEX_CASELESS),
+                           GRegexMatchFlags(0), NULL);
+  if (m_regex[1]) {
+    pr2("set regex1")
+  }
+  return m_regex[1] != nullptr;
 }
 
 bool WordsBase::testFilterRegex(const std::string &s) {
-  return m_filterRegex == nullptr || m_filterText.empty() ||
-         g_regex_match(m_filterRegex, s.c_str(), GRegexMatchFlags(0), NULL);
+  return m_regex[1] == nullptr || m_filterText.empty() ||
+         g_regex_match(m_regex[1], s.c_str(), GRegexMatchFlags(0), NULL);
 }
 #endif
 
@@ -2029,3 +2044,12 @@ int WordsBase::getDictionaryIndex() const {
          m_comboValue[COMBOBOX_DICTIONARY] < LANGUAGES);
   return m_comboValue[COMBOBOX_DICTIONARY];
 }
+
+#ifndef USE_STANDARD_REGEX
+void WordsBase::freeRegex(int i) {
+  if (m_regex[i]) {
+    pr2("free regex", i);
+    g_regex_unref(m_regex[i]);
+  }
+}
+#endif

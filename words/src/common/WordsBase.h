@@ -7,7 +7,7 @@
 
 #pragma once
 
-#define STD_THREAD
+//#define STD_THREAD
 
 #include "HelperStructs.h"
 #include "Modification.h"
@@ -27,17 +27,17 @@
 #include <thread>
 #endif
 
+template <typename... Args> void pr2(Args &&...args) {
+  ((std::cout << std::forward<Args>(args) << " "), ...);
+  std::cout  << "\n";
+}
+
 const char SEPARATOR[] = "SEPARATOR";
 constexpr std::string LANGUAGE[] = {"english", "russian"};
 constexpr int LANGUAGES = SIZEI(LANGUAGE);
 
 class WordsBase;
 extern WordsBase *wordsBase;
-
-// Note if use "const std::string&" instead of "const std::string" program works
-// really much faster 0.05 -> 0.01
-typedef bool (WordsBase::*BOOL_STRING_WORDSBASE_FUNCTION)(const std::string &);
-typedef bool (WordsBase::*BOOL_VOID_WORDSBASE_FUNCTION)();
 
 class WordsBase {
   // prepare addons before search;
@@ -63,8 +63,6 @@ protected:
   // mode
 #ifdef USE_STANDARD_REGEX
   std::regex m_regex;
-#else
-  GRegex *m_regex;
 #endif
 
   int m_languageIndex;
@@ -84,10 +82,11 @@ protected:
 #ifdef NOGTK
   VString m_cgiLanguage; // utf8
 #else
-  GRegex *m_filterRegex;
+  GRegex *m_regex[2];
   std::string m_filterText; // locale
   int m_filteredWordsCount;
   std::string m_programVersion;
+  void freeRegex(int i);
 #endif
 
   std::string getStatusString();

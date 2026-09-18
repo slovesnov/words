@@ -1124,12 +1124,12 @@ void Frame::endJob() {
  */
 void Frame::stopThread() {
 #ifdef STD_THREAD
-  pr("try stop", m_thread.joinable());
+  //pr("try stop", m_thread.joinable());
   m_thread.request_stop();
   if (m_thread.joinable()) {
     m_thread.join();
   }
-  pr("stopped")
+  //pr("stopped")
 #else
   g_mutex_lock(&m_mutex);
   waitThread();
@@ -1141,14 +1141,9 @@ bool Frame::userBreakThread() {
   // Sleep(1);//to slowdown check user break
 #ifdef STD_THREAD
   if (m_token.stop_requested()) {
-    pr("thread exit");
+    pr2("thread exit");
     m_result.clear();
     m_out = "";
-#ifndef USE_STANDARD_REGEX
-    if (m_menuClick == MENU_REGULAR_EXPRESSIONS) {
-      g_regex_unref(m_regex);
-    }
-#endif
     return true;
   } else {
     return false;
@@ -1160,11 +1155,6 @@ bool Frame::userBreakThread() {
   } else {
     m_result.clear();
     m_out = "";
-#ifndef USE_STANDARD_REGEX
-    if (m_menuClick == MENU_REGULAR_EXPRESSIONS) {
-      g_regex_unref(m_regex);
-    }
-#endif
     return true;
   }
 #endif
@@ -1204,7 +1194,7 @@ void Frame::startThread(GThreadFunc f) {
       f(nullptr);
     });
   } else {
-    pr("strange")
+    pr2("strange")
   }
 #else
   m_thread = g_thread_new("", f, NULL);
@@ -1223,7 +1213,7 @@ void Frame::updateComboValue(ENUM_COMBOBOX e) {
   if (GTK_IS_COMBO_BOX_TEXT(m_combo[e])) {
     char *p =
         gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(m_combo[e]));
-    if (p && ::parseString(p, v)) {
+    if (p && parseString(p, v)) {
       assert(v >= 0);
     }
   }
