@@ -140,7 +140,7 @@ WordsBase::WordsBase() {
   int num_threads = g_get_num_processors(); // std::hardware_concurrency();
 
   for (i = 0; i < LANGUAGES; i++) {
-    auto begin = clock();
+    // auto begin = clock();
     StringSet const &main_set = m_dictionary[i];
     size_t total_size = main_set.size();
     size_t chunk_size = total_size / num_threads;
@@ -156,11 +156,11 @@ WordsBase::WordsBase() {
       m_it[i].push_back(current_it);
       current_it = std::next(current_it, current_chunk);
     }
-    //pr(current_it==main_set.end());
-      m_it[i].push_back(current_it);
+    // pr(current_it==main_set.end());
+    m_it[i].push_back(current_it);
 
-      //m_it[i].size()=threads+1
-    //pr(total_size, timeElapse(begin), m_it[i].size());
+    // m_it[i].size()=threads+1
+    // pr(total_size, timeElapse(begin), m_it[i].size());
   }
 
   // test();
@@ -184,44 +184,7 @@ WordsBase::WordsBase() {
 #endif
 }
 
-void WordsBase::test() {
-  StringSet const &main_set = m_dictionary[1];
-
-  auto begin = clock();
-
-  unsigned int num_threads =
-      g_get_num_processors(); // std::hardware_concurrency();
-
-  size_t total_size = main_set.size();
-  pr(total_size);
-
-  // Рассчитываем базовый размер кусочка для каждого потока
-  size_t chunk_size = total_size / num_threads;
-  size_t remainder =
-      total_size % num_threads; // Остаток отдадим последнему потоку
-
-  auto current_it = main_set.begin();
-
-  for (size_t i = 0; i < num_threads; ++i) {
-    // Вычисляем, сколько элементов взять для текущего потока
-    size_t current_chunk = chunk_size + (i == num_threads - 1 ? remainder : 0);
-    if (current_chunk == 0)
-      break;
-
-    auto next_it = std::next(current_it, current_chunk);
-
-    // Создаем подмножество из диапазона [current_it, next_it)
-    StringSet sub_set(current_it, next_it);
-    pr(current_chunk, sub_set.size());
-
-    // Запускаем jthread, передавая sub_set через std::move
-    // m_threads.emplace_back(global_worker, i, std::move(sub_set));
-
-    current_it = next_it;
-  }
-
-  pr(timeElapse(begin));
-}
+void WordsBase::test() {}
 
 WordsBase::~WordsBase() {
 #ifndef NOGTK
@@ -1809,11 +1772,11 @@ std::string WordsBase::getTimeString() {
   return format("%.2lf", double(m_end - m_begin) / CLOCKS_PER_SEC);
 }
 
-bool WordsBase::run() {
+void WordsBase::run_thread(int nthread) {
   auto it = menu2BoolVoid.find(m_menuClick);
   if (it != menu2BoolVoid.end()) {
     auto f = it->second;
-    return (this->*f)(0);
+    (this->*f)(nthread);
   }
 
   auto it1 = menu2BoolString.find(m_menuClick);
@@ -1823,11 +1786,49 @@ bool WordsBase::run() {
       if ((this->*f)(e)) {
         m_result.push_back(SearchResult(e, e.length(), 1));
       }
-      RETURN_ON_USER_BREAK(true)
+      RETURN_ON_USER_BREAK()
+    }
+  }
+  pr(nthread,"finished");
+}
+
+void WordsBase::run() {
+  std::vector<std::jthread> workers;
+  const int num_workers = 1;
+  for (int i = 0; i < num_workers; ++i) {
+    workers.emplace_back(run_thread, this, i);
+  }
+  for (auto &t : workers) {
+    if (t.joinable()) {
+      // pri;
+      t.join();
+      // pri;
     }
   }
 
-  return false;
+  bool b = m_token.stop_requested();
+
+  if ((m_outSplitted = m_result.empty())) {
+    auto v = split(m_out, "\n");
+    for (auto &e : v) {
+      m_result.push_back(SearchResult(utf8ToLocale(e), 0, 0));
+    }
+  }
+
+#ifndef NOGTK
+  setSortCombosState(!m_outSplitted);
+#endif
+
+  if (b) { // was user break
+    //		printl("end set")
+    m_end = clock();
+  } else {
+    sortFilterResults();
+    m_end = clock();
+#ifndef NOGTK
+    endJobThread();
+#endif
+  }
 }
 
 bool WordsBase::differenceOnlyOneChar(const std::string &a,
@@ -1961,8 +1962,6 @@ void WordsBase::cgi() {
   }
 
   run();
-  sortFilterResults();
-  m_end = clock();
   printf("%s\n%s", getStatusString().c_str(), m_out.c_str());
 }
 

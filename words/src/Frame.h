@@ -41,7 +41,6 @@ class Frame : WordsBase {
   int m_tags;
 #ifdef STD_THREAD
   std::jthread m_thread;
-  std::stop_token m_token;
 #else
   GMutex m_mutex;
   GThread *m_thread; // uses only in main thread
@@ -139,13 +138,15 @@ public:
     routine();
   }
 
-  virtual void setMenuLabel(ENUM_MENU e, std::string const &text);
+  virtual bool userBreakThread();
+  virtual void setMenuLabel(ENUM_MENU e, std::string const &text) override;
+  virtual void setSortCombosState(bool enable) override;
+  virtual void endJobThread()override;
   std::string getMenuLabel(ENUM_MENU e);
 
-  void proceedThread();
+  // void proceedThread();
 
   void stopThread();
-  virtual bool userBreakThread();
   void waitThread();
   void startThread(GThreadFunc f);
 

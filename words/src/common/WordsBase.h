@@ -90,6 +90,10 @@ protected:
 #endif
 std::vector<StringSetCI> m_it[LANGUAGES];
 
+#ifdef STD_THREAD
+  std::stop_token m_token;
+#endif
+
   std::string getStatusString();
   std::string getTimeString();
 
@@ -115,6 +119,8 @@ std::vector<StringSetCI> m_it[LANGUAGES];
   }
   virtual bool userBreakThread() = 0;
   virtual void setMenuLabel(ENUM_MENU e, std::string const &text) = 0;
+  virtual void setSortCombosState(bool enable)=0;
+  virtual void endJobThread()=0;
   bool setCheckFilterRegex();
   bool testFilterRegex(const std::string &s);
 #endif
@@ -130,8 +136,8 @@ std::vector<StringSetCI> m_it[LANGUAGES];
     return k == std::string::npos ? -1 : k;
   }
 
-  // return true if was user break
-  bool run();
+  void run();
+  void run_thread(int nthread);
 
   void fillResultFromMap(const MapStringTwoStringVectors &map, size_t len);
 

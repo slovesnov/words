@@ -96,10 +96,10 @@ const std::unordered_map<ENUM_MENU, int> MENU_TO_ACCEL_KEY = {
     {MENU_EDIT_COPY_TO_CLIPBOARD, GDK_KEY_C}};
 Frame *frame;
 
-static gpointer thread(gpointer) {
-  frame->proceedThread();
-  return NULL;
-}
+// static gpointer thread(gpointer) {
+//   frame->proceedThread();
+//   return NULL;
+// }
 
 static gpointer sort_filter_thread(gpointer) {
   frame->sortFilterAndUpdateResults();
@@ -662,7 +662,7 @@ void Frame::routine() {
   startJob(true);
 
   if (prepare()) {
-    startThread(thread);
+    run();
   } else { // wrapper to call endJob() if prepare() returns false
     m_end = clock();
     endJob();
@@ -779,7 +779,7 @@ void Frame::sortFilterAndUpdateResults() {
   sortFilterResults();
   m_end = clock();
   //	printl(m_begin,m_end,m_end-m_begin)
-  //pr2("end sortFilterAndUpdateResults");
+  // pr2("end sortFilterAndUpdateResults");
   gdk_threads_add_idle(end_job, NULL);
 }
 
@@ -1057,6 +1057,14 @@ void Frame::setMenuLabel(ENUM_MENU e, std::string const &text) {
   }
 }
 
+void Frame::setSortCombosState(bool enable) {
+  for (auto &e : {COMBOBOX_SORT, COMBOBOX_SORT_ORDER}) {
+    gtk_widget_set_sensitive(m_combo[e], !m_outSplitted);
+  }
+}
+
+void Frame::endJobThread() { gdk_threads_add_idle(end_job, NULL); }
+
 std::string Frame::getMenuLabel(ENUM_MENU e) {
   GtkWidget *w = m_menuMap[e];
   if (MENU_TO_ICON_FILE.contains(e)) {
@@ -1068,29 +1076,6 @@ std::string Frame::getMenuLabel(ENUM_MENU e) {
     return gtk_menu_item_get_label(GTK_MENU_ITEM(w));
   }
 }
-
-void Frame::proceedThread() {
-  bool b = run();
-
-  if ((m_outSplitted = m_result.empty())) {
-    auto v = split(m_out, "\n");
-    for (auto &e : v) {
-      m_result.push_back(SearchResult(utf8ToLocale(e), 0, 0));
-    }
-  }
-  for (auto &e : {COMBOBOX_SORT, COMBOBOX_SORT_ORDER}) {
-    gtk_widget_set_sensitive(m_combo[e], !m_outSplitted);
-  }
-
-  if (b) { // was user break
-    //		printl("end set")
-    m_end = clock();
-  } else {
-    // m_end set in sortFilterAndUpdateResults
-    sortFilterAndUpdateResults();
-  }
-}
-
 void Frame::startJob(bool clearResult) {
   if (clearResult) {
     m_result.clear();
