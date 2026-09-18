@@ -50,6 +50,7 @@ const std::string CONFIG_TAGS[] = {"version", "language", "dictionary"};
 
 Frame *frame;
 
+#ifndef STD_THREAD
 static gpointer thread(gpointer) {
   frame->proceedThread();
   return NULL;
@@ -59,6 +60,7 @@ static gpointer sort_filter_thread(gpointer) {
   frame->sortFilterAndUpdateResults();
   return NULL;
 }
+#endif
 
 static gboolean end_job(gpointer) {
   frame->endJob();
@@ -156,8 +158,11 @@ Frame::Frame() : WordsBase() {
   // set dot as decimal separator, standard locale
   setlocale(LC_NUMERIC, "C");
   m_lockSignals = false;
+
+#ifndef STD_THREAD
   m_thread = 0;
   g_mutex_init(&m_mutex);
+#endif
 
   m_widget = gtk_window_new(GTK_WINDOW_TOPLEVEL);
   m_menu = gtk_menu_bar_new();
@@ -624,7 +629,18 @@ void Frame::routine() {
   startJob(true);
 
   if (prepare()) {
+#ifdef STD_THREAD
+    if (!m_thread.joinable()) {
+      // GCC bug #100612 so use lambda
+      m_thread =
+          std::jthread([this](std::stop_token token) { proceedThread(token); });
+    } else {
+      pr("strange")
+    }
+#else
     startThread(thread);
+#endif
+
   } else { // wrapper to call endJob() if prepare() returns false
     m_end = clock();
     endJob();
@@ -736,8 +752,18 @@ void Frame::setHelperPanel() {
  * Note function can be called from thread
  *
  */
-void Frame::sortFilterAndUpdateResults() {
-  sortFilterResults();
+void Frame::sortFilterAndUpdateResults(
+#ifdef STD_THREAD
+    std::stop_token token
+#endif
+) {
+  m_token = token;
+
+  sortFilterResults(
+#ifdef STD_THREAD
+      token
+#endif
+  );
   m_end = clock();
   //	printl(m_begin,m_end,m_end-m_begin)
   gdk_threads_add_idle(end_job, NULL);
@@ -1030,8 +1056,17 @@ std::string Frame::getMenuLabel(ENUM_MENU e) {
   }
 }
 
-void Frame::proceedThread() {
-  bool b = run();
+void Frame::proceedThread(
+#ifdef STD_THREAD
+    std::stop_token token
+#endif
+) {
+  m_token = token;
+  bool b = run(
+#ifdef STD_THREAD
+      token
+#endif
+  );
 
   if ((m_outSplitted = m_result.empty())) {
     auto v = split(m_out, "\n");
@@ -1048,7 +1083,11 @@ void Frame::proceedThread() {
     m_end = clock();
   } else {
     // m_end set in sortFilterAndUpdateResults
-    sortFilterAndUpdateResults();
+    sortFilterAndUpdateResults(
+#ifdef STD_THREAD
+        token
+#endif
+    );
   }
 }
 
@@ -1082,14 +1121,31 @@ void Frame::endJob() {
  * if thread runs stop it
  */
 void Frame::stopThread() {
+#ifdef STD_THREAD
+  pr("try stop") m_thread.request_stop();
+  if (m_thread.joinable())
+    m_thread.join();
+  pr("stopped")
+#else
   g_mutex_lock(&m_mutex);
   waitThread();
   g_mutex_unlock(&m_mutex);
+#endif
 }
 
 bool Frame::userBreakThread() {
   // Sleep(1);//to slowdown check user break
+#ifdef STD_THREAD
+  // TODO
+  if (m_token.stop_requested()) {
+    m_result.clear();
+    m_out = "";
+    return true;
+  } else {
+    return false;
+  }
 
+#else
   if (g_mutex_trylock(&m_mutex)) {
     g_mutex_unlock(&m_mutex);
     return false;
@@ -1098,12 +1154,20 @@ bool Frame::userBreakThread() {
     m_out = "";
     return true;
   }
+#endif
 }
 
 /**
  * if thread is run, wait while finish
  */
 void Frame::waitThread() {
+#ifdef STD_THREAD
+  if (m_thread.joinable()) {
+    m_thread.join();
+    // update status & GtkTextBuffer
+    endJob();
+  }
+#else
   if (m_thread) {
     /* g_thread_join cann't be called several times. see documentation
      * on second call program hang out
@@ -1115,6 +1179,15 @@ void Frame::waitThread() {
     // update status & GtkTextBuffer
     endJob();
   }
+#endif
+}
+
+void Frame::startThread(ThreadFunction f) {
+#ifdef STD_THREAD
+  m_thread = std::jthread(f);
+#else
+  m_thread = g_thread_new("", f, NULL);
+#endif
 }
 
 void Frame::setComboIndex(ENUM_COMBOBOX e, gint v) {
@@ -1228,7 +1301,16 @@ void Frame::sortOrFilterChanged() {
   startJob(false);
   /* sortAndUpdateResults() could take a long time so use thread
    */
+#ifdef STD_THREAD
+  if (!m_thread.joinable()) {
+    m_thread = std::jthread(
+        [this](std::stop_token token) { sortFilterAndUpdateResults(token); });
+  } else {
+    pr("strange")
+  }
+#else
   startThread(sort_filter_thread);
+#endif
 }
 
 void Frame::refillCombo(ENUM_COMBOBOX e, ENUM_STRING first, int length) {

@@ -16,7 +16,7 @@ using uchar = unsigned char;
 #else
 #define RETURN_ON_USER_BREAK(a)                                                \
   if (userBreakThread()) {                                                     \
-    return a;                                                                  \
+    pr("thread exit");return a;                                                                  \
   }
 #endif
 
@@ -1452,7 +1452,11 @@ bool WordsBase::dictionaryStatistics() {
   return false;
 }
 
-void WordsBase::sortFilterResults() {
+void WordsBase::sortFilterResults(
+#ifdef STD_THREAD
+      std::stop_token token
+#endif
+) {
   int i;
   std::string s;
 
@@ -1707,7 +1711,12 @@ std::string WordsBase::getTimeString() {
   return format("%.2lf", double(m_end - m_begin) / CLOCKS_PER_SEC);
 }
 
-bool WordsBase::run() {
+bool WordsBase::run(
+ 	#ifdef STD_THREAD
+std::stop_token token
+#endif
+
+) {
   StringSet const &r = getDictionary();
   int i;
 

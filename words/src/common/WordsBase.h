@@ -7,6 +7,8 @@
 
 #pragma once
 
+#define STD_THREAD
+
 #include "HelperStructs.h"
 #include "Modification.h"
 #include "SearchResult.h"
@@ -19,6 +21,10 @@
 #ifdef NOGTK
 #define USE_STANDARD_REGEX
 #include <regex>
+#endif
+
+#ifdef STD_THREAD
+#include <thread>
 #endif
 
 const char SEPARATOR[] = "SEPARATOR";
@@ -125,7 +131,12 @@ protected:
   }
 
   // return true if was user break
-  bool run();
+  bool run(
+ 	#ifdef STD_THREAD
+std::stop_token token
+#endif
+
+  );
 
   void fillResultFromMap(const MapStringTwoStringVectors &map, size_t len);
 
@@ -206,7 +217,11 @@ public:
   }
 
   std::string intToStringLocaled(int v);
-  void sortFilterResults();
+  void sortFilterResults(
+#ifdef STD_THREAD
+      std::stop_token token
+#endif
+  );
 
   void loadLanguage();
 };
