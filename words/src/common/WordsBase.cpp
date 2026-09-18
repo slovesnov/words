@@ -1695,7 +1695,7 @@ bool WordsBase::run() {
   }
 
   if (m_menuClick == MENU_REGULAR_EXPRESSIONS) {
-#ifndef NOGTK
+#ifndef USE_STANDARD_REGEX
     g_regex_unref(m_regex);
 #endif
   }
