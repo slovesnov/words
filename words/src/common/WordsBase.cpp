@@ -30,7 +30,7 @@ using uchar = unsigned char;
 std::string LNG[LANGUAGES];
 std::vector<MapStringStringVector> eqmap;
 
-const std::unordered_map<ENUM_MENU, void (WordsBase::*)(int)> menu2BoolVoid = {
+const std::unordered_map<ENUM_MENU, void (WordsBase::*)(int)> menu2VoidInt = {
     {MENU_ANAGRAM, &WordsBase::findAnagram}, // break implemented
     {MENU_SIMPLE_WORD_SEQUENCE,
      &WordsBase::findSimpleWordSequence}, // break implemented
@@ -1761,8 +1761,8 @@ std::string WordsBase::getTimeString() {
 }
 
 void WordsBase::run_thread(int nthread) {
-  auto it = menu2BoolVoid.find(m_menuClick);
-  if (it != menu2BoolVoid.end()) {
+  auto it = menu2VoidInt.find(m_menuClick);
+  if (it != menu2VoidInt.end()) {
     auto f = it->second;
     (this->*f)(nthread);
   }
