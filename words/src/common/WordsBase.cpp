@@ -1647,10 +1647,7 @@ bool WordsBase::prepare() {
                              GRegexCompileFlags(G_REGEX_RAW | G_REGEX_CASELESS),
                              GRegexMatchFlags(0), NULL);
     if (!m_regex[0]) {
-      // pr2("invalid regex0");
       return false;
-    } else {
-      // pr2("new regex0");
     }
 #endif
 
@@ -1840,9 +1837,6 @@ bool WordsBase::setCheckFilterRegex() {
   freeRegex(1);
   m_regex[1] = g_regex_new(s.c_str(), GRegexCompileFlags(G_REGEX_CASELESS),
                            GRegexMatchFlags(0), NULL);
-  if (m_regex[1]) {
-    // pr2("set regex1");
-  }
   return m_regex[1] != nullptr;
 }
 
@@ -2061,7 +2055,6 @@ int WordsBase::getDictionaryIndex() const {
 #ifndef USE_STANDARD_REGEX
 void WordsBase::freeRegex(int i) {
   if (m_regex[i]) {
-    // pr2("free regex", i);
     g_regex_unref(m_regex[i]);
   }
 }
