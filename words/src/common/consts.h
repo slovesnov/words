@@ -34,12 +34,6 @@ const int KEYBOARD_ROW_SIZE = SIZE(KEYBOARD_ROW);
 
 #ifndef NOGTK
 
-const ENUM_MENU MENU_ACCEL[] = {MENU_EDIT_SELECT_ALL_AND_COPY_TO_CLIPBOARD,
-                                MENU_EDIT_SELECT_ALL,
-                                MENU_EDIT_COPY_TO_CLIPBOARD};
-const int MENU_ACCEL_SIZE = SIZE(MENU_ACCEL);
-const int ACCEL_KEY[] = {GDK_KEY_B, GDK_KEY_A, GDK_KEY_C};
-
 const ENUM_COMBOBOX HELPER_COMBOBOX[] = {COMBOBOX_HELPER0, COMBOBOX_HELPER1,
                                          COMBOBOX_HELPER2};
 

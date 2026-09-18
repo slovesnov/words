@@ -35,7 +35,7 @@ class Frame : WordsBase {
   GtkWidget *m_radio;
 
   MenuMap m_menuMap;
-  GtkAccelGroup *m_accelGroup[MENU_ACCEL_SIZE];
+  std::vector<GtkAccelGroup*>m_accelGroup;
   bool m_lockSignals;
   int m_tagIndex;
   int m_tags;

@@ -21,7 +21,6 @@
 #include <format>
 #include <unordered_map>
 
-
 // Note WORDS_VERSION defined in consts.h
 const char MAIL[] = "slovesnov@yandex.ru";
 const std::string URL = "https://slovesnov.rf.gd/";
@@ -91,6 +90,10 @@ const std::unordered_map<ENUM_MENU, std::string> MENU_TO_ICON_FILE = {
     {MENU_ABOUT, "word16.png"},
     {MENU_HOMEPAGE, "web.png"}};
 
+const std::unordered_map<ENUM_MENU, int> MENU_TO_ACCEL_KEY = {
+    {MENU_EDIT_SELECT_ALL_AND_COPY_TO_CLIPBOARD, GDK_KEY_B},
+    {MENU_EDIT_SELECT_ALL, GDK_KEY_A},
+    {MENU_EDIT_COPY_TO_CLIPBOARD, GDK_KEY_C}};
 Frame *frame;
 
 static gpointer thread(gpointer) {
@@ -171,8 +174,6 @@ Frame::Frame() : WordsBase() {
   std::vector<GtkMenuItem *> subMenu;
   std::string s;
 
-  static_assert(MENU_ACCEL_SIZE == SIZE(ACCEL_KEY));
-
 #ifndef NDEBUG
   // No intersection between FUNCTION_MENU & BOOL_VOID_MENU
   i = 0;
@@ -245,8 +246,8 @@ Frame::Frame() : WordsBase() {
   m_currentDictionary = gtk_label_new("");
   m_filterEntry = gtk_entry_new();
 
-  for (i = 0; i < MENU_ACCEL_SIZE; i++) {
-    m_accelGroup[i] = gtk_accel_group_new();
+  for (i = 0; i < int(MENU_TO_ACCEL_KEY.size()); i++) {
+    m_accelGroup.push_back(gtk_accel_group_new());
   }
   addAccelerators();
 
@@ -369,10 +370,11 @@ Frame::Frame() : WordsBase() {
                            : gtk_menu_item_get_submenu(subMenu.back())),
         item);
 
-    if ((j = INDEX_OF(ENUM_MENU(i), MENU_ACCEL)) != -1) {
-      gtk_widget_add_accelerator(item, "activate", m_accelGroup[j],
-                                 ACCEL_KEY[j], GDK_CONTROL_MASK,
-                                 GTK_ACCEL_VISIBLE);
+    auto it1 = MENU_TO_ACCEL_KEY.find(ENUM_MENU(i));
+    if (it1 != MENU_TO_ACCEL_KEY.end()) {
+      j = std::distance(MENU_TO_ACCEL_KEY.begin(), it1);
+      gtk_widget_add_accelerator(item, "activate", m_accelGroup[j], it1->second,
+                                 GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
     }
 
     m_menuMap[ENUM_MENU(i)] = item;
@@ -1300,9 +1302,8 @@ void Frame::entryFocusChanged(bool in) {
 }
 
 void Frame::removeAccelerators() {
-  int i;
-  for (i = 0; i < MENU_ACCEL_SIZE; i++) {
-    gtk_window_remove_accel_group(GTK_WINDOW(m_widget), m_accelGroup[i]);
+  for (auto &a : m_accelGroup) {
+    gtk_window_remove_accel_group(GTK_WINDOW(m_widget), a);
   }
 }
 
@@ -1311,8 +1312,8 @@ void Frame::removeAccelerators() {
  * don't work
  */
 void Frame::addAccelerators() {
-  for (int i = 0; i < MENU_ACCEL_SIZE; i++) {
-    gtk_window_add_accel_group(GTK_WINDOW(m_widget), m_accelGroup[i]);
+  for (auto &a : m_accelGroup) {
+    gtk_window_add_accel_group(GTK_WINDOW(m_widget), a);
   }
 }
 
