@@ -16,7 +16,7 @@ using uchar = unsigned char;
 #else
 #define RETURN_ON_USER_BREAK(a)                                                \
   if (userBreakThread()) {                                                     \
-    pr("thread exit");return a;                                                                  \
+    return a;                                                                  \
   }
 #endif
 
@@ -90,17 +90,17 @@ WordsBase::WordsBase() {
     file.close();
   }
 
+  //test();
 #ifdef NOGTK
   // cgi();TODO uncomment on real cgi query, and comment next lines
 
-  // test();
-  setDictionaryIndex(1);
+  // setDictionaryIndex(1);
 
-  m_result.clear();
-  twoDictionaries(0);
+  // m_result.clear();
+  // twoDictionaries(0);
 
-  m_result.clear();
-  twoDictionaries(1);
+  // m_result.clear();
+  // twoDictionaries(1);
   // count longest constants needs when dictinary changed
   // checkLFAllFiles();
   // system("chcp 1251>nul");
@@ -111,77 +111,44 @@ WordsBase::WordsBase() {
 #endif
 }
 
-#ifdef NOGTK
 void WordsBase::test() {
-  VVString to;
-  int i, j, fromIndex = -1;
-  // int i, j, m, l, len, n, fromIndex = -1;
-  std::string s, alphabetFrom;
-  VString v;
-  const bool translit = 0;
-  // const int di = getDictionaryIndex();
-  s = getTwoDictionariesPath(translit);
-  for (auto &s : readFile(s)) {
-    if (to.empty()) {
-      fromIndex = INDEX_OF(s, LNG);
-      assert(fromIndex != -1);
-      alphabetFrom = m_settings[fromIndex][SETTINGS_ALPHABET];
-      to.resize(alphabetFrom.length());
-    } else {
-      v = split(s, ' ');
-      assert(v.size() > 1);
-      i = 0;
-      for (auto &a : v) {
-        if (i) {
-          to[j].push_back(a == "'" ? "" : a); //"'" = empty string
-        } else {
-          assert(a.size() == 1);
-          j = indexOf(a[0], alphabetFrom);
-          assert(j >= 0);
-        }
-        i++;
-      }
-    }
-  }
-
-  bool seen[256] = {false};
-  s = "";
-  for (auto const &e : to) {
-    for (auto a : e) {
-      for (const char ch : a) {
-        const uchar b = uchar(ch);
-        if (!seen[b]) {
-          seen[b] = true;
-          s += b;
-        }
-      }
-    }
-  }
-  j = 0;
-  for (i = 0; i < 256; i++) {
-    if (seen[i]) {
-      s += char(i);
-      j++;
-    }
-  }
-  pr(s, j);
-
-  // StringSet const &df = m_dictionary[fromIndex];
-  StringSet const &dt = m_dictionary[fromIndex == 1 ? 0 : 1];
+  StringSet const &main_set = m_dictionary[1];
 
   auto begin = clock();
-  i = 0;
-  j = 0;
-  for (auto const &e : dt) {
-    if (spanIncluding(e, s)) {
-      i++;
-    }
+
+  unsigned int num_threads =
+      g_get_num_processors(); // std::hardware_concurrency();
+
+  size_t total_size = main_set.size();
+  pr(total_size);
+
+  // Рассчитываем базовый размер кусочка для каждого потока
+  size_t chunk_size = total_size / num_threads;
+  size_t remainder =
+      total_size % num_threads; // Остаток отдадим последнему потоку
+
+  auto current_it = main_set.begin();
+
+  for (size_t i = 0; i < num_threads; ++i) {
+    // Вычисляем, сколько элементов взять для текущего потока
+    size_t current_chunk = chunk_size + (i == num_threads - 1 ? remainder : 0);
+    if (current_chunk == 0)
+      break;
+
+    auto next_it = std::next(current_it, current_chunk);
+
+    // Создаем подмножество из диапазона [current_it, next_it)
+    StringSet sub_set(current_it, next_it);
+    pr(current_chunk, sub_set.size());
+
+    // Запускаем jthread, передавая sub_set через std::move
+    // m_threads.emplace_back(global_worker, i, std::move(sub_set));
+
+    current_it = next_it;
   }
-  pr(dt.size(), i);
 
   pr(timeElapse(begin));
 }
-#endif
 
 WordsBase::~WordsBase() {
 #ifndef NOGTK
@@ -1452,11 +1419,7 @@ bool WordsBase::dictionaryStatistics() {
   return false;
 }
 
-void WordsBase::sortFilterResults(
-#ifdef STD_THREAD
-      std::stop_token token
-#endif
-) {
+void WordsBase::sortFilterResults() {
   int i;
   std::string s;
 
@@ -1711,12 +1674,7 @@ std::string WordsBase::getTimeString() {
   return format("%.2lf", double(m_end - m_begin) / CLOCKS_PER_SEC);
 }
 
-bool WordsBase::run(
- 	#ifdef STD_THREAD
-std::stop_token token
-#endif
-
-) {
+bool WordsBase::run() {
   StringSet const &r = getDictionary();
   int i;
 

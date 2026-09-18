@@ -10,13 +10,7 @@
 #include "CheckNewVersion.h"
 #include "common/WordsBase.h"
 #include "common/consts.h"
-
 using MenuMap = std::map<ENUM_MENU, GtkWidget *>;
-#ifdef STD_THREAD
-using ThreadFunction = void (*)(std::stop_token);
-#else
-using ThreadFunction = GThreadFunc;
-#endif
 
 class Frame : WordsBase {
   static const int COMBOLINE_MARGIN = 3;
@@ -123,11 +117,7 @@ public:
   bool prepare(); // return true if entry data is valid
 
   void routine();
-  void sortFilterAndUpdateResults(
-#ifdef STD_THREAD
-    std::stop_token token
-#endif
-  );
+  void sortFilterAndUpdateResults();
 
   bool isSignalsLocked() { return m_lockSignals; }
 
@@ -152,16 +142,12 @@ public:
   virtual void setMenuLabel(ENUM_MENU e, std::string const &text);
   std::string getMenuLabel(ENUM_MENU e);
 
-  void proceedThread(
-#ifdef STD_THREAD
-      std::stop_token token
-#endif
-  );
+  void proceedThread();
 
   void stopThread();
   virtual bool userBreakThread();
   void waitThread();
-  void startThread(ThreadFunction f);
+  void startThread(GThreadFunc f);
 
   void updateTextView() {
     GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(m_text));

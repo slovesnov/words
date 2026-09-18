@@ -50,7 +50,6 @@ const std::string CONFIG_TAGS[] = {"version", "language", "dictionary"};
 
 Frame *frame;
 
-#ifndef STD_THREAD
 static gpointer thread(gpointer) {
   frame->proceedThread();
   return NULL;
@@ -60,7 +59,6 @@ static gpointer sort_filter_thread(gpointer) {
   frame->sortFilterAndUpdateResults();
   return NULL;
 }
-#endif
 
 static gboolean end_job(gpointer) {
   frame->endJob();
@@ -629,18 +627,7 @@ void Frame::routine() {
   startJob(true);
 
   if (prepare()) {
-#ifdef STD_THREAD
-    if (!m_thread.joinable()) {
-      // GCC bug #100612 so use lambda
-      m_thread =
-          std::jthread([this](std::stop_token token) { proceedThread(token); });
-    } else {
-      pr("strange")
-    }
-#else
     startThread(thread);
-#endif
-
   } else { // wrapper to call endJob() if prepare() returns false
     m_end = clock();
     endJob();
@@ -752,18 +739,9 @@ void Frame::setHelperPanel() {
  * Note function can be called from thread
  *
  */
-void Frame::sortFilterAndUpdateResults(
-#ifdef STD_THREAD
-    std::stop_token token
-#endif
-) {
-  m_token = token;
+void Frame::sortFilterAndUpdateResults() {
 
-  sortFilterResults(
-#ifdef STD_THREAD
-      token
-#endif
-  );
+  sortFilterResults();
   m_end = clock();
   //	printl(m_begin,m_end,m_end-m_begin)
   gdk_threads_add_idle(end_job, NULL);
@@ -1056,17 +1034,8 @@ std::string Frame::getMenuLabel(ENUM_MENU e) {
   }
 }
 
-void Frame::proceedThread(
-#ifdef STD_THREAD
-    std::stop_token token
-#endif
-) {
-  m_token = token;
-  bool b = run(
-#ifdef STD_THREAD
-      token
-#endif
-  );
+void Frame::proceedThread() {
+  bool b = run();
 
   if ((m_outSplitted = m_result.empty())) {
     auto v = split(m_out, "\n");
@@ -1083,11 +1052,7 @@ void Frame::proceedThread(
     m_end = clock();
   } else {
     // m_end set in sortFilterAndUpdateResults
-    sortFilterAndUpdateResults(
-#ifdef STD_THREAD
-        token
-#endif
-    );
+    sortFilterAndUpdateResults();
   }
 }
 
@@ -1122,9 +1087,11 @@ void Frame::endJob() {
  */
 void Frame::stopThread() {
 #ifdef STD_THREAD
-  pr("try stop") m_thread.request_stop();
-  if (m_thread.joinable())
+  pr("try stop",m_thread.joinable());
+  m_thread.request_stop();
+  if (m_thread.joinable()){
     m_thread.join();
+  }
   pr("stopped")
 #else
   g_mutex_lock(&m_mutex);
@@ -1136,8 +1103,8 @@ void Frame::stopThread() {
 bool Frame::userBreakThread() {
   // Sleep(1);//to slowdown check user break
 #ifdef STD_THREAD
-  // TODO
   if (m_token.stop_requested()) {
+    pr("thread exit");
     m_result.clear();
     m_out = "";
     return true;
@@ -1182,9 +1149,17 @@ void Frame::waitThread() {
 #endif
 }
 
-void Frame::startThread(ThreadFunction f) {
+void Frame::startThread(GThreadFunc f) {
 #ifdef STD_THREAD
-  m_thread = std::jthread(f);
+  if (!m_thread.joinable()) {
+    // GCC bug #100612 so use lambda if call class member
+    m_thread = std::jthread([this,f](std::stop_token token) {
+      m_token = token;
+      f(nullptr);
+    });
+  } else {
+    pr("strange")
+  }
 #else
   m_thread = g_thread_new("", f, NULL);
 #endif
@@ -1301,16 +1276,7 @@ void Frame::sortOrFilterChanged() {
   startJob(false);
   /* sortAndUpdateResults() could take a long time so use thread
    */
-#ifdef STD_THREAD
-  if (!m_thread.joinable()) {
-    m_thread = std::jthread(
-        [this](std::stop_token token) { sortFilterAndUpdateResults(token); });
-  } else {
-    pr("strange")
-  }
-#else
   startThread(sort_filter_thread);
-#endif
 }
 
 void Frame::refillCombo(ENUM_COMBOBOX e, ENUM_STRING first, int length) {

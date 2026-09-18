@@ -131,17 +131,13 @@ protected:
   }
 
   // return true if was user break
-  bool run(
- 	#ifdef STD_THREAD
-std::stop_token token
-#endif
-
-  );
+  bool run();
 
   void fillResultFromMap(const MapStringTwoStringVectors &map, size_t len);
 
-#ifdef NOGTK
+  //todo
   void test();
+#ifdef NOGTK
   void checkLFAllFiles();
   void showLongestAnagram();            // for MAX_ANAGRAM_LENGTH
   void showLongestPangram();            // for MAX_PANGRAM_LENGTH
@@ -181,10 +177,8 @@ public:
   bool wordFrequency();
   bool checkDictionary();
   bool twoCharactersDistribution();
-  bool dummy() {
-    return false;
-  } 
-  
+  bool dummy() { return false; }
+
   static std::string getTwoDictionariesPath(bool translit);
   // Helper wrapper function for language change menu
   // helper BOOL_VOID_FUNCTION
@@ -217,12 +211,7 @@ public:
   }
 
   std::string intToStringLocaled(int v);
-  void sortFilterResults(
-#ifdef STD_THREAD
-      std::stop_token token
-#endif
-  );
+  void sortFilterResults();
 
   void loadLanguage();
 };
-
