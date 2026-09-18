@@ -9,6 +9,7 @@
 #include "consts.h"
 #include <cassert>
 #include <unordered_map>
+#include <ranges>
 
 using uchar = unsigned char;
 
@@ -144,7 +145,7 @@ WordsBase::WordsBase() {
   }
 
   int num_threads = g_get_num_processors(); // std::hardware_concurrency();
-
+  m_thread_result.resize(num_threads);
   for (i = 0; i < LANGUAGES; i++) {
     // auto begin = clock();
     StringSet const &main_set = m_dictionary[i];
@@ -1136,6 +1137,7 @@ void WordsBase::twoDictionaries(int nthread, bool translit) {
   int i, j, m, l, len, n, fromIndex = -1;
   std::string s, alphabetFrom;
   VString v;
+  clock_t begin=clock();
   const int di = getDictionaryIndex();
   s = getTwoDictionariesPath(translit);
   for (auto &s : readFile(s)) {
@@ -1161,14 +1163,17 @@ void WordsBase::twoDictionaries(int nthread, bool translit) {
     }
   }
 
-  StringSet const &df = m_dictionary[fromIndex];
+  // TODO StringSet const &df = m_dictionary[fromIndex];
   StringSet const &dt = m_dictionary[fromIndex == 1 ? 0 : 1];
 
   i = m_longestWordLength[fromIndex];
   VVString k(i);
   IntVector id(i);
 
-  for (auto const &e : df) {
+  auto z = m_it[fromIndex];
+  for (auto it = z[nthread]; it != z[nthread + 1]; it++) {
+    auto const &e = *it;
+    // TODO  for (auto const &e : df) {
     len = e.length();
     for (n = 1, i = 0; i < len; i++) {
       j = indexOf(e[i], alphabetFrom);
@@ -1203,13 +1208,16 @@ void WordsBase::twoDictionaries(int nthread, bool translit) {
           s = s + " " + e;
         }
         assert(len == int(e.length()));
-        m_result.push_back(SearchResult(
+        m_thread_result[nthread].push_back(SearchResult(
             s, len, 1)); // mark as 1 word only to not show number of words
       }
     }
   l1531:
     RETURN_ON_USER_BREAK
   }
+
+  pr(nthread, timeElapse(begin), m_thread_result[nthread].size());
+
 }
 
 void WordsBase::keyboardWords(int nthread) {
@@ -1758,6 +1766,8 @@ std::string WordsBase::getTimeString() {
 }
 
 void WordsBase::run_thread(int nthread) {
+  m_thread_result[nthread].clear();
+
   auto it = menu2VoidInt.find(m_menuClick);
   if (it != menu2VoidInt.end()) {
     auto f = it->second;
@@ -1774,12 +1784,15 @@ void WordsBase::run_thread(int nthread) {
       RETURN_ON_USER_BREAK
     }
   }
-  pr(nthread, "finished");
 }
 
 void WordsBase::run() {
   std::vector<std::jthread> workers;
-  const int num_workers = 1;
+  int num_workers = 1;
+  if(oneOf(m_menuClick,MENU_TWO_DICTIONARIES_SIMPLE,MENU_TWO_DICTIONARIES_TRANSLIT)){
+    num_workers=g_get_num_processors();
+  }
+  pr(num_workers);
   for (int i = 0; i < num_workers; ++i) {
     workers.emplace_back(run_thread, this, i);
   }
@@ -1790,6 +1803,8 @@ void WordsBase::run() {
       // pri;
     }
   }
+
+  m_result = m_thread_result | std::views::join | std::ranges::to<SearchResultVector>();
 
   bool b = m_token.stop_requested();
 

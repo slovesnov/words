@@ -13,17 +13,18 @@
 
 class SearchResult {
 public:
-	std::string s;
-	int length;
-	int words;
-	double percent[VOWELS_CONSONANTS_SIZE]; //percent of vowels,consonants
-	int differentCharacters;
+  std::string s;
+  int length;
+  int words;
+  double percent[VOWELS_CONSONANTS_SIZE]; // percent of vowels,consonants
+  int differentCharacters;
 
-	SearchResult(std::string _s, int _length, int _words);
+  SearchResult(std::string _s, int _length, int _words);
 };
 
-typedef std::vector<SearchResult> SearchResultVector;
-typedef bool (*BOOL_SEARCH_RESULT_SEARCH_RESULT_FUNCTION)(const SearchResult&,
-		const SearchResult&);
+using SearchResultVector = std::vector<SearchResult>;
+using BOOL_SEARCH_RESULT_SEARCH_RESULT_FUNCTION =
+    bool (*)(const SearchResult &, const SearchResult &);
+
 extern BOOL_SEARCH_RESULT_SEARCH_RESULT_FUNCTION SORT_FUNCTION[];
 extern const int NUMBER_OF_SORTS;

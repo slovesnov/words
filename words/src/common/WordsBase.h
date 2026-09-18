@@ -56,6 +56,7 @@ protected:
   ENUM_MENU m_menuClick; // last search option
   std::string m_out;
   SearchResultVector m_result;
+  std::vector<SearchResultVector> m_thread_result;
   int m_longestWordLength[LANGUAGES];
   clock_t m_begin, m_end;
   bool m_outSplitted;
