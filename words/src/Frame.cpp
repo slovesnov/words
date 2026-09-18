@@ -779,7 +779,7 @@ void Frame::sortFilterAndUpdateResults() {
   sortFilterResults();
   m_end = clock();
   //	printl(m_begin,m_end,m_end-m_begin)
-  pr2("end sortFilterAndUpdateResults")
+  //pr2("end sortFilterAndUpdateResults");
   gdk_threads_add_idle(end_job, NULL);
 }
 
@@ -906,16 +906,15 @@ void Frame::comboChanged(ENUM_COMBOBOX e) {
     gtk_widget_set_visible(m_comboline, getComboIndex(e) == 0);
   }
 
-  if (oneOf(e, COMBOBOX_SORT, COMBOBOX_SORT_ORDER, COMBOBOX_DICTIONARY,
-            COMBOBOX_FILTER)) {
-    waitThread();
-    if (e == COMBOBOX_DICTIONARY) {
-      setDictionary();
-    } else {
-      sortOrFilterChanged();
-    }
+  if (oneOf(e, COMBOBOX_SORT, COMBOBOX_SORT_ORDER, COMBOBOX_FILTER)) {
+    sortOrFilterChanged();
+    return;
+  }
+
+  stopThread();
+  if (e == COMBOBOX_DICTIONARY) {
+    setDictionary();
   } else {
-    stopThread();
     if ((e == COMBOBOX_HELPER0 || e == COMBOBOX_HELPER1) &&
         ONE_OF(m_menuClick, MENU_ADJUST_COMBO)) {
       if (getComboIndex(COMBOBOX_HELPER0) > getComboIndex(COMBOBOX_HELPER1)) {
@@ -1123,12 +1122,12 @@ void Frame::endJob() {
  */
 void Frame::stopThread() {
 #ifdef STD_THREAD
-  pr2("try stop", m_thread.joinable());
+  // pr2("try stop", m_thread.joinable());
   m_thread.request_stop();
   if (m_thread.joinable()) {
     m_thread.join();
   }
-  pr2("stopped")
+  // pr2("stopped")
 #else
   g_mutex_lock(&m_mutex);
   waitThread();
@@ -1140,7 +1139,7 @@ bool Frame::userBreakThread() {
   // Sleep(1);//to slowdown check user break
 #ifdef STD_THREAD
   if (m_token.stop_requested()) {
-    pr2("thread exit");
+    // pr2("thread exit");
     m_result.clear();
     m_out = "";
     return true;
@@ -1302,10 +1301,8 @@ void Frame::addAccelerators() {
 }
 
 void Frame::sortOrFilterChanged() {
-  stopThread();//TODO
+  stopThread();
   startJob(false);
-  /* sortAndUpdateResults() could take a long time so use thread
-   */
   startThread(sort_filter_thread);
 }
 

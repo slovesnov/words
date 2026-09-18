@@ -1472,14 +1472,9 @@ void WordsBase::sortFilterResults() {
               SORT_FUNCTION[m_comboValue[COMBOBOX_SORT] * 2 +
                             m_comboValue[COMBOBOX_SORT_ORDER]]);
   }
-  int j=0;
   for (auto const &e : m_result) {
     s = localeToUtf8(e.s);
 #ifndef NOGTK
-if(++j<5){
-    pr2(m_regex[1] == nullptr , m_filterText.empty() ,m_regex[1] == nullptr?-1: g_regex_match(m_regex[1], s.c_str(), GRegexMatchFlags(0), NULL),"@@@");
-
-}
     if (find != testFilterRegex(s)) {
       continue;
     }
