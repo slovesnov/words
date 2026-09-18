@@ -774,13 +774,12 @@ void Frame::setHelperPanel() {
 
 /**
  * Note function can be called from thread
- *
  */
 void Frame::sortFilterAndUpdateResults() {
-
   sortFilterResults();
   m_end = clock();
   //	printl(m_begin,m_end,m_end-m_begin)
+  pr2("end sortFilterAndUpdateResults")
   gdk_threads_add_idle(end_job, NULL);
 }
 
@@ -1124,12 +1123,12 @@ void Frame::endJob() {
  */
 void Frame::stopThread() {
 #ifdef STD_THREAD
-  //pr("try stop", m_thread.joinable());
+  pr2("try stop", m_thread.joinable());
   m_thread.request_stop();
   if (m_thread.joinable()) {
     m_thread.join();
   }
-  //pr("stopped")
+  pr2("stopped")
 #else
   g_mutex_lock(&m_mutex);
   waitThread();
@@ -1172,11 +1171,6 @@ void Frame::waitThread() {
   }
 #else
   if (m_thread) {
-    /* g_thread_join cann't be called several times. see documentation
-     * on second call program hang out
-     * stopThread() can be called several times, and stopThread() calls
-     * waitThread() so use m_thread variable as indicator
-     */
     g_thread_join(m_thread);
     m_thread = 0;
     // update status & GtkTextBuffer
@@ -1308,6 +1302,7 @@ void Frame::addAccelerators() {
 }
 
 void Frame::sortOrFilterChanged() {
+  stopThread();//TODO
   startJob(false);
   /* sortAndUpdateResults() could take a long time so use thread
    */

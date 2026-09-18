@@ -1472,9 +1472,14 @@ void WordsBase::sortFilterResults() {
               SORT_FUNCTION[m_comboValue[COMBOBOX_SORT] * 2 +
                             m_comboValue[COMBOBOX_SORT_ORDER]]);
   }
+  int j=0;
   for (auto const &e : m_result) {
     s = localeToUtf8(e.s);
 #ifndef NOGTK
+if(++j<5){
+    pr2(m_regex[1] == nullptr , m_filterText.empty() ,m_regex[1] == nullptr?-1: g_regex_match(m_regex[1], s.c_str(), GRegexMatchFlags(0), NULL),"@@@");
+
+}
     if (find != testFilterRegex(s)) {
       continue;
     }
@@ -1604,10 +1609,10 @@ bool WordsBase::prepare() {
                              GRegexCompileFlags(G_REGEX_RAW | G_REGEX_CASELESS),
                              GRegexMatchFlags(0), NULL);
     if (!m_regex[0]) {
-      pr2("invalid regex0");
+      // pr2("invalid regex0");
       return false;
     } else {
-      pr2("new regex0");
+      // pr2("new regex0");
     }
 #endif
 
@@ -1764,7 +1769,7 @@ bool WordsBase::setCheckFilterRegex() {
   m_regex[1] = g_regex_new(s.c_str(), GRegexCompileFlags(G_REGEX_CASELESS),
                            GRegexMatchFlags(0), NULL);
   if (m_regex[1]) {
-    pr2("set regex1");
+    // pr2("set regex1");
   }
   return m_regex[1] != nullptr;
 }
@@ -2048,7 +2053,7 @@ int WordsBase::getDictionaryIndex() const {
 #ifndef USE_STANDARD_REGEX
 void WordsBase::freeRegex(int i) {
   if (m_regex[i]) {
-    pr2("free regex", i);
+    // pr2("free regex", i);
     g_regex_unref(m_regex[i]);
   }
 }

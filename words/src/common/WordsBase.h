@@ -27,10 +27,7 @@
 #include <thread>
 #endif
 
-template <typename... Args> void pr2(Args &&...args) {
-  ((std::cout << std::forward<Args>(args) << " "), ...);
-  std::cout  << "\n";
-}
+#define pr2(...) print_variables(__VA_ARGS__);std::cout  << "\n";
 
 const char SEPARATOR[] = "SEPARATOR";
 constexpr std::string LANGUAGE[] = {"english", "russian"};
