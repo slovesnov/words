@@ -23,30 +23,39 @@ using uchar = unsigned char;
 
 std::string LNG[LANGUAGES];
 
-using BOOL_STRING_WORDSBASE_FUNCTION = bool (WordsBase::*)(const std::string&);
+using BOOL_STRING_WORDSBASE_FUNCTION = bool (WordsBase::*)(const std::string &);
 using BOOL_VOID_WORDSBASE_FUNCTION = bool (WordsBase::*)();
 
 const std::unordered_map<ENUM_MENU, BOOL_VOID_WORDSBASE_FUNCTION>
     menu2BoolVoid = {
-        {MENU_ANAGRAM, &WordsBase::findAnagram},
-        {MENU_SIMPLE_WORD_SEQUENCE, &WordsBase::findSimpleWordSequence},
-        {MENU_DOUBLE_WORD_SEQUENCE, &WordsBase::findDoubleWordSequence},
-        {MENU_WORD_SEQUENCE_FULL, &WordsBase::findWordSequenceFull},
-        {MENU_MODIFICATION, &WordsBase::findModification},
-        {MENU_CHAIN, &WordsBase::findChain},
-        {MENU_LETTER_GROUP_SPLIT, &WordsBase::findLetterGroupSplit},
-        {MENU_TWO_DICTIONARIES_SIMPLE, &WordsBase::twoDictionariesSimple},
-        {MENU_TWO_DICTIONARIES_TRANSLIT, &WordsBase::twoDictionariesTranslit},
-        {MENU_TWO_DICTIONARIES_KEYBOARD_WORD, &WordsBase::keyboardWords},
-        {MENU_DICTIONARY_STATISTICS, &WordsBase::dictionaryStatistics},
-        {MENU_WORD_FREQUENCY, &WordsBase::wordFrequency},
-        {MENU_CHECK_DICTIONARY, &WordsBase::checkDictionary},
+        {MENU_ANAGRAM, &WordsBase::findAnagram}, // break implemented
+        {MENU_SIMPLE_WORD_SEQUENCE,
+         &WordsBase::findSimpleWordSequence}, // break implemented
+        {MENU_DOUBLE_WORD_SEQUENCE,
+         &WordsBase::findDoubleWordSequence}, // break implemented
+        {MENU_WORD_SEQUENCE_FULL,
+         &WordsBase::findWordSequenceFull},                // not implemented
+        {MENU_MODIFICATION, &WordsBase::findModification}, // break implemented
+        {MENU_CHAIN, &WordsBase::findChain},               // not implemented
+        {MENU_LETTER_GROUP_SPLIT,
+         &WordsBase::findLetterGroupSplit}, // not implemented
+        {MENU_TWO_DICTIONARIES_SIMPLE,
+         &WordsBase::twoDictionariesSimple}, // break implemented
+        {MENU_TWO_DICTIONARIES_TRANSLIT,
+         &WordsBase::twoDictionariesTranslit}, // break implemented
+        {MENU_TWO_DICTIONARIES_KEYBOARD_WORD,
+         &WordsBase::keyboardWords}, // not implemented
+        {MENU_DICTIONARY_STATISTICS,
+         &WordsBase::dictionaryStatistics},                   // not implemented
+        {MENU_WORD_FREQUENCY, &WordsBase::wordFrequency},     // not implemented
+        {MENU_CHECK_DICTIONARY, &WordsBase::checkDictionary}, // not implemented
         {MENU_TWO_CHARACTERS_DISTRIBUTION,
-         &WordsBase::twoCharactersDistribution},
+         &WordsBase::twoCharactersDistribution}, // not implemented
         {MENU_TWO_CHARACTERS_DISTRIBUTION_START,
-         &WordsBase::twoCharactersDistribution},
+         &WordsBase::twoCharactersDistribution}, // not implemented
         {MENU_TWO_CHARACTERS_DISTRIBUTION_END,
-         &WordsBase::twoCharactersDistribution}};
+         &WordsBase::twoCharactersDistribution} // not implemented
+};
 
 const std::map<ENUM_MENU, BOOL_STRING_WORDSBASE_FUNCTION> menu2BoolString = {
     {MENU_PANGRAM, &WordsBase::checkPangram},
