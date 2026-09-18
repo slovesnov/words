@@ -2032,6 +2032,7 @@ void WordsBase::setDictionaryIndex(int i) {
   assert(i >= 0 && i < LANGUAGES);
   m_comboValue[COMBOBOX_DICTIONARY] = i;
 }
+
 int WordsBase::getDictionaryIndex() const {
   assert(m_comboValue[COMBOBOX_DICTIONARY] >= 0 &&
          m_comboValue[COMBOBOX_DICTIONARY] < LANGUAGES);
