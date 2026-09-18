@@ -22,8 +22,9 @@
 
 // Note WORDS_VERSION defined in consts.h
 const char MAIL[] = "slovesnov@yandex.ru";
-const std::string HOMEPAGE = "https://slovesnov.rf.gd/?words";
-const std::string HOMEPAGE_ONLINE = "https://slovesnov.rf.gd/?words_online";
+const std::string URL = "https://slovesnov.rf.gd/";
+const std::string HOMEPAGE = URL + "?words";
+const std::string HOMEPAGE_ONLINE = URL + "?words_online";
 const char markTag[] = "mark";
 const char activeTag[] = "active";
 const int SEARCH_ENTRY_ID = -1;

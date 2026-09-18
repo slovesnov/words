@@ -10,10 +10,6 @@
 #include "aslov.h"
 #include <set>
 
-// Iterators
-using StringI = std::string::iterator;
-using StringCI = std::string::const_iterator;
-
 // Pairs
 using StringInt = std::pair<std::string, int>;
 using IntDouble = std::pair<int, double>;

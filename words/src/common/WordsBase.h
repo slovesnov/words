@@ -13,7 +13,6 @@
 #include "aslov.h"
 #include <algorithm>
 #include <array>
-#include <cassert>
 #include <cstring>
 #include <ctime>
 
@@ -92,11 +91,10 @@ protected:
     return m_longestWordLength[getDictionaryIndex()];
   }
 
-  static std::string getShortLanguageString(int i);
-
   bool prepare();
-  void setDictionaryIndex(int i) { m_comboValue[COMBOBOX_DICTIONARY] = i; }
-  int getDictionaryIndex() const { return m_comboValue[COMBOBOX_DICTIONARY]; }
+  static std::string getShortLanguageString(int i);
+  void setDictionaryIndex(int i);
+  int getDictionaryIndex() const;
 
   static std::string path(int i, std::string s);
   static VString readFile(int i, std::string s);

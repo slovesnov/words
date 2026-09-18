@@ -6,8 +6,8 @@
  */
 
 #include "WordsBase.h"
-#include "aslov.h"
 #include "consts.h"
+#include <cassert>
 
 typedef unsigned char uchar;
 
@@ -833,8 +833,6 @@ bool WordsBase::findChain() {
   int i, j, k, l, n, mx[2];
   MapStringInt dl;
   VString v, w[2];
-  StringI ic;
-  StringCI ia;
   MapStringIntI mi;
   char c;
   std::string s;
@@ -866,11 +864,11 @@ bool WordsBase::findChain() {
       v.clear();
       for (auto &vit : w[i]) {
         std::string &vr = vit;
-        for (ic = vr.begin(); ic != vr.end(); ic++) {
-          c = *ic;
-          for (ia = getAlphabet().begin(); ia != getAlphabet().end(); ia++) {
-            if (*ia != c) {
-              *ic = *ia;
+        for (auto &ic : vr) {
+          c = ic;
+          for (auto &ia : getAlphabet()) {
+            if (ia != c) {
+              ic = ia;
               mi = dl.find(vr);
               if (mi != dl.end()) {
                 if (mi->second == 0) {
@@ -880,7 +878,7 @@ bool WordsBase::findChain() {
                   if ((mi->second > 0 && i == 1) ||
                       (mi->second < 0 && i == 0)) {
                     s = vr;
-                    *ic = c;
+                    ic = c;
                     if (mi->second > 0) {
                       // USE set not vector to avoid same words. Example "????
                       // ????"
@@ -897,7 +895,7 @@ bool WordsBase::findChain() {
               }
             }
           }
-          *ic = c;
+          ic = c;
         }
       }
       if (v.empty() || !vs[0].empty()) {
@@ -1104,43 +1102,8 @@ bool WordsBase::twoDictionaries(bool translit) {
     }
   }
 
-#define NEWS
-
-#ifdef NEWS
-  auto begin = clock();
-  bool seen[256] = {false};
-  s = "";
-  for (auto const &e : to) {
-    for (auto a : e) {
-      for (const char ch : a) {
-        const uchar b = uchar(ch);
-        if (!seen[b]) {
-          seen[b] = true;
-          s += b;
-        }
-      }
-    }
-  }
-  j = 0;
-  for (i = 0; i < 256; i++) {
-    if (seen[i]) {
-      s += char(i);
-      j++;
-    }
-  }
-  // pr(s,j);
-
-  std::set<std::string> dt;
-  for (auto const &e : m_dictionary[fromIndex == 1 ? 0 : 1]) {
-    if (spanIncluding(e, s)) {
-      dt.insert(e);
-    }
-  }
-  pr(timeElapse(begin),dt.size());
-#else
-  StringSet const &dt = m_dictionary[fromIndex == 1 ? 0 : 1];
-#endif
   StringSet const &df = m_dictionary[fromIndex];
+  StringSet const &dt = m_dictionary[fromIndex == 1 ? 0 : 1];
 
   i = m_longestWordLength[fromIndex];
   VVString k(i);
@@ -1189,9 +1152,6 @@ bool WordsBase::twoDictionaries(bool translit) {
     RETURN_ON_USER_BREAK(true);
   }
 
-  pr(m_result.size())
-  pr(timeElapse(begin), m_result.size(), translit);
-  
   return false;
 }
 
@@ -1778,15 +1738,15 @@ bool WordsBase::run() {
 
 bool WordsBase::differenceOnlyOneChar(const std::string &a,
                                       const std::string &b) {
-  StringCI ia, ib;
+  auto ib = b.begin();
   int i = 0;
-  for (ia = a.begin(), ib = b.begin(); ia != a.end(); ia++, ib++) {
-    if (*ia != *ib) {
-      i++;
-      if (i > 1) {
+  for (auto &ia : a) {
+    if (ia != *ib) {
+      if (++i > 1) {
         return false;
       }
     }
+    ib++;
   }
   return i == 1;
 }
@@ -1971,8 +1931,7 @@ StringStringVector getAllPairs(std::string const &s,
       if (low == invalidDifference || low <= e.first) {
         auto a = sub(s, e.first);
         if (a != invalidDifference && e.first <= a) {
-          auto &m = eqmap[a.length()];
-          if (m.find(a) != m.end()) {
+          if (eqmap[a.length()].contains(a)) {
             v.push_back({getUserString(e.first), getUserString(a)});
           }
         }
@@ -2067,4 +2026,14 @@ bool WordsBase::findLetterGroupSplit() {
 std::string WordsBase::getShortLanguageString(int i) {
   assert(i >= 0 && i < LANGUAGES);
   return LNG[i];
+}
+
+void WordsBase::setDictionaryIndex(int i) {
+  assert(i >= 0 && i < LANGUAGES);
+  m_comboValue[COMBOBOX_DICTIONARY] = i;
+}
+int WordsBase::getDictionaryIndex() const {
+  assert(m_comboValue[COMBOBOX_DICTIONARY] >= 0 &&
+         m_comboValue[COMBOBOX_DICTIONARY] < LANGUAGES);
+  return m_comboValue[COMBOBOX_DICTIONARY];
 }
