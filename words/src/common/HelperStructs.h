@@ -52,17 +52,14 @@ using ChainNodeVector = std::vector<ChainNode>;
 using ChainNodeVectorI = ChainNodeVector::iterator;
 using ChainNodeVectorCI = ChainNodeVector::const_iterator;
 
-class TwoCharactersDistributionResult {
+class ThreadResult {
 public:
   int total;
   std::vector<IntVector> a;
-  void zero(int n) {
-    total = 0;
-    a.resize(n);
-    for (int i = 0; i < n; ++i) {
-      a[i].assign(n, 0);
-    }
-  }
+  std::string s;
+  void clear(int n, int n1 = -1);
+  void add(std::vector<IntVector> &e) const;
+  std::vector<IntVector> createZeroLike();
 };
 
 bool sortIntDouble(const IntDouble &r1, const IntDouble &r2);

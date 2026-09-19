@@ -92,7 +92,7 @@ protected:
   std::string m_programVersion;
 #endif
   std::vector<StringSetCI> m_it[LANGUAGES];
-  std::vector<TwoCharactersDistributionResult> m_2chdr;
+  std::vector<ThreadResult> m_2chdr;
   std::vector<IntVector> m_wf;
 
   std::stop_token m_token;
@@ -187,6 +187,7 @@ public:
   void checkDictionary(int nthread);
   void twoCharactersDistribution(int nthread);
   
+  void dictionaryStatisticsPostProseeding();
   void wordFrequencyPostProseeding();
   void twoCharactersDistributionPostProseeding();
 

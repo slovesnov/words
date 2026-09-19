@@ -71,7 +71,25 @@ const std::unordered_map<ENUM_MENU, void (WordsBase::*)(int)> menu2VoidInt = {
     {MENU_TWO_CHARACTERS_DISTRIBUTION_END,
      &WordsBase::twoCharactersDistribution} // not implemented
 };
-
+/*
+MENU_MODIFICATION, findModification
+MENU_CHAIN, findChain
+MENU_LETTER_GROUP_SPLIT, findLetterGroupSplit
+MENU_CHECK_DICTIONARY, checkDictionary
+===========================
+MENU_ANAGRAM, findAnagram
+MENU_TWO_DICTIONARIES_SIMPLE, twoDictionariesSimple
+MENU_TWO_DICTIONARIES_TRANSLIT, twoDictionariesTranslit
+--MENU_SIMPLE_WORD_SEQUENCE, findSimpleWordSequence
+--MENU_DOUBLE_WORD_SEQUENCE, findDoubleWordSequence
+--MENU_WORD_SEQUENCE_FULL, findWordSequenceFull
+MENU_TWO_CHARACTERS_DISTRIBUTION, twoCharactersDistribution
+MENU_TWO_CHARACTERS_DISTRIBUTION_START, twoCharactersDistribution
+MENU_TWO_CHARACTERS_DISTRIBUTION_END, twoCharactersDistribution
+MENU_TWO_DICTIONARIES_KEYBOARD_WORD, keyboardWords
+MENU_WORD_FREQUENCY, wordFrequency
+MENU_DICTIONARY_STATISTICS, dictionaryStatistics
+*/
 const std::map<ENUM_MENU, bool (WordsBase::*)(const std::string &)>
     menu2BoolString = {
         {MENU_PANGRAM, &WordsBase::checkPangram},
@@ -1320,7 +1338,7 @@ void WordsBase::wordFrequencyPostProseeding() {
       m[i] += e[i];
     }
   }
-  v.reserve(MAX+1);
+  v.reserve(MAX + 1);
   for (i = 0; i < MAX; ++i) {
     if (m[i] > 0) {
       v.emplace_back(std::move(m[i]), i + 1); // store actual word length
@@ -1402,7 +1420,7 @@ void WordsBase::twoCharactersDistribution(int nthread) {
   int i;
   const int n = getAlphabetSize();
   auto &st = m_2chdr[nthread];
-  st.zero(n);
+  st.clear(n);
   int &total = st.total;
   auto &a = st.a;
 
@@ -1434,17 +1452,11 @@ void WordsBase::twoCharactersDistributionPostProseeding() {
   auto begin = clock();
   const int n = getAlphabetSize();
   StringIntVector v;
-  auto a = create2dArray<int>(n, n, 0);
-
+  auto a =m_2chdr[0].createZeroLike();
   int total = 0;
   for (auto &e : m_2chdr) {
     total += e.total;
-    std::vector<IntVector> &b = e.a;
-    for (i = 0; i < n; i++) {
-      for (j = 0; j < n; j++) {
-        a[i][j] += b[i][j];
-      }
-    }
+    e.add(a);
   }
 
   v.reserve(n * n);
@@ -1477,17 +1489,49 @@ void WordsBase::twoCharactersDistributionPostProseeding() {
 }
 
 void WordsBase::dictionaryStatistics(int nthread) {
+  const int SZ_CAPTION = 3;
+  const int a = getAlphabetSize();
+  auto &st = m_2chdr[nthread];
+  st.clear(SZ_CAPTION, a + 1);
+  auto &m = st.a;
+  std::string &longestWord = st.s;
+
+  auto z = m_it[getDictionaryIndex()];
+  for (auto it = z[nthread]; it != z[nthread + 1]; it++) {
+    auto const &e = *it;
+    m[0][a] += e.length();
+    if (e.length() > longestWord.length()) {
+      longestWord = e;
+    }
+    for (auto c : e) {
+      m[0][alphabetIndex(c)]++;
+    }
+    m[1][alphabetIndex(e.front())]++;
+    m[2][alphabetIndex(e.back())]++;
+  }
+}
+
+void WordsBase::dictionaryStatisticsPostProseeding() {
   int i, j;
   unsigned k;
   double v;
+  std::string longestWord;
+  std::string s, s2;
   const int SZ_CAPTION = 3;
+  const int a = getAlphabetSize();
+  auto m =m_2chdr[0].createZeroLike() ;
+  StringSet const &r = getDictionary();
+  m[1][a] = m[2][a] = r.size();
+
+  for (auto &e : m_2chdr) {
+    if (e.s.size() > longestWord.size()) {
+      longestWord = e.s;
+    }
+    e.add(m);
+  }
+
   std::string caption[SZ_CAPTION];
   std::string additionalCaption[2];
-  std::string longestWord;
-  const int a = getAlphabetSize();
-  auto m = create2dArray<int>(SZ_CAPTION, a + 1, 0);
-  StringSet const &r = getDictionary();
-
   for (i = 0; i < SZ_CAPTION; i++) {
     caption[i] =
         m_language[i == 0
@@ -1501,24 +1545,6 @@ void WordsBase::dictionaryStatistics(int nthread) {
         " " + m_language[i == 0 ? SORTED_BY_ALPHABET : SORTED_BY_FREQUENCY];
   }
 
-  m[1][a] = m[2][a] = r.size();
-
-  for (auto &e : r) {
-    m[0][a] += e.length();
-
-    if (e.length() > longestWord.length()) {
-      longestWord = e;
-    }
-
-    for (auto c : e) {
-      m[0][alphabetIndex(c)]++;
-    }
-
-    m[1][alphabetIndex(e.front())]++;
-    m[2][alphabetIndex(e.back())]++;
-  }
-
-  std::string s, s2;
   m_out = m_language[PROCEED_SYMBOLS] + " " + intToStringLocaled(m[0][a]) +
           ", " + m_language[WORDS] + " " + intToStringLocaled(m[1][a]);
 
@@ -1886,11 +1912,10 @@ void WordsBase::run_thread(int nthread) {
 
 void WordsBase::run() {
   std::vector<std::jthread> workers;
-  const int threads =
-      oneOf(m_menuClick, MENU_MODIFICATION, MENU_CHAIN, MENU_LETTER_GROUP_SPLIT,
-            MENU_DICTIONARY_STATISTICS, MENU_CHECK_DICTIONARY)
-          ? 1
-          : g_get_num_processors();
+  const int threads = oneOf(m_menuClick, MENU_MODIFICATION, MENU_CHAIN,
+                            MENU_LETTER_GROUP_SPLIT, MENU_CHECK_DICTIONARY)
+                          ? 1
+                          : g_get_num_processors();
   prsync(threads, magic_enum::enum_name(m_menuClick));
   for (int i = 0; i < threads; ++i) {
     workers.emplace_back(run_thread, this, i);
@@ -1903,6 +1928,8 @@ void WordsBase::run() {
 
   if (m_menuClick == MENU_WORD_FREQUENCY) {
     wordFrequencyPostProseeding();
+  } else if (m_menuClick == MENU_DICTIONARY_STATISTICS) {
+    dictionaryStatisticsPostProseeding();
   } else if (oneOf(m_menuClick, MENU_TWO_CHARACTERS_DISTRIBUTION,
                    MENU_TWO_CHARACTERS_DISTRIBUTION_START,
                    MENU_TWO_CHARACTERS_DISTRIBUTION_END)) {
