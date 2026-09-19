@@ -30,6 +30,8 @@ const ENUM_SETTINGS KEYBOARD_ROW[] = {
     SETTINGS_KEYBOARD_ROW3  // should goes immediately after
                             // SETTINGS_KEYBOARD_ROW2
 };
+static_assert(SETTINGS_KEYBOARD_ROW2 == SETTINGS_KEYBOARD_ROW1 + 1);
+static_assert(SETTINGS_KEYBOARD_ROW3 == SETTINGS_KEYBOARD_ROW1 + 2);
 const int KEYBOARD_ROW_SIZE = SIZE(KEYBOARD_ROW);
 
 #ifndef NOGTK
@@ -47,4 +49,6 @@ const ENUM_MENU MENU_WAITING[] = {MENU_DICTIONARY_STATISTICS,
                                   MENU_TWO_CHARACTERS_DISTRIBUTION,
                                   MENU_TWO_CHARACTERS_DISTRIBUTION_START,
                                   MENU_TWO_CHARACTERS_DISTRIBUTION_END};
+
+
 #endif /*#ifndef NOGTK*/
