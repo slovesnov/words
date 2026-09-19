@@ -1406,11 +1406,10 @@ void WordsBase::wordFrequencyPostProseeding() {
           std::format("{:2d} {:6.3f}% {:>{}}/{}", e.second, 100. * e.first / sz,
                       toString(e.first, ','), w, toString(sz, ','));
       if (i == 0 && j == 0) {
-        k = s.length() + SP;
         s1 = m_language[WORD_LENGTH_FREQUENCY];
-        guint count = g_utf8_strlen(s1.c_str(), -1);
-        if (k > count) {
-          s1 += std::string(k - count, ' ');
+        k = s.length() + SP - g_utf8_strlen(s1.c_str(), -1);
+        if (k > 0) {
+          s1 += std::string(k, ' ');
         }
         m_out = s1 + m_language[WORD_LENGTH_FREQUENCY1];
       }
