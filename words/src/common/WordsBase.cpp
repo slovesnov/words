@@ -155,8 +155,9 @@ WordsBase::WordsBase() {
     std::ifstream file(path(i, "words"));
     assert(file.is_open());
     std::string line;
+    auto hint = m_dictionary[i].end();
     while (std::getline(file, line)) {
-      m_dictionary[i].insert(line);
+      hint = m_dictionary[i].insert(hint, std::move(line));
       j = line.size();
       if (j > m_longestWordLength[i]) {
         m_longestWordLength[i] = j;
