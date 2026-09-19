@@ -8,8 +8,8 @@
 #include "WordsBase.h"
 #include "consts.h"
 #include <cassert>
-#include <unordered_map>
 #include <ranges>
+#include <unordered_map>
 
 using uchar = unsigned char;
 
@@ -1137,7 +1137,7 @@ void WordsBase::twoDictionaries(int nthread, bool translit) {
   int i, j, m, l, len, n, fromIndex = -1;
   std::string s, alphabetFrom;
   VString v;
-  clock_t begin=clock();
+  clock_t begin = clock();
   const int di = getDictionaryIndex();
   s = getTwoDictionariesPath(translit);
   for (auto &s : readFile(s)) {
@@ -1163,7 +1163,6 @@ void WordsBase::twoDictionaries(int nthread, bool translit) {
     }
   }
 
-  // TODO StringSet const &df = m_dictionary[fromIndex];
   StringSet const &dt = m_dictionary[fromIndex == 1 ? 0 : 1];
 
   i = m_longestWordLength[fromIndex];
@@ -1173,7 +1172,6 @@ void WordsBase::twoDictionaries(int nthread, bool translit) {
   auto z = m_it[fromIndex];
   for (auto it = z[nthread]; it != z[nthread + 1]; it++) {
     auto const &e = *it;
-    // TODO  for (auto const &e : df) {
     len = e.length();
     for (n = 1, i = 0; i < len; i++) {
       j = indexOf(e[i], alphabetFrom);
@@ -1217,7 +1215,6 @@ void WordsBase::twoDictionaries(int nthread, bool translit) {
   }
 
   pr(nthread, timeElapse(begin), m_thread_result[nthread].size());
-
 }
 
 void WordsBase::keyboardWords(int nthread) {
@@ -1766,6 +1763,7 @@ std::string WordsBase::getTimeString() {
 }
 
 void WordsBase::run_thread(int nthread) {
+  auto begin = clock();
   m_thread_result[nthread].clear();
 
   auto it = menu2VoidInt.find(m_menuClick);
@@ -1777,23 +1775,40 @@ void WordsBase::run_thread(int nthread) {
   auto it1 = menu2BoolString.find(m_menuClick);
   if (it1 != menu2BoolString.end()) {
     auto f = it1->second;
-    for (auto &e : getDictionary()) {
+    auto z = m_it[getDictionaryIndex()];
+    for (auto it2 = z[nthread]; it2 != z[nthread + 1]; it2++) {
+      auto &e = *it2;
       if ((this->*f)(e)) {
-        m_result.push_back(SearchResult(e, e.length(), 1));
+        m_thread_result[nthread].push_back(SearchResult(e, e.length(), 1));
       }
       RETURN_ON_USER_BREAK
     }
   }
+
+  //  auto it1 = menu2BoolString.find(m_menuClick);
+  // if (it1 != menu2BoolString.end()) {
+  //   auto f = it1->second;
+  //   for (auto &e : getDictionary()) {
+  //     if ((this->*f)(e)) {
+  //       m_result.push_back(SearchResult(e, e.length(), 1));
+  //     }
+  //     RETURN_ON_USER_BREAK
+  //   }
+  // }
+
+  pr(nthread, timeElapse(begin),m_thread_result[nthread].size());
 }
 
 void WordsBase::run() {
   std::vector<std::jthread> workers;
-  int num_workers = 1;
-  if(oneOf(m_menuClick,MENU_TWO_DICTIONARIES_SIMPLE,MENU_TWO_DICTIONARIES_TRANSLIT)){
-    num_workers=g_get_num_processors();
-  }
-  pr(num_workers);
-  for (int i = 0; i < num_workers; ++i) {
+  const int threads = 
+  oneOf(m_menuClick, MENU_TWO_DICTIONARIES_SIMPLE,
+                                MENU_TWO_DICTIONARIES_TRANSLIT) ||
+                                  !menu2VoidInt.contains(m_menuClick)
+                              ? g_get_num_processors()
+                              : 1;
+  pr(threads);
+  for (int i = 0; i < threads; ++i) {
     workers.emplace_back(run_thread, this, i);
   }
   for (auto &t : workers) {
@@ -1804,7 +1819,11 @@ void WordsBase::run() {
     }
   }
 
-  m_result = m_thread_result | std::views::join | std::ranges::to<SearchResultVector>();
+  //TODO
+  if (threads > 1) {
+    m_result = m_thread_result | std::views::join |
+               std::ranges::to<SearchResultVector>();
+  }
 
   bool b = m_token.stop_requested();
 

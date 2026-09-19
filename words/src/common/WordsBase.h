@@ -7,8 +7,6 @@
 
 #pragma once
 
-#define STD_THREAD
-
 #include "HelperStructs.h"
 #include "Modification.h"
 #include "SearchResult.h"
@@ -17,15 +15,13 @@
 #include <array>
 #include <cstring>
 #include <ctime>
+#include <thread>
 
 #ifdef NOGTK
 #define USE_STANDARD_REGEX
 #include <regex>
 #endif
 
-#ifdef STD_THREAD
-#include <thread>
-#endif
 
 #define pr2(...)                                                               \
   print_variables(__VA_ARGS__);                                                \
@@ -91,9 +87,7 @@ protected:
 #endif
 std::vector<StringSetCI> m_it[LANGUAGES];
 
-#ifdef STD_THREAD
   std::stop_token m_token;
-#endif
 
   std::string getStatusString();
   std::string getTimeString();

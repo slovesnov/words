@@ -39,19 +39,7 @@ class Frame : WordsBase {
   bool m_lockSignals;
   int m_tagIndex;
   int m_tags;
-#ifdef STD_THREAD
   std::jthread m_thread;
-#else
-  GMutex m_mutex;
-  GThread *m_thread; // uses only in main thread
-#endif
-
-  /* Note should be a variable
-   * cann't create CheckNewVersion object in Frame::Frame()
-   * because in this case ~CheckNewVersion() is called in Frame::Frame()
-   * and ~CheckNewVersion() is waiting while thread is finished so program slow
-   * down
-   */
   CheckNewVersion m_newVersion;
 
   gint getComboIndex(ENUM_COMBOBOX e) const {

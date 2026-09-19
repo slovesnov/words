@@ -96,11 +96,6 @@ const std::unordered_map<ENUM_MENU, int> MENU_TO_ACCEL_KEY = {
     {MENU_EDIT_COPY_TO_CLIPBOARD, GDK_KEY_C}};
 Frame *frame;
 
-// static gpointer thread(gpointer) {
-//   frame->proceedThread();
-//   return NULL;
-// }
-
 static gpointer sort_filter_thread(gpointer) {
   frame->sortFilterAndUpdateResults();
   return NULL;
@@ -196,11 +191,6 @@ Frame::Frame() : WordsBase() {
   // set dot as decimal separator, standard locale
   setlocale(LC_NUMERIC, "C");
   m_lockSignals = false;
-
-#ifndef STD_THREAD
-  m_thread = 0;
-  g_mutex_init(&m_mutex);
-#endif
 
   m_widget = gtk_window_new(GTK_WINDOW_TOPLEVEL);
   m_menu = gtk_menu_bar_new();
@@ -530,9 +520,6 @@ void Frame::destroy() {
   WRITE_CONFIG(CONFIG_TAGS, WORDS_VERSION,
                getShortLanguageString(m_languageIndex),
                getShortLanguageString(getDictionaryIndex()));
-#ifndef STD_THREAD
-  g_mutex_clear(&m_mutex);
-#endif
   stopThread();
   gtk_main_quit();
 }
@@ -1102,23 +1089,16 @@ void Frame::endJob() {
  * if thread runs stop it
  */
 void Frame::stopThread() {
-#ifdef STD_THREAD
   // pr2("try stop", m_thread.joinable());
   m_thread.request_stop();
   if (m_thread.joinable()) {
     m_thread.join();
   }
   // pr2("stopped")
-#else
-  g_mutex_lock(&m_mutex);
-  waitThread();
-  g_mutex_unlock(&m_mutex);
-#endif
 }
 
 bool Frame::userBreakThread() {
   // Sleep(1);//to slowdown check user break
-#ifdef STD_THREAD
   if (m_token.stop_requested()) {
     // pr2("thread exit");
     m_result.clear();
@@ -1127,52 +1107,27 @@ bool Frame::userBreakThread() {
   } else {
     return false;
   }
-#else
-  if (g_mutex_trylock(&m_mutex)) {
-    g_mutex_unlock(&m_mutex);
-    return false;
-  } else {
-    m_result.clear();
-    m_out = "";
-    return true;
-  }
-#endif
 }
 
 /**
  * if thread is run, wait while finish
  */
 void Frame::waitThread() {
-#ifdef STD_THREAD
   if (m_thread.joinable()) {
     m_thread.join();
     // update status & GtkTextBuffer
     endJob();
   }
-#else
-  if (m_thread) {
-    g_thread_join(m_thread);
-    m_thread = 0;
-    // update status & GtkTextBuffer
-    endJob();
-  }
-#endif
 }
 
 void Frame::startThread(GThreadFunc f) {
-#ifdef STD_THREAD
   if (!m_thread.joinable()) {
     // GCC bug #100612 so use lambda if call class member
     m_thread = std::jthread([this, f](std::stop_token token) {
       m_token = token;
       f(nullptr);
     });
-  } else {
-    pr2("strange")
   }
-#else
-  m_thread = g_thread_new("", f, NULL);
-#endif
 }
 
 void Frame::setComboIndex(ENUM_COMBOBOX e, gint v) {
