@@ -21,10 +21,6 @@
 #include <regex>
 #endif
 
-#define pr2(...)                                                               \
-  print_variables(__VA_ARGS__);                                                \
-  std::cout << "\n";
-
 const char SEPARATOR[] = "SEPARATOR";
 constexpr std::string LANGUAGE[] = {"english", "russian"};
 constexpr int LANGUAGES = SIZEI(LANGUAGE);

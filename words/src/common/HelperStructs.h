@@ -14,6 +14,8 @@
 #define USE_STANDARD_REGEX
 #endif
 
+using uchar = unsigned char;
+
 // Pairs
 using StringInt = std::pair<std::string, int>;
 using IntDouble = std::pair<int, double>;

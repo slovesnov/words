@@ -21,7 +21,9 @@ std::mutex cout_mutex;
     print_variables(__VA_ARGS__, "\n");                                        \
   }
 
-using uchar = unsigned char;
+#define pr2(...)                                                               \
+  print_variables(__VA_ARGS__);                                                \
+  std::cout << "\n";
 
 #ifdef NOGTK
 #define RETURN_ON_USER_BREAK
