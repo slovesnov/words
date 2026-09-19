@@ -17,8 +17,7 @@
 #include <ctime>
 #include <thread>
 
-#ifdef NOGTK
-#define USE_STANDARD_REGEX
+#ifdef USE_STANDARD_REGEX
 #include <regex>
 #endif
 
@@ -33,13 +32,6 @@ const std::string invalidDifference = "$";
 
 class WordsBase;
 extern WordsBase *wordsBase;
-
-#ifndef USE_STANDARD_REGEX
-struct GRegexDeleter {
-    void operator()(GRegex* r) const { if (r) g_regex_unref(r); }
-};
-using SafeGRegex = std::unique_ptr<GRegex, GRegexDeleter>;
-#endif
 
 class WordsBase {
   // prepare addons before search;
@@ -138,7 +130,8 @@ protected:
     return k == std::string::npos ? -1 : k;
   }
 
-  void fillResultFromMap(int nthread,const MapStringTwoStringVectors &map, size_t len);
+  void fillResultFromMap(int nthread, const MapStringTwoStringVectors &map,
+                         size_t len);
 
   // todo
   void test();
@@ -161,9 +154,9 @@ public:
   bool checkTemplate(const std::string &s);
   bool checkPalindrome(const std::string &s);
   bool checkCrossword(const std::string &s);
-  bool checkRegularExpression(const std::string &s,const SafeGRegex&r);
-  bool checkRegularExpression(const std::string &s){
-    return checkRegularExpression(s,m_regex[0]);
+  bool checkRegularExpression(const std::string &s, const SafeGRegex &r);
+  bool checkRegularExpression(const std::string &s) {
+    return checkRegularExpression(s, m_regex[0]);
   }
   bool checkCharacterSequence(const std::string &s);
   bool checkConsonantVowelSequence(const std::string &s);
@@ -186,7 +179,7 @@ public:
   void wordFrequency(int nthread);
   void checkDictionary(int nthread);
   void twoCharactersDistribution(int nthread);
-  
+
   void dictionaryStatisticsPostProseeding();
   void wordFrequencyPostProseeding();
   void twoCharactersDistributionPostProseeding();

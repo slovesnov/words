@@ -10,6 +10,10 @@
 #include "aslov.h"
 #include <set>
 
+#ifdef NOGTK
+#define USE_STANDARD_REGEX
+#endif
+
 // Pairs
 using StringInt = std::pair<std::string, int>;
 using IntDouble = std::pair<int, double>;
@@ -61,6 +65,14 @@ public:
   void add(std::vector<IntVector> &e) const;
   std::vector<IntVector> createZeroLike();
 };
+
+#ifndef USE_STANDARD_REGEX
+struct GRegexDeleter {
+    void operator()(GRegex* r) const { if (r) g_regex_unref(r); }
+};
+using SafeGRegex = std::unique_ptr<GRegex, GRegexDeleter>;
+#endif
+
 
 bool sortIntDouble(const IntDouble &r1, const IntDouble &r2);
 bool sortIntInt(const IntInt &r1, const IntInt &r2);
