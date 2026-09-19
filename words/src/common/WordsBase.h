@@ -92,6 +92,7 @@ protected:
   std::string m_programVersion;
 #endif
   std::vector<StringSetCI> m_it[LANGUAGES];
+  std::vector<TwoCharactersDistributionResult> m_2chdr;
 
   std::stop_token m_token;
 
@@ -150,6 +151,7 @@ protected:
 
 public:
   WordsBase();
+  ~WordsBase();
 
   void run();
   void run_thread(int nthread);
@@ -183,6 +185,8 @@ public:
   void wordFrequency(int nthread);
   void checkDictionary(int nthread);
   void twoCharactersDistribution(int nthread);
+  
+  void twoCharactersDistributionPostProseeding();
 
   static std::string getTwoDictionariesPath(bool translit);
   void twoDictionaries(int nthread, bool translit);

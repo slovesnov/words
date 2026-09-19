@@ -13,10 +13,19 @@
 #include <ranges>
 #include <unordered_map>
 
+// TODO
+std::mutex cout_mutex;
+#define prsync(...)                                                            \
+  {                                                                            \
+    std::lock_guard<std::mutex> lock(cout_mutex);                              \
+    print_variables(__VA_ARGS__);                                              \
+  }
+
 using uchar = unsigned char;
 
 #ifdef NOGTK
 #define RETURN_ON_USER_BREAK
+#define RETURN_ON_USER_BREAK1
 #else
 #define RETURN_ON_USER_BREAK                                                   \
   if (userBreakThread()) {                                                     \
@@ -146,18 +155,18 @@ WordsBase::WordsBase() {
     file.close();
   }
 
-  int num_threads = g_get_num_processors(); // std::hardware_concurrency();
-  m_thread_result.resize(num_threads);
+  int threads = g_get_num_processors(); // std::hardware_concurrency();
+  m_2chdr.resize(threads);
+  prs(m_2chdr.size()) m_thread_result.resize(threads);
   for (i = 0; i < LANGUAGES; i++) {
     StringSet const &main_set = m_dictionary[i];
     size_t total_size = main_set.size();
-    size_t chunk_size = total_size / num_threads;
-    size_t remainder = total_size % num_threads;
+    size_t chunk_size = total_size / threads;
+    size_t remainder = total_size % threads;
     auto current_it = main_set.begin();
 
-    for (j = 0; j < num_threads; ++j) {
-      size_t current_chunk =
-          chunk_size + (j == num_threads - 1 ? remainder : 0);
+    for (j = 0; j < threads; ++j) {
+      size_t current_chunk = chunk_size + (j == threads - 1 ? remainder : 0);
       if (current_chunk == 0)
         break;
 
@@ -167,6 +176,8 @@ WordsBase::WordsBase() {
     m_it[i].push_back(current_it);
   }
 
+  // TODO
+  system("chcp 1251>nul");
   // test();
 #ifdef NOGTK
   // cgi();TODO uncomment on real cgi query, and comment next lines
@@ -366,9 +377,10 @@ bool WordsBase::checkPalindrome(const std::string &s) {
   return true;
 }
 
-bool WordsBase::checkRegularExpression(const std::string &s, const SafeGRegex &r) {
+bool WordsBase::checkRegularExpression(const std::string &s,
+                                       const SafeGRegex &r) {
 #ifdef USE_STANDARD_REGEX
-//todo always m_regex
+  // todo always m_regex
   std::ptrdiff_t const matches(
       std::distance(std::sregex_iterator(s.begin(), s.end(), m_regex[0]),
                     std::sregex_iterator()));
@@ -385,38 +397,40 @@ bool WordsBase::checkRegularExpression(const std::string &s, const SafeGRegex &r
   int start_pos = 0;
   const int max = m_comboValue[COMBOBOX_HELPER1];
   const int string_len = s.length();
-  
+
   GMatchInfo *matchInfo = nullptr;
 
   // Find the first match
-  if (g_regex_match_full(r.get(), s.c_str(), string_len, start_pos, GRegexMatchFlags(0), &matchInfo, nullptr)) {
-    
+  if (g_regex_match_full(r.get(), s.c_str(), string_len, start_pos,
+                         GRegexMatchFlags(0), &matchInfo, nullptr)) {
+
     while (g_match_info_matches(matchInfo) && i <= max) {
       i++;
-      
+
       // Get the coordinates of the current match
       int start_match, end_match;
       g_match_info_fetch_pos(matchInfo, 0, &start_match, &end_match);
-      
+
       // Advance the start position for the next search iteration
       start_pos = end_match;
-      
-      // If the match was zero-length (e.g., ".*" pattern), advance by 1 character to prevent an infinite loop
+
+      // If the match was zero-length (e.g., ".*" pattern), advance by 1
+      // character to prevent an infinite loop
       if (start_match == end_match) {
-          start_pos++;
+        start_pos++;
       }
-      
+
       if (start_pos > string_len) {
-          break;
+        break;
       }
 
       // Reuse matchInfo without reallocating internal heap memory
-      g_match_info_next(matchInfo, nullptr); 
+      g_match_info_next(matchInfo, nullptr);
     }
   }
-  
+
   if (matchInfo) {
-      g_match_info_free(matchInfo);
+    g_match_info_free(matchInfo);
   }
 
   return i >= m_comboValue[COMBOBOX_HELPER0] && i <= max;
@@ -719,7 +733,6 @@ void WordsBase::findAnagram(int nthread) {
   // can use string or string_view
   using V = std::vector<std::string_view>;
   using MapStringV = std::map<std::string, V>;
-
   MapStringV map;
   MapStringV::iterator cit;
   const int min = m_comboValue[COMBOBOX_HELPER0];
@@ -727,7 +740,9 @@ void WordsBase::findAnagram(int nthread) {
 
   // at first make several sets by length is slower
   for (i = min; i <= max; i++) {
-    for (auto const &e : getDictionary()) {
+    auto z = m_it[getDictionaryIndex()];
+    for (auto it = z[nthread]; it != z[nthread + 1]; it++) {
+      auto const &e = *it;
       if (int(e.length()) != i) {
         continue;
       }
@@ -745,7 +760,8 @@ void WordsBase::findAnagram(int nthread) {
         continue;
       }
       s = joinV(v);
-      m_result.push_back(SearchResult(s, v.begin()->length(), v.size()));
+      m_thread_result[nthread].push_back(
+          SearchResult(s, v.begin()->length(), v.size()));
     }
     map.clear();
     RETURN_ON_USER_BREAK
@@ -1376,14 +1392,16 @@ void WordsBase::checkDictionary(int nthread) {
 }
 
 void WordsBase::twoCharactersDistribution(int nthread) {
-  int i, j;
-  const int s = getAlphabetSize();
-  auto a = create2dArray<int>(s, s, 0);
-  std::string ss;
-  StringIntVectorCI p;
+  int i;
+  const int n = getAlphabetSize();
+  auto &st = m_2chdr[nthread];
+  st.zero(n);
+  int &total = st.total;
+  auto &a = st.a;
 
-  int total = 0;
-  for (auto const &e : getDictionary()) {
+  auto z = m_it[getDictionaryIndex()];
+  for (auto it = z[nthread]; it != z[nthread + 1]; it++) {
+    auto const &e = *it;
     if (e.length() < 2) {
       continue;
     }
@@ -1400,32 +1418,55 @@ void WordsBase::twoCharactersDistribution(int nthread) {
       total++;
     }
   }
+}
 
+void WordsBase::twoCharactersDistributionPostProseeding() {
+  int i, j;
+  std::string s;
+  StringIntVectorCI p;
+  auto begin = clock();
+  const int n = getAlphabetSize();
   StringIntVector v;
-  for (i = 0; i < s; i++) {
-    for (j = 0; j < s; j++) {
-      if (a[i][j] != 0) {
-        ss = getAlphabetChar(i);
-        ss += getAlphabetChar(j);
-        v.push_back({ss, a[i][j]});
+  auto a = create2dArray<int>(n, n, 0);
+
+  int total = 0;
+  for (auto &e : m_2chdr) {
+    total += e.total;
+    std::vector<IntVector> &b = e.a;
+    for (i = 0; i < n; i++) {
+      for (j = 0; j < n; j++) {
+        a[i][j] += b[i][j];
       }
     }
   }
+
+  v.reserve(n * n);
+  for (i = 0; i < n; i++) {
+    for (j = 0; j < n; j++) {
+      if (a[i][j] != 0) {
+        s = getAlphabetChar(i);
+        s += getAlphabetChar(j);
+        v.emplace_back(std::move(s), a[i][j]);
+      }
+    }
+  }
+
   std::sort(v.begin(), v.end(), sortStringInt);
   p = v.begin();
   i = format("%.2f", (p->second * 100.) / total).length();
   j = intToStringLocaled(p->second).length();
-  ss = "%s %" + std::to_string(i) + ".2f%% = %" + std::to_string(j) + "s / %s";
+  s = "%s %" + std::to_string(i) + ".2f%% = %" + std::to_string(j) + "s / %s";
   for (p = v.begin(); p != v.end(); p++) {
     if (p != v.begin()) {
       m_out += "\n";
     }
-    m_out += localeToUtf8(format(ss.c_str(), p->first.c_str(),
+    m_out += localeToUtf8(format(s.c_str(), p->first.c_str(),
                                  (p->second * 100.) / total,
                                  intToStringLocaled(p->second).c_str(),
                                  intToStringLocaled(total).c_str()));
   }
   m_addstatus = m_language[PAIRS] + " " + intToStringLocaled(v.size());
+  prs(timeElapse(begin), "post");
 }
 
 void WordsBase::dictionaryStatistics(int nthread) {
@@ -1785,8 +1826,6 @@ std::string WordsBase::getTimeString() {
   return format("%.2lf", double(m_end - m_begin) / CLOCKS_PER_SEC);
 }
 
-std::mutex cout_mutex;
-
 void WordsBase::run_thread(int nthread) {
   auto begin = clock();
   m_thread_result[nthread].clear();
@@ -1802,10 +1841,6 @@ void WordsBase::run_thread(int nthread) {
     auto f = it1->second;
     auto z = m_it[getDictionaryIndex()];
     if (m_menuClick == MENU_REGULAR_EXPRESSIONS) {
-      {
-        std::lock_guard<std::mutex> lock(cout_mutex);
-        prs("#th", nthread);
-      }
       SafeGRegex r; // have to create separate regex, for every thread otherwise
       // very slow
       createRegex(r);
@@ -1839,31 +1874,36 @@ void WordsBase::run_thread(int nthread) {
   //     RETURN_ON_USER_BREAK
   //   }
   // }
-  {
-    std::lock_guard<std::mutex> lock(cout_mutex);
-    prs(nthread, timeElapse(begin), m_thread_result[nthread].size());
-  }
+  prsync(nthread, timeElapse(begin), m_thread_result[nthread].size());
 }
 
 void WordsBase::run() {
+  prsync(m_2chdr.size());
   std::vector<std::jthread> workers;
   const int threads =
-      oneOf(m_menuClick, MENU_TWO_DICTIONARIES_SIMPLE,
+      oneOf(m_menuClick, MENU_ANAGRAM, MENU_TWO_DICTIONARIES_SIMPLE,
             MENU_TWO_DICTIONARIES_TRANSLIT, MENU_SIMPLE_WORD_SEQUENCE,
-            MENU_DOUBLE_WORD_SEQUENCE, MENU_WORD_SEQUENCE_FULL) ||
+            MENU_DOUBLE_WORD_SEQUENCE, MENU_WORD_SEQUENCE_FULL,
+            MENU_TWO_CHARACTERS_DISTRIBUTION,
+            MENU_TWO_CHARACTERS_DISTRIBUTION_START,
+            MENU_TWO_CHARACTERS_DISTRIBUTION_END) ||
               !menu2VoidInt.contains(m_menuClick)
           ? g_get_num_processors()
           : 1;
-  pr(threads, magic_enum::enum_name(m_menuClick));
+  prsync(threads, magic_enum::enum_name(m_menuClick));
   for (int i = 0; i < threads; ++i) {
     workers.emplace_back(run_thread, this, i);
   }
   for (auto &t : workers) {
     if (t.joinable()) {
-      // pri;
       t.join();
-      // pri;
     }
+  }
+
+  if (oneOf(m_menuClick, MENU_TWO_CHARACTERS_DISTRIBUTION,
+            MENU_TWO_CHARACTERS_DISTRIBUTION_START,
+            MENU_TWO_CHARACTERS_DISTRIBUTION_END)) {
+    twoCharactersDistributionPostProseeding();
   }
 
   // TODO
@@ -1882,7 +1922,6 @@ void WordsBase::run() {
   }
 
   if (b) { // was user break
-    //		printl("end set")
     m_end = clock();
   } else {
     sortFilterResults();
@@ -2139,3 +2178,7 @@ void WordsBase::createRegex(SafeGRegex &r) {
                                          G_REGEX_NO_AUTO_CAPTURE),
                       GRegexMatchFlags(0), NULL));
 }
+
+WordsBase::~WordsBase() { 
+  
+ }

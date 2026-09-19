@@ -1,7 +1,7 @@
 4.5.0 ??
 russian dictionary now contains 2,415,399 words (previously 445,342)
 english dictionary now contains 393,167 words (previously 134,511)
-??added multitasking for certain operations due to the expanded dictionary size
+added multitasking for certain operations due to the expanded dictionary size
 reduced installer size; only necessary libraries are now used
 refactored file reading and certain functions
 optimized several functions
@@ -15,7 +15,7 @@ changed line endings in all text files from CRLF to LF
 [ru]
 русский словарь содержит 2,415,399 слов, раньше было 445,342
 английcкий словарь содержит 393,167 слов, раньше было 134,511
-??добавлена многозадачность для некоторых операций в связи с увеличением словаря
+добавлена многозадачность для некоторых операций в связи с увеличением словаря
 уменьшен размер установочного файла, теперь используются только нужные библиотеки
 рефакторинг чтения файлов и некоторых функций
 ускорены некоторые функции

@@ -52,6 +52,19 @@ using ChainNodeVector = std::vector<ChainNode>;
 using ChainNodeVectorI = ChainNodeVector::iterator;
 using ChainNodeVectorCI = ChainNodeVector::const_iterator;
 
+class TwoCharactersDistributionResult {
+public:
+  int total;
+  std::vector<IntVector> a;
+  void zero(int n) {
+    total = 0;
+    a.resize(n);
+    for (int i = 0; i < n; ++i) {
+      a[i].assign(n, 0);
+    }
+  }
+};
+
 bool sortIntDouble(const IntDouble &r1, const IntDouble &r2);
 bool sortIntInt(const IntInt &r1, const IntInt &r2);
 bool sortStringInt(const StringInt &r1, const StringInt &r2);
