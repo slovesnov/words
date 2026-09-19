@@ -77,18 +77,8 @@ MENU_CHAIN, findChain
 MENU_LETTER_GROUP_SPLIT, findLetterGroupSplit
 MENU_CHECK_DICTIONARY, checkDictionary
 ===========================
-MENU_ANAGRAM, findAnagram
-MENU_TWO_DICTIONARIES_SIMPLE, twoDictionariesSimple
-MENU_TWO_DICTIONARIES_TRANSLIT, twoDictionariesTranslit
 --MENU_SIMPLE_WORD_SEQUENCE, findSimpleWordSequence
 --MENU_DOUBLE_WORD_SEQUENCE, findDoubleWordSequence
---MENU_WORD_SEQUENCE_FULL, findWordSequenceFull
-MENU_TWO_CHARACTERS_DISTRIBUTION, twoCharactersDistribution
-MENU_TWO_CHARACTERS_DISTRIBUTION_START, twoCharactersDistribution
-MENU_TWO_CHARACTERS_DISTRIBUTION_END, twoCharactersDistribution
-MENU_TWO_DICTIONARIES_KEYBOARD_WORD, keyboardWords
-MENU_WORD_FREQUENCY, wordFrequency
-MENU_DICTIONARY_STATISTICS, dictionaryStatistics
 */
 const std::map<ENUM_MENU, bool (WordsBase::*)(const std::string &)>
     menu2BoolString = {
@@ -151,6 +141,8 @@ WordsBase::WordsBase() {
 #endif
 
   for (i = 0; i < LANGUAGES; i++) {
+    clock_t begin = clock();
+
     LNG[i] = LANGUAGE[i].substr(0, 2);
     m_settings[i] = readFile(i, "settings");
 #ifndef NOGTK
@@ -171,6 +163,8 @@ WordsBase::WordsBase() {
       }
     }
     file.close();
+
+    pr(i, timeElapse(begin));
   }
 
   int threads = g_get_num_processors(); // std::hardware_concurrency();
@@ -195,8 +189,6 @@ WordsBase::WordsBase() {
     m_it[i].push_back(current_it);
   }
 
-  // TODO
-  system("chcp 1251>nul");
   // test();
 #ifdef NOGTK
   // cgi();TODO uncomment on real cgi query, and comment next lines
@@ -1198,7 +1190,6 @@ void WordsBase::twoDictionaries(int nthread, bool translit) {
   int i, j, m, l, len, n, fromIndex = -1;
   std::string s, alphabetFrom;
   VString v;
-  clock_t begin = clock();
   const int di = getDictionaryIndex();
   s = getTwoDictionariesPath(translit);
   for (auto &s : readFile(s)) {
@@ -1274,8 +1265,6 @@ void WordsBase::twoDictionaries(int nthread, bool translit) {
   l1531:
     RETURN_ON_USER_BREAK
   }
-
-  pr(nthread, timeElapse(begin), m_thread_result[nthread].size());
 }
 
 void WordsBase::keyboardWords(int nthread) {
@@ -1449,10 +1438,9 @@ void WordsBase::twoCharactersDistributionPostProseeding() {
   int i, j;
   std::string s;
   StringIntVectorCI p;
-  auto begin = clock();
   const int n = getAlphabetSize();
   StringIntVector v;
-  auto a =m_2chdr[0].createZeroLike();
+  auto a = m_2chdr[0].createZeroLike();
   int total = 0;
   for (auto &e : m_2chdr) {
     total += e.total;
@@ -1485,7 +1473,6 @@ void WordsBase::twoCharactersDistributionPostProseeding() {
                                  intToStringLocaled(total).c_str()));
   }
   m_addstatus = m_language[PAIRS] + " " + intToStringLocaled(v.size());
-  prs(timeElapse(begin), "post");
 }
 
 void WordsBase::dictionaryStatistics(int nthread) {
@@ -1519,7 +1506,7 @@ void WordsBase::dictionaryStatisticsPostProseeding() {
   std::string s, s2;
   const int SZ_CAPTION = 3;
   const int a = getAlphabetSize();
-  auto m =m_2chdr[0].createZeroLike() ;
+  auto m = m_2chdr[0].createZeroLike();
   StringSet const &r = getDictionary();
   m[1][a] = m[2][a] = r.size();
 
