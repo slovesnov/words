@@ -44,8 +44,6 @@ using MapStringTwoStringVectorsI = MapStringTwoStringVectors::iterator;
 // Sets
 using StringSet = std::set<std::string>;
 
-
-
 class ChainNode {
 public:
   std::string s;
@@ -76,5 +74,4 @@ using SafeGRegex = std::unique_ptr<GRegex, GRegexDeleter>;
 
 
 bool sortIntDouble(const IntDouble &r1, const IntDouble &r2);
-bool sortIntInt(const IntInt &r1, const IntInt &r2);
 bool sortStringInt(const StringInt &r1, const StringInt &r2);

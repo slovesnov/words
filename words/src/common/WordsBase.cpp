@@ -929,7 +929,8 @@ void WordsBase::findModification(int nthread) {
     auto const &e = *it;
     s = m_modifications.apply(e, m_checkValue);
     if (!s.empty() && s != e && CONTAINS(getDictionary(), s)) {
-      m_thread_result[nthread].push_back(SearchResult(e + " " + s, e.length(), 1));
+      m_thread_result[nthread].push_back(
+          SearchResult(e + " " + s, e.length(), 1));
     }
     RETURN_ON_USER_BREAK
   }
@@ -946,7 +947,7 @@ void WordsBase::findChain(int nthread) {
   ChainNodeVectorCI cni1;
   ChainNode *cp;
 
-  auto begin=clock();
+  auto begin = clock();
 
   if (differenceOnlyOneChar(m_chainHelper[0], m_chainHelper[1])) {
     m_out = localeToUtf8(m_chainHelper[0] + " " + m_chainHelper[1]) + OPEN_S +
@@ -960,8 +961,7 @@ void WordsBase::findChain(int nthread) {
     }
   }
 
-  pr(timeElapse(begin))
-  begin=clock();
+  pr(timeElapse(begin)) begin = clock();
 
   j = 1; // j is step
   for (i = 0; i < 2; i++) {
@@ -1372,30 +1372,39 @@ void WordsBase::wordFrequency(int nthread) {
 }
 
 void WordsBase::wordFrequencyPostProseeding() {
-  int i;
+  int i, j;
   const int MAX = getMaximumWordLength();
   IntVector m(MAX, 0);
-  IntIntVector v;
+  IntIntVector v[2];
   for (auto &e : m_iv) {
     for (i = 0; i < MAX; ++i) {
       m[i] += e[i];
     }
   }
-  v.reserve(MAX + 1);
   for (i = 0; i < MAX; ++i) {
     if (m[i] > 0) {
-      v.emplace_back(std::move(m[i]), i + 1); // store actual word length
+      v[0].push_back({m[i], i + 1}); // store actual word length
+      v[1].push_back({m[i], i + 1});
     }
   }
+  std::sort(v[0].begin(), v[0].end(),
+            [](auto &a, auto &b) { return a.first > b.first; });
+  std::sort(v[1].begin(), v[1].end(),
+            [](auto &a, auto &b) { return a.second < b.second; });
 
-  Dictionary const &r = getDictionary();
+  size_t w = toString(v[0][0].first, ',').size(); // max len
+  int sz = getDictionary().size();
   m_out = m_language[WORD_LENGTH_FREQUENCY];
-  std::sort(v.begin(), v.end(), sortIntInt);
-  for (auto &e : v) {
+  i = -1;
+  for (i = 0; i < int(v[0].size()); i++) {
     // use separator for intToString for understandable view
-    m_out +=
-        format("\n%2d %6.3lf%% %6s/%s", e.second, 100. * e.first / r.size(),
-               toString(e.first, ',').c_str(), toString(r.size(), ',').c_str());
+    for (j = 0; j < 2; j++) {
+      auto &e = v[j][i];
+      m_out += (j ? "\t\t" : "\n") + std::format("{:2d} {:6.3f}% {:>{}}/{}",
+                                                 e.second, 100. * e.first / sz,
+                                                 toString(e.first, ','), w,
+                                                 toString(sz, ','));
+    }
   }
 }
 
@@ -1954,8 +1963,8 @@ void WordsBase::run(bool onlysort) {
   bool b = false;
   if (!onlysort) {
     std::vector<std::jthread> workers;
-    int threads = oneOf(m_menuClick, MENU_CHAIN,
-                        MENU_LETTER_GROUP_SPLIT, MENU_CHECK_DICTIONARY)
+    int threads = oneOf(m_menuClick, MENU_CHAIN, MENU_LETTER_GROUP_SPLIT,
+                        MENU_CHECK_DICTIONARY)
                       ? 1
                       : g_get_num_processors();
     prsync(threads, magic_enum::enum_name(m_menuClick));
@@ -2002,7 +2011,7 @@ void WordsBase::run(bool onlysort) {
     endJobThread();
 #endif
   }
-  prsync("end main thread")
+  // prsync("end main thread")
 }
 
 bool WordsBase::differenceOnlyOneChar(const std::string &a,
