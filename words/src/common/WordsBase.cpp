@@ -149,7 +149,13 @@ WordsBase::WordsBase() {
     m_template[i] = readFile(i, "template");
     assert(m_template[i].size() == SIZE(TEMPLATE_MENU));
 #endif
+/*
+0 0.665 src/common/WordsBase.cpp:167 WordsBase::WordsBase()
+1 4.745 src/common/WordsBase.cpp:167 WordsBase::WordsBase()
 
+0 0.263 src/common/WordsBase.cpp:168 WordsBase::WordsBase()
+1 1.694 src/common/WordsBase.cpp:168 WordsBase::WordsBase()
+*/
     // load dictionaries
     m_longestWordLength[i] = 0;
     std::ifstream file(path(i, "words"));
@@ -895,7 +901,6 @@ void WordsBase::findChain(int nthread) {
   StringSet vs[2];
   ChainNodeVectorCI cni1;
   ChainNode *cp;
-  StringSet const &r = getDictionary();
 
   if (differenceOnlyOneChar(m_chainHelper[0], m_chainHelper[1])) {
     m_out = localeToUtf8(m_chainHelper[0] + " " + m_chainHelper[1]) + OPEN_S +
@@ -903,7 +908,7 @@ void WordsBase::findChain(int nthread) {
     return;
   }
 
-  for (auto &e : r) {
+  for (auto &e : getDictionary()) {
     if (e.length() == m_chainHelper[0].length()) {
       dl[e] = 0;
     }
@@ -1105,14 +1110,13 @@ l210:
 void WordsBase::findLetterGroupSplit(int nthread) {
   std::string s, s1, t, lng;
   size_t i, j;
-  StringSet const &r = getDictionary();
   auto charset = getOrderedString(m_entryText);
 
   const size_t size = m_entryText.length();
   eqmap.clear();
   eqmap.resize(size);
 
-  for (auto &s : r) {
+  for (auto &s : getDictionary()) {
     j = s.length();
     if (j < size) {
       s1 = getOrderedString(s);
