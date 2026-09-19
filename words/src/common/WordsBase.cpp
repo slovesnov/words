@@ -7,7 +7,9 @@
 
 #include "WordsBase.h"
 #include "consts.h"
+#include "magic_enum.hpp" //TODO
 #include <cassert>
+#include <mutex> //TODO
 #include <ranges>
 #include <unordered_map>
 
@@ -147,7 +149,6 @@ WordsBase::WordsBase() {
   int num_threads = g_get_num_processors(); // std::hardware_concurrency();
   m_thread_result.resize(num_threads);
   for (i = 0; i < LANGUAGES; i++) {
-    // auto begin = clock();
     StringSet const &main_set = m_dictionary[i];
     size_t total_size = main_set.size();
     size_t chunk_size = total_size / num_threads;
@@ -163,11 +164,7 @@ WordsBase::WordsBase() {
       m_it[i].push_back(current_it);
       current_it = std::next(current_it, current_chunk);
     }
-    // pr(current_it==main_set.end());
     m_it[i].push_back(current_it);
-
-    // m_it[i].size()=threads+1
-    // pr(total_size, timeElapse(begin), m_it[i].size());
   }
 
   // test();
@@ -192,14 +189,6 @@ WordsBase::WordsBase() {
 }
 
 void WordsBase::test() {}
-
-WordsBase::~WordsBase() {
-#ifndef NOGTK
-  for (int i = 0; i < SIZEI(m_regex); i++) {
-    freeRegex(i);
-  }
-#endif
-}
 
 bool WordsBase::checkKeyboardWordSimple(const std::string &s) {
   std::string *ps = m_keyboardOneRow[uchar(s[0])];
@@ -377,25 +366,58 @@ bool WordsBase::checkPalindrome(const std::string &s) {
   return true;
 }
 
-bool WordsBase::checkRegularExpression(const std::string &s) {
+bool WordsBase::checkRegularExpression(const std::string &s, const SafeGRegex &r) {
 #ifdef USE_STANDARD_REGEX
+//todo always m_regex
   std::ptrdiff_t const matches(
-      std::distance(std::sregex_iterator(s.begin(), s.end(), m_regex),
+      std::distance(std::sregex_iterator(s.begin(), s.end(), m_regex[0]),
                     std::sregex_iterator()));
   return matches >= m_comboValue[COMBOBOX_HELPER0] &&
          matches <= m_comboValue[COMBOBOX_HELPER1];
 #else
+  // Fast path (single match check)
   if (!m_radioValue) {
-    return g_regex_match(m_regex[0], s.c_str(), GRegexMatchFlags(0), NULL);
+    return g_regex_match(r.get(), s.c_str(), GRegexMatchFlags(0), NULL);
   }
-  GMatchInfo *matchInfo;
-  g_regex_match(m_regex[0], s.c_str(), GRegexMatchFlags(0), &matchInfo);
-  int i;
+
+  // Optimized path to count matches without repeating GMatchInfo allocation
+  int i = 0;
+  int start_pos = 0;
   const int max = m_comboValue[COMBOBOX_HELPER1];
-  for (i = 0; g_match_info_matches(matchInfo) && i <= max; i++) {
-    g_match_info_next(matchInfo, NULL);
+  const int string_len = s.length();
+  
+  GMatchInfo *matchInfo = nullptr;
+
+  // Find the first match
+  if (g_regex_match_full(r.get(), s.c_str(), string_len, start_pos, GRegexMatchFlags(0), &matchInfo, nullptr)) {
+    
+    while (g_match_info_matches(matchInfo) && i <= max) {
+      i++;
+      
+      // Get the coordinates of the current match
+      int start_match, end_match;
+      g_match_info_fetch_pos(matchInfo, 0, &start_match, &end_match);
+      
+      // Advance the start position for the next search iteration
+      start_pos = end_match;
+      
+      // If the match was zero-length (e.g., ".*" pattern), advance by 1 character to prevent an infinite loop
+      if (start_match == end_match) {
+          start_pos++;
+      }
+      
+      if (start_pos > string_len) {
+          break;
+      }
+
+      // Reuse matchInfo without reallocating internal heap memory
+      g_match_info_next(matchInfo, nullptr); 
+    }
   }
-  g_match_info_free(matchInfo);
+  
+  if (matchInfo) {
+      g_match_info_free(matchInfo);
+  }
 
   return i >= m_comboValue[COMBOBOX_HELPER0] && i <= max;
 #endif
@@ -737,7 +759,9 @@ void WordsBase::findSimpleWordSequence(int nthread) {
   MapStringTwoStringVectorsI mit;
   for (i = m_comboValue[COMBOBOX_HELPER0]; i <= m_comboValue[COMBOBOX_HELPER1];
        i++) {
-    for (auto const &e : getDictionary()) {
+    auto z = m_it[getDictionaryIndex()];
+    for (auto it = z[nthread]; it != z[nthread + 1]; it++) {
+      auto const &e = *it;
       if (int(e.length()) >= i) {
         for (j = 0; j < 2; j++) {
           s = j ? e.substr(0, i) : e.substr(e.length() - i);
@@ -750,11 +774,9 @@ void WordsBase::findSimpleWordSequence(int nthread) {
           }
         }
       }
-
       RETURN_ON_USER_BREAK
     }
-
-    fillResultFromMap(map, i);
+    fillResultFromMap(nthread, map, i);
     map.clear();
   }
 }
@@ -764,10 +786,11 @@ void WordsBase::findDoubleWordSequence(int nthread) {
   std::string s, t, q;
   MapStringTwoStringVectors map;
   MapStringTwoStringVectorsI mit;
-
   for (i = m_comboValue[COMBOBOX_HELPER0]; i <= m_comboValue[COMBOBOX_HELPER1];
        i++) {
-    for (auto const &e : getDictionary()) {
+    auto z = m_it[getDictionaryIndex()];
+    for (auto it = z[nthread]; it != z[nthread + 1]; it++) {
+      auto const &e = *it;
       if (int(e.length()) >= i) {
         s = e.substr(0, i);
         q = e.substr(e.length() - i);
@@ -799,25 +822,26 @@ void WordsBase::findDoubleWordSequence(int nthread) {
           }
         }
       }
-
       RETURN_ON_USER_BREAK
     }
-
-    fillResultFromMap(map, i);
+    fillResultFromMap(nthread, map, i);
     map.clear();
   }
 }
 
 void WordsBase::findWordSequenceFull(int nthread) {
   std::string s;
-  for (auto const &e : getDictionary()) {
+  auto z = m_it[getDictionaryIndex()];
+  for (auto it = z[nthread]; it != z[nthread + 1]; it++) {
+    auto const &e = *it;
     if (checkPalindrome(e)) {
       continue;
     }
     s = e;
     std::reverse(s.begin(), s.end());
     if (s > e && getDictionary().contains(s)) {
-      m_result.push_back(SearchResult(e + " " + s, e.length(), 2));
+      m_thread_result[nthread].push_back(
+          SearchResult(e + " " + s, e.length(), 2));
     }
   }
 }
@@ -1108,7 +1132,8 @@ void WordsBase::findLetterGroupSplit(int nthread) {
   }
 }
 
-void WordsBase::fillResultFromMap(const MapStringTwoStringVectors &map,
+void WordsBase::fillResultFromMap(int nthread,
+                                  const MapStringTwoStringVectors &map,
                                   size_t len) {
   int i, j;
   std::string s;
@@ -1122,7 +1147,8 @@ void WordsBase::fillResultFromMap(const MapStringTwoStringVectors &map,
         continue;
       }
       s = joinV(v0) + " - " + joinV(v1);
-      m_result.push_back(SearchResult(s, v0.begin()->length(), i + j));
+      m_thread_result[nthread].push_back(
+          SearchResult(s, v0.begin()->length(), i + j));
     }
   }
 }
@@ -1647,10 +1673,7 @@ bool WordsBase::prepare() {
 #else
     // Note G_REGEX_RAW support 's' in locale, otherwise 's' should be a utf8
     // string
-    freeRegex(0);
-    m_regex[0] = g_regex_new(m_entryText.c_str(),
-                             GRegexCompileFlags(G_REGEX_RAW | G_REGEX_CASELESS),
-                             GRegexMatchFlags(0), NULL);
+    createRegex(m_regex[0]);
     if (!m_regex[0]) {
       return false;
     }
@@ -1762,6 +1785,8 @@ std::string WordsBase::getTimeString() {
   return format("%.2lf", double(m_end - m_begin) / CLOCKS_PER_SEC);
 }
 
+std::mutex cout_mutex;
+
 void WordsBase::run_thread(int nthread) {
   auto begin = clock();
   m_thread_result[nthread].clear();
@@ -1776,12 +1801,31 @@ void WordsBase::run_thread(int nthread) {
   if (it1 != menu2BoolString.end()) {
     auto f = it1->second;
     auto z = m_it[getDictionaryIndex()];
-    for (auto it2 = z[nthread]; it2 != z[nthread + 1]; it2++) {
-      auto &e = *it2;
-      if ((this->*f)(e)) {
-        m_thread_result[nthread].push_back(SearchResult(e, e.length(), 1));
+    if (m_menuClick == MENU_REGULAR_EXPRESSIONS) {
+      {
+        std::lock_guard<std::mutex> lock(cout_mutex);
+        prs("#th", nthread);
       }
-      RETURN_ON_USER_BREAK
+      SafeGRegex r; // have to create separate regex, for every thread otherwise
+      // very slow
+      createRegex(r);
+
+      for (auto it2 = z[nthread]; it2 != z[nthread + 1]; it2++) {
+        auto &e = *it2;
+        if (checkRegularExpression(e, r)) {
+          m_thread_result[nthread].push_back(SearchResult(e, e.length(), 1));
+        }
+        RETURN_ON_USER_BREAK
+      }
+
+    } else {
+      for (auto it2 = z[nthread]; it2 != z[nthread + 1]; it2++) {
+        auto &e = *it2;
+        if ((this->*f)(e)) {
+          m_thread_result[nthread].push_back(SearchResult(e, e.length(), 1));
+        }
+        RETURN_ON_USER_BREAK
+      }
     }
   }
 
@@ -1795,19 +1839,22 @@ void WordsBase::run_thread(int nthread) {
   //     RETURN_ON_USER_BREAK
   //   }
   // }
-
-  pr(nthread, timeElapse(begin),m_thread_result[nthread].size());
+  {
+    std::lock_guard<std::mutex> lock(cout_mutex);
+    prs(nthread, timeElapse(begin), m_thread_result[nthread].size());
+  }
 }
 
 void WordsBase::run() {
   std::vector<std::jthread> workers;
-  const int threads = 
-  oneOf(m_menuClick, MENU_TWO_DICTIONARIES_SIMPLE,
-                                MENU_TWO_DICTIONARIES_TRANSLIT) ||
-                                  !menu2VoidInt.contains(m_menuClick)
-                              ? g_get_num_processors()
-                              : 1;
-  pr(threads);
+  const int threads =
+      oneOf(m_menuClick, MENU_TWO_DICTIONARIES_SIMPLE,
+            MENU_TWO_DICTIONARIES_TRANSLIT, MENU_SIMPLE_WORD_SEQUENCE,
+            MENU_DOUBLE_WORD_SEQUENCE, MENU_WORD_SEQUENCE_FULL) ||
+              !menu2VoidInt.contains(m_menuClick)
+          ? g_get_num_processors()
+          : 1;
+  pr(threads, magic_enum::enum_name(m_menuClick));
   for (int i = 0; i < threads; ++i) {
     workers.emplace_back(run_thread, this, i);
   }
@@ -1819,7 +1866,7 @@ void WordsBase::run() {
     }
   }
 
-  //TODO
+  // TODO
   if (threads > 1) {
     m_result = m_thread_result | std::views::join |
                std::ranges::to<SearchResultVector>();
@@ -1868,15 +1915,14 @@ bool WordsBase::setCheckFilterRegex() {
   }
   // need case insensitive filter, work ok in russian only for utf8
   auto s = localeToUtf8(m_filterText);
-  freeRegex(1);
-  m_regex[1] = g_regex_new(s.c_str(), GRegexCompileFlags(G_REGEX_CASELESS),
-                           GRegexMatchFlags(0), NULL);
+  m_regex[1].reset(g_regex_new(s.c_str(), GRegexCompileFlags(G_REGEX_CASELESS),
+                               GRegexMatchFlags(0), NULL));
   return m_regex[1] != nullptr;
 }
 
 bool WordsBase::testFilterRegex(const std::string &s) {
   return m_regex[1] == nullptr || m_filterText.empty() ||
-         g_regex_match(m_regex[1], s.c_str(), GRegexMatchFlags(0), NULL);
+         g_regex_match(m_regex[1].get(), s.c_str(), GRegexMatchFlags(0), NULL);
 }
 #endif
 
@@ -2086,10 +2132,10 @@ int WordsBase::getDictionaryIndex() const {
   return m_comboValue[COMBOBOX_DICTIONARY];
 }
 
-#ifndef USE_STANDARD_REGEX
-void WordsBase::freeRegex(int i) {
-  if (m_regex[i]) {
-    g_regex_unref(m_regex[i]);
-  }
+void WordsBase::createRegex(SafeGRegex &r) {
+  r.reset(g_regex_new(m_entryText.c_str(),
+                      GRegexCompileFlags(G_REGEX_RAW | G_REGEX_CASELESS |
+                                         G_REGEX_OPTIMIZE |
+                                         G_REGEX_NO_AUTO_CAPTURE),
+                      GRegexMatchFlags(0), NULL));
 }
-#endif

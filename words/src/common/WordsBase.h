@@ -22,7 +22,6 @@
 #include <regex>
 #endif
 
-
 #define pr2(...)                                                               \
   print_variables(__VA_ARGS__);                                                \
   std::cout << "\n";
@@ -34,6 +33,13 @@ const std::string invalidDifference = "$";
 
 class WordsBase;
 extern WordsBase *wordsBase;
+
+#ifndef USE_STANDARD_REGEX
+struct GRegexDeleter {
+    void operator()(GRegex* r) const { if (r) g_regex_unref(r); }
+};
+using SafeGRegex = std::unique_ptr<GRegex, GRegexDeleter>;
+#endif
 
 class WordsBase {
   // prepare addons before search;
@@ -60,6 +66,8 @@ protected:
   // mode
 #ifdef USE_STANDARD_REGEX
   std::regex m_regex;
+#else
+  SafeGRegex m_regex[2];
 #endif
 
   int m_languageIndex;
@@ -79,13 +87,11 @@ protected:
 #ifdef NOGTK
   VString m_cgiLanguage; // utf8
 #else
-  GRegex *m_regex[2];
   std::string m_filterText; // locale
   int m_filteredWordsCount;
   std::string m_programVersion;
-  void freeRegex(int i);
 #endif
-std::vector<StringSetCI> m_it[LANGUAGES];
+  std::vector<StringSetCI> m_it[LANGUAGES];
 
   std::stop_token m_token;
 
@@ -114,7 +120,7 @@ std::vector<StringSetCI> m_it[LANGUAGES];
   }
   virtual bool userBreakThread() = 0;
   virtual void setMenuLabel(ENUM_MENU e, std::string const &text) = 0;
-  virtual void endJobThread()=0;
+  virtual void endJobThread() = 0;
   bool setCheckFilterRegex();
   bool testFilterRegex(const std::string &s);
 #endif
@@ -130,7 +136,7 @@ std::vector<StringSetCI> m_it[LANGUAGES];
     return k == std::string::npos ? -1 : k;
   }
 
-  void fillResultFromMap(const MapStringTwoStringVectors &map, size_t len);
+  void fillResultFromMap(int nthread,const MapStringTwoStringVectors &map, size_t len);
 
   // todo
   void test();
@@ -144,7 +150,6 @@ std::vector<StringSetCI> m_it[LANGUAGES];
 
 public:
   WordsBase();
-  virtual ~WordsBase();
 
   void run();
   void run_thread(int nthread);
@@ -153,7 +158,10 @@ public:
   bool checkTemplate(const std::string &s);
   bool checkPalindrome(const std::string &s);
   bool checkCrossword(const std::string &s);
-  bool checkRegularExpression(const std::string &s);
+  bool checkRegularExpression(const std::string &s,const SafeGRegex&r);
+  bool checkRegularExpression(const std::string &s){
+    return checkRegularExpression(s,m_regex[0]);
+  }
   bool checkCharacterSequence(const std::string &s);
   bool checkConsonantVowelSequence(const std::string &s);
   bool checkDensity(const std::string &s);
@@ -168,12 +176,8 @@ public:
   void findModification(int nthread);
   void findChain(int nthread);
   void findLetterGroupSplit(int nthread);
-  void twoDictionariesSimple(int nthread) {
-    twoDictionaries(nthread, false);
-  }
-  void twoDictionariesTranslit(int nthread) {
-    twoDictionaries(nthread, true);
-  }
+  void twoDictionariesSimple(int nthread) { twoDictionaries(nthread, false); }
+  void twoDictionariesTranslit(int nthread) { twoDictionaries(nthread, true); }
   void keyboardWords(int nthread);
   void dictionaryStatistics(int nthread);
   void wordFrequency(int nthread);
@@ -221,5 +225,5 @@ public:
   static StringStringVector
   getAllPairs(std::string const &s, std::string const &low = invalidDifference);
   static std::string pairsToString(StringStringVector const &v, bool p = 0);
-
+  void createRegex(SafeGRegex &r);
 };
