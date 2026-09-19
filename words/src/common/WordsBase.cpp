@@ -1396,7 +1396,6 @@ void WordsBase::wordFrequencyPostProseeding() {
 
   size_t w = toString(v[0][0].first, ',').size(); // max len
   int sz = getDictionary().size();
-  i = -1;
   const int SP = 20;
   const std::string separator(SP, ' ');
   for (i = 0; i < int(v[0].size()); i++) {
