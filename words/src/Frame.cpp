@@ -41,6 +41,8 @@ const char DOWNLOAD_URL[] =
   showLongestPangram();
   showLongestSimpleWordSequence();
   showLongestDoubleWordSequence();
+  onchange dictionay size need to recount
+  also on loading need to set dictionary size for vector, if use vector
  */
 const int MAX_ANAGRAM_LENGTH = 31;              //{22 31}
 const int MAX_PANGRAM_LENGTH = 21;              //{16 21}
@@ -95,11 +97,6 @@ const std::unordered_map<ENUM_MENU, int> MENU_TO_ACCEL_KEY = {
     {MENU_EDIT_SELECT_ALL, GDK_KEY_A},
     {MENU_EDIT_COPY_TO_CLIPBOARD, GDK_KEY_C}};
 Frame *frame;
-
-static gpointer sort_filter_thread(gpointer) {
-  frame->sortFilterAndUpdateResults();
-  return NULL;
-}
 
 static gboolean end_job(gpointer) {
   frame->endJob();
@@ -651,7 +648,7 @@ void Frame::routine() {
   startJob(true);
 
   if (prepare()) {
-    m_thread = std::jthread([this]() { this->run(); });
+    startThread(false);
   } else { // wrapper to call endJob() if prepare() returns false
     m_end = clock();
     endJob();
@@ -1120,13 +1117,16 @@ void Frame::waitThread() {
   }
 }
 
-void Frame::startThread(GThreadFunc f) {
+void Frame::startThread(bool onlysort) {
   if (!m_thread.joinable()) {
     // GCC bug #100612 so use lambda if call class member
-    m_thread = std::jthread([this, f](std::stop_token token) {
+    m_thread = std::jthread([this, onlysort](std::stop_token token) {
       m_token = token;
-      f(nullptr);
+      run(onlysort);
     });
+  }
+  else{
+    pr("strange")
   }
 }
 
@@ -1239,7 +1239,7 @@ void Frame::addAccelerators() {
 void Frame::sortOrFilterChanged() {
   stopThread();
   startJob(false);
-  startThread(sort_filter_thread);
+  startThread(true);
 }
 
 void Frame::refillCombo(ENUM_COMBOBOX e, ENUM_STRING first, int length) {

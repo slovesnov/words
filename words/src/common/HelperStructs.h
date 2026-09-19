@@ -15,6 +15,7 @@
 #endif
 
 using uchar = unsigned char;
+using TwoStringVectors = std::array<VString, 2>;
 
 // Pairs
 using StringInt = std::pair<std::string, int>;
@@ -37,15 +38,13 @@ using MapStringStringVector = std::map<std::string, VString>;
 using MapStringStringVectorI = MapStringStringVector::iterator;
 using MapStringInt = std::map<std::string, int>;
 using MapStringIntI = MapStringInt::iterator;
+using MapStringTwoStringVectors = std::map<std::string, TwoStringVectors>;
+using MapStringTwoStringVectorsI = MapStringTwoStringVectors::iterator;
 
 // Sets
 using StringSet = std::set<std::string>;
-using StringSetCI = StringSet::const_iterator;
 
-using TwoStringVectors = std::array<VString, 2>;
 
-using MapStringTwoStringVectors = std::map<std::string, TwoStringVectors>;
-using MapStringTwoStringVectorsI = MapStringTwoStringVectors::iterator;
 
 class ChainNode {
 public:

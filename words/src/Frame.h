@@ -128,7 +128,7 @@ public:
 
   void stopThread();
   void waitThread();
-  void startThread(GThreadFunc f);
+  void startThread(bool onlysort);
 
   void updateTextView() {
     GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(m_text));

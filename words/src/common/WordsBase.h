@@ -21,6 +21,14 @@
 #include <regex>
 #endif
 
+//#define USE_SET
+
+#ifdef USE_SET
+using Dictionary = StringSet;
+#else
+using Dictionary = VString;
+#endif
+
 const char SEPARATOR[] = "SEPARATOR";
 constexpr std::string LANGUAGE[] = {"english", "russian"};
 constexpr int LANGUAGES = SIZEI(LANGUAGE);
@@ -35,7 +43,7 @@ class WordsBase {
   void setKeyboardRowDiagonals();
 
 protected:
-  StringSet m_dictionary[LANGUAGES];
+  Dictionary m_dictionary[LANGUAGES];
   VString m_settings[LANGUAGES]; // m_settings[i] see ENUM_SETTINGS
                                  // {encoding=locale}
 #ifndef NOGTK
@@ -79,9 +87,9 @@ protected:
   int m_filteredWordsCount;
   std::string m_programVersion;
 #endif
-  std::vector<StringSetCI> m_it[LANGUAGES];
-  std::vector<ThreadResult> m_2chdr;
-  std::vector<IntVector> m_wf;
+  std::vector<Dictionary::const_iterator> m_it[LANGUAGES];
+  std::vector<ThreadResult> m_tr;
+  std::vector<IntVector> m_iv;
 
   std::stop_token m_token;
 
@@ -143,7 +151,7 @@ public:
   WordsBase();
   ~WordsBase();
 
-  void run();
+  void run(bool onlysort=false);
   void run_thread(int nthread);
 
   bool checkPangram(const std::string &s);
@@ -201,7 +209,7 @@ public:
     return m_settings[getDictionaryIndex()][e];
   }
 
-  inline StringSet const &getDictionary() const {
+  inline Dictionary const &getDictionary() const {
     return m_dictionary[getDictionaryIndex()];
   }
 
