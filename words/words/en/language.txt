@@ -37,11 +37,11 @@ english
 russian
 }
 dictionary statistics
-frequency of word length (descend)
-check dictionary
+words in descending order of frequency and increasing length
 two nearby characters distribution
 two nearby characters distribution at the beginning of a word
 two nearby characters distribution at the end of a word
+check dictionary
 }
 Language{
 english
@@ -99,7 +99,7 @@ number of matches
 time of last operation
 Search words which write in english the same as in russian. For example, <i>Beep</i> (english word) - <i>����</i> (russian word).
 Search pairs of words which after keyboard typing with invalid keyboard locale give valid word on another language. For example, <i>entity</i> (english word) - <i>������</i> (russian word).
-Frequency of word length.
+Words in descending order of frequency.
 Dictionary check finished successfully
 sorted by alphabet
 sorted by frequency
@@ -139,3 +139,4 @@ triplets
 any
 waiting
 cr symbol found
+Words in ascending order of length.

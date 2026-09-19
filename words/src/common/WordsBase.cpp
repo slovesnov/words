@@ -1373,9 +1373,11 @@ void WordsBase::wordFrequency(int nthread) {
 
 void WordsBase::wordFrequencyPostProseeding() {
   int i, j;
+  size_t k;
   const int MAX = getMaximumWordLength();
   IntVector m(MAX, 0);
   IntIntVector v[2];
+  std::string s, s1;
   for (auto &e : m_iv) {
     for (i = 0; i < MAX; ++i) {
       m[i] += e[i];
@@ -1394,16 +1396,26 @@ void WordsBase::wordFrequencyPostProseeding() {
 
   size_t w = toString(v[0][0].first, ',').size(); // max len
   int sz = getDictionary().size();
-  m_out = m_language[WORD_LENGTH_FREQUENCY];
   i = -1;
+  const int SP = 20;
+  const std::string separator(SP, ' ');
   for (i = 0; i < int(v[0].size()); i++) {
     // use separator for intToString for understandable view
     for (j = 0; j < 2; j++) {
       auto &e = v[j][i];
-      m_out += (j ? "\t\t" : "\n") + std::format("{:2d} {:6.3f}% {:>{}}/{}",
-                                                 e.second, 100. * e.first / sz,
-                                                 toString(e.first, ','), w,
-                                                 toString(sz, ','));
+      auto s =
+          std::format("{:2d} {:6.3f}% {:>{}}/{}", e.second, 100. * e.first / sz,
+                      toString(e.first, ','), w, toString(sz, ','));
+      if (i == 0 && j == 0) {
+        k = s.length() + SP;
+        s1 = m_language[WORD_LENGTH_FREQUENCY];
+        guint count = g_utf8_strlen(s1.c_str(), -1);
+        if (k > count) {
+          s1 += std::string(k - count, ' ');
+        }
+        m_out = s1 + m_language[WORD_LENGTH_FREQUENCY1];
+      }
+      m_out += (j ? separator : "\n") + s;
     }
   }
 }
