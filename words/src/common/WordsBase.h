@@ -88,7 +88,7 @@ protected:
   std::string m_programVersion;
 #endif
   std::vector<Dictionary::const_iterator> m_it[LANGUAGES];
-  std::vector<ThreadResult> m_tr;
+  ThreadResultVector m_tr;
   std::vector<IntVector> m_iv;
   std::vector<MapStringTwoStringVectors> m_ma;
 

@@ -61,16 +61,18 @@ public:
   std::string s;
   void clear(int n, int n1 = -1);
   void add(std::vector<IntVector> &e) const;
-  std::vector<IntVector> createZeroLike();
 };
+using ThreadResultVector = std::vector<ThreadResult>;
 
 #ifndef USE_STANDARD_REGEX
 struct GRegexDeleter {
-    void operator()(GRegex* r) const { if (r) g_regex_unref(r); }
+  void operator()(GRegex *r) const {
+    if (r)
+      g_regex_unref(r);
+  }
 };
 using SafeGRegex = std::unique_ptr<GRegex, GRegexDeleter>;
 #endif
-
 
 bool sortIntDouble(const IntDouble &r1, const IntDouble &r2);
 bool sortStringInt(const StringInt &r1, const StringInt &r2);

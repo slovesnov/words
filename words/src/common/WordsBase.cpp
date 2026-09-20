@@ -862,8 +862,13 @@ void WordsBase::findSimpleWordSequence(int nthread) {
   int i, j;
   std::string s;
   MapStringTwoStringVectors &map = m_ma[nthread];
-  for (i = m_comboValue[COMBOBOX_HELPER0]; i <= m_comboValue[COMBOBOX_HELPER1];
-       i++) {
+
+  i = m_comboValue[COMBOBOX_HELPER0];
+  {
+    // TODO
+    // for (i = m_comboValue[COMBOBOX_HELPER0]; i <=
+    // m_comboValue[COMBOBOX_HELPER1];
+    //      i++) {
     auto z = m_it[getDictionaryIndex()];
     for (auto it = z[nthread]; it != z[nthread + 1]; it++) {
       auto const &e = *it;
@@ -892,8 +897,11 @@ void WordsBase::findDoubleWordSequence(int nthread) {
   int i, j;
   std::string q, s, t;
   MapStringTwoStringVectors &map = m_ma[nthread];
-  for (i = m_comboValue[COMBOBOX_HELPER0]; i <= m_comboValue[COMBOBOX_HELPER1];
-       i++) {
+  i = m_comboValue[COMBOBOX_HELPER0];
+  {
+    //  for (i = m_comboValue[COMBOBOX_HELPER0]; i <=
+    //  m_comboValue[COMBOBOX_HELPER1];
+    //      i++) {
     auto z = m_it[getDictionaryIndex()];
     for (auto it = z[nthread]; it != z[nthread + 1]; it++) {
       auto const &e = *it;
@@ -960,6 +968,7 @@ void WordsBase::simpleDoubleWordSequencePostProseeding() {
         }
       }
     }
+    // TODO?      RETURN_ON_USER_BREAK
   }
   pr(timeElapse(begin));
 
@@ -1562,17 +1571,24 @@ void WordsBase::twoCharactersDistribution(int nthread) {
   }
 }
 
+std::vector<IntVector> &sum(ThreadResultVector &v) {
+  auto &a = v[0].a;
+  for (size_t i = 1; i < v.size(); i++) {
+    v[i].add(a);
+  }
+  return a;
+}
+
 void WordsBase::twoCharactersDistributionPostProseeding() {
   int i, j;
   std::string s;
   StringIntVectorCI p;
   const int n = getAlphabetSize();
   StringIntVector v;
-  auto a = m_tr[0].createZeroLike();
+  auto &a = sum(m_tr);
   int total = 0;
   for (auto &e : m_tr) {
     total += e.total;
-    e.add(a);
   }
 
   v.reserve(n * n);
@@ -1633,7 +1649,7 @@ void WordsBase::dictionaryStatisticsPostProseeding() {
   std::string s, s2, longestWord;
   const int SZ_CAPTION = 3;
   const int a = getAlphabetSize();
-  auto m = m_tr[0].createZeroLike();
+  auto &m = sum(m_tr);
   Dictionary const &r = getDictionary();
   m[1][a] = m[2][a] = r.size();
 
@@ -1641,7 +1657,6 @@ void WordsBase::dictionaryStatisticsPostProseeding() {
     if (e.s.size() > longestWord.size()) {
       longestWord = e.s;
     }
-    e.add(m);
   }
 
   std::string caption[SZ_CAPTION];
@@ -2048,7 +2063,8 @@ void WordsBase::run(bool onlysort) {
       (this->*f)();
     }
 
-    if (threads > 1 && !oneOf(m_menuClick,MENU_SIMPLE_WORD_SEQUENCE,MENU_DOUBLE_WORD_SEQUENCE) ) {
+    if (threads > 1 && !oneOf(m_menuClick, MENU_SIMPLE_WORD_SEQUENCE,
+                              MENU_DOUBLE_WORD_SEQUENCE)) {
       m_result = m_thread_result | std::views::join |
                  std::ranges::to<SearchResultVector>();
     }

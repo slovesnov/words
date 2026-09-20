@@ -25,10 +25,6 @@ void ThreadResult::add(std::vector<IntVector> &e) const {
   }
 }
 
-std::vector<IntVector> ThreadResult::createZeroLike() {
-  return create2dArray(a.size(), a[0].size(), 0);
-}
-
 bool sortIntDouble(const IntDouble &r1, const IntDouble &r2) {
   return r1.second > r2.second;
 }
