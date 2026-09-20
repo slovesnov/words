@@ -188,6 +188,7 @@ public:
   void dictionaryStatisticsPostProseeding();
   void wordFrequencyPostProseeding();
   void twoCharactersDistributionPostProseeding();
+  void simpleDoubleWordSequencePostProseeding();
 
   static std::string getTwoDictionariesPath(bool translit);
   void twoDictionaries(int nthread, bool translit);

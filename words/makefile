@@ -3,6 +3,10 @@
 # mingw32-make clean
 CONFIG ?= release
 
+ifeq ($(CLEAR),1)
+  $(shell clear)
+endif
+
 # 1. Compiler and flags settings
 TARGET   := words
 ASLOV    := ../../aslov/aslov/src/aslov

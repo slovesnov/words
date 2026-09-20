@@ -101,7 +101,23 @@ MENU_CHECK_DICTIONARY, checkDictionary
 1192 w116 314
 1061 w764
 */
-const std::map<ENUM_MENU, bool (WordsBase::*)(const std::string &)>
+
+const std::unordered_map<ENUM_MENU, void (WordsBase::*)()> menu2PostProseeding =
+    {{MENU_WORD_FREQUENCY, &WordsBase::wordFrequencyPostProseeding},
+     {MENU_DICTIONARY_STATISTICS,
+      &WordsBase::dictionaryStatisticsPostProseeding},
+     {MENU_SIMPLE_WORD_SEQUENCE,
+      &WordsBase::simpleDoubleWordSequencePostProseeding},
+     {MENU_DOUBLE_WORD_SEQUENCE,
+      &WordsBase::simpleDoubleWordSequencePostProseeding},
+     {MENU_TWO_CHARACTERS_DISTRIBUTION,
+      &WordsBase::twoCharactersDistributionPostProseeding},
+     {MENU_TWO_CHARACTERS_DISTRIBUTION_START,
+      &WordsBase::twoCharactersDistributionPostProseeding},
+     {MENU_TWO_CHARACTERS_DISTRIBUTION_END,
+      &WordsBase::twoCharactersDistributionPostProseeding}};
+
+const std::unordered_map<ENUM_MENU, bool (WordsBase::*)(const std::string &)>
     menu2BoolString = {
         {MENU_PANGRAM, &WordsBase::checkPangram},
         {MENU_TEMPLATE, &WordsBase::checkTemplate},
@@ -845,14 +861,14 @@ void WordsBase::findAnagram(int nthread) {
 void WordsBase::findSimpleWordSequence(int nthread) {
   int i, j;
   std::string s;
-  MapStringTwoStringVectors map;
+  MapStringTwoStringVectors &map = m_ma[nthread];
   for (i = m_comboValue[COMBOBOX_HELPER0]; i <= m_comboValue[COMBOBOX_HELPER1];
        i++) {
-    // auto z = m_it[getDictionaryIndex()];
-    // for (auto it = z[nthread]; it != z[nthread + 1]; it++) {
-    //   auto const &e = *it;
+    auto z = m_it[getDictionaryIndex()];
+    for (auto it = z[nthread]; it != z[nthread + 1]; it++) {
+      auto const &e = *it;
 
-    for (auto &e : getDictionary()) {
+      // for (auto &e : getDictionary()) {
 
       if (int(e.length()) >= i) {
         for (j = 0; j < 2; j++) {
@@ -869,22 +885,22 @@ void WordsBase::findSimpleWordSequence(int nthread) {
       }
       RETURN_ON_USER_BREAK
     }
-    fillResultFromMap(nthread, map, i);
-    map.clear();
+    // fillResultFromMap(nthread, map, i);
+    // map.clear();
   }
 }
 
 void WordsBase::findDoubleWordSequence(int nthread) {
   int i, j;
-  std::string t, s, q;
-  MapStringTwoStringVectors map;
+  std::string q, s, t;
+  MapStringTwoStringVectors &map = m_ma[nthread];
   for (i = m_comboValue[COMBOBOX_HELPER0]; i <= m_comboValue[COMBOBOX_HELPER1];
        i++) {
-    // auto z = m_it[getDictionaryIndex()];
-    // for (auto it = z[nthread]; it != z[nthread + 1]; it++) {
-    //   auto const &e = *it;
+    auto z = m_it[getDictionaryIndex()];
+    for (auto it = z[nthread]; it != z[nthread + 1]; it++) {
+      auto const &e = *it;
 
-     for (auto &e : getDictionary()) {
+      // for (auto &e : getDictionary()) {
 
       if (int(e.length()) >= i) {
         t = e.substr(0, i);
@@ -920,10 +936,76 @@ void WordsBase::findDoubleWordSequence(int nthread) {
       }
       RETURN_ON_USER_BREAK
     }
-    fillResultFromMap(nthread, map, i);
-    map.clear();
+    // fillResultFromMap(nthread, map, i);
+    // map.clear();
   }
 }
+
+void WordsBase::simpleDoubleWordSequencePostProseeding() {
+  int i, j;
+  std::string s;
+
+  auto begin = clock();
+  pri;
+
+  MapStringTwoStringVectors &map = m_ma[0];
+  for (i = 1; i < int(m_ma.size()); i++) {
+    for (auto &[e, a] : m_ma[i]) {
+      auto it = map.find(e);
+      if (it == map.end()) {
+        map[e] = a;
+      } else {
+        auto it1 = a.begin();
+        for (auto &v : it->second) {
+          v.insert(v.end(), std::make_move_iterator(it1->begin()),
+                   std::make_move_iterator(it1->end()));
+          it1++;
+        }
+      }
+    }
+  }
+  pr(timeElapse(begin));
+
+  const size_t len = m_comboValue[COMBOBOX_HELPER0];
+  for (auto &[_, v] : map) {
+    auto &v0 = v[0];
+    auto &v1 = v[1];
+    i = v0.size();
+    j = v1.size();
+    if (i != 0 && j != 0) {
+      if (i == 1 && j == 1 && v0[0] == v1[0] && v0[0].length() == len) {
+        continue;
+      }
+      s = joinV(v0) + " - " + joinV(v1);
+      m_result.push_back(SearchResult(s, v0.begin()->length(), i + j));
+    }
+  }
+
+  pr(timeElapse(begin));
+}
+
+/*
+  void WordsBase::fillResultFromMap(int nthread,
+                                  const MapStringTwoStringVectors &map,
+                                  size_t len) {
+  int i, j;
+  std::string s;
+  for (auto &[_, v] : map) {
+    auto &v0 = v[0];
+    auto &v1 = v[1];
+    i = v0.size();
+    j = v1.size();
+    if (i != 0 && j != 0) {
+      if (i == 1 && j == 1 && v0[0] == v1[0] && v0[0].length() == len) {
+        continue;
+      }
+      s = joinV(v0) + " - " + joinV(v1);
+      m_result.push_back(SearchResult(s, v0.begin()->length(), i + j));
+    }
+  }
+}
+
+*/
 
 void WordsBase::findWordSequenceFull(int nthread) {
   std::string s;
@@ -2028,14 +2110,10 @@ void WordsBase::run(bool onlysort) {
       }
     }
 
-    if (m_menuClick == MENU_WORD_FREQUENCY) {
-      wordFrequencyPostProseeding();
-    } else if (m_menuClick == MENU_DICTIONARY_STATISTICS) {
-      dictionaryStatisticsPostProseeding();
-    } else if (oneOf(m_menuClick, MENU_TWO_CHARACTERS_DISTRIBUTION,
-                     MENU_TWO_CHARACTERS_DISTRIBUTION_START,
-                     MENU_TWO_CHARACTERS_DISTRIBUTION_END)) {
-      twoCharactersDistributionPostProseeding();
+    auto it = menu2PostProseeding.find(m_menuClick);
+    if (it != menu2PostProseeding.end()) {
+      auto f = it->second;
+      (this->*f)();
     }
 
     // TODO
