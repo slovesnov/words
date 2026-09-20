@@ -72,12 +72,12 @@ protected:
   std::vector<std::vector<char>> m_template_a;
   Modification m_modifications;
   std::string m_chainHelper[2]; // locale
-
   int m_comboValue
       [COMBOBOX_SIZE]; // Note use helper value is faster and thread safe, note
                        // m_comboValue[COMBOBOX_DICTIONARY] is not used
   int m_radioValue;    // todo in cgi mode
   bool m_checkValue;
+  std::string m_textViewText;
   VString m_language; // utf8
   std::string m_addstatus;
 #ifdef NOGTK

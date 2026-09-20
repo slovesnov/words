@@ -14,11 +14,6 @@
 #include <unordered_map>
 #include <unordered_set>
 
-// TODO
-#ifdef _WIN32
-#include <windows.h>
-#endif
-
 std::mutex cout_mutex;
 #define prsync(...)                                                            \
   {                                                                            \
@@ -89,9 +84,6 @@ const std::unordered_map<ENUM_MENU, void (WordsBase::*)(int)> menu2VoidInt = {
 MENU_CHAIN, findChain
 MENU_LETTER_GROUP_SPLIT, findLetterGroupSplit
 MENU_CHECK_DICTIONARY, checkDictionary
-===========================
---MENU_SIMPLE_WORD_SEQUENCE, findSimpleWordSequence
---MENU_DOUBLE_WORD_SEQUENCE, findDoubleWordSequence
 
 1 MENU_SIMPLE_WORD_SEQUENCE
 0 9.028 0
@@ -877,9 +869,6 @@ void WordsBase::findSimpleWordSequence(int nthread) {
     auto z = m_it[getDictionaryIndex()];
     for (auto it = z[nthread]; it != z[nthread + 1]; it++) {
       auto const &e = *it;
-      // todo
-      //  for (auto &e : getDictionary()) {
-
       if (int(e.length()) >= i) {
         for (j = 0; j < 2; j++) {
           s = j ? e.substr(0, i) : e.substr(e.length() - i);
@@ -911,10 +900,6 @@ void WordsBase::findDoubleWordSequence(int nthread) {
     auto z = m_it[getDictionaryIndex()];
     for (auto it = z[nthread]; it != z[nthread + 1]; it++) {
       auto const &e = *it;
-
-      // todo
-      //  for (auto &e : getDictionary()) {
-
       if (int(e.length()) >= i) {
         t = e.substr(0, i);
         q = e.substr(e.length() - i);
@@ -955,150 +940,152 @@ void WordsBase::findDoubleWordSequence(int nthread) {
 void WordsBase::simpleDoubleWordSequencePostProseeding() {
 
   auto begin = clock();
-/*
-  size_t i, j, l;
-  std::string s, sl, sr;
-  std::unordered_set<std::string> all_keys;
-  size_t total_size = 0;
-  for (auto &m : m_ma)
-    total_size += m.size();
-  all_keys.reserve(total_size);
+  /*
+    size_t i, j, l;
+    std::string s, sl, sr;
+    std::unordered_set<std::string> all_keys;
+    size_t total_size = 0;
+    for (auto &m : m_ma)
+      total_size += m.size();
+    all_keys.reserve(total_size);
 
-  for (const auto &m : m_ma) {
-    for (const auto &key : m | std::views::keys) {
-      all_keys.insert(key);
-    }
-  }
-
-  prsync("time1", timeElapse(begin));
-
-  const size_t len = m_comboValue[COMBOBOX_HELPER0];
-  for (auto &key : all_keys) {
-    i = j = l = 0;
-    sl = sr = "";
-    for (auto &m : m_ma) {
-      auto it = m.find(key);
-      if (it != m.end()) {
-        auto &v0 = it->second[0];
-        auto &v1 = it->second[1];
-        i += v0.size();
-        j += v1.size();
-        sl += joinV(v0);
-        sr += joinV(v1);
-        if (!l && !v0.empty()) {
-          l = v0[0].length();
-        }
+    for (const auto &m : m_ma) {
+      for (const auto &key : m | std::views::keys) {
+        all_keys.insert(key);
       }
     }
-    if (i && j && !(i == 1 && j == 1 && l == len && sl == sr)) {
-      m_result.push_back(SearchResult(sl + " - " + sr, l, i + j));
+
+    prsync("time1", timeElapse(begin));
+
+    const size_t len = m_comboValue[COMBOBOX_HELPER0];
+    for (auto &key : all_keys) {
+      i = j = l = 0;
+      sl = sr = "";
+      for (auto &m : m_ma) {
+        auto it = m.find(key);
+        if (it != m.end()) {
+          auto &v0 = it->second[0];
+          auto &v1 = it->second[1];
+          i += v0.size();
+          j += v1.size();
+          sl += joinV(v0);
+          sr += joinV(v1);
+          if (!l && !v0.empty()) {
+            l = v0[0].length();
+          }
+        }
+      }
+      if (i && j && !(i == 1 && j == 1 && l == len && sl == sr)) {
+        m_result.push_back(SearchResult(sl + " - " + sr, l, i + j));
+      }
     }
-  }
-  prsync("time2", timeElapse(begin));
-  */
-/*
-   MapStringTwoStringVectors &map = m_ma[0];
-   for (i = 1; i < m_ma.size(); i++) {
-     for (auto &[e, a] : m_ma[i]) {
-       auto it = map.find(e);
-       if (it == map.end()) {
-         map[e] = a;
-       } else {
-         auto it1 = a.begin();
-         for (auto &v : it->second) {
-           v.insert(v.end(), std::make_move_iterator(it1->begin()),
-                    std::make_move_iterator(it1->end()));
-           it1++;
+    prsync("time2", timeElapse(begin));
+    */
+  /*
+     MapStringTwoStringVectors &map = m_ma[0];
+     for (i = 1; i < m_ma.size(); i++) {
+       for (auto &[e, a] : m_ma[i]) {
+         auto it = map.find(e);
+         if (it == map.end()) {
+           map[e] = a;
+         } else {
+           auto it1 = a.begin();
+           for (auto &v : it->second) {
+             v.insert(v.end(), std::make_move_iterator(it1->begin()),
+                      std::make_move_iterator(it1->end()));
+             it1++;
+           }
          }
        }
      }
-   }
-   prsync("time1",timeElapse(begin));
+     prsync("time1",timeElapse(begin));
 
-   const size_t len = m_comboValue[COMBOBOX_HELPER0];
-   for (auto &[_, v] : map) {
-     auto &v0 = v[0];
-     auto &v1 = v[1];
-     i = v0.size();
-     j = v1.size();
-     if (i != 0 && j != 0) {
-       if (i == 1 && j == 1 && v0[0] == v1[0] && v0[0].length() == len) {
-         continue;
-       }
-       s = joinV(v0) + " - " + joinV(v1);
-       m_result.push_back(SearchResult(s, v0.begin()->length(), i + j));
-     }
-   }
-
-   prsync("time2",timeElapse(begin));*/
-
-   // --- ОПТИМИЗАЦИЯ ЭТАПА 1: СЛИЯНИЕ МАП ---
-   MapStringTwoStringVectors &map = m_ma[0];
-   
-   for (size_t i = 1; i < m_ma.size(); i++) {
-     for (auto &[e, a] : m_ma[i]) {
-       auto it = map.find(e);
-       if (it == map.end()) {
-         // Перемещаем всю структуру 'a' целиком, вместо копирования
-         map[e] = std::move(a); 
-       } else {
-         auto &dest_array = it->second;
-         // Фиксированный размер std::array (2) позволяет развернуть цикл вручную
-         // Это избавляет от создания итераторов типа it1
-         
-         // Оптимизация вектора 0
-         auto &dest_v0 = dest_array[0];
-         auto &src_v0 = a[0];
-         dest_v0.reserve(dest_v0.size() + src_v0.size()); // Выделяем память ОДИН раз
-         dest_v0.insert(dest_v0.end(), 
-                        std::make_move_iterator(src_v0.begin()), 
-                        std::make_move_iterator(src_v0.end()));
-
-         // Оптимизация вектора 1
-         auto &dest_v1 = dest_array[1];
-         auto &src_v1 = a[1];
-         dest_v1.reserve(dest_v1.size() + src_v1.size()); // Выделяем память ОДИН раз
-         dest_v1.insert(dest_v1.end(), 
-                        std::make_move_iterator(src_v1.begin()), 
-                        std::make_move_iterator(src_v1.end()));
-       }
-     }
-   }
-   prsync("time1", timeElapse(begin));
-
-   // --- ОПТИМИЗАЦИЯ ЭТАПА 2: СБОР РЕЗУЛЬТАТОВ ---
-   const size_t len = m_comboValue[COMBOBOX_HELPER0];
-   
-   // Резервируем место под результат, чтобы избежать reallocations в m_result
-   m_result.reserve(m_result.size() + map.size() / 2); 
-
-   for (auto &[_, v] : map) {
-     const auto &v0 = v[0]; // Используем const reference, так как данные только читаем
-     const auto &v1 = v[1];
-     
-     const size_t size_v0 = v0.size();
-     const size_t size_v1 = v1.size();
-     
-     if (size_v0 != 0 && size_v1 != 0) {
-       // Оптимизация условий: вычисляем только быстрые типы данных (размеры)
-       if (size_v0 == 1 && size_v1 == 1) {
-         if (v0[0] == v1[0] && v0[0].length() == len) {
+     const size_t len = m_comboValue[COMBOBOX_HELPER0];
+     for (auto &[_, v] : map) {
+       auto &v0 = v[0];
+       auto &v1 = v[1];
+       i = v0.size();
+       j = v1.size();
+       if (i != 0 && j != 0) {
+         if (i == 1 && j == 1 && v0[0] == v1[0] && v0[0].length() == len) {
            continue;
          }
+         s = joinV(v0) + " - " + joinV(v1);
+         m_result.push_back(SearchResult(s, v0.begin()->length(), i + j));
        }
-       
-       // Извлекаем длину один раз напрямую из строки элемента, не вызывая тяжелый v0.begin()->length()
-       // Ключ итерации '_' или любая строка из v0 имеют одну и ту же длину
-       size_t word_len = v0[0].length(); 
-       
-       // Сборка строки происходит только после того, как объект гарантированно прошел все фильтры
-       std::string s = joinV(v0) + " - " + joinV(v1);
-       m_result.emplace_back(std::move(s), word_len, size_v0 + size_v1);
      }
-   }
 
-   prsync("time2", timeElapse(begin));
+     prsync("time2",timeElapse(begin));*/
 
+  // --- ОПТИМИЗАЦИЯ ЭТАПА 1: СЛИЯНИЕ МАП ---
+  MapStringTwoStringVectors &map = m_ma[0];
+
+  for (size_t i = 1; i < m_ma.size(); i++) {
+    for (auto &[e, a] : m_ma[i]) {
+      auto it = map.find(e);
+      if (it == map.end()) {
+        // Перемещаем всю структуру 'a' целиком, вместо копирования
+        map[e] = std::move(a);
+      } else {
+        auto &dest_array = it->second;
+        // Фиксированный размер std::array (2) позволяет развернуть цикл вручную
+        // Это избавляет от создания итераторов типа it1
+
+        // Оптимизация вектора 0
+        auto &dest_v0 = dest_array[0];
+        auto &src_v0 = a[0];
+        dest_v0.reserve(dest_v0.size() +
+                        src_v0.size()); // Выделяем память ОДИН раз
+        dest_v0.insert(dest_v0.end(), std::make_move_iterator(src_v0.begin()),
+                       std::make_move_iterator(src_v0.end()));
+
+        // Оптимизация вектора 1
+        auto &dest_v1 = dest_array[1];
+        auto &src_v1 = a[1];
+        dest_v1.reserve(dest_v1.size() +
+                        src_v1.size()); // Выделяем память ОДИН раз
+        dest_v1.insert(dest_v1.end(), std::make_move_iterator(src_v1.begin()),
+                       std::make_move_iterator(src_v1.end()));
+      }
+    }
+  }
+  prsync("time1", timeElapse(begin));
+
+  // --- ОПТИМИЗАЦИЯ ЭТАПА 2: СБОР РЕЗУЛЬТАТОВ ---
+  const size_t len = m_comboValue[COMBOBOX_HELPER0];
+
+  // Резервируем место под результат, чтобы избежать reallocations в m_result
+  m_result.reserve(m_result.size() + map.size() / 2);
+
+  for (auto &[_, v] : map) {
+    const auto &v0 =
+        v[0]; // Используем const reference, так как данные только читаем
+    const auto &v1 = v[1];
+
+    const size_t size_v0 = v0.size();
+    const size_t size_v1 = v1.size();
+
+    if (size_v0 != 0 && size_v1 != 0) {
+      // Оптимизация условий: вычисляем только быстрые типы данных (размеры)
+      if (size_v0 == 1 && size_v1 == 1) {
+        if (v0[0] == v1[0] && v0[0].length() == len) {
+          continue;
+        }
+      }
+
+      // Извлекаем длину один раз напрямую из строки элемента, не вызывая
+      // тяжелый v0.begin()->length() Ключ итерации '_' или любая строка из v0
+      // имеют одну и ту же длину
+      size_t word_len = v0[0].length();
+
+      // Сборка строки происходит только после того, как объект гарантированно
+      // прошел все фильтры
+      std::string s = joinV(v0) + " - " + joinV(v1);
+      m_result.emplace_back(std::move(s), word_len, size_v0 + size_v1);
+    }
+  }
+
+  prsync("time2", timeElapse(begin));
 }
 
 void WordsBase::findWordSequenceFull(int nthread) {
@@ -1142,8 +1129,9 @@ void WordsBase::findChain(int nthread) {
   StringSet vs[2]; // always set
   ChainNodeVectorCI cni1;
   ChainNode *cp;
+  std::set<std::string> ex;
 
-  auto begin = clock();
+  // auto begin = clock();
 
   if (differenceOnlyOneChar(m_chainHelper[0], m_chainHelper[1])) {
     m_out = localeToUtf8(m_chainHelper[0] + " " + m_chainHelper[1]) + OPEN_S +
@@ -1151,13 +1139,24 @@ void WordsBase::findChain(int nthread) {
     return;
   }
 
+  std::stringstream ss(m_textViewText);
+  while (ss >> s) {
+    if (s.size() == m_chainHelper[0].length())
+      ex.insert(s);
+  }
+
+  i = 0;
   for (auto &e : getDictionary()) {
     if (e.length() == m_chainHelper[0].length()) {
-      dl[e] = 0;
+      if (ex.contains(e)) {
+        i++;
+      } else
+        dl[e] = 0;
     }
   }
 
-  pr(timeElapse(begin)) begin = clock();
+  // pr(timeElapse(begin),m_textViewText);
+  // begin = clock();
 
   j = 1; // j is step
   for (i = 0; i < 2; i++) {
@@ -1350,7 +1349,7 @@ l210:
   for (auto &e : v) {
     m_result.push_back(SearchResult(e, m_chainHelper[0].length(), j + 2));
   }
-  pr(timeElapse(begin))
+  // pr(timeElapse(begin))
 }
 
 void WordsBase::findLetterGroupSplit(int nthread) {

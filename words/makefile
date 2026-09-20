@@ -66,4 +66,4 @@ $(TARGET): $(OBJS) $(EXTRA_OBJS)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 clean:
-	rm -f $(OBJS) $(TARGET).exe $(TARGET)
+	rm -f $(OBJS) $(TARGET).exe

@@ -33,9 +33,10 @@ class Frame : WordsBase {
   GtkWidget *m_check;
   GtkWidget *m_comboline;
   GtkWidget *m_radio;
+  GtkWidget *m_textView;
 
   MenuMap m_menuMap;
-  std::vector<GtkAccelGroup*>m_accelGroup;
+  std::vector<GtkAccelGroup *> m_accelGroup;
   bool m_lockSignals;
   int m_tagIndex;
   int m_tags;
@@ -121,19 +122,16 @@ public:
 
   virtual bool userBreakThread();
   virtual void setMenuLabel(ENUM_MENU e, std::string const &text) override;
-  virtual void endJobThread()override;
+  virtual void endJobThread() override;
   std::string getMenuLabel(ENUM_MENU e);
-
-  // void proceedThread();
 
   void stopThread();
   void waitThread();
   void startThread(bool onlysort);
 
-  void updateTextView() {
-    GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(m_text));
-    gtk_text_buffer_set_text(buffer, m_out.c_str(), -1);
-  }
+  void updateTextView() { updateTextView(m_text, m_out); }
+
+  void updateTextView(GtkWidget *view, std::string const &s);
 
   void setStatus(std::string const &s);
 

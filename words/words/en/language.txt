@@ -124,7 +124,7 @@ words of dictionary are not in alphabet order
 Search modifications of words. There are three types of modifications: replaces, inserts and substrings. Also it's possible to set several modifications.<br>REPLACES. Syntax <i>string1&gt;string2</i>.<br>String <i>ab&gt;cde</i> means replace all occurences of <i>ab</i> to <i>cde</i>. String <i>k&gt;0</i> means replace all characters <i>k</i> to empty string.<br>INSERTS/CONCATENATIONS. Syntax <i>+index,string</i>.<br>String <i>+0,b</i> add character <i>b</i> to the beginning (before first symbol of word). String <i>+2,we</i> inserts <i>we</i> before third symbol of word. String <i>+L,y</i> add <i>y</i> to the end. String <i>+L-1,s</i> inserts <i>s</i> before last symbol of word.<br>SUBSTRINGS. Syntax <i>-index,length</i>.<br>String <i>-0,3</i> leaves first three chars of word. String  <i>-4,3</i> leaves three chars from fifth char. If second parameter is not set (eg. <i>-3</i>), then left all chars till the end (from fourth symbol). String <i>-L-5,3</i> leaves three letters from fifth char from the end of the word. String <i>-L-5</i> leaves last five chars. Other string examples <i>-4,L-5</i> <i>-L-4,L-5</i>.<br>Not all of replaces change word. If option <i>%s</i> is on, then every single operation should change word.
 every modification changes word
 New version is found on the internet. Download it now?
-Search chains of words such as only one character changes for every step. Consider two words <i>woman</i> and <i>chick</i>. There is a chain <i>woman</i> <i>women</i> <i>woven</i> <i>coven</i> <i>coves</i> <i>cores</i> <i>corns</i> <i>coins</i> <i>chins</i> <i>chink</i> <i>chick</i>. Program searches all chains with shortest length.
+Search chains of words such as only one character changes for every step. Consider two words <i>woman</i> and <i>chick</i>. There is a chain <i>woman</i> <i>women</i> <i>woven</i> <i>coven</i> <i>coves</i> <i>cores</i> <i>corns</i> <i>coins</i> <i>chins</i> <i>chink</i> <i>chick</i>. Program searches all chains with shortest length. You can specify a list of excluded words that should not appear in the chain.
 no chains found
 results filter (regular expression)
 found
@@ -140,3 +140,4 @@ any
 waiting
 cr symbol found
 Words in ascending order of length.
+Exception words.

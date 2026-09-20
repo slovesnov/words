@@ -151,6 +151,10 @@ static void radio_changed(GtkWidget *radio, gpointer) {
   frame->radioChanged(radio);
 }
 
+void text_view_changed(GtkTextBuffer *buffer, gpointer) {
+  frame->stopThreadAndNewRoutine();
+}
+
 static void destroy_window(GtkWidget *object, gpointer) { frame->destroy(); }
 
 static gboolean new_version_message(gpointer) {
@@ -715,6 +719,25 @@ void Frame::setHelperPanel() {
     g_signal_connect(m_check, "toggled", G_CALLBACK(check_changed), NULL);
     break;
 
+  case MENU_CHAIN:
+    w = gtk_label_new(m_language[EXCEPTION_WORDS].c_str());
+    gtk_widget_set_halign(w, GTK_ALIGN_START);
+    gtk_container_add(GTK_CONTAINER(m_helperUp), w);
+
+    w = gtk_scrolled_window_new(NULL, NULL);
+    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(w), GTK_POLICY_AUTOMATIC,
+                                   GTK_POLICY_AUTOMATIC);
+    m_textView = gtk_text_view_new();
+    gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(m_textView), GTK_WRAP_WORD);
+    gtk_container_add(GTK_CONTAINER(w), m_textView);
+    gtk_container_add(GTK_CONTAINER(m_helperUp), w);
+    updateTextView(m_textView, localeToUtf8(getSettings(SETTINGS_CHAIN)));
+    g_signal_connect(gtk_text_view_get_buffer(GTK_TEXT_VIEW(m_textView)),
+                     "changed", G_CALLBACK(text_view_changed), NULL);
+
+
+    break;
+
   case MENU_CHARACTER_SEQUENCE:
     addComboToHelper(SEARCH_IN_ANY_PLACE_OF_WORD, SEARCH_IN_END_OF_WORD, 0,
                      COMBOBOX_HELPER2);
@@ -1086,12 +1109,12 @@ void Frame::endJob() {
  * if thread runs stop it
  */
 void Frame::stopThread() {
-  // pr2("try stop", m_thread.joinable());
+  // pr("try stop", m_thread.joinable());
   m_thread.request_stop();
   if (m_thread.joinable()) {
     m_thread.join();
   }
-  // pr2("stopped")
+  // pr("stopped")
 }
 
 bool Frame::userBreakThread() {
@@ -1125,7 +1148,7 @@ void Frame::startThread(bool onlysort) {
       run(onlysort);
     });
   } else {
-    pr("strange")
+    pr("strange--")
   }
 }
 
@@ -1156,6 +1179,15 @@ bool Frame::prepare() {
   if (m_menuClick == MENU_MODIFICATION) {
     m_checkValue =
         gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(m_check)) == TRUE;
+  }
+
+  if (m_menuClick == MENU_CHAIN) {
+    GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(m_textView));
+    GtkTextIter start, end;
+    gtk_text_buffer_get_bounds(buffer, &start, &end);
+    gchar *raw_text = gtk_text_buffer_get_text(buffer, &start, &end, FALSE);
+    m_textViewText = utf8ToLocale(raw_text);
+    g_free(raw_text);
   }
 
   bool hasEntry = INDEX_OF(m_menuClick, TEMPLATE_MENU) != -1;
@@ -1288,6 +1320,11 @@ void Frame::radioChanged(GtkWidget *w) {
 }
 
 void Frame::setStatus(std::string const &s) {
-  //add " " at the beginning for nice view
-  gtk_label_set_text(GTK_LABEL(m_statusMessage), (" "+s).c_str());
+  // add " " at the beginning for nice view
+  gtk_label_set_text(GTK_LABEL(m_statusMessage), (" " + s).c_str());
+}
+
+void Frame::updateTextView(GtkWidget *view, std::string const &s) {
+  GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(view));
+  gtk_text_buffer_set_text(buffer, s.c_str(), -1);
 }
