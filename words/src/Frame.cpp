@@ -18,6 +18,8 @@
 #include <windows.h>
 #endif
 
+#include "magic_enum.hpp" //TODO
+
 #include <format>
 #include <unordered_map>
 
@@ -660,7 +662,6 @@ void Frame::routine() {
 }
 
 void Frame::setHelperPanel() {
-  int i;
   GtkWidget *w;
   gchar *p;
   std::string s;
@@ -684,10 +685,7 @@ void Frame::setHelperPanel() {
     g_free(p);
   }
 
-  // add entry with template
-  if ((i = INDEX_OF(m_menuClick, TEMPLATE_MENU)) != -1) {
-    addEntryLineToHelper(i);
-  }
+  addEntryForTemplate();
 
   switch (m_menuClick) {
   case MENU_ANAGRAM:
@@ -720,7 +718,7 @@ void Frame::setHelperPanel() {
     break;
 
   case MENU_CHAIN:
-    w = gtk_label_new(m_language[EXCEPTION_WORDS].c_str());
+    w = createLabel(EXCEPTION_WORDS);
     gtk_widget_set_halign(w, GTK_ALIGN_START);
     gtk_container_add(GTK_CONTAINER(m_helperUp), w);
 
@@ -731,10 +729,10 @@ void Frame::setHelperPanel() {
     gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(m_textView), GTK_WRAP_WORD);
     gtk_container_add(GTK_CONTAINER(w), m_textView);
     gtk_container_add(GTK_CONTAINER(m_helperUp), w);
-    updateTextView(m_textView, localeToUtf8(getSettings(SETTINGS_CHAIN)));
+    updateTextView(m_textView,
+                   localeToUtf8(getSettings(SETTINGS_CHAIN_EXCEPTIONS)));
     g_signal_connect(gtk_text_view_get_buffer(GTK_TEXT_VIEW(m_textView)),
                      "changed", G_CALLBACK(text_view_changed), NULL);
-
 
     break;
 
@@ -850,17 +848,20 @@ GtkWidget *Frame::createTextCombo(ENUM_COMBOBOX e, ENUM_STRING from,
   return createTextCombo(e, v, active);
 }
 
-GtkWidget *Frame::createEntry(int i) {
-  GtkWidget *w = m_entry = gtk_entry_new();
-  gtk_entry_set_text(GTK_ENTRY(w), localeToUtf8(getTemplate(i)).c_str());
-  connectEntrySignals(0);
-  return w;
-}
+void Frame::addEntryForTemplate() {
+  auto it = menu2Settings.find(m_menuClick);
+  if (it == menu2Settings.end()) {
+    return;
+  }
+  pr(magic_enum::enum_name(m_menuClick), magic_enum::enum_name(it->second));
 
-void Frame::addEntryLineToHelper(int i) {
   GtkWidget *w = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 3);
   gtk_container_add(GTK_CONTAINER(w), createLabel(SEARCH));
-  add(w, createEntry(i));
+  m_entry = gtk_entry_new();
+  gtk_entry_set_text(GTK_ENTRY(m_entry),
+                     localeToUtf8(getSettings(it->second)).c_str());
+  connectEntrySignals(0);
+  add(w, m_entry);
   gtk_container_add(GTK_CONTAINER(m_helperUp), w);
 }
 
@@ -1087,11 +1088,11 @@ void Frame::startJob(bool clearResult) {
   m_begin = clock();
   m_out = "";
   m_addstatus = "";
-  m_filteredWordsCount = 0; // need to set always because in case of error need
-                            // m_filteredWordsCount = 0
+  m_filteredWordsCount = 0; // need to set always because in case of error
+                            // need m_filteredWordsCount = 0
 
-  // For long jobs show status & view. Long jobs when whole dictionary is added
-  // to m_result
+  // For long jobs show status & view. Long jobs when whole dictionary is
+  // added to m_result
   setStatus(m_language[ONE_OF(m_menuClick, MENU_WAITING) ? WAITING : SEARCH] +
             "...");
   updateTextView();
@@ -1190,7 +1191,7 @@ bool Frame::prepare() {
     g_free(raw_text);
   }
 
-  bool hasEntry = ONE_OF(m_menuClick, TEMPLATE_MENU);
+  bool hasEntry = isTemplateMenu();
 
   if (hasEntry) {
     // should encode to locale string at first to get valid length

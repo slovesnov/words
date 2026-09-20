@@ -46,9 +46,6 @@ protected:
   Dictionary m_dictionary[LANGUAGES];
   VString m_settings[LANGUAGES]; // m_settings[i] see ENUM_SETTINGS
                                  // {encoding=locale}
-#ifndef NOGTK
-  VString m_template[LANGUAGES]; //{encoding=locale}
-#endif
   std::string m_keyboardOneRow[256][2];
   std::string m_keyboardRowDiagonals[256];
   ENUM_MENU m_menuClick; // last search option
@@ -114,9 +111,6 @@ protected:
   static std::string getResourcePath(std::string name);
   void cgi();
 #else
-  inline const std::string &getTemplate(int i) const {
-    return m_template[getDictionaryIndex()][i];
-  }
   virtual bool userBreakThread() = 0;
   virtual void setMenuLabel(ENUM_MENU e, std::string const &text) = 0;
   virtual void endJobThread() = 0;
@@ -226,4 +220,6 @@ public:
   getAllPairs(std::string const &s, std::string const &low = invalidDifference);
   static std::string pairsToString(StringStringVector const &v, bool p = 0);
   void createRegex(SafeGRegex &r);
+
+  bool isTemplateMenu()const;
 };

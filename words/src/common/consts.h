@@ -7,21 +7,13 @@
 
 #pragma once
 
-#include "WordsBase.h"
-#ifndef NOGTK
-#include <gtk/gtk.h> //for GDK_KEY_...
-#endif
+#include <unordered_map>
 
-// need for cgi & gtk
+// gtk & cgi
 const std::string WORDS_VERSION = "4.5.0";
 
 const char OPEN_BRACKET = '(';
 const std::string OPEN_S = std::string(" ") + OPEN_BRACKET;
-
-const ENUM_MENU TEMPLATE_MENU[] = {
-    MENU_TEMPLATE,          MENU_CROSSWORD, MENU_REGULAR_EXPRESSIONS,
-    MENU_MODIFICATION,      MENU_CHAIN,     MENU_CHARACTER_SEQUENCE,
-    MENU_LETTER_GROUP_SPLIT};
 
 const ENUM_SETTINGS KEYBOARD_ROW[] = {
     SETTINGS_KEYBOARD_ROW1,
@@ -50,5 +42,13 @@ const ENUM_MENU MENU_WAITING[] = {MENU_DICTIONARY_STATISTICS,
                                   MENU_TWO_CHARACTERS_DISTRIBUTION_START,
                                   MENU_TWO_CHARACTERS_DISTRIBUTION_END};
 
+const std::unordered_map<ENUM_MENU, ENUM_SETTINGS> menu2Settings = {
+    {MENU_TEMPLATE, SETTINGS_TEMPLATE},
+    {MENU_CROSSWORD, SETTINGS_CROSSWORD},
+    {MENU_REGULAR_EXPRESSIONS, SETTINGS_REGULAR_EXPRESSIONS},
+    {MENU_MODIFICATION, SETTINGS_MODIFICATION},
+    {MENU_CHAIN, SETTINGS_CHAIN},
+    {MENU_CHARACTER_SEQUENCE, SETTINGS_CHARACTER_SEQUENCE},
+    {MENU_LETTER_GROUP_SPLIT, SETTINGS_LETTER_GROUP_SPLIT}};
 
 #endif /*#ifndef NOGTK*/

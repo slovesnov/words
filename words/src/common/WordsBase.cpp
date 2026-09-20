@@ -11,8 +11,6 @@
 #include <cassert>
 #include <mutex> //TODO
 #include <ranges>
-#include <unordered_map>
-#include <unordered_set>
 
 std::mutex cout_mutex;
 #define prsync(...)                                                            \
@@ -127,6 +125,7 @@ const std::unordered_map<ENUM_MENU, bool (WordsBase::*)(const std::string &)>
         {MENU_CONSONANT_VOWEL_SEQUENCE,
          &WordsBase::checkConsonantVowelSequence},
         {MENU_DENSITY, &WordsBase::checkDensity}};
+
 #ifdef NOGTK
 // use cgi project
 #include "cgi.h"
@@ -186,10 +185,6 @@ WordsBase::WordsBase() {
 
     LNG[i] = LANGUAGE[i].substr(0, 2);
     m_settings[i] = readFile(i, "settings");
-#ifndef NOGTK
-    m_template[i] = readFile(i, "template");
-    assert(m_template[i].size() == SIZE(TEMPLATE_MENU));
-#endif
     /*
     //set without optimization
     0 0.665 src/common/WordsBase.cpp:167 WordsBase::WordsBase()
@@ -602,7 +597,7 @@ std::string readBinaryFileToString(const std::string &filename) {
 }
 
 void WordsBase::checkLFAllFiles() {
-  auto v = {"cgi_language", "language", "settings", "template"};
+  auto v = {"cgi_language", "language", "settings"};
 
   auto checkFile = [this](const std::string &filepath) {
     std::string s = readBinaryFileToString(filepath);
@@ -1960,7 +1955,7 @@ bool WordsBase::prepare() {
     return true;
   }
 
-  if (!ONE_OF(m_menuClick, TEMPLATE_MENU)) {
+  if (!isTemplateMenu()) {
     return true;
   }
 
@@ -2448,3 +2443,7 @@ void WordsBase::createRegex(SafeGRegex &r) {
 }
 
 WordsBase::~WordsBase() {}
+
+bool WordsBase::isTemplateMenu() const {
+  return menu2Settings.find(m_menuClick) != menu2Settings.end();
+}

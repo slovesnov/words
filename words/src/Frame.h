@@ -63,9 +63,7 @@ class Frame : WordsBase {
   GtkWidget *createTextCombo(ENUM_COMBOBOX e, ENUM_STRING from, ENUM_STRING to,
                              int active);
 
-  GtkWidget *createEntry(int i);
-
-  void addEntryLineToHelper(int i);
+  void addEntryForTemplate();
   void addComboLineToHelper(ENUM_STRING id, int from, int to, int active,
                             ENUM_STRING eid, bool any = false);
   void addComboLineToHelper(ENUM_STRING id, int from, int to, int active,
