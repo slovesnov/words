@@ -135,9 +135,7 @@ public:
     gtk_text_buffer_set_text(buffer, m_out.c_str(), -1);
   }
 
-  void setStatus(std::string const &s) {
-    gtk_label_set_text(GTK_LABEL(m_statusMessage), s.c_str());
-  }
+  void setStatus(std::string const &s);
 
   void connectEntrySignals(int index);
   void entryFocusChanged(bool in);

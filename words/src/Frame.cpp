@@ -1124,8 +1124,7 @@ void Frame::startThread(bool onlysort) {
       m_token = token;
       run(onlysort);
     });
-  }
-  else{
+  } else {
     pr("strange")
   }
 }
@@ -1286,4 +1285,9 @@ void Frame::radioChanged(GtkWidget *w) {
                    g_slist_index(group, w); // Note group inverted order
     stopThreadAndNewRoutine();
   }
+}
+
+void Frame::setStatus(std::string const &s) {
+  //add " " at the beginning for nice view
+  gtk_label_set_text(GTK_LABEL(m_statusMessage), (" "+s).c_str());
 }

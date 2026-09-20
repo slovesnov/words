@@ -636,7 +636,7 @@ void outMax(std::string f, std::array<int, 2> r) {
                            std::max(r[0], r[1]), join(r));
 }
 
-// like fillResultFromMap
+// like simpleDoubleWordSequencePostProseeding()
 bool outMap(const MapStringTwoStringVectors &map, size_t len) {
   int i, j;
   std::string s;
@@ -867,8 +867,8 @@ void WordsBase::findSimpleWordSequence(int nthread) {
     auto z = m_it[getDictionaryIndex()];
     for (auto it = z[nthread]; it != z[nthread + 1]; it++) {
       auto const &e = *it;
-
-      // for (auto &e : getDictionary()) {
+      // todo
+      //  for (auto &e : getDictionary()) {
 
       if (int(e.length()) >= i) {
         for (j = 0; j < 2; j++) {
@@ -885,8 +885,6 @@ void WordsBase::findSimpleWordSequence(int nthread) {
       }
       RETURN_ON_USER_BREAK
     }
-    // fillResultFromMap(nthread, map, i);
-    // map.clear();
   }
 }
 
@@ -900,7 +898,8 @@ void WordsBase::findDoubleWordSequence(int nthread) {
     for (auto it = z[nthread]; it != z[nthread + 1]; it++) {
       auto const &e = *it;
 
-      // for (auto &e : getDictionary()) {
+      // todo
+      //  for (auto &e : getDictionary()) {
 
       if (int(e.length()) >= i) {
         t = e.substr(0, i);
@@ -936,8 +935,6 @@ void WordsBase::findDoubleWordSequence(int nthread) {
       }
       RETURN_ON_USER_BREAK
     }
-    // fillResultFromMap(nthread, map, i);
-    // map.clear();
   }
 }
 
@@ -983,29 +980,6 @@ void WordsBase::simpleDoubleWordSequencePostProseeding() {
 
   pr(timeElapse(begin));
 }
-
-/*
-  void WordsBase::fillResultFromMap(int nthread,
-                                  const MapStringTwoStringVectors &map,
-                                  size_t len) {
-  int i, j;
-  std::string s;
-  for (auto &[_, v] : map) {
-    auto &v0 = v[0];
-    auto &v1 = v[1];
-    i = v0.size();
-    j = v1.size();
-    if (i != 0 && j != 0) {
-      if (i == 1 && j == 1 && v0[0] == v1[0] && v0[0].length() == len) {
-        continue;
-      }
-      s = joinV(v0) + " - " + joinV(v1);
-      m_result.push_back(SearchResult(s, v0.begin()->length(), i + j));
-    }
-  }
-}
-
-*/
 
 void WordsBase::findWordSequenceFull(int nthread) {
   std::string s;
@@ -1315,47 +1289,6 @@ void WordsBase::findLetterGroupSplit(int nthread) {
     }
   }
 }
-
-void WordsBase::fillResultFromMap(int nthread,
-                                  const MapStringTwoStringVectors &map,
-                                  size_t len) {
-  int i, j;
-  std::string s;
-  for (auto &[_, v] : map) {
-    auto &v0 = v[0];
-    auto &v1 = v[1];
-    i = v0.size();
-    j = v1.size();
-    if (i != 0 && j != 0) {
-      if (i == 1 && j == 1 && v0[0] == v1[0] && v0[0].length() == len) {
-        continue;
-      }
-      s = joinV(v0) + " - " + joinV(v1);
-      m_result.push_back(SearchResult(s, v0.begin()->length(), i + j));
-    }
-  }
-}
-
-// void WordsBase::fillResultFromMap(int nthread,
-//                                   const MapStringTwoStringVectors &map,
-//                                   size_t len) {
-//   int i, j;
-//   std::string s;
-//   for (auto &[_, v] : map) {
-//     auto &v0 = v[0];
-//     auto &v1 = v[1];
-//     i = v0.size();
-//     j = v1.size();
-//     if (i != 0 && j != 0) {
-//       if (i == 1 && j == 1 && v0[0] == v1[0] && v0[0].length() == len) {
-//         continue;
-//       }
-//       s = joinV(v0) + " - " + joinV(v1);
-//       m_thread_result[nthread].push_back(
-//           SearchResult(s, v0.begin()->length(), i + j));
-//     }
-//   }
-// }
 
 std::string WordsBase::getTwoDictionariesPath(bool translit) {
   return getResourcePath(LNG[0] + LNG[1] + "_" +
@@ -2096,8 +2029,7 @@ void WordsBase::run(bool onlysort) {
   if (!onlysort) {
     std::vector<std::jthread> workers;
     int threads = oneOf(m_menuClick, MENU_CHAIN, MENU_LETTER_GROUP_SPLIT,
-                        MENU_CHECK_DICTIONARY, MENU_SIMPLE_WORD_SEQUENCE,
-                        MENU_DOUBLE_WORD_SEQUENCE)
+                        MENU_CHECK_DICTIONARY)
                       ? 1
                       : g_get_num_processors();
     prsync(threads, magic_enum::enum_name(m_menuClick));
@@ -2116,8 +2048,7 @@ void WordsBase::run(bool onlysort) {
       (this->*f)();
     }
 
-    // TODO
-    if (threads > 1) {
+    if (threads > 1 && !oneOf(m_menuClick,MENU_SIMPLE_WORD_SEQUENCE,MENU_DOUBLE_WORD_SEQUENCE) ) {
       m_result = m_thread_result | std::views::join |
                  std::ranges::to<SearchResultVector>();
     }

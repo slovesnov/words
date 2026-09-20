@@ -135,9 +135,6 @@ protected:
     return k == std::string::npos ? -1 : k;
   }
 
-  void fillResultFromMap(int nthread, const MapStringTwoStringVectors &map,
-                         size_t len);
-
   // todo
   void test();
 #ifdef NOGTK
