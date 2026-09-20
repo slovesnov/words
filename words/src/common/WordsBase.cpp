@@ -1361,6 +1361,7 @@ void WordsBase::findLetterGroupSplit(int nthread) {
   size_t i, j;
   auto charset = getOrderedString(m_entryText);
 
+  auto begin=clock();
   const size_t size = m_entryText.length();
   eqmap.clear();
   eqmap.resize(size);
@@ -1381,6 +1382,8 @@ void WordsBase::findLetterGroupSplit(int nthread) {
       }
     }
   }
+
+  pr2(timeElapse(begin))
 
   auto v = getAllPairs(charset);
   size_t n[] = {v.size(), 0};
@@ -1411,6 +1414,7 @@ void WordsBase::findLetterGroupSplit(int nthread) {
                      intToStringLocaled(n[i]) + (i ? "" : ", ");
     }
   }
+  pr2(timeElapse(begin))
 }
 
 std::string WordsBase::getTwoDictionariesPath(bool translit) {
