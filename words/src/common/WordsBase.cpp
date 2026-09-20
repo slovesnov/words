@@ -953,11 +953,11 @@ void WordsBase::findDoubleWordSequence(int nthread) {
 }
 
 void WordsBase::simpleDoubleWordSequencePostProseeding() {
-  size_t i, j, l;
-  std::string s, sl, sr;
 
   auto begin = clock();
 /*
+  size_t i, j, l;
+  std::string s, sl, sr;
   std::unordered_set<std::string> all_keys;
   size_t total_size = 0;
   for (auto &m : m_ma)
@@ -996,7 +996,7 @@ void WordsBase::simpleDoubleWordSequencePostProseeding() {
   }
   prsync("time2", timeElapse(begin));
   */
-
+/*
    MapStringTwoStringVectors &map = m_ma[0];
    for (i = 1; i < m_ma.size(); i++) {
      for (auto &[e, a] : m_ma[i]) {
@@ -1030,7 +1030,75 @@ void WordsBase::simpleDoubleWordSequencePostProseeding() {
      }
    }
 
-   prsync("time2",timeElapse(begin));
+   prsync("time2",timeElapse(begin));*/
+
+   // --- ОПТИМИЗАЦИЯ ЭТАПА 1: СЛИЯНИЕ МАП ---
+   MapStringTwoStringVectors &map = m_ma[0];
+   
+   for (size_t i = 1; i < m_ma.size(); i++) {
+     for (auto &[e, a] : m_ma[i]) {
+       auto it = map.find(e);
+       if (it == map.end()) {
+         // Перемещаем всю структуру 'a' целиком, вместо копирования
+         map[e] = std::move(a); 
+       } else {
+         auto &dest_array = it->second;
+         // Фиксированный размер std::array (2) позволяет развернуть цикл вручную
+         // Это избавляет от создания итераторов типа it1
+         
+         // Оптимизация вектора 0
+         auto &dest_v0 = dest_array[0];
+         auto &src_v0 = a[0];
+         dest_v0.reserve(dest_v0.size() + src_v0.size()); // Выделяем память ОДИН раз
+         dest_v0.insert(dest_v0.end(), 
+                        std::make_move_iterator(src_v0.begin()), 
+                        std::make_move_iterator(src_v0.end()));
+
+         // Оптимизация вектора 1
+         auto &dest_v1 = dest_array[1];
+         auto &src_v1 = a[1];
+         dest_v1.reserve(dest_v1.size() + src_v1.size()); // Выделяем память ОДИН раз
+         dest_v1.insert(dest_v1.end(), 
+                        std::make_move_iterator(src_v1.begin()), 
+                        std::make_move_iterator(src_v1.end()));
+       }
+     }
+   }
+   prsync("time1", timeElapse(begin));
+
+   // --- ОПТИМИЗАЦИЯ ЭТАПА 2: СБОР РЕЗУЛЬТАТОВ ---
+   const size_t len = m_comboValue[COMBOBOX_HELPER0];
+   
+   // Резервируем место под результат, чтобы избежать reallocations в m_result
+   m_result.reserve(m_result.size() + map.size() / 2); 
+
+   for (auto &[_, v] : map) {
+     const auto &v0 = v[0]; // Используем const reference, так как данные только читаем
+     const auto &v1 = v[1];
+     
+     const size_t size_v0 = v0.size();
+     const size_t size_v1 = v1.size();
+     
+     if (size_v0 != 0 && size_v1 != 0) {
+       // Оптимизация условий: вычисляем только быстрые типы данных (размеры)
+       if (size_v0 == 1 && size_v1 == 1) {
+         if (v0[0] == v1[0] && v0[0].length() == len) {
+           continue;
+         }
+       }
+       
+       // Извлекаем длину один раз напрямую из строки элемента, не вызывая тяжелый v0.begin()->length()
+       // Ключ итерации '_' или любая строка из v0 имеют одну и ту же длину
+       size_t word_len = v0[0].length(); 
+       
+       // Сборка строки происходит только после того, как объект гарантированно прошел все фильтры
+       std::string s = joinV(v0) + " - " + joinV(v1);
+       m_result.emplace_back(std::move(s), word_len, size_v0 + size_v1);
+     }
+   }
+
+   prsync("time2", timeElapse(begin));
+
 }
 
 void WordsBase::findWordSequenceFull(int nthread) {
