@@ -12,8 +12,13 @@
 #include <mutex> //TODO
 #include <ranges>
 #include <unordered_map>
+#include <unordered_set>
 
 // TODO
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 std::mutex cout_mutex;
 #define prsync(...)                                                            \
   {                                                                            \
@@ -862,7 +867,7 @@ void WordsBase::findSimpleWordSequence(int nthread) {
   int i, j;
   std::string s;
   MapStringTwoStringVectors &map = m_ma[nthread];
-
+  map.clear();
   i = m_comboValue[COMBOBOX_HELPER0];
   {
     // TODO
@@ -897,6 +902,7 @@ void WordsBase::findDoubleWordSequence(int nthread) {
   int i, j;
   std::string q, s, t;
   MapStringTwoStringVectors &map = m_ma[nthread];
+  map.clear();
   i = m_comboValue[COMBOBOX_HELPER0];
   {
     //  for (i = m_comboValue[COMBOBOX_HELPER0]; i <=
@@ -947,46 +953,84 @@ void WordsBase::findDoubleWordSequence(int nthread) {
 }
 
 void WordsBase::simpleDoubleWordSequencePostProseeding() {
-  int i, j;
-  std::string s;
+  size_t i, j, l;
+  std::string s, sl, sr;
 
   auto begin = clock();
+/*
+  std::unordered_set<std::string> all_keys;
+  size_t total_size = 0;
+  for (auto &m : m_ma)
+    total_size += m.size();
+  all_keys.reserve(total_size);
 
-  MapStringTwoStringVectors &map = m_ma[0];
-  for (i = 1; i < int(m_ma.size()); i++) {
-    for (auto &[e, a] : m_ma[i]) {
-      auto it = map.find(e);
-      if (it == map.end()) {
-        map[e] = a;
-      } else {
-        auto it1 = a.begin();
-        for (auto &v : it->second) {
-          v.insert(v.end(), std::make_move_iterator(it1->begin()),
-                   std::make_move_iterator(it1->end()));
-          it1++;
+  for (const auto &m : m_ma) {
+    for (const auto &key : m | std::views::keys) {
+      all_keys.insert(key);
+    }
+  }
+
+  prsync("time1", timeElapse(begin));
+
+  const size_t len = m_comboValue[COMBOBOX_HELPER0];
+  for (auto &key : all_keys) {
+    i = j = l = 0;
+    sl = sr = "";
+    for (auto &m : m_ma) {
+      auto it = m.find(key);
+      if (it != m.end()) {
+        auto &v0 = it->second[0];
+        auto &v1 = it->second[1];
+        i += v0.size();
+        j += v1.size();
+        sl += joinV(v0);
+        sr += joinV(v1);
+        if (!l && !v0.empty()) {
+          l = v0[0].length();
         }
       }
     }
-    // TODO?      RETURN_ON_USER_BREAK
-  }
-  prsync(timeElapse(begin));
-
-  const size_t len = m_comboValue[COMBOBOX_HELPER0];
-  for (auto &[_, v] : map) {
-    auto &v0 = v[0];
-    auto &v1 = v[1];
-    i = v0.size();
-    j = v1.size();
-    if (i != 0 && j != 0) {
-      if (i == 1 && j == 1 && v0[0] == v1[0] && v0[0].length() == len) {
-        continue;
-      }
-      s = joinV(v0) + " - " + joinV(v1);
-      m_result.push_back(SearchResult(s, v0.begin()->length(), i + j));
+    if (i && j && !(i == 1 && j == 1 && l == len && sl == sr)) {
+      m_result.push_back(SearchResult(sl + " - " + sr, l, i + j));
     }
   }
+  prsync("time2", timeElapse(begin));
+  */
 
-  prsync(timeElapse(begin));
+   MapStringTwoStringVectors &map = m_ma[0];
+   for (i = 1; i < m_ma.size(); i++) {
+     for (auto &[e, a] : m_ma[i]) {
+       auto it = map.find(e);
+       if (it == map.end()) {
+         map[e] = a;
+       } else {
+         auto it1 = a.begin();
+         for (auto &v : it->second) {
+           v.insert(v.end(), std::make_move_iterator(it1->begin()),
+                    std::make_move_iterator(it1->end()));
+           it1++;
+         }
+       }
+     }
+   }
+   prsync("time1",timeElapse(begin));
+
+   const size_t len = m_comboValue[COMBOBOX_HELPER0];
+   for (auto &[_, v] : map) {
+     auto &v0 = v[0];
+     auto &v1 = v[1];
+     i = v0.size();
+     j = v1.size();
+     if (i != 0 && j != 0) {
+       if (i == 1 && j == 1 && v0[0] == v1[0] && v0[0].length() == len) {
+         continue;
+       }
+       s = joinV(v0) + " - " + joinV(v1);
+       m_result.push_back(SearchResult(s, v0.begin()->length(), i + j));
+     }
+   }
+
+   prsync("time2",timeElapse(begin));
 }
 
 void WordsBase::findWordSequenceFull(int nthread) {
