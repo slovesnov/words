@@ -119,7 +119,7 @@ public:
 
   void stopThreadAndNewRoutine();
   void stopThread();
-  //void waitThread();
+  // void waitThread();
   void startThread(bool onlysort);
 
   void updateTextView() { updateTextView(m_text, m_out); }
@@ -140,4 +140,8 @@ public:
 
   void setDebounceTimer(ENTRY_ENUM e);
   void debounceTimeout(ENTRY_ENUM e);
+
+  void setLabel(GtkWidget *w, ENUM_STRING e);
+  void setLabel(GtkWidget *w, const std::string &s);
+  bool setCheckFilterRegex();
 };

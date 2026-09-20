@@ -2220,16 +2220,6 @@ bool WordsBase::differenceOnlyOneChar(const std::string &a,
 }
 
 #ifndef NOGTK
-bool WordsBase::setCheckFilterRegex() {
-  if (m_filterText.empty()) {
-    return true;
-  }
-  // need case insensitive filter, work ok in russian only for utf8
-  auto s = localeToUtf8(m_filterText);
-  m_regex[1].reset(g_regex_new(s.c_str(), GRegexCompileFlags(G_REGEX_CASELESS),
-                               GRegexMatchFlags(0), NULL));
-  return m_regex[1] != nullptr;
-}
 
 bool WordsBase::testFilterRegex(const std::string &s) {
   return m_regex[1] == nullptr || m_filterText.empty() ||

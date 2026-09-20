@@ -112,7 +112,6 @@ protected:
   virtual bool userBreakThread() = 0;
   virtual void setMenuLabel(ENUM_MENU e, std::string const &text) = 0;
   virtual void endJobThread() = 0;
-  bool setCheckFilterRegex();
   bool testFilterRegex(const std::string &s);
 #endif
   const std::string &getAlphabet() const {

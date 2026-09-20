@@ -215,15 +215,6 @@ Frame::Frame() : WordsBase() {
   m_status = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 2);
   m_statusMessage = gtk_label_new("");
 
-  /*
-   #ifdef NDEBUG
-   s="no debug";
-   #else
-   s="debug";
-   #endif
-   gtk_label_set_text(GTK_LABEL(m_statusMessage),s.c_str());
-   */
-
   createImageCombo(COMBOBOX_SORT_ORDER);
   createImageCombo(COMBOBOX_DICTIONARY);
 
@@ -657,7 +648,7 @@ void Frame::routine() {
   startJob(true);
   if (prepare()) {
     startThread(false);
-  } else { // wrapper to call endJob() if prepare() returns false
+  } else {
     m_end = clock();
     endJob();
   }
@@ -800,9 +791,8 @@ void Frame::loadAndUpdateCurrentLanguage() {
   gtk_widget_set_sensitive(m_menuMap[MENU_RUSSIAN_LANGUAGE],
                            m_languageIndex != 1);
 
-  gtk_label_set_text(GTK_LABEL(m_searchLabel), m_language[SEARCH].c_str());
-  gtk_label_set_text(GTK_LABEL(m_currentDictionary),
-                     m_language[DICTIONARY].c_str());
+  setLabel(m_searchLabel, SEARCH);
+  setLabel(m_currentDictionary, DICTIONARY);
 
   gtk_window_set_title(GTK_WINDOW(m_widget), m_language[PROGRAM].c_str());
 
@@ -951,7 +941,7 @@ void Frame::updateTags(int n) {
   const gchar *text = gtk_entry_get_text(GTK_ENTRY(m_searchEntry));
   if (!strlen(text)) {
     // exit after remove all tags
-    gtk_label_set_text(GTK_LABEL(m_searchTagLabel), "");
+    setLabel(m_searchTagLabel, "");
     return;
   }
 
@@ -992,9 +982,8 @@ void Frame::updateTags(int n) {
     gtk_text_view_scroll_to_iter(GTK_TEXT_VIEW(m_text), &scroll, 0.0, true, .5,
                                  .5);
   }
-  gtk_label_set_text(
-      GTK_LABEL(m_searchTagLabel),
-      format("%d/%d", m_tags == 0 ? 0 : m_tagIndex + 1, m_tags).c_str());
+  setLabel(m_searchTagLabel,
+           std::format("{}/{}", m_tags == 0 ? 0 : m_tagIndex + 1, m_tags));
 }
 
 void Frame::createImageCombo(ENUM_COMBOBOX e) {
@@ -1060,7 +1049,7 @@ void Frame::startJob(bool clearResult) {
   m_addstatus = "";
   m_filteredWordsCount = 0; // need to set always because in case of error
                             // need m_filteredWordsCount = 0
-
+  setLabel(m_searchTagLabel, "");
   // For long jobs show status & view. Long jobs when whole dictionary is
   // added to m_result
   setStatus(m_language[ONE_OF(m_menuClick, MENU_WAITING) ? WAITING : SEARCH] +
@@ -1293,7 +1282,7 @@ void Frame::radioChanged(GtkWidget *w) {
 
 void Frame::setStatus(std::string const &s) {
   // add " " at the beginning for nice view
-  gtk_label_set_text(GTK_LABEL(m_statusMessage), (" " + s).c_str());
+  setLabel(m_statusMessage, " " + s);
 }
 
 void Frame::updateTextView(GtkWidget *view, std::string const &s) {
@@ -1329,4 +1318,23 @@ void Frame::debounceTimeout(ENTRY_ENUM e) {
   default:
     assert(0);
   }
+}
+
+void Frame::setLabel(GtkWidget *w, ENUM_STRING e) {
+  setLabel(w, m_language[e]);
+}
+
+void Frame::setLabel(GtkWidget *w, const std::string &s) {
+  gtk_label_set_text(GTK_LABEL(w), s.c_str());
+}
+
+bool Frame::setCheckFilterRegex() {
+  if (m_filterText.empty()) {
+    return true;
+  }
+  // need case insensitive filter, work ok in russian only for utf8
+  auto s = localeToUtf8(m_filterText);
+  m_regex[1].reset(g_regex_new(s.c_str(), GRegexCompileFlags(G_REGEX_CASELESS),
+                               GRegexMatchFlags(0), NULL));
+  return m_regex[1] != nullptr;
 }
