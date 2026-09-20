@@ -42,7 +42,7 @@ class Frame : WordsBase {
   int m_tags;
   std::jthread m_thread;
   CheckNewVersion m_newVersion;
-
+  guint m_debounce_timer_id = 0;
   gint getComboIndex(ENUM_COMBOBOX e) const {
     assert(e != COMBOBOX_SIZE);
     assert(GTK_IS_COMBO_BOX(m_combo[e]));
@@ -109,20 +109,15 @@ public:
   void setDictionary();
   void loadAndUpdateCurrentLanguage();
   void comboChanged(ENUM_COMBOBOX e);
-  void entryChanged(int entryIndex);
   void radioChanged(GtkWidget *w);
   void clickButton(GtkWidget *button);
-
-  void stopThreadAndNewRoutine() {
-    stopThread();
-    routine();
-  }
 
   virtual bool userBreakThread();
   virtual void setMenuLabel(ENUM_MENU e, std::string const &text) override;
   virtual void endJobThread() override;
   std::string getMenuLabel(ENUM_MENU e);
 
+  void stopThreadAndNewRoutine();
   void stopThread();
   void waitThread();
   void startThread(bool onlysort);
@@ -133,7 +128,7 @@ public:
 
   void setStatus(std::string const &s);
 
-  void connectEntrySignals(int index);
+  void connectEntrySignals(ENTRY_ENUM e);
   void entryFocusChanged(bool in);
   void removeAccelerators();
   void addAccelerators();
@@ -142,4 +137,7 @@ public:
 
   void refillCombo(ENUM_COMBOBOX e, ENUM_STRING first, int length);
   void newVersionMessage();
+
+  void setDebounceTimer(ENTRY_ENUM e);
+  void debounceTimeout(ENTRY_ENUM e);
 };

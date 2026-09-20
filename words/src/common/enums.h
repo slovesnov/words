@@ -217,4 +217,10 @@ enum POST_ENUM {
   POST_CHECK,
   POST_SIZE
 };
+#else
+enum ENTRY_ENUM {
+  ENTRY_TEMPLATE,
+  ENTRY_SEARCH,
+  ENTRY_FILTER
+};
 #endif

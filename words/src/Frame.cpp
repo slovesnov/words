@@ -18,6 +18,7 @@
 #include <windows.h>
 #endif
 
+#include "magic_enum.hpp" //TODO
 #include <format>
 #include <unordered_map>
 
@@ -28,9 +29,8 @@ const std::string HOMEPAGE = URL + "?words";
 const std::string HOMEPAGE_ONLINE = URL + "?words_online";
 const char markTag[] = "mark";
 const char activeTag[] = "active";
-const int SEARCH_ENTRY_ID = -1;
-const int FILTER_ENTRY_ID = -2;
 const char CERROR[] = "cerror";
+const int TIMER = 400; // milliseconds
 
 const char DOWNLOAD_URL[] =
     "http://sourceforge.net/projects/javawords/files/latest/download";
@@ -115,13 +115,13 @@ static void combo_changed(GtkComboBox *comboBox, ENUM_COMBOBOX e) {
 
 static void entry_insert(GtkWidget *entry, gchar *new_text,
                          gint new_text_length, gpointer position,
-                         int entryIndex) {
-  frame->entryChanged(entryIndex);
+                         ENTRY_ENUM e) {
+  frame->setDebounceTimer(e);
 }
 
 static void entry_delete(GtkWidget *entry, gint start_pos, gint end_pos,
-                         int entryIndex) {
-  frame->entryChanged(entryIndex);
+                         ENTRY_ENUM e) {
+  frame->setDebounceTimer(e);
 }
 
 static gboolean entry_focus_in(GtkWidget *widget, GdkEvent *event, gpointer) {
@@ -151,11 +151,17 @@ static void radio_changed(GtkWidget *radio, gpointer) {
   frame->radioChanged(radio);
 }
 
-void text_view_changed(GtkTextBuffer *buffer, gpointer) {
-  frame->stopThreadAndNewRoutine();
+static void text_view_changed(GtkTextBuffer *buffer, gpointer) {
+  // proceed same as template entry changed
+  frame->setDebounceTimer(ENTRY_TEMPLATE);
 }
 
 static void destroy_window(GtkWidget *object, gpointer) { frame->destroy(); }
+
+static gboolean on_debounce_timeout(gpointer user_data) {
+  frame->debounceTimeout(ENTRY_ENUM(GP2INT(user_data)));
+  return G_SOURCE_REMOVE;
+}
 
 static gboolean new_version_message(gpointer) {
   frame->newVersionMessage();
@@ -386,12 +392,11 @@ Frame::Frame() : WordsBase() {
 
   loadCSS();
 
-  connectEntrySignals(SEARCH_ENTRY_ID);
-  connectEntrySignals(FILTER_ENTRY_ID);
+  connectEntrySignals(ENTRY_SEARCH);
+  connectEntrySignals(ENTRY_FILTER);
 
-  for (i = 0; i < SIZEI(m_searchButton); i++) {
-    g_signal_connect(m_searchButton[i], "clicked", G_CALLBACK(button_clicked),
-                     NULL);
+  for (auto &a : m_searchButton) {
+    g_signal_connect(a, "clicked", G_CALLBACK(button_clicked), NULL);
   }
 
   g_signal_connect(m_combo[COMBOBOX_SORT_ORDER], "changed",
@@ -650,7 +655,6 @@ void Frame::aboutDialog() {
 
 void Frame::routine() {
   startJob(true);
-
   if (prepare()) {
     startThread(false);
   } else { // wrapper to call endJob() if prepare() returns false
@@ -855,7 +859,7 @@ void Frame::addEntryForTemplate() {
   gtk_container_add(GTK_CONTAINER(w), createLabel(SEARCH));
   m_entry = gtk_entry_new();
   gtk_entry_set_text(GTK_ENTRY(m_entry), localeToUtf8(getSettings(i)).c_str());
-  connectEntrySignals(0);
+  connectEntrySignals(ENTRY_TEMPLATE);
   add(w, m_entry);
   gtk_container_add(GTK_CONTAINER(m_helperUp), w);
 }
@@ -935,34 +939,20 @@ void Frame::comboChanged(ENUM_COMBOBOX e) {
   }
 }
 
-void Frame::entryChanged(int entryIndex) {
-  if (entryIndex == SEARCH_ENTRY_ID) {
-    waitThread();
-    m_tagIndex = 0;
-    updateTags();
-  } else if (entryIndex == FILTER_ENTRY_ID) {
-    if (prepare()) {
-      sortOrFilterChanged();
-    }
-  } else {
-    stopThreadAndNewRoutine();
-  }
-}
-
 void Frame::updateTags() {
   GtkTextIter first, scroll, start, end;
   gint i, j;
+
+  // remove all tags
+  GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(m_text));
+  gtk_text_buffer_get_bounds(buffer, &start, &end);
+  gtk_text_buffer_remove_all_tags(buffer, &start, &end);
   const gchar *text = gtk_entry_get_text(GTK_ENTRY(m_searchEntry));
-  if (strlen(text) == 0) {
+  if (!strlen(text)) {
+    // exit after remove all tags
     gtk_label_set_text(GTK_LABEL(m_searchTagLabel), "");
     return;
   }
-
-  GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(m_text));
-  gtk_text_buffer_get_start_iter(buffer, &start);
-  gtk_text_buffer_get_end_iter(buffer, &end);
-  gtk_text_buffer_remove_tag_by_name(buffer, markTag, &start, &end);
-  gtk_text_buffer_remove_tag_by_name(buffer, activeTag, &start, &end);
 
   VString v = split(gtk_text_iter_get_text(&start, &end), "\n");
 
@@ -1101,6 +1091,11 @@ void Frame::endJob() {
   updateTags();
 }
 
+void Frame::stopThreadAndNewRoutine() {
+  stopThread();
+  routine();
+}
+
 /**
  * if thread runs stop it
  */
@@ -1215,14 +1210,14 @@ bool Frame::prepare() {
   return true;
 }
 
-void Frame::connectEntrySignals(int index) {
+void Frame::connectEntrySignals(ENTRY_ENUM e) {
   GtkWidget *w;
-  switch (index) {
-  case SEARCH_ENTRY_ID:
+  switch (e) {
+  case ENTRY_SEARCH:
     w = m_searchEntry;
     break;
 
-  case FILTER_ENTRY_ID:
+  case ENTRY_FILTER:
     w = m_filterEntry;
     break;
 
@@ -1230,13 +1225,13 @@ void Frame::connectEntrySignals(int index) {
     w = m_entry;
   }
   g_signal_connect_after(G_OBJECT(w), "insert-text", G_CALLBACK(entry_insert),
-                         GP(index));
+                         GP(e));
   g_signal_connect_after(G_OBJECT(w), "delete-text", G_CALLBACK(entry_delete),
-                         GP(index));
+                         GP(e));
   g_signal_connect_after(G_OBJECT(w), "focus-in-event",
-                         G_CALLBACK(entry_focus_in), GP(index));
+                         G_CALLBACK(entry_focus_in), GP(e));
   g_signal_connect_after(G_OBJECT(w), "focus-out-event",
-                         G_CALLBACK(entry_focus_out), GP(index));
+                         G_CALLBACK(entry_focus_out), GP(e));
 }
 
 void Frame::entryFocusChanged(bool in) {
@@ -1323,4 +1318,36 @@ void Frame::setStatus(std::string const &s) {
 void Frame::updateTextView(GtkWidget *view, std::string const &s) {
   GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(view));
   gtk_text_buffer_set_text(buffer, s.c_str(), -1);
+}
+
+void Frame::setDebounceTimer(ENTRY_ENUM e) {
+  if (m_debounce_timer_id) {
+    g_source_remove(m_debounce_timer_id);
+  }
+  m_debounce_timer_id = g_timeout_add(TIMER, on_debounce_timeout, GP(e));
+}
+
+void Frame::debounceTimeout(ENTRY_ENUM e) {
+  // pr(magic_enum::enum_name(e));
+  m_debounce_timer_id = 0;
+  switch (e) {
+  case ENTRY_TEMPLATE:
+    stopThreadAndNewRoutine();
+    break;
+
+  case ENTRY_SEARCH:
+    waitThread(); // TODO??
+    m_tagIndex = 0;
+    updateTags();
+    break;
+
+  case ENTRY_FILTER:
+    if (prepare()) {
+      sortOrFilterChanged();
+    }
+    break;
+
+  default:
+    assert(0);
+  }
 }
