@@ -1190,7 +1190,7 @@ bool Frame::prepare() {
     g_free(raw_text);
   }
 
-  bool hasEntry = INDEX_OF(m_menuClick, TEMPLATE_MENU) != -1;
+  bool hasEntry = ONE_OF(m_menuClick, TEMPLATE_MENU);
 
   if (hasEntry) {
     // should encode to locale string at first to get valid length

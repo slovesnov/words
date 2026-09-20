@@ -123,7 +123,6 @@ protected:
   bool setCheckFilterRegex();
   bool testFilterRegex(const std::string &s);
 #endif
-
   const std::string &getAlphabet() const {
     return m_settings[getDictionaryIndex()][SETTINGS_ALPHABET];
   }
@@ -195,8 +194,6 @@ public:
     return p.find_first_not_of(pattern) == std::string_view::npos;
   }
   static bool differenceOnlyOneChar(std::string const &a, std::string const &b);
-
-  const std::string &getAlphabet() { return getSettings(SETTINGS_ALPHABET); }
 
   const char getAlphabetChar(int i) { return getAlphabet()[i]; }
 
