@@ -1,2 +1,0 @@
-invalid regular expression
-invalid modification string

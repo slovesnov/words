@@ -606,7 +606,7 @@ std::string readBinaryFileToString(const std::string &filename) {
 }
 
 void WordsBase::checkLFAllFiles() {
-  auto v = {"cgi_language", "language", "settings"};
+  auto v = { "language", "settings"};
 
   auto checkFile = [this](const std::string &filepath) {
     std::string s = readBinaryFileToString(filepath);
@@ -1933,11 +1933,7 @@ void WordsBase::loadLanguage() {
 
   assert(m_language.size() == STRING_SIZE);
 
-#ifdef NOGTK
-  for (auto &s : readFile(m_languageIndex, "cgi_language"))
-    m_cgiLanguage.push_back(localeToUtf8(s));
-  assert(m_cgiLanguage.size() == CGI_STRING_SIZE);
-#else
+#ifndef NOGTK
   m_programVersion =
       m_language[PROGRAM] + " " + m_language[VERSION] + " " + WORDS_VERSION;
 #endif
@@ -2007,7 +2003,7 @@ bool WordsBase::prepare() {
     if (!m_modifications.parse(m_entryText)) {
 #ifdef NOGTK
       printf(
-          m_cgiLanguage[CGI_STRING_ERROR_INVALID_MODIFICATION_STRING].c_str());
+          m_language[CGI_STRING_ERROR_INVALID_MODIFICATION_STRING].c_str());
 #endif
       return false;
     }

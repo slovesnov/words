@@ -77,9 +77,7 @@ protected:
   std::string m_textViewText;
   VString m_language; // utf8
   std::string m_addstatus;
-#ifdef NOGTK
-  VString m_cgiLanguage; // utf8
-#else
+#ifndef NOGTK
   std::string m_filterText; // locale
   int m_filteredWordsCount;
   std::string m_programVersion;

@@ -141,3 +141,4 @@ waiting
 cr symbol found
 Words in ascending order of length.
 Exception words.
+invalid modification string
