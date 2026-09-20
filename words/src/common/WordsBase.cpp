@@ -126,6 +126,15 @@ const std::unordered_map<ENUM_MENU, bool (WordsBase::*)(const std::string &)>
          &WordsBase::checkConsonantVowelSequence},
         {MENU_DENSITY, &WordsBase::checkDensity}};
 
+const std::unordered_map<ENUM_MENU, ENUM_SETTINGS> menu2Settings = {
+    {MENU_TEMPLATE, SETTINGS_TEMPLATE},
+    {MENU_CROSSWORD, SETTINGS_CROSSWORD},
+    {MENU_REGULAR_EXPRESSIONS, SETTINGS_REGULAR_EXPRESSIONS},
+    {MENU_MODIFICATION, SETTINGS_MODIFICATION},
+    {MENU_CHAIN, SETTINGS_CHAIN},
+    {MENU_CHARACTER_SEQUENCE, SETTINGS_CHARACTER_SEQUENCE},
+    {MENU_LETTER_GROUP_SPLIT, SETTINGS_LETTER_GROUP_SPLIT}};
+
 #ifdef NOGTK
 // use cgi project
 #include "cgi.h"
@@ -1955,7 +1964,7 @@ bool WordsBase::prepare() {
     return true;
   }
 
-  if (!isTemplateMenu()) {
+  if (!isEntryMenu()) {
     return true;
   }
 
@@ -2444,6 +2453,11 @@ void WordsBase::createRegex(SafeGRegex &r) {
 
 WordsBase::~WordsBase() {}
 
-bool WordsBase::isTemplateMenu() const {
-  return menu2Settings.find(m_menuClick) != menu2Settings.end();
+bool WordsBase::isEntryMenu() const {
+  return entryEnumString() != SETTINGS_SIZE;
+}
+
+ENUM_SETTINGS WordsBase::entryEnumString() const {
+  auto it = menu2Settings.find(m_menuClick);
+  return it == menu2Settings.end() ? SETTINGS_SIZE : it->second;
 }

@@ -849,17 +849,14 @@ GtkWidget *Frame::createTextCombo(ENUM_COMBOBOX e, ENUM_STRING from,
 }
 
 void Frame::addEntryForTemplate() {
-  auto it = menu2Settings.find(m_menuClick);
-  if (it == menu2Settings.end()) {
+  auto i = entryEnumString();
+  if (i == SETTINGS_SIZE) {
     return;
   }
-  pr(magic_enum::enum_name(m_menuClick), magic_enum::enum_name(it->second));
-
   GtkWidget *w = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 3);
   gtk_container_add(GTK_CONTAINER(w), createLabel(SEARCH));
   m_entry = gtk_entry_new();
-  gtk_entry_set_text(GTK_ENTRY(m_entry),
-                     localeToUtf8(getSettings(it->second)).c_str());
+  gtk_entry_set_text(GTK_ENTRY(m_entry), localeToUtf8(getSettings(i)).c_str());
   connectEntrySignals(0);
   add(w, m_entry);
   gtk_container_add(GTK_CONTAINER(m_helperUp), w);
@@ -1191,7 +1188,7 @@ bool Frame::prepare() {
     g_free(raw_text);
   }
 
-  bool hasEntry = isTemplateMenu();
+  bool hasEntry = isEntryMenu();
 
   if (hasEntry) {
     // should encode to locale string at first to get valid length

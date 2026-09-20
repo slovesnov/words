@@ -221,5 +221,6 @@ public:
   static std::string pairsToString(StringStringVector const &v, bool p = 0);
   void createRegex(SafeGRegex &r);
 
-  bool isTemplateMenu()const;
+  bool isEntryMenu()const;
+  ENUM_SETTINGS entryEnumString()const;
 };
