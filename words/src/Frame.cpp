@@ -115,13 +115,13 @@ static void combo_changed(GtkComboBox *comboBox, ENUM_COMBOBOX e) {
 
 static void entry_insert(GtkWidget *entry, gchar *new_text,
                          gint new_text_length, gpointer position,
-                         ENTRY_ENUM e) {
-  frame->setDebounceTimer(e);
+                         ENUM_ENTRY e) {
+  frame->entryChanged(e);
 }
 
 static void entry_delete(GtkWidget *entry, gint start_pos, gint end_pos,
-                         ENTRY_ENUM e) {
-  frame->setDebounceTimer(e);
+                         ENUM_ENTRY e) {
+  frame->entryChanged(e);
 }
 
 static gboolean entry_focus_in(GtkWidget *widget, GdkEvent *event, gpointer) {
@@ -159,7 +159,7 @@ static void text_view_changed(GtkTextBuffer *buffer, gpointer) {
 static void destroy_window(GtkWidget *object, gpointer) { frame->destroy(); }
 
 static gboolean on_debounce_timeout(gpointer user_data) {
-  frame->debounceTimeout(ENTRY_ENUM(GP2INT(user_data)));
+  frame->debounceTimeout(ENUM_ENTRY(GP2INT(user_data)));
   return G_SOURCE_REMOVE;
 }
 
@@ -647,7 +647,7 @@ void Frame::aboutDialog() {
 
 void Frame::routine() {
   startJob(true);
-  if (prepare()) {
+  if (framePrepare()) {
     startThread(true);
   } else {
     m_end = clock();
@@ -849,7 +849,8 @@ void Frame::addEntryForTemplate() {
   GtkWidget *w = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 3);
   gtk_container_add(GTK_CONTAINER(w), createLabel(SEARCH));
   m_entry[ENTRY_TEMPLATE] = gtk_entry_new();
-  gtk_entry_set_text(GTK_ENTRY(m_entry[ENTRY_TEMPLATE]), localeToUtf8(getSettings(i)).c_str());
+  gtk_entry_set_text(GTK_ENTRY(m_entry[ENTRY_TEMPLATE]),
+                     localeToUtf8(getSettings(i)).c_str());
   connectEntrySignals(ENTRY_TEMPLATE);
   add(w, m_entry[ENTRY_TEMPLATE]);
   gtk_container_add(GTK_CONTAINER(m_helperUp), w);
@@ -939,8 +940,9 @@ void Frame::updateTags(int n) {
   GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(m_text));
   gtk_text_buffer_get_bounds(buffer, &start, &end);
   gtk_text_buffer_remove_all_tags(buffer, &start, &end);
-  const gchar *text = gtk_entry_get_text(GTK_ENTRY(m_entry[ENTRY_SEARCH]));
-  if (!strlen(text)) {
+  std::string s = getEntryString(ENTRY_SEARCH, false);
+  const gchar *text = s.c_str();
+  if (s.empty()) {
     // exit after remove all tags
     setLabel(m_searchTagLabel, "");
     return;
@@ -1044,15 +1046,12 @@ void Frame::startJob(bool clearResult) {
   if (clearResult) {
     m_result.clear();
   }
-  //	printl("begin set")
   m_begin = clock();
   m_out = "";
   m_addstatus = "";
   m_filteredWordsCount = 0; // need to set always because in case of error
                             // need m_filteredWordsCount = 0
   setLabel(m_searchTagLabel, "");
-  // For long jobs show status & view. Long jobs when whole dictionary is
-  // added to m_result
   setStatus(m_language[ONE_OF(m_menuClick, MENU_WAITING) ? WAITING : SEARCH] +
             "...");
   updateTextView();
@@ -1137,13 +1136,12 @@ void Frame::updateComboValue(ENUM_COMBOBOX e) {
   m_comboValue[e] = v;
 }
 
-bool Frame::prepare() {
+bool Frame::framePrepare() {
   if (m_menuClick == MENU_MODIFICATION) {
     m_checkValue =
         gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(m_check)) == TRUE;
   }
-
-  if (m_menuClick == MENU_CHAIN) {
+  else if (m_menuClick == MENU_CHAIN) {
     GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(m_textView));
     GtkTextIter start, end;
     gtk_text_buffer_get_bounds(buffer, &start, &end);
@@ -1152,37 +1150,23 @@ bool Frame::prepare() {
     g_free(raw_text);
   }
 
-  bool hasEntry = isEntryMenu();
+  m_filterText = getEntryString(ENTRY_FILTER);
 
+  bool hasEntry = isEntryMenu();
   if (hasEntry) {
     // should encode to locale string at first to get valid length
-    m_entryText = utf8ToLocale(gtk_entry_get_text(GTK_ENTRY(m_entry[ENTRY_TEMPLATE])));
+    m_entryText = getEntryString(ENTRY_TEMPLATE);
   }
 
-  m_filterText = utf8ToLocale(gtk_entry_get_text(GTK_ENTRY(m_entry[ENTRY_FILTER])));
-  if (!setCheckFilterRegex()) {
-    addClass(m_entry[ENTRY_FILTER], CERROR); // red font
-    return false;
-  }
-
-  if (!WordsBase::prepare()) {
-    if (hasEntry) {
-      addClass(m_entry[ENTRY_TEMPLATE], CERROR); // red font
-    }
-    return false;
-  }
-
+  bool b = prepare();
   if (hasEntry) {
-    removeClass(m_entry[ENTRY_TEMPLATE], CERROR); // normal font, all valid
+    addRemoveClass(m_entry[ENTRY_TEMPLATE], CERROR, !b);
   }
-
-  removeClass(m_entry[ENTRY_FILTER], CERROR); // normal font, all valid
-
-  return true;
+  return b;
 }
 
-void Frame::connectEntrySignals(ENTRY_ENUM e) {
-  GtkWidget *w=m_entry[e];
+void Frame::connectEntrySignals(ENUM_ENTRY e) {
+  GtkWidget *w = m_entry[e];
   g_signal_connect_after(G_OBJECT(w), "insert-text", G_CALLBACK(entry_insert),
                          GP(e));
   g_signal_connect_after(G_OBJECT(w), "delete-text", G_CALLBACK(entry_delete),
@@ -1279,16 +1263,17 @@ void Frame::updateTextView(GtkWidget *view, std::string const &s) {
   gtk_text_buffer_set_text(buffer, s.c_str(), -1);
 }
 
-void Frame::setDebounceTimer(ENTRY_ENUM e) {
+void Frame::setDebounceTimer(ENUM_ENTRY e) {
   if (m_debounce_timer_id) {
     g_source_remove(m_debounce_timer_id);
   }
   m_debounce_timer_id = g_timeout_add(TIMER, on_debounce_timeout, GP(e));
 }
 
-void Frame::debounceTimeout(ENTRY_ENUM e) {
+void Frame::debounceTimeout(ENUM_ENTRY e) {
   // pr(magic_enum::enum_name(e));
   m_debounce_timer_id = 0;
+  bool b;
   switch (e) {
   case ENTRY_TEMPLATE:
     stopThreadAndNewRoutine();
@@ -1299,7 +1284,9 @@ void Frame::debounceTimeout(ENTRY_ENUM e) {
     break;
 
   case ENTRY_FILTER:
-    if (prepare()) {
+    b = setCheckFilterRegex();
+    addRemoveClass(m_entry[ENTRY_FILTER], CERROR, !b);
+    if (b) {
       sortOrFilterChanged();
     }
     break;
@@ -1318,12 +1305,24 @@ void Frame::setLabel(GtkWidget *w, const std::string &s) {
 }
 
 bool Frame::setCheckFilterRegex() {
-  if (m_filterText.empty()) {
+  auto s=getEntryString(ENTRY_FILTER,false);
+  m_filterText = utf8ToLocale(s);
+  if (s.empty()) {
     return true;
   }
   // need case insensitive filter, work ok in russian only for utf8
-  auto s = localeToUtf8(m_filterText);
   m_regex[1].reset(g_regex_new(s.c_str(), GRegexCompileFlags(G_REGEX_CASELESS),
                                GRegexMatchFlags(0), NULL));
   return m_regex[1] != nullptr;
+}
+
+std::string Frame::getEntryString(ENUM_ENTRY e, bool toLocale) const {
+  auto p = gtk_entry_get_text(GTK_ENTRY(m_entry[e]));
+  return toLocale ? utf8ToLocale(p) : p;
+}
+
+void Frame::entryChanged(ENUM_ENTRY e) {
+  bool b = framePrepare();
+  addRemoveClass(m_entry[e], CERROR, !b);
+  setDebounceTimer(e);
 }

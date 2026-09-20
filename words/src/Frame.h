@@ -91,7 +91,7 @@ public:
 
   void startJob(bool clearResult);
   void endJob();
-  bool prepare(); // return true if entry data is valid
+  bool framePrepare(); // return true if entry data is valid
 
   void routine();
   void sortFilterAndUpdateResults();
@@ -118,7 +118,7 @@ public:
   void stopThreadAndNewRoutine();
   void stopThread();
   // void waitThread();
-  void startThread(bool full);//false - only sort/filter
+  void startThread(bool full); // false - only sort/filter
 
   void updateTextView() { updateTextView(m_text, m_out); }
 
@@ -126,7 +126,7 @@ public:
 
   void setStatus(std::string const &s);
 
-  void connectEntrySignals(ENTRY_ENUM e);
+  void connectEntrySignals(ENUM_ENTRY e);
   void entryFocusChanged(bool in);
   void removeAccelerators();
   void addAccelerators();
@@ -136,10 +136,12 @@ public:
   void refillCombo(ENUM_COMBOBOX e, ENUM_STRING first, int length);
   void newVersionMessage();
 
-  void setDebounceTimer(ENTRY_ENUM e);
-  void debounceTimeout(ENTRY_ENUM e);
+  void setDebounceTimer(ENUM_ENTRY e);
+  void debounceTimeout(ENUM_ENTRY e);
 
   void setLabel(GtkWidget *w, ENUM_STRING e);
   void setLabel(GtkWidget *w, const std::string &s);
   bool setCheckFilterRegex();
+  std::string getEntryString(ENUM_ENTRY e, bool toLocale = 1) const;
+  void entryChanged(ENUM_ENTRY e);
 };

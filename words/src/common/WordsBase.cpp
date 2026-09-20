@@ -139,7 +139,7 @@ const std::unordered_map<ENUM_MENU, ENUM_SETTINGS> menu2Settings = {
 // use cgi project
 #include "cgi.h"
 
-// should match with POST_ENUM
+// should match with ENUM_POST
 const std::string POST_NAME[] = {
     "searchType", "entry",  "dictionary", "sortType", "sortOrder",
     "language",   "combo0", "combo1",     "combo2",   "check"};
@@ -2313,7 +2313,7 @@ void WordsBase::cgi() {
     }
   }
 
-  loadLanguage(); // prepare can output error message so load before
+  loadLanguage();
 
   if (!prepare()) {
     printf(" %s", getTimeString().c_str());
