@@ -951,7 +951,6 @@ void WordsBase::simpleDoubleWordSequencePostProseeding() {
   std::string s;
 
   auto begin = clock();
-  pri;
 
   MapStringTwoStringVectors &map = m_ma[0];
   for (i = 1; i < int(m_ma.size()); i++) {
@@ -970,7 +969,7 @@ void WordsBase::simpleDoubleWordSequencePostProseeding() {
     }
     // TODO?      RETURN_ON_USER_BREAK
   }
-  pr(timeElapse(begin));
+  prsync(timeElapse(begin));
 
   const size_t len = m_comboValue[COMBOBOX_HELPER0];
   for (auto &[_, v] : map) {
@@ -987,7 +986,7 @@ void WordsBase::simpleDoubleWordSequencePostProseeding() {
     }
   }
 
-  pr(timeElapse(begin));
+  prsync(timeElapse(begin));
 }
 
 void WordsBase::findWordSequenceFull(int nthread) {
