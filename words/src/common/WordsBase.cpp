@@ -876,7 +876,7 @@ void WordsBase::findSimpleWordSequence(int nthread) {
 
 void WordsBase::findDoubleWordSequence(int nthread) {
   int i, j;
-  std::string s, t, q;
+  std::string t, s, q;
   MapStringTwoStringVectors map;
   for (i = m_comboValue[COMBOBOX_HELPER0]; i <= m_comboValue[COMBOBOX_HELPER1];
        i++) {
@@ -887,17 +887,17 @@ void WordsBase::findDoubleWordSequence(int nthread) {
      for (auto &e : getDictionary()) {
 
       if (int(e.length()) >= i) {
-        s = e.substr(0, i);
+        t = e.substr(0, i);
         q = e.substr(e.length() - i);
-        if (s == q) {
+        if (t == q) {
           j = 2;
-          t = s + " " + q;
-        } else if (s < q) {
+          s = t + " " + q;
+        } else if (t < q) {
           j = 0;
-          t = s + " " + q;
+          s = t + " " + q;
         } else {
           j = 1;
-          t = q + " " + s;
+          s = q + " " + t;
         }
         auto mit = map.find(s);
         if (mit == map.end()) {
@@ -908,7 +908,7 @@ void WordsBase::findDoubleWordSequence(int nthread) {
           } else {
             v[j].push_back(e);
           }
-          map[t] = v;
+          map[s] = v;
         } else {
           if (j == 2) {
             mit->second[0].push_back(e);
