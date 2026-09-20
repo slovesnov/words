@@ -31,6 +31,9 @@ else ifeq ($(CONFIG), console)
     CXXFLAGS += -DNOGTK=0 -I$(CGI)
     SRCS     += $(CGI)/cgi.cpp
     LDFLAGS  := -liconv
+    #for gtk regex
+    #CXXFLAGS += $(shell pkg-config --cflags gtk+-3.0)
+    #LIBS     := $(shell pkg-config --libs gtk+-3.0)
 else
     $(error Invalid CONFIG="$(CONFIG)". Valid options are 'release' or 'console')
 endif

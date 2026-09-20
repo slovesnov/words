@@ -11,7 +11,12 @@
 #include <set>
 
 #ifdef NOGTK
-#define USE_STANDARD_REGEX
+//#define USE_STANDARD_REGEX
+#endif
+
+//if use gtk regex
+#if defined(NOGTK) && !defined(USE_STANDARD_REGEX)
+#include <glib.h>
 #endif
 
 using uchar = unsigned char;
