@@ -98,8 +98,8 @@ MENU_CHECK_DICTIONARY, checkDictionary
 1 MENU_DOUBLE_WORD_SEQUENCE
 0 10.509 0
 
-1192
-1061
+1192 w116 314
+1061 w764
 */
 const std::map<ENUM_MENU, bool (WordsBase::*)(const std::string &)>
     menu2BoolString = {
@@ -232,6 +232,7 @@ vector
   int threads = g_get_num_processors(); // std::hardware_concurrency();
   m_tr.resize(threads);
   m_iv.resize(threads);
+  m_ma.resize(threads);
   m_thread_result.resize(threads);
   for (i = 0; i < LANGUAGES; i++) {
     Dictionary const &d = m_dictionary[i];
@@ -750,7 +751,6 @@ void WordsBase::showLongestDoubleWordSequence() {
   std::array<int, 2> r;
   std::string s, t, q;
   MapStringTwoStringVectors map;
-  MapStringTwoStringVectorsI mit;
   for (n = 0; n < 2; n++) {
     setDictionaryIndex(n);
     for (i = m_longestWordLength[n]; i > 0; i--) {
@@ -768,7 +768,8 @@ void WordsBase::showLongestDoubleWordSequence() {
             j = 1;
             t = q + " " + s;
           }
-          if ((mit = map.find(t)) == map.end()) {
+          auto mit = map.find(t);
+          if (mit == map.end()) {
             TwoStringVectors v;
             if (j == 2) {
               v[0].push_back(e);
@@ -845,19 +846,19 @@ void WordsBase::findSimpleWordSequence(int nthread) {
   int i, j;
   std::string s;
   MapStringTwoStringVectors map;
-  MapStringTwoStringVectorsI mit;
   for (i = m_comboValue[COMBOBOX_HELPER0]; i <= m_comboValue[COMBOBOX_HELPER1];
        i++) {
     // auto z = m_it[getDictionaryIndex()];
     // for (auto it = z[nthread]; it != z[nthread + 1]; it++) {
     //   auto const &e = *it;
 
-      for(auto&e:getDictionary()){
+    for (auto &e : getDictionary()) {
 
       if (int(e.length()) >= i) {
         for (j = 0; j < 2; j++) {
           s = j ? e.substr(0, i) : e.substr(e.length() - i);
-          if ((mit = map.find(s)) == map.end()) {
+          auto mit = map.find(s);
+          if (mit == map.end()) {
             TwoStringVectors v;
             v[j].push_back(e);
             map[s] = v;
@@ -877,13 +878,14 @@ void WordsBase::findDoubleWordSequence(int nthread) {
   int i, j;
   std::string s, t, q;
   MapStringTwoStringVectors map;
-  MapStringTwoStringVectorsI mit;
   for (i = m_comboValue[COMBOBOX_HELPER0]; i <= m_comboValue[COMBOBOX_HELPER1];
        i++) {
     // auto z = m_it[getDictionaryIndex()];
     // for (auto it = z[nthread]; it != z[nthread + 1]; it++) {
     //   auto const &e = *it;
-      for(auto&e:getDictionary()){
+
+     for (auto &e : getDictionary()) {
+
       if (int(e.length()) >= i) {
         s = e.substr(0, i);
         q = e.substr(e.length() - i);
@@ -897,7 +899,8 @@ void WordsBase::findDoubleWordSequence(int nthread) {
           j = 1;
           t = q + " " + s;
         }
-        if ((mit = map.find(t)) == map.end()) {
+        auto mit = map.find(s);
+        if (mit == map.end()) {
           TwoStringVectors v;
           if (j == 2) {
             v[0].push_back(e);
@@ -1246,8 +1249,7 @@ void WordsBase::fillResultFromMap(int nthread,
         continue;
       }
       s = joinV(v0) + " - " + joinV(v1);
-      m_result.push_back(
-          SearchResult(s, v0.begin()->length(), i + j));
+      m_result.push_back(SearchResult(s, v0.begin()->length(), i + j));
     }
   }
 }
@@ -2012,9 +2014,8 @@ void WordsBase::run(bool onlysort) {
   if (!onlysort) {
     std::vector<std::jthread> workers;
     int threads = oneOf(m_menuClick, MENU_CHAIN, MENU_LETTER_GROUP_SPLIT,
-                        MENU_CHECK_DICTIONARY
-                      ,MENU_SIMPLE_WORD_SEQUENCE,MENU_DOUBLE_WORD_SEQUENCE
-                      )
+                        MENU_CHECK_DICTIONARY, MENU_SIMPLE_WORD_SEQUENCE,
+                        MENU_DOUBLE_WORD_SEQUENCE)
                       ? 1
                       : g_get_num_processors();
     prsync(threads, magic_enum::enum_name(m_menuClick));

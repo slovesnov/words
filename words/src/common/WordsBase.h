@@ -90,6 +90,7 @@ protected:
   std::vector<Dictionary::const_iterator> m_it[LANGUAGES];
   std::vector<ThreadResult> m_tr;
   std::vector<IntVector> m_iv;
+  std::vector<MapStringTwoStringVectors> m_ma;
 
   std::stop_token m_token;
 
