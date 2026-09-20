@@ -224,15 +224,16 @@ Frame::Frame() : WordsBase() {
   createTextCombo(COMBOBOX_FILTER);
 
   m_searchLabel = gtk_label_new("");
-  m_searchEntry = gtk_entry_new();
+  m_entry[ENTRY_SEARCH] = gtk_entry_new();
   m_searchTagLabel = gtk_label_new("");
+  gtk_widget_set_size_request(m_searchTagLabel, 40, -1);
   for (i = 0; i < SIZEI(m_searchButton); i++) {
     m_searchButton[i] = gtk_button_new();
     gtk_button_set_image(GTK_BUTTON(m_searchButton[i]),
                          image(i == 0 ? "down.png" : "up.png"));
   }
   m_currentDictionary = gtk_label_new("");
-  m_filterEntry = gtk_entry_new();
+  m_entry[ENTRY_FILTER] = gtk_entry_new();
 
   for (i = 0; i < int(MENU_TO_ACCEL_KEY.size()); i++) {
     m_accelGroup.push_back(gtk_accel_group_new());
@@ -254,7 +255,7 @@ Frame::Frame() : WordsBase() {
 
   w1 = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, margin);
   gtk_container_add(GTK_CONTAINER(w1), m_searchLabel);
-  add(w1, m_searchEntry); // stretch
+  add(w1, m_entry[ENTRY_SEARCH]); // stretch
   gtk_container_add(GTK_CONTAINER(w1), m_searchTagLabel);
   for (i = 0; i < SIZEI(m_searchButton); i++) {
     gtk_container_add(GTK_CONTAINER(w1), m_searchButton[i]);
@@ -265,7 +266,7 @@ Frame::Frame() : WordsBase() {
 
   w1 = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, margin);
   // gtk_container_add(GTK_CONTAINER(w1), m_filterLabel);
-  add(w1, m_filterEntry); // stretch
+  add(w1, m_entry[ENTRY_FILTER]); // stretch
   gtk_container_add(GTK_CONTAINER(w1), m_combo[COMBOBOX_FILTER]);
 
   m_filterFrame = gtk_frame_new("");
@@ -847,10 +848,10 @@ void Frame::addEntryForTemplate() {
   }
   GtkWidget *w = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 3);
   gtk_container_add(GTK_CONTAINER(w), createLabel(SEARCH));
-  m_entry = gtk_entry_new();
-  gtk_entry_set_text(GTK_ENTRY(m_entry), localeToUtf8(getSettings(i)).c_str());
+  m_entry[ENTRY_TEMPLATE] = gtk_entry_new();
+  gtk_entry_set_text(GTK_ENTRY(m_entry[ENTRY_TEMPLATE]), localeToUtf8(getSettings(i)).c_str());
   connectEntrySignals(ENTRY_TEMPLATE);
-  add(w, m_entry);
+  add(w, m_entry[ENTRY_TEMPLATE]);
   gtk_container_add(GTK_CONTAINER(m_helperUp), w);
 }
 
@@ -938,7 +939,7 @@ void Frame::updateTags(int n) {
   GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(m_text));
   gtk_text_buffer_get_bounds(buffer, &start, &end);
   gtk_text_buffer_remove_all_tags(buffer, &start, &end);
-  const gchar *text = gtk_entry_get_text(GTK_ENTRY(m_searchEntry));
+  const gchar *text = gtk_entry_get_text(GTK_ENTRY(m_entry[ENTRY_SEARCH]));
   if (!strlen(text)) {
     // exit after remove all tags
     setLabel(m_searchTagLabel, "");
@@ -1155,45 +1156,33 @@ bool Frame::prepare() {
 
   if (hasEntry) {
     // should encode to locale string at first to get valid length
-    m_entryText = utf8ToLocale(gtk_entry_get_text(GTK_ENTRY(m_entry)));
+    m_entryText = utf8ToLocale(gtk_entry_get_text(GTK_ENTRY(m_entry[ENTRY_TEMPLATE])));
   }
 
-  m_filterText = utf8ToLocale(gtk_entry_get_text(GTK_ENTRY(m_filterEntry)));
+  m_filterText = utf8ToLocale(gtk_entry_get_text(GTK_ENTRY(m_entry[ENTRY_FILTER])));
   if (!setCheckFilterRegex()) {
-    addClass(m_filterEntry, CERROR); // red font
+    addClass(m_entry[ENTRY_FILTER], CERROR); // red font
     return false;
   }
 
   if (!WordsBase::prepare()) {
     if (hasEntry) {
-      addClass(m_entry, CERROR); // red font
+      addClass(m_entry[ENTRY_TEMPLATE], CERROR); // red font
     }
     return false;
   }
 
   if (hasEntry) {
-    removeClass(m_entry, CERROR); // normal font, all valid
+    removeClass(m_entry[ENTRY_TEMPLATE], CERROR); // normal font, all valid
   }
 
-  removeClass(m_filterEntry, CERROR); // normal font, all valid
+  removeClass(m_entry[ENTRY_FILTER], CERROR); // normal font, all valid
 
   return true;
 }
 
 void Frame::connectEntrySignals(ENTRY_ENUM e) {
-  GtkWidget *w;
-  switch (e) {
-  case ENTRY_SEARCH:
-    w = m_searchEntry;
-    break;
-
-  case ENTRY_FILTER:
-    w = m_filterEntry;
-    break;
-
-  default:
-    w = m_entry;
-  }
+  GtkWidget *w=m_entry[e];
   g_signal_connect_after(G_OBJECT(w), "insert-text", G_CALLBACK(entry_insert),
                          GP(e));
   g_signal_connect_after(G_OBJECT(w), "delete-text", G_CALLBACK(entry_delete),

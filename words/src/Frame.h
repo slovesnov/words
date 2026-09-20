@@ -20,15 +20,13 @@ class Frame : WordsBase {
   GtkWidget *m_text;
   GtkWidget *m_helperUp;
   GtkWidget *m_combo[COMBOBOX_SIZE];
-  GtkWidget *m_entry;
+  GtkWidget *m_entry[ENTRY_SIZE];
   GtkWidget *m_status;
   GtkWidget *m_statusMessage;
   GtkWidget *m_searchLabel;
   GtkWidget *m_searchTagLabel;
   GtkWidget *m_searchButton[2]; // next, previous buttons
-  GtkWidget *m_searchEntry;
   GtkWidget *m_currentDictionary;
-  GtkWidget *m_filterEntry;
   GtkWidget *m_filterFrame;
   GtkWidget *m_check;
   GtkWidget *m_comboline;
