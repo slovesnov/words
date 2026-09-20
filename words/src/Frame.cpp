@@ -648,7 +648,7 @@ void Frame::aboutDialog() {
 void Frame::routine() {
   startJob(true);
   if (prepare()) {
-    startThread(false);
+    startThread(true);
   } else {
     m_end = clock();
     endJob();
@@ -1102,12 +1102,12 @@ bool Frame::userBreakThread() {
   }
 }
  */
-void Frame::startThread(bool onlysort) {
+void Frame::startThread(bool full) {
   if (!m_thread.joinable()) {
     // GCC bug #100612 so use lambda if call class member
-    m_thread = std::jthread([this, onlysort](std::stop_token token) {
+    m_thread = std::jthread([this, full](std::stop_token token) {
       m_token = token;
-      run(onlysort);
+      run(full);
     });
   } else {
     pr("error start thread joinable")
@@ -1220,7 +1220,7 @@ void Frame::addAccelerators() {
 void Frame::sortOrFilterChanged() {
   stopThread();
   startJob(false);
-  startThread(true);
+  startThread(false);
 }
 
 void Frame::refillCombo(ENUM_COMBOBOX e, ENUM_STRING first, int length) {

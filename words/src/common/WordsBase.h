@@ -139,7 +139,7 @@ public:
   WordsBase();
   ~WordsBase();
 
-  void run(bool onlysort=false);
+  void run(bool full=true);
   void run_thread(int nthread);
 
   bool checkPangram(const std::string &s);

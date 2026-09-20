@@ -118,7 +118,7 @@ public:
   void stopThreadAndNewRoutine();
   void stopThread();
   // void waitThread();
-  void startThread(bool onlysort);
+  void startThread(bool full);//false - only sort/filter
 
   void updateTextView() { updateTextView(m_text, m_out); }
 

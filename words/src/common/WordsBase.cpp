@@ -2153,9 +2153,9 @@ void WordsBase::run_thread(int nthread) {
   prsync(nthread, timeElapse(begin), m_thread_result[nthread].size());
 }
 
-void WordsBase::run(bool onlysort) {
+void WordsBase::run(bool full) {
   bool b = false;
-  if (!onlysort) {
+  if (full) {
     std::vector<std::jthread> workers;
     int threads = oneOf(m_menuClick, MENU_CHAIN, MENU_LETTER_GROUP_SPLIT,
                         MENU_CHECK_DICTIONARY)
