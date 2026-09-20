@@ -22,7 +22,7 @@
 #endif
 
 //#define USE_SET
-
+//USE_SET slow down dictionary loading and need 2x memory
 #ifdef USE_SET
 using Dictionary = StringSet;
 #else

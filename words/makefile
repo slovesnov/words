@@ -1,7 +1,6 @@
 # mingw32-make -j $(nproc)
 # mingw32-make -j$(nproc) CONFIG=console RUN=1
 # mingw32-make clean
-# cd e:/slovesno/words/words
 CONFIG ?= release
 
 # 1. Compiler and flags settings

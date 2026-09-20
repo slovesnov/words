@@ -27,7 +27,7 @@ std::mutex cout_mutex;
   std::cout << "\n";
 
 #ifdef USE_SET
-#define CONTAINS(set, s) set.contains(s)
+#define CONTAINS(v, s) v.contains(s)
 #else
 #define CONTAINS(v, s) std::ranges::binary_search(v, s)
 #endif
@@ -87,6 +87,19 @@ MENU_CHECK_DICTIONARY, checkDictionary
 ===========================
 --MENU_SIMPLE_WORD_SEQUENCE, findSimpleWordSequence
 --MENU_DOUBLE_WORD_SEQUENCE, findDoubleWordSequence
+
+1 MENU_SIMPLE_WORD_SEQUENCE
+0 9.028 0
+1 MENU_DOUBLE_WORD_SEQUENCE
+0 11.08 0
+
+1 MENU_SIMPLE_WORD_SEQUENCE
+0 9.249 0
+1 MENU_DOUBLE_WORD_SEQUENCE
+0 10.509 0
+
+1192
+1061
 */
 const std::map<ENUM_MENU, bool (WordsBase::*)(const std::string &)>
     menu2BoolString = {
@@ -835,9 +848,12 @@ void WordsBase::findSimpleWordSequence(int nthread) {
   MapStringTwoStringVectorsI mit;
   for (i = m_comboValue[COMBOBOX_HELPER0]; i <= m_comboValue[COMBOBOX_HELPER1];
        i++) {
-    auto z = m_it[getDictionaryIndex()];
-    for (auto it = z[nthread]; it != z[nthread + 1]; it++) {
-      auto const &e = *it;
+    // auto z = m_it[getDictionaryIndex()];
+    // for (auto it = z[nthread]; it != z[nthread + 1]; it++) {
+    //   auto const &e = *it;
+
+      for(auto&e:getDictionary()){
+
       if (int(e.length()) >= i) {
         for (j = 0; j < 2; j++) {
           s = j ? e.substr(0, i) : e.substr(e.length() - i);
@@ -864,9 +880,10 @@ void WordsBase::findDoubleWordSequence(int nthread) {
   MapStringTwoStringVectorsI mit;
   for (i = m_comboValue[COMBOBOX_HELPER0]; i <= m_comboValue[COMBOBOX_HELPER1];
        i++) {
-    auto z = m_it[getDictionaryIndex()];
-    for (auto it = z[nthread]; it != z[nthread + 1]; it++) {
-      auto const &e = *it;
+    // auto z = m_it[getDictionaryIndex()];
+    // for (auto it = z[nthread]; it != z[nthread + 1]; it++) {
+    //   auto const &e = *it;
+      for(auto&e:getDictionary()){
       if (int(e.length()) >= i) {
         s = e.substr(0, i);
         q = e.substr(e.length() - i);
@@ -1229,11 +1246,32 @@ void WordsBase::fillResultFromMap(int nthread,
         continue;
       }
       s = joinV(v0) + " - " + joinV(v1);
-      m_thread_result[nthread].push_back(
+      m_result.push_back(
           SearchResult(s, v0.begin()->length(), i + j));
     }
   }
 }
+
+// void WordsBase::fillResultFromMap(int nthread,
+//                                   const MapStringTwoStringVectors &map,
+//                                   size_t len) {
+//   int i, j;
+//   std::string s;
+//   for (auto &[_, v] : map) {
+//     auto &v0 = v[0];
+//     auto &v1 = v[1];
+//     i = v0.size();
+//     j = v1.size();
+//     if (i != 0 && j != 0) {
+//       if (i == 1 && j == 1 && v0[0] == v1[0] && v0[0].length() == len) {
+//         continue;
+//       }
+//       s = joinV(v0) + " - " + joinV(v1);
+//       m_thread_result[nthread].push_back(
+//           SearchResult(s, v0.begin()->length(), i + j));
+//     }
+//   }
+// }
 
 std::string WordsBase::getTwoDictionariesPath(bool translit) {
   return getResourcePath(LNG[0] + LNG[1] + "_" +
@@ -1974,7 +2012,9 @@ void WordsBase::run(bool onlysort) {
   if (!onlysort) {
     std::vector<std::jthread> workers;
     int threads = oneOf(m_menuClick, MENU_CHAIN, MENU_LETTER_GROUP_SPLIT,
-                        MENU_CHECK_DICTIONARY)
+                        MENU_CHECK_DICTIONARY
+                      ,MENU_SIMPLE_WORD_SEQUENCE,MENU_DOUBLE_WORD_SEQUENCE
+                      )
                       ? 1
                       : g_get_num_processors();
     prsync(threads, magic_enum::enum_name(m_menuClick));
