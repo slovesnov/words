@@ -939,9 +939,10 @@ void Frame::comboChanged(ENUM_COMBOBOX e) {
   }
 }
 
-void Frame::updateTags() {
+void Frame::updateTags(int n) {
   GtkTextIter first, scroll, start, end;
   gint i, j;
+  m_tagIndex = n;
 
   // remove all tags
   GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(m_text));
@@ -1016,27 +1017,11 @@ void Frame::createImageCombo(ENUM_COMBOBOX e) {
 }
 
 void Frame::clickButton(GtkWidget *button) {
-  waitThread();
-  if (m_tags == 0 || m_tags == 1) {
+  if (m_tags < 2) {
     return;
   }
-
-  int i;
-  for (i = 0; i < SIZEI(m_searchButton); i++) {
-    if (button == m_searchButton[i]) {
-      break;
-    }
-  }
-  assert(i != SIZEI(m_searchButton));
-
-  if (i == 0) {
-    m_tagIndex++;
-  } else {
-    m_tagIndex += m_tags - 1;
-  }
-
-  m_tagIndex %= m_tags;
-  updateTags();
+  int i = m_tagIndex + (button == m_searchButton[1] ? m_tags - 1 : 1);
+  updateTags(i % m_tags);
 }
 
 void Frame::setMenuLabel(ENUM_MENU e, std::string const &text) {
@@ -1087,8 +1072,7 @@ void Frame::endJob() {
   setStatus(getStatusString());
   updateTextView();
   // update tags if user searched something
-  m_tagIndex = 0;
-  updateTags();
+  updateTags(0);
 }
 
 void Frame::stopThreadAndNewRoutine() {
@@ -1120,17 +1104,14 @@ bool Frame::userBreakThread() {
   }
 }
 
-/**
- * if thread is run, wait while finish
- */
-void Frame::waitThread() {
+/* void Frame::waitThread() {
   if (m_thread.joinable()) {
     m_thread.join();
     // update status & GtkTextBuffer
     endJob();
   }
 }
-
+ */
 void Frame::startThread(bool onlysort) {
   if (!m_thread.joinable()) {
     // GCC bug #100612 so use lambda if call class member
@@ -1139,7 +1120,7 @@ void Frame::startThread(bool onlysort) {
       run(onlysort);
     });
   } else {
-    pr("strange--")
+    pr("error start thread joinable")
   }
 }
 
@@ -1336,9 +1317,7 @@ void Frame::debounceTimeout(ENTRY_ENUM e) {
     break;
 
   case ENTRY_SEARCH:
-    waitThread(); // TODO??
-    m_tagIndex = 0;
-    updateTags();
+    updateTags(0);
     break;
 
   case ENTRY_FILTER:

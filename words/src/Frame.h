@@ -72,7 +72,7 @@ class Frame : WordsBase {
   void addComboToHelper(ENUM_STRING from, ENUM_STRING to, int active,
                         ENUM_COMBOBOX comboboxId = COMBOBOX_HELPER0);
 
-  void updateTags();
+  void updateTags(int n);
 
   /*make non static because other createLabel() functions is not static*/
   GtkWidget *createLabel(std::string s) { return gtk_label_new(s.c_str()); }
@@ -119,7 +119,7 @@ public:
 
   void stopThreadAndNewRoutine();
   void stopThread();
-  void waitThread();
+  //void waitThread();
   void startThread(bool onlysort);
 
   void updateTextView() { updateTextView(m_text, m_out); }
