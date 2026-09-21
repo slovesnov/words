@@ -1302,7 +1302,7 @@ std::string WordsBase::getTwoDictionariesPath(bool translit) {
                          (translit ? "translit" : "simple") + ".txt");
 }
 
-void WordsBase::twoDictionaries(int nthread, DictionaryCI , DictionaryCI ,
+void WordsBase::twoDictionaries(int nthread, DictionaryCI, DictionaryCI,
                                 bool translit) {
   VVString to;
   int i, j, m, l, len, n, fromIndex = -1;
@@ -1986,11 +1986,11 @@ std::pair<DictionaryCI, DictionaryCI> WordsBase::iterators(int lng,
 void WordsBase::run_thread(int nthread) {
   auto begin = clock();
   m_thread_result[nthread].clear();
+  auto [it2, end] = iterators(getDictionaryIndex(), nthread);
 
   auto it = menu2VoidInt.find(m_menuClick);
   if (it != menu2VoidInt.end()) {
     auto f = it->second;
-    auto [it2, end] = iterators(getDictionaryIndex(), nthread);
     // call inside funcntion     twoDictionaries=fromindex, keyboardWords=0
     (this->*f)(nthread, it2, end);
   }
@@ -1998,7 +1998,6 @@ void WordsBase::run_thread(int nthread) {
   auto it1 = menu2BoolString.find(m_menuClick);
   if (it1 != menu2BoolString.end()) {
     auto f = it1->second;
-    auto [it2, end] = iterators(getDictionaryIndex(), nthread);
     if (m_menuClick == MENU_REGULAR_EXPRESSIONS) {
       SafeGRegex r; // have to create separate regex, for every thread otherwise
       // very slow
