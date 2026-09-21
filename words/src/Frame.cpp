@@ -780,11 +780,10 @@ void Frame::sortFilterAndUpdateResults() {
 
 void Frame::loadAndUpdateCurrentLanguage() {
   m_language = m_languageAll[m_languageIndex]; // TODO
+  printlo(m_languageIndex)
   std::string s;
-  int n = m_languageIndex;
-  auto v = readFile(n, "language");
   int i = -1;
-  for(auto&a:m_menuAll[n]){
+  for(auto&a:m_menuAll[m_languageIndex]){
     i++;
     setMenuLabel(ENUM_MENU(i), a);
   }
@@ -853,6 +852,7 @@ void Frame::addEntryForTemplate() {
   m_entry[ENTRY_TEMPLATE] = gtk_entry_new();
   gtk_entry_set_text(GTK_ENTRY(m_entry[ENTRY_TEMPLATE]),
                      m_language[i].c_str());
+   printlo(i,m_language[i],m_languageAll[0][i],m_languageAll[1][i])
   connectEntrySignals(ENTRY_TEMPLATE);
   add(w, m_entry[ENTRY_TEMPLATE]);
   gtk_container_add(GTK_CONTAINER(m_helperUp), w);
@@ -1379,7 +1379,6 @@ void Frame::updateTags(int n) {
   }
   setLabel(m_searchTagLabel,
            std::format("{}/{}", m_tags == 0 ? 0 : m_tagIndex + 1, m_tags));
-  pr(m_tags, m_found_tags.size())
 }
 
 GtkTextBuffer *Frame::tvBuffer(ENUM_TEXTVIEW e) const {
