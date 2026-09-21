@@ -1,5 +1,5 @@
 4.5.0 ??
-russian dictionary now contains 2,415,399 words (previously 445,342)
+russian dictionary now contains 2,415,401 words (previously 445,342)
 english dictionary now contains 393,167 words (previously 134,511)
 added a list of exceptions for string chain searches
 added a list of words sorted by length in ascending order (the word menu is sorted by descending frequency and ascending length)
@@ -19,7 +19,7 @@ changed line endings in all text files from CRLF to LF
 added replacement of 'ё' with 'е' (russian characters)
 
 [ru]
-русский словарь содержит 2,415,399 слов, раньше было 445,342
+русский словарь содержит 2,415,401 слово, раньше было 445,342
 английcкий словарь содержит 393,167 слов, раньше было 134,511
 добавлен список исключений при поиске цепочек
 добавлен список слов по возрастанию длины (меню cлова по убыванию частоты и возрастанию длины)

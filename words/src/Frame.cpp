@@ -1097,8 +1097,6 @@ bool Frame::framePrepare() {
     g_free(raw_text);
   }
 
-  setFilterText();
-
   bool hasEntry = isEntryMenu();
   if (hasEntry) {
     // should encode to locale string at first to get valid length
@@ -1231,7 +1229,7 @@ void Frame::debounceTimeout(ENUM_ENTRY e) {
     break;
 
   case ENTRY_FILTER:
-    b = setCheckFilterRegex();
+    b = createEntryRegex();
     addRemoveClass(m_entry[ENTRY_FILTER], CERROR, !b);
     if (b) {
       sortOrFilterChanged();
@@ -1249,18 +1247,6 @@ void Frame::setLabel(GtkWidget *w, ENUM_STRING e) {
 
 void Frame::setLabel(GtkWidget *w, const std::string &s) {
   gtk_label_set_text(GTK_LABEL(w), s.c_str());
-}
-
-bool Frame::setCheckFilterRegex() {
-  setFilterText();
-  if (m_filterText.empty()) {
-    return true;
-  }
-  return createRegex(m_regex[1], false);
-}
-
-void Frame::setFilterText() {
-  m_filterText = getEntryString(ENTRY_FILTER, false);
 }
 
 std::string Frame::getEntryString(ENUM_ENTRY e, bool toLocale) const {

@@ -184,7 +184,7 @@ WordsBase::WordsBase() {
 
 #ifndef USE_SET
   int k;
-  const int DICTIONARY_SIZE[] = {393'167, 2'415'399};
+  const int DICTIONARY_SIZE[] = {393'167, 2'415'401};
 #endif
   for (i = 0; i < LANGUAGES; i++) {
 #ifndef USE_SET
@@ -231,6 +231,10 @@ vector
 #ifdef USE_SET
       hint = m_dictionary[i].insert(hint, std::move(line));
 #else
+      if (k == DICTIONARY_SIZE[i]) {
+        pr("error invalid dictionary size (file bigger)");
+        exit(1);
+      }
       m_dictionary[i][k++] = std::move(line);
 #endif
     }
@@ -241,7 +245,8 @@ vector
 #else
     // pr(i, timeElapse(begin), k, DICTIONARY_SIZE[i]);
     if (k != DICTIONARY_SIZE[i]) {
-      pr("error invalid dictionary size")
+      pr("error invalid dictionary size after");
+      exit(1);
     }
 #endif
   }
@@ -2206,7 +2211,7 @@ bool WordsBase::differenceOnlyOneChar(const std::string &a,
 
 #ifndef NOGTK
 bool WordsBase::testFilterRegex(const std::string &s) {
-  return m_regex[1] == nullptr || m_filterText.empty() ||
+  return !m_regex[1] ||
          g_regex_match(m_regex[1].get(), s.c_str(), GRegexMatchFlags(0), NULL);
 }
 #endif
@@ -2417,11 +2422,28 @@ int WordsBase::getDictionaryIndex() const {
   return m_comboValue[COMBOBOX_DICTIONARY];
 }
 
-//should be in utf-8
-bool WordsBase::createRegex(SafeGRegex &r, bool fromEntryText) {
-  auto &s = fromEntryText ? m_entryText : m_filterText;
+std::string WordsBase::getEntryString(ENUM_ENTRY e, bool toLocale) const {
+  // todo in cgi mode
+  return "";
+}
+
+bool WordsBase::createEntryRegex() {
+  auto s = getEntryString(ENTRY_FILTER, false);
+  if (s.empty()) {
+    m_regex[1].reset(nullptr); // set nullptr for testFilterRegex()
+    return true;
+  }
+  return createRegex(m_regex[1], ENTRY_FILTER);
+}
+
+// should be in utf-8, but now for ENTRY_TEMPLATE local, ENTRY_FILTER -utf8
+bool WordsBase::createRegex(SafeGRegex &r, ENUM_ENTRY e) {
   GRegexCompileFlags f =
-      GRegexCompileFlags(fromEntryText ? G_REGEX_RAW | G_REGEX_CASELESS |G_REGEX_OPTIMIZE | G_REGEX_NO_AUTO_CAPTURE: G_REGEX_OPTIMIZE | G_REGEX_NO_AUTO_CAPTURE);
+      (GRegexCompileFlags)(G_REGEX_OPTIMIZE | G_REGEX_NO_AUTO_CAPTURE);
+  if (e == ENTRY_TEMPLATE) {
+    f = (GRegexCompileFlags)(f | G_REGEX_RAW /*| G_REGEX_CASELESS*/);
+  }
+  auto s = getEntryString(e, e == ENTRY_TEMPLATE);
   r.reset(g_regex_new(s.c_str(), f, GRegexMatchFlags(0), NULL));
   return r.get() != nullptr;
 }

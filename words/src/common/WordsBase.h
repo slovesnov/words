@@ -78,7 +78,6 @@ protected:
   VString m_language;         // utf8
   std::string m_addstatus;
 #ifndef NOGTK
-  std::string m_filterText; // utf8
   int m_filteredWordsCount;
   std::string m_programVersion;
 #endif
@@ -216,7 +215,10 @@ public:
   static StringStringVector
   getAllPairs(std::string const &s, std::string const &low = invalidDifference);
   static std::string pairsToString(StringStringVector const &v, bool p = 0);
-  bool createRegex(SafeGRegex &r, bool fromEntryText = true);
+  virtual std::string getEntryString(ENUM_ENTRY e, bool toLocale = true) const;
+
+  bool createEntryRegex();
+  bool createRegex(SafeGRegex &r, ENUM_ENTRY e = ENTRY_TEMPLATE);
 
   bool isEntryMenu() const;
   ENUM_SETTINGS entryEnumString() const;
