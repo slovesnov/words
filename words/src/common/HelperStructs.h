@@ -19,6 +19,8 @@
 #include <glib.h>
 #endif
 
+using Dictionary = VString;
+using DictionaryCI=Dictionary::const_iterator;
 using uchar = unsigned char;
 using TwoStringVectors = std::array<VString, 2>;
 

@@ -21,8 +21,6 @@
 #include <regex>
 #endif
 
-using Dictionary = VString;
-
 const char SEPARATOR[] = "SEPARATOR";
 constexpr std::string LANGUAGE[] = {"english", "russian"};
 constexpr int LANGUAGES = SIZEI(LANGUAGE);
@@ -35,7 +33,6 @@ class WordsBase {
   // prepare addons before search;
   void setKeyboardOneRow();
   void setKeyboardRowDiagonals();
-
 protected:
   Dictionary m_dictionary[LANGUAGES],m_dictionaryRuUtf8;
   VString m_settings[LANGUAGES]; // m_settings[i] see ENUM_SETTINGS
@@ -75,7 +72,6 @@ protected:
   int m_filteredWordsCount;
   std::string m_programVersion;
 #endif
-  std::vector<Dictionary::const_iterator> m_it[LANGUAGES];
   ThreadResultVector m_tr;
   std::vector<IntVector> m_iv;
   std::vector<MapStringTwoStringVectors> m_ma;
@@ -134,6 +130,7 @@ public:
 
   void run(bool full = true);
   void run_thread(int nthread);
+  std::pair<DictionaryCI,DictionaryCI> iterators(int lng, int nthread);
 
   bool checkPangram(const std::string &s);
   bool checkTemplate(const std::string &s);
@@ -150,20 +147,20 @@ public:
   bool checkKeyboardWordSimple(const std::string &s);
   bool checkKeyboardWordComplex(const std::string &s);
 
-  void findAnagram(int nthread);
-  void findSimpleWordSequence(int nthread);
-  void findDoubleWordSequence(int nthread);
-  void findWordSequenceFull(int nthread);
-  void findModification(int nthread);
-  void findChain(int nthread);
-  void findLetterGroupSplit(int nthread);
-  void twoDictionariesSimple(int nthread) { twoDictionaries(nthread, false); }
-  void twoDictionariesTranslit(int nthread) { twoDictionaries(nthread, true); }
-  void keyboardWords(int nthread);
-  void dictionaryStatistics(int nthread);
-  void wordFrequency(int nthread);
-  void checkDictionary(int nthread);
-  void twoCharactersDistribution(int nthread);
+  void findAnagram(int nthread,DictionaryCI it,DictionaryCI end);
+  void findSimpleWordSequence(int nthread,DictionaryCI it,DictionaryCI end);
+  void findDoubleWordSequence(int nthread,DictionaryCI it,DictionaryCI end);
+  void findWordSequenceFull(int nthread,DictionaryCI it,DictionaryCI end);
+  void findModification(int nthread,DictionaryCI it,DictionaryCI end);
+  void findChain(int nthread,DictionaryCI it,DictionaryCI end);
+  void findLetterGroupSplit(int nthread,DictionaryCI it,DictionaryCI end);
+  void twoDictionariesSimple(int nthread,DictionaryCI it,DictionaryCI end) { twoDictionaries(nthread,it,end, false); }
+  void twoDictionariesTranslit(int nthread,DictionaryCI it,DictionaryCI end) { twoDictionaries(nthread,it,end, true); }
+  void keyboardWords(int nthread,DictionaryCI it,DictionaryCI end);
+  void dictionaryStatistics(int nthread,DictionaryCI it,DictionaryCI end);
+  void wordFrequency(int nthread,DictionaryCI it,DictionaryCI end);
+  void checkDictionary(int nthread,DictionaryCI it,DictionaryCI end);
+  void twoCharactersDistribution(int nthread,DictionaryCI it,DictionaryCI end);
 
   void dictionaryStatisticsPostProseeding();
   void wordFrequencyPostProseeding();
@@ -171,7 +168,7 @@ public:
   void simpleDoubleWordSequencePostProseeding();
 
   static std::string getTwoDictionariesPath(bool translit);
-  void twoDictionaries(int nthread, bool translit);
+  void twoDictionaries(int nthread,DictionaryCI it,DictionaryCI end, bool translit);
 
   static int differentChars(std::string_view s);
   static bool spanIncluding(std::string_view p, std::string_view pattern) {

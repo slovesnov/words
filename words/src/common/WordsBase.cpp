@@ -45,34 +45,36 @@ std::mutex cout_mutex;
 std::string LNG[LANGUAGES];
 std::vector<MapStringStringVector> eqmap;
 
-const std::unordered_map<ENUM_MENU, void (WordsBase::*)(int)> menu2VoidInt = {
-    {MENU_ANAGRAM, &WordsBase::findAnagram}, // break implemented
-    {MENU_SIMPLE_WORD_SEQUENCE,
-     &WordsBase::findSimpleWordSequence}, // break implemented
-    {MENU_DOUBLE_WORD_SEQUENCE,
-     &WordsBase::findDoubleWordSequence}, // break implemented
-    {MENU_WORD_SEQUENCE_FULL,
-     &WordsBase::findWordSequenceFull},                // not implemented
-    {MENU_MODIFICATION, &WordsBase::findModification}, // break implemented
-    {MENU_CHAIN, &WordsBase::findChain},               // not implemented
-    {MENU_LETTER_GROUP_SPLIT,
-     &WordsBase::findLetterGroupSplit}, // not implemented
-    {MENU_TWO_DICTIONARIES_SIMPLE,
-     &WordsBase::twoDictionariesSimple}, // break implemented
-    {MENU_TWO_DICTIONARIES_TRANSLIT,
-     &WordsBase::twoDictionariesTranslit}, // break implemented
-    {MENU_TWO_DICTIONARIES_KEYBOARD_WORD,
-     &WordsBase::keyboardWords}, // not implemented
-    {MENU_DICTIONARY_STATISTICS,
-     &WordsBase::dictionaryStatistics},                   // not implemented
-    {MENU_WORD_FREQUENCY, &WordsBase::wordFrequency},     // not implemented
-    {MENU_CHECK_DICTIONARY, &WordsBase::checkDictionary}, // not implemented
-    {MENU_TWO_CHARACTERS_DISTRIBUTION,
-     &WordsBase::twoCharactersDistribution}, // not implemented
-    {MENU_TWO_CHARACTERS_DISTRIBUTION_START,
-     &WordsBase::twoCharactersDistribution}, // not implemented
-    {MENU_TWO_CHARACTERS_DISTRIBUTION_END,
-     &WordsBase::twoCharactersDistribution} // not implemented
+const std::unordered_map<ENUM_MENU,
+                         void (WordsBase::*)(int, DictionaryCI, DictionaryCI)>
+    menu2VoidInt = {
+        {MENU_ANAGRAM, &WordsBase::findAnagram}, // break implemented
+        {MENU_SIMPLE_WORD_SEQUENCE,
+         &WordsBase::findSimpleWordSequence}, // break implemented
+        {MENU_DOUBLE_WORD_SEQUENCE,
+         &WordsBase::findDoubleWordSequence}, // break implemented
+        {MENU_WORD_SEQUENCE_FULL,
+         &WordsBase::findWordSequenceFull},                // not implemented
+        {MENU_MODIFICATION, &WordsBase::findModification}, // break implemented
+        {MENU_CHAIN, &WordsBase::findChain},               // not implemented
+        {MENU_LETTER_GROUP_SPLIT,
+         &WordsBase::findLetterGroupSplit}, // not implemented
+        {MENU_TWO_DICTIONARIES_SIMPLE,
+         &WordsBase::twoDictionariesSimple}, // break implemented
+        {MENU_TWO_DICTIONARIES_TRANSLIT,
+         &WordsBase::twoDictionariesTranslit}, // break implemented
+        {MENU_TWO_DICTIONARIES_KEYBOARD_WORD,
+         &WordsBase::keyboardWords}, // not implemented
+        {MENU_DICTIONARY_STATISTICS,
+         &WordsBase::dictionaryStatistics},                   // not implemented
+        {MENU_WORD_FREQUENCY, &WordsBase::wordFrequency},     // not implemented
+        {MENU_CHECK_DICTIONARY, &WordsBase::checkDictionary}, // not implemented
+        {MENU_TWO_CHARACTERS_DISTRIBUTION,
+         &WordsBase::twoCharactersDistribution}, // not implemented
+        {MENU_TWO_CHARACTERS_DISTRIBUTION_START,
+         &WordsBase::twoCharactersDistribution}, // not implemented
+        {MENU_TWO_CHARACTERS_DISTRIBUTION_END,
+         &WordsBase::twoCharactersDistribution} // not implemented
 };
 /*
 MENU_CHAIN, findChain
@@ -227,23 +229,6 @@ WordsBase::WordsBase() {
   m_iv.resize(threads);
   m_ma.resize(threads);
   m_thread_result.resize(threads);
-  for (i = 0; i < LANGUAGES; i++) {
-    Dictionary const &d = m_dictionary[i];
-    size_t total_size = d.size();
-    size_t chunk_size = total_size / threads;
-    size_t remainder = total_size % threads;
-    auto current_it = d.begin();
-
-    for (j = 0; j < threads; ++j) {
-      size_t current_chunk = chunk_size + (j == threads - 1 ? remainder : 0);
-      if (current_chunk == 0)
-        break;
-
-      m_it[i].push_back(current_it);
-      current_it = std::next(current_it, current_chunk);
-    }
-    m_it[i].push_back(current_it);
-  }
 
   // test();
 #ifdef NOGTK
@@ -794,7 +779,7 @@ void WordsBase::showLongestDoubleWordSequence() {
 }
 #endif
 
-void WordsBase::findAnagram(int nthread) {
+void WordsBase::findAnagram(int nthread, DictionaryCI it, DictionaryCI end) {
   int i;
   std::string s;
   // can use string or string_view
@@ -806,9 +791,9 @@ void WordsBase::findAnagram(int nthread) {
   const int max = m_comboValue[COMBOBOX_HELPER1];
 
   // at first make several sets by length is slower
+
   for (i = min; i <= max; i++) {
-    auto z = m_it[getDictionaryIndex()];
-    for (auto it = z[nthread]; it != z[nthread + 1]; it++) {
+    for (; it != end; it++) {
       auto const &e = *it;
       if (int(e.length()) != i) {
         continue;
@@ -835,7 +820,8 @@ void WordsBase::findAnagram(int nthread) {
   }
 }
 
-void WordsBase::findSimpleWordSequence(int nthread) {
+void WordsBase::findSimpleWordSequence(int nthread, DictionaryCI it,
+                                       DictionaryCI end) {
   int i, j;
   std::string s;
   MapStringTwoStringVectors &map = m_ma[nthread];
@@ -846,8 +832,7 @@ void WordsBase::findSimpleWordSequence(int nthread) {
     // for (i = m_comboValue[COMBOBOX_HELPER0]; i <=
     // m_comboValue[COMBOBOX_HELPER1];
     //      i++) {
-    auto z = m_it[getDictionaryIndex()];
-    for (auto it = z[nthread]; it != z[nthread + 1]; it++) {
+    for (; it != end; it++) {
       auto const &e = *it;
       if (int(e.length()) >= i) {
         for (j = 0; j < 2; j++) {
@@ -867,7 +852,8 @@ void WordsBase::findSimpleWordSequence(int nthread) {
   }
 }
 
-void WordsBase::findDoubleWordSequence(int nthread) {
+void WordsBase::findDoubleWordSequence(int nthread, DictionaryCI it,
+                                       DictionaryCI end) {
   int i, j;
   std::string q, s, t;
   MapStringTwoStringVectors &map = m_ma[nthread];
@@ -877,8 +863,8 @@ void WordsBase::findDoubleWordSequence(int nthread) {
     //  for (i = m_comboValue[COMBOBOX_HELPER0]; i <=
     //  m_comboValue[COMBOBOX_HELPER1];
     //      i++) {
-    auto z = m_it[getDictionaryIndex()];
-    for (auto it = z[nthread]; it != z[nthread + 1]; it++) {
+    for (; it != end; it++) {
+
       auto const &e = *it;
       if (int(e.length()) >= i) {
         t = e.substr(0, i);
@@ -920,84 +906,6 @@ void WordsBase::findDoubleWordSequence(int nthread) {
 void WordsBase::simpleDoubleWordSequencePostProseeding() {
 
   auto begin = clock();
-  /*
-    size_t i, j, l;
-    std::string s, sl, sr;
-    std::unordered_set<std::string> all_keys;
-    size_t total_size = 0;
-    for (auto &m : m_ma)
-      total_size += m.size();
-    all_keys.reserve(total_size);
-
-    for (const auto &m : m_ma) {
-      for (const auto &key : m | std::views::keys) {
-        all_keys.insert(key);
-      }
-    }
-
-    prsync("time1", timeElapse(begin));
-
-    const size_t len = m_comboValue[COMBOBOX_HELPER0];
-    for (auto &key : all_keys) {
-      i = j = l = 0;
-      sl = sr = "";
-      for (auto &m : m_ma) {
-        auto it = m.find(key);
-        if (it != m.end()) {
-          auto &v0 = it->second[0];
-          auto &v1 = it->second[1];
-          i += v0.size();
-          j += v1.size();
-          sl += joinV(v0);
-          sr += joinV(v1);
-          if (!l && !v0.empty()) {
-            l = v0[0].length();
-          }
-        }
-      }
-      if (i && j && !(i == 1 && j == 1 && l == len && sl == sr)) {
-        m_result.push_back(SearchResult(sl + " - " + sr, l, i + j));
-      }
-    }
-    prsync("time2", timeElapse(begin));
-    */
-  /*
-     MapStringTwoStringVectors &map = m_ma[0];
-     for (i = 1; i < m_ma.size(); i++) {
-       for (auto &[e, a] : m_ma[i]) {
-         auto it = map.find(e);
-         if (it == map.end()) {
-           map[e] = a;
-         } else {
-           auto it1 = a.begin();
-           for (auto &v : it->second) {
-             v.insert(v.end(), std::make_move_iterator(it1->begin()),
-                      std::make_move_iterator(it1->end()));
-             it1++;
-           }
-         }
-       }
-     }
-     prsync("time1",timeElapse(begin));
-
-     const size_t len = m_comboValue[COMBOBOX_HELPER0];
-     for (auto &[_, v] : map) {
-       auto &v0 = v[0];
-       auto &v1 = v[1];
-       i = v0.size();
-       j = v1.size();
-       if (i != 0 && j != 0) {
-         if (i == 1 && j == 1 && v0[0] == v1[0] && v0[0].length() == len) {
-           continue;
-         }
-         s = joinV(v0) + " - " + joinV(v1);
-         m_result.push_back(SearchResult(s, v0.begin()->length(), i + j));
-       }
-     }
-
-     prsync("time2",timeElapse(begin));*/
-
-  // --- ОПТИМИЗАЦИЯ ЭТАПА 1: СЛИЯНИЕ МАП ---
   MapStringTwoStringVectors &map = m_ma[0];
 
   for (size_t i = 1; i < m_ma.size(); i++) {
@@ -1068,10 +976,10 @@ void WordsBase::simpleDoubleWordSequencePostProseeding() {
   prsync("time2", timeElapse(begin));
 }
 
-void WordsBase::findWordSequenceFull(int nthread) {
+void WordsBase::findWordSequenceFull(int nthread, DictionaryCI it,
+                                     DictionaryCI end) {
   std::string s;
-  auto z = m_it[getDictionaryIndex()];
-  for (auto it = z[nthread]; it != z[nthread + 1]; it++) {
+  for (; it != end; it++) {
     auto const &e = *it;
     if (checkPalindrome(e)) {
       continue;
@@ -1085,10 +993,10 @@ void WordsBase::findWordSequenceFull(int nthread) {
   }
 }
 
-void WordsBase::findModification(int nthread) {
+void WordsBase::findModification(int nthread, DictionaryCI it,
+                                 DictionaryCI end) {
   std::string s;
-  auto z = m_it[getDictionaryIndex()];
-  for (auto it = z[nthread]; it != z[nthread + 1]; it++) {
+  for (; it != end; it++) {
     auto const &e = *it;
     s = m_modifications.apply(e, m_checkValue);
     if (!s.empty() && s != e && CONTAINS(getDictionary(), s)) {
@@ -1099,7 +1007,7 @@ void WordsBase::findModification(int nthread) {
   }
 }
 
-void WordsBase::findChain(int nthread) {
+void WordsBase::findChain(int nthread, DictionaryCI it, DictionaryCI end) {
   int i, j, k, l, n, mx[2];
   MapStringInt dl;
   VString v, w[2];
@@ -1332,7 +1240,8 @@ l210:
   // pr(timeElapse(begin))
 }
 
-void WordsBase::findLetterGroupSplit(int nthread) {
+void WordsBase::findLetterGroupSplit(int nthread, DictionaryCI it,
+                                     DictionaryCI end) {
   std::string s, s1, t, lng;
   size_t i, j;
   auto charset = getOrderedString(m_entryText);
@@ -1398,7 +1307,8 @@ std::string WordsBase::getTwoDictionariesPath(bool translit) {
                          (translit ? "translit" : "simple") + ".txt");
 }
 
-void WordsBase::twoDictionaries(int nthread, bool translit) {
+void WordsBase::twoDictionaries(int nthread, DictionaryCI , DictionaryCI ,
+                                bool translit) {
   VVString to;
   int i, j, m, l, len, n, fromIndex = -1;
   std::string s, alphabetFrom;
@@ -1428,13 +1338,13 @@ void WordsBase::twoDictionaries(int nthread, bool translit) {
     }
   }
 
-  Dictionary const &dt = m_dictionary[fromIndex == 1 ? 0 : 1];
+  Dictionary const &dt = m_dictionary[!fromIndex];
   i = m_longestWordLength[fromIndex];
   VVString k(i);
   IntVector id(i);
 
-  auto z = m_it[fromIndex];
-  for (auto it = z[nthread]; it != z[nthread + 1]; it++) {
+  auto [it, end] = iterators(fromIndex, nthread);
+  for (; it != end; it++) {
     auto const &e = *it;
     len = e.length();
     for (n = 1, i = 0; i < len; i++) {
@@ -1479,7 +1389,7 @@ void WordsBase::twoDictionaries(int nthread, bool translit) {
   }
 }
 
-void WordsBase::keyboardWords(int nthread) {
+void WordsBase::keyboardWords(int nthread, DictionaryCI, DictionaryCI) {
   int i;
   char a[256] = {0}, b[128], *p;
   std::string s;
@@ -1496,8 +1406,8 @@ void WordsBase::keyboardWords(int nthread) {
     }
   }
 
-  auto z = m_it[0];
-  for (auto it = z[nthread]; it != z[nthread + 1]; it++) {
+  auto [it, end] = iterators(0, nthread);
+  for (; it != end; it++) {
     auto const &e = *it;
     p = b;
     len = e.length();
@@ -1518,12 +1428,11 @@ void WordsBase::keyboardWords(int nthread) {
   }
 }
 
-void WordsBase::wordFrequency(int nthread) {
+void WordsBase::wordFrequency(int nthread, DictionaryCI it, DictionaryCI end) {
   const int MAX = getMaximumWordLength();
   auto &m = m_iv[nthread];
   m.assign(MAX, 0);
-  auto z = m_it[getDictionaryIndex()];
-  for (auto it = z[nthread]; it != z[nthread + 1]; it++) {
+  for (; it != end; it++) {
     auto const &e = *it;
     m[e.length() - 1]++; // use length-1
   }
@@ -1576,7 +1485,8 @@ void WordsBase::wordFrequencyPostProseeding() {
   }
 }
 
-void WordsBase::checkDictionary(int nthread) {
+void WordsBase::checkDictionary(int nthread, DictionaryCI it,
+                                DictionaryCI end) {
   // NOTE!!! SHOULD CHECK DICTIONARY FILE NOT!!! DICTIONARY SET. Check for
   // duplicates and valid line numbers
   std::string s, p = path(getDictionaryIndex(), "words");
@@ -1636,7 +1546,8 @@ void WordsBase::checkDictionary(int nthread) {
   }
 }
 
-void WordsBase::twoCharactersDistribution(int nthread) {
+void WordsBase::twoCharactersDistribution(int nthread, DictionaryCI it,
+                                          DictionaryCI end) {
   int i;
   const int n = getAlphabetSize();
   auto &st = m_tr[nthread];
@@ -1644,8 +1555,7 @@ void WordsBase::twoCharactersDistribution(int nthread) {
   int &total = st.total;
   auto &a = st.a;
 
-  auto z = m_it[getDictionaryIndex()];
-  for (auto it = z[nthread]; it != z[nthread + 1]; it++) {
+  for (; it != end; it++) {
     auto const &e = *it;
     if (e.length() < 2) {
       continue;
@@ -1713,7 +1623,8 @@ void WordsBase::twoCharactersDistributionPostProseeding() {
   m_addstatus = m_language[PAIRS] + " " + intToStringLocaled(v.size());
 }
 
-void WordsBase::dictionaryStatistics(int nthread) {
+void WordsBase::dictionaryStatistics(int nthread, DictionaryCI it,
+                                     DictionaryCI end) {
   const int SZ_CAPTION = 3;
   const int a = getAlphabetSize();
   auto &st = m_tr[nthread];
@@ -1721,8 +1632,7 @@ void WordsBase::dictionaryStatistics(int nthread) {
   auto &m = st.a;
   std::string &longestWord = st.s;
 
-  auto z = m_it[getDictionaryIndex()];
-  for (auto it = z[nthread]; it != z[nthread + 1]; it++) {
+  for (; it != end; it++) {
     auto const &e = *it;
     m[0][a] += e.length();
     if (e.length() > longestWord.length()) {
@@ -2063,6 +1973,21 @@ std::string WordsBase::getTimeString() {
   return format("%.2lf", double(m_end - m_begin) / CLOCKS_PER_SEC);
 }
 
+std::pair<DictionaryCI, DictionaryCI> WordsBase::iterators(int lng,
+                                                           int nthread) {
+  Dictionary const &d = m_dictionary[lng];
+  int total_size = d.size();
+  const int total_threads = g_get_num_processors();
+
+  int chunk_size = total_size / total_threads;
+  int remainder = total_size % total_threads;
+
+  int start_idx = nthread * chunk_size + std::min(nthread, remainder);
+  int end_idx = start_idx + chunk_size + (nthread < remainder ? 1 : 0);
+
+  return {d.begin() + start_idx, d.begin() + end_idx};
+}
+
 void WordsBase::run_thread(int nthread) {
   auto begin = clock();
   m_thread_result[nthread].clear();
@@ -2070,19 +1995,20 @@ void WordsBase::run_thread(int nthread) {
   auto it = menu2VoidInt.find(m_menuClick);
   if (it != menu2VoidInt.end()) {
     auto f = it->second;
-    (this->*f)(nthread);
+    auto [it2, end] = iterators(getDictionaryIndex(), nthread);
+    // call inside funcntion     twoDictionaries=fromindex, keyboardWords=0
+    (this->*f)(nthread, it2, end);
   }
 
   auto it1 = menu2BoolString.find(m_menuClick);
   if (it1 != menu2BoolString.end()) {
     auto f = it1->second;
-    auto z = m_it[getDictionaryIndex()];
+    auto [it2, end] = iterators(getDictionaryIndex(), nthread);
     if (m_menuClick == MENU_REGULAR_EXPRESSIONS) {
       SafeGRegex r; // have to create separate regex, for every thread otherwise
       // very slow
       createRegex(r);
-
-      for (auto it2 = z[nthread]; it2 != z[nthread + 1]; it2++) {
+      for (; it2 != end; it2++) {
         auto &e = *it2;
         if (checkRegularExpression(e, r)) {
           m_thread_result[nthread].push_back(SearchResult(e, e.length(), 1));
@@ -2091,7 +2017,7 @@ void WordsBase::run_thread(int nthread) {
       }
 
     } else {
-      for (auto it2 = z[nthread]; it2 != z[nthread + 1]; it2++) {
+      for (; it2 != end; it++) {
         auto &e = *it2;
         if ((this->*f)(e)) {
           m_thread_result[nthread].push_back(SearchResult(e, e.length(), 1));
