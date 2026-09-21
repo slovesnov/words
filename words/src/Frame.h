@@ -17,7 +17,7 @@ class Frame : WordsBase {
 
   GtkWidget *m_widget;
   GtkWidget *m_menu;
-  GtkWidget *m_text;
+  GtkWidget *m_text[TEXTVIEW_SIZE];
   GtkWidget *m_helperUp;
   GtkWidget *m_combo[COMBOBOX_SIZE];
   GtkWidget *m_entry[ENTRY_SIZE];
@@ -31,22 +31,24 @@ class Frame : WordsBase {
   GtkWidget *m_check;
   GtkWidget *m_comboline;
   GtkWidget *m_radio;
-  GtkWidget *m_textView;
 
   MenuMap m_menuMap;
   std::vector<GtkAccelGroup *> m_accelGroup;
   bool m_lockSignals;
-  int m_tagIndex;
-  int m_tags;
   std::jthread m_thread;
   CheckNewVersion m_newVersion;
   guint m_debounce_timer_id = 0;
-  gint getComboIndex(ENUM_COMBOBOX e) const {
-    assert(e != COMBOBOX_SIZE);
-    assert(GTK_IS_COMBO_BOX(m_combo[e]));
-    return gtk_combo_box_get_active(GTK_COMBO_BOX(m_combo[e]));
-  }
 
+  int m_tagIndex = 0;
+  int m_tags = 0;
+  struct TagRange {
+    GtkTextMark *start_mark;
+    GtkTextMark *end_mark;
+  };
+  std::vector<TagRange> m_found_tags;
+  void clearTagMarks();
+
+  gint getComboIndex(ENUM_COMBOBOX e) const;
   void setComboIndex(ENUM_COMBOBOX e, gint v);
 
   void updateComboValue(ENUM_COMBOBOX e);
@@ -110,7 +112,7 @@ public:
   void radioChanged(GtkWidget *w);
   void clickButton(GtkWidget *button);
 
-  virtual bool userBreakThread();
+  virtual bool userBreakThread() override;
   virtual void setMenuLabel(ENUM_MENU e, std::string const &text) override;
   virtual void endJobThread() override;
   std::string getMenuLabel(ENUM_MENU e);
@@ -120,10 +122,8 @@ public:
   // void waitThread();
   void startThread(bool full); // false - only sort/filter
 
-  void updateTextView() { updateTextView(m_text, m_out); }
-
-  void updateTextView(GtkWidget *view, std::string const &s);
-
+  void updateTextView();
+  void updateTextView(ENUM_TEXTVIEW e, std::string const &s);
   void setStatus(std::string const &s);
 
   void connectEntrySignals(ENUM_ENTRY e);
@@ -144,4 +144,7 @@ public:
   bool setCheckFilterRegex();
   std::string getEntryString(ENUM_ENTRY e, bool toLocale = 1) const;
   void entryChanged(ENUM_ENTRY e);
+
+  GtkTextBuffer *tvBuffer(ENUM_TEXTVIEW e = TEXTVIEW_MAIN) const;
+  void setFilterText();
 };

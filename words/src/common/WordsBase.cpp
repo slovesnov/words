@@ -606,7 +606,7 @@ std::string readBinaryFileToString(const std::string &filename) {
 }
 
 void WordsBase::checkLFAllFiles() {
-  auto v = { "language", "settings"};
+  auto v = {"language", "settings"};
 
   auto checkFile = [this](const std::string &filepath) {
     std::string s = readBinaryFileToString(filepath);
@@ -1361,7 +1361,7 @@ void WordsBase::findLetterGroupSplit(int nthread) {
   size_t i, j;
   auto charset = getOrderedString(m_entryText);
 
-  auto begin=clock();
+  auto begin = clock();
   const size_t size = m_entryText.length();
   eqmap.clear();
   eqmap.resize(size);
@@ -1385,7 +1385,7 @@ void WordsBase::findLetterGroupSplit(int nthread) {
 
   pr2(timeElapse(begin))
 
-  auto v = getAllPairs(charset);
+      auto v = getAllPairs(charset);
   size_t n[] = {v.size(), 0};
 
   if (!v.empty()) {
@@ -1974,40 +1974,29 @@ bool WordsBase::prepare() {
     return false;
   }
 
-  if (m_menuClick ==
-      MENU_REGULAR_EXPRESSIONS) { // finish with MENU_REGULAR_EXPRESSIONS
-    // russain char to lowercase, other ignorecase options in
-    // regcomp/g_regex_new functions
-    m_entryText = localeToLowerCase(m_entryText, true);
+  if (m_menuClick == MENU_REGULAR_EXPRESSIONS) {
 #ifdef USE_STANDARD_REGEX
     try {
       m_regex =
           std::regex(m_entryText.c_str(), std::regex_constants::icase |
                                               std::regex_constants::extended);
+      return true;
     } catch (std::regex_error &) {
       return false;
     }
 #else
-    // Note G_REGEX_RAW support 's' in locale, otherwise 's' should be a utf8
-    // string
-    createRegex(m_regex[0]);
-    if (!m_regex[0]) {
-      return false;
-    }
+    return createRegex(m_regex[0]);
 #endif
-
-    return true;
   }
 
   // MENU_MODIFICATION MENU_CHAIN MENU_TEMPLATE MENU_CROSSWORD
   // MENU_CHARACTER_SEQUENCE
-  m_entryText = localeToLowerCase(m_entryText);
+  // m_entryText = localeToLowerCase(m_entryText);
 
   if (m_menuClick == MENU_MODIFICATION) { // finish with MENU_MODIFICATION
     if (!m_modifications.parse(m_entryText)) {
 #ifdef NOGTK
-      printf(
-          m_language[CGI_STRING_ERROR_INVALID_MODIFICATION_STRING].c_str());
+      printf(m_language[CGI_STRING_ERROR_INVALID_MODIFICATION_STRING].c_str());
 #endif
       return false;
     }
@@ -2433,12 +2422,13 @@ int WordsBase::getDictionaryIndex() const {
   return m_comboValue[COMBOBOX_DICTIONARY];
 }
 
-void WordsBase::createRegex(SafeGRegex &r) {
-  r.reset(g_regex_new(m_entryText.c_str(),
+bool WordsBase::createRegex(SafeGRegex &r,bool fromEntryText) {
+  r.reset(g_regex_new((fromEntryText?m_entryText:m_filterText).c_str(),
                       GRegexCompileFlags(G_REGEX_RAW | G_REGEX_CASELESS |
                                          G_REGEX_OPTIMIZE |
                                          G_REGEX_NO_AUTO_CAPTURE),
                       GRegexMatchFlags(0), NULL));
+  return r.get() != nullptr;
 }
 
 WordsBase::~WordsBase() {}

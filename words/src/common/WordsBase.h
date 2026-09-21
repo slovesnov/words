@@ -74,11 +74,11 @@ protected:
                        // m_comboValue[COMBOBOX_DICTIONARY] is not used
   int m_radioValue;    // todo in cgi mode
   bool m_checkValue;
-  std::string m_textViewText;
+  std::string m_textViewText;// locale
   VString m_language; // utf8
   std::string m_addstatus;
 #ifndef NOGTK
-  std::string m_filterText; // locale
+  std::string m_filterText; // utf8
   int m_filteredWordsCount;
   std::string m_programVersion;
 #endif
@@ -216,7 +216,7 @@ public:
   static StringStringVector
   getAllPairs(std::string const &s, std::string const &low = invalidDifference);
   static std::string pairsToString(StringStringVector const &v, bool p = 0);
-  void createRegex(SafeGRegex &r);
+  bool createRegex(SafeGRegex &r,bool fromEntryText=true);
 
   bool isEntryMenu()const;
   ENUM_SETTINGS entryEnumString()const;

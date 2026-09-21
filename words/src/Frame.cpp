@@ -201,15 +201,15 @@ Frame::Frame() : WordsBase() {
 
   m_widget = gtk_window_new(GTK_WINDOW_TOPLEVEL);
   m_menu = gtk_menu_bar_new();
-  m_text = gtk_text_view_new();
-  gtk_text_view_set_editable(GTK_TEXT_VIEW(m_text), FALSE);
-  gtk_text_view_set_cursor_visible(GTK_TEXT_VIEW(m_text), FALSE);
-  gtk_text_buffer_create_tag(gtk_text_view_get_buffer(GTK_TEXT_VIEW(m_text)),
-                             markTag, "background", "lightblue", NULL);
-  gtk_text_buffer_create_tag(gtk_text_view_get_buffer(GTK_TEXT_VIEW(m_text)),
-                             activeTag, "background", "Khaki", NULL);
+  m_text[TEXTVIEW_MAIN] = gtk_text_view_new();
+  gtk_text_view_set_editable(GTK_TEXT_VIEW(m_text[TEXTVIEW_MAIN]), FALSE);
+  gtk_text_view_set_cursor_visible(GTK_TEXT_VIEW(m_text[TEXTVIEW_MAIN]), FALSE);
+  gtk_text_buffer_create_tag(tvBuffer(), markTag, "background", "lightblue",
+                             NULL);
+  gtk_text_buffer_create_tag(tvBuffer(), activeTag, "background", "Khaki",
+                             NULL);
   scroll = gtk_scrolled_window_new(NULL, NULL);
-  gtk_container_add(GTK_CONTAINER(scroll), m_text);
+  gtk_container_add(GTK_CONTAINER(scroll), m_text[TEXTVIEW_MAIN]);
 
   m_helperUp = gtk_box_new(GTK_ORIENTATION_VERTICAL, 3);
   m_status = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 2);
@@ -445,8 +445,8 @@ void Frame::clickMenu(ENUM_MENU menu) {
   case MENU_EDIT_SELECT_ALL:
   case MENU_EDIT_COPY_TO_CLIPBOARD:
     if (menu != MENU_EDIT_COPY_TO_CLIPBOARD) {
-      gtk_widget_grab_focus(m_text);
-      buf = gtk_text_view_get_buffer(GTK_TEXT_VIEW(m_text));
+      gtk_widget_grab_focus(m_text[TEXTVIEW_MAIN]);
+      buf = tvBuffer();
       gtk_text_buffer_get_start_iter(buf, &start);
       gtk_text_buffer_get_end_iter(buf, &end);
       gtk_text_buffer_select_range(buf, &start, &end);
@@ -454,7 +454,7 @@ void Frame::clickMenu(ENUM_MENU menu) {
 
     if (menu != MENU_EDIT_SELECT_ALL) {
       clipboard = gtk_clipboard_get(GDK_SELECTION_CLIPBOARD);
-      buf = gtk_text_view_get_buffer(GTK_TEXT_VIEW(m_text));
+      buf = tvBuffer();
       if (gtk_text_buffer_get_selection_bounds(buf, &start, &end)) {
         text = gtk_text_buffer_get_text(buf, &start, &end,
                                         TRUE); // utf8
@@ -719,14 +719,15 @@ void Frame::setHelperPanel() {
     w = gtk_scrolled_window_new(NULL, NULL);
     gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(w), GTK_POLICY_AUTOMATIC,
                                    GTK_POLICY_AUTOMATIC);
-    m_textView = gtk_text_view_new();
-    gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(m_textView), GTK_WRAP_WORD);
-    gtk_container_add(GTK_CONTAINER(w), m_textView);
+    m_text[TEXTVIEW_HELPER] = gtk_text_view_new();
+    gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(m_text[TEXTVIEW_HELPER]),
+                                GTK_WRAP_WORD);
+    gtk_container_add(GTK_CONTAINER(w), m_text[TEXTVIEW_HELPER]);
     gtk_container_add(GTK_CONTAINER(m_helperUp), w);
-    updateTextView(m_textView,
+    updateTextView(TEXTVIEW_HELPER,
                    localeToUtf8(getSettings(SETTINGS_CHAIN_EXCEPTIONS)));
-    g_signal_connect(gtk_text_view_get_buffer(GTK_TEXT_VIEW(m_textView)),
-                     "changed", G_CALLBACK(text_view_changed), NULL);
+    g_signal_connect(tvBuffer(TEXTVIEW_HELPER), "changed",
+                     G_CALLBACK(text_view_changed), NULL);
 
     break;
 
@@ -779,8 +780,6 @@ void Frame::setHelperPanel() {
 void Frame::sortFilterAndUpdateResults() {
   sortFilterResults();
   m_end = clock();
-  //	printl(m_begin,m_end,m_end-m_begin)
-  // pr2("end sortFilterAndUpdateResults");
   gdk_threads_add_idle(end_job, NULL);
 }
 
@@ -931,64 +930,6 @@ void Frame::comboChanged(ENUM_COMBOBOX e) {
   }
 }
 
-void Frame::updateTags(int n) {
-  GtkTextIter first, scroll, start, end;
-  gint i, j;
-  m_tagIndex = n;
-
-  // remove all tags
-  GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(m_text));
-  gtk_text_buffer_get_bounds(buffer, &start, &end);
-  gtk_text_buffer_remove_all_tags(buffer, &start, &end);
-  std::string s = getEntryString(ENTRY_SEARCH, false);
-  const gchar *text = s.c_str();
-  if (s.empty()) {
-    // exit after remove all tags
-    setLabel(m_searchTagLabel, "");
-    return;
-  }
-
-  VString v = split(gtk_text_iter_get_text(&start, &end), "\n");
-
-  gtk_text_buffer_get_start_iter(buffer, &first);
-  for (m_tags = 0; gtk_text_iter_forward_search(
-           &first, text,
-           GtkTextSearchFlags(GTK_TEXT_SEARCH_TEXT_ONLY |
-                              GTK_TEXT_SEARCH_CASE_INSENSITIVE |
-                              GTK_TEXT_SEARCH_VISIBLE_ONLY),
-           &start, &end, NULL);
-       gtk_text_buffer_get_iter_at_offset(buffer, &first,
-                                          gtk_text_iter_get_offset(&end))) {
-
-    /* this code disables search "char" in "henslowe (characters 8)"
-     * string because text in brackets is additional information
-     */
-    i = gtk_text_iter_get_line(&start);
-    j = gtk_text_iter_get_line_offset(&start);
-    auto p = v[i].find(OPEN_BRACKET);
-    if (p != std::string::npos && !m_outSplitted) {
-      i = g_utf8_strlen(v[i].c_str(), p);
-      if (j >= i) {
-        continue;
-      }
-    }
-
-    if (m_tags == m_tagIndex) {
-      scroll = start;
-    }
-    gtk_text_buffer_apply_tag_by_name(
-        buffer, m_tags == m_tagIndex ? activeTag : markTag, &start, &end);
-    m_tags++;
-  }
-
-  if (m_tags > 0) {
-    gtk_text_view_scroll_to_iter(GTK_TEXT_VIEW(m_text), &scroll, 0.0, true, .5,
-                                 .5);
-  }
-  setLabel(m_searchTagLabel,
-           std::format("{}/{}", m_tags == 0 ? 0 : m_tagIndex + 1, m_tags));
-}
-
 void Frame::createImageCombo(ENUM_COMBOBOX e) {
   int i;
   GtkTreeIter iter;
@@ -1113,6 +1054,12 @@ void Frame::startThread(bool full) {
   }
 }
 
+gint Frame::getComboIndex(ENUM_COMBOBOX e) const {
+  assert(e != COMBOBOX_SIZE);
+  assert(GTK_IS_COMBO_BOX(m_combo[e]));
+  return gtk_combo_box_get_active(GTK_COMBO_BOX(m_combo[e]));
+}
+
 void Frame::setComboIndex(ENUM_COMBOBOX e, gint v) {
   assert(GTK_IS_COMBO_BOX(m_combo[e]));
   gtk_combo_box_set_active(GTK_COMBO_BOX(m_combo[e]), v);
@@ -1140,9 +1087,8 @@ bool Frame::framePrepare() {
   if (m_menuClick == MENU_MODIFICATION) {
     m_checkValue =
         gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(m_check)) == TRUE;
-  }
-  else if (m_menuClick == MENU_CHAIN) {
-    GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(m_textView));
+  } else if (m_menuClick == MENU_CHAIN) {
+    GtkTextBuffer *buffer = tvBuffer(TEXTVIEW_HELPER);
     GtkTextIter start, end;
     gtk_text_buffer_get_bounds(buffer, &start, &end);
     gchar *raw_text = gtk_text_buffer_get_text(buffer, &start, &end, FALSE);
@@ -1150,7 +1096,7 @@ bool Frame::framePrepare() {
     g_free(raw_text);
   }
 
-  m_filterText = getEntryString(ENTRY_FILTER);
+  setFilterText();
 
   bool hasEntry = isEntryMenu();
   if (hasEntry) {
@@ -1258,9 +1204,10 @@ void Frame::setStatus(std::string const &s) {
   setLabel(m_statusMessage, " " + s);
 }
 
-void Frame::updateTextView(GtkWidget *view, std::string const &s) {
-  GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(view));
-  gtk_text_buffer_set_text(buffer, s.c_str(), -1);
+void Frame::updateTextView() { updateTextView(TEXTVIEW_MAIN, m_out); }
+
+void Frame::updateTextView(ENUM_TEXTVIEW e, std::string const &s) {
+  gtk_text_buffer_set_text(tvBuffer(e), s.c_str(), -1);
 }
 
 void Frame::setDebounceTimer(ENUM_ENTRY e) {
@@ -1305,24 +1252,152 @@ void Frame::setLabel(GtkWidget *w, const std::string &s) {
 }
 
 bool Frame::setCheckFilterRegex() {
-  auto s=getEntryString(ENTRY_FILTER,false);
-  m_filterText = utf8ToLocale(s);
-  if (s.empty()) {
+  setFilterText();
+  if (m_filterText.empty()) {
     return true;
   }
-  // need case insensitive filter, work ok in russian only for utf8
-  m_regex[1].reset(g_regex_new(s.c_str(), GRegexCompileFlags(G_REGEX_CASELESS),
-                               GRegexMatchFlags(0), NULL));
-  return m_regex[1] != nullptr;
+  return createRegex(m_regex[1],false);
+}
+
+void Frame::setFilterText(){
+  m_filterText = getEntryString(ENTRY_FILTER,false);
 }
 
 std::string Frame::getEntryString(ENUM_ENTRY e, bool toLocale) const {
-  auto p = gtk_entry_get_text(GTK_ENTRY(m_entry[e]));
-  return toLocale ? utf8ToLocale(p) : p;
+  const gchar *p = gtk_entry_get_text(GTK_ENTRY(m_entry[e]));
+  gchar *lower_str = g_utf8_strdown(p, -1);
+  // 'ё' -> 'е'.
+  gchar *cursor = lower_str;
+  while (*cursor != '\0') {
+    if ((guchar)cursor[0] == 0xD1 && (guchar)cursor[1] == 0x91) {
+      cursor[0] = 0xD0;
+      cursor[1] = 0xB5;
+    }
+    cursor = g_utf8_next_char(cursor);
+  }
+
+  std::string s = toLocale ? utf8ToLocale(lower_str) : lower_str;
+  g_free(lower_str);
+  return s;
 }
 
 void Frame::entryChanged(ENUM_ENTRY e) {
-  bool b = framePrepare();
-  addRemoveClass(m_entry[e], CERROR, !b);
+  if (e == ENTRY_SEARCH) {
+    clearTagMarks();
+  } else {
+    bool b = framePrepare();
+    addRemoveClass(m_entry[e], CERROR, !b);
+  }
   setDebounceTimer(e);
+}
+
+void Frame::clearTagMarks() {
+  GtkTextBuffer *buffer = tvBuffer();
+  for (auto &range : m_found_tags) {
+    gtk_text_buffer_delete_mark(buffer, range.start_mark);
+    gtk_text_buffer_delete_mark(buffer, range.end_mark);
+  }
+  m_found_tags.clear();
+}
+
+void Frame::updateTags(int n) {
+  GtkTextBuffer *buffer = tvBuffer();
+  std::string s = getEntryString(ENTRY_SEARCH, false);
+
+  int old_tag_index = m_tagIndex;
+  m_tagIndex = n;
+
+  if (!s.empty() && !m_found_tags.empty() && m_tags > 0) {
+
+    if (old_tag_index >= 0 && old_tag_index < (int)m_found_tags.size()) {
+      GtkTextIter s_iter, e_iter;
+      gtk_text_buffer_get_iter_at_mark(buffer, &s_iter,
+                                       m_found_tags[old_tag_index].start_mark);
+      gtk_text_buffer_get_iter_at_mark(buffer, &e_iter,
+                                       m_found_tags[old_tag_index].end_mark);
+
+      gtk_text_buffer_remove_tag_by_name(buffer, activeTag, &s_iter, &e_iter);
+      gtk_text_buffer_apply_tag_by_name(buffer, markTag, &s_iter, &e_iter);
+    }
+
+    GtkTextIter scroll;
+    if (m_tagIndex >= 0 && m_tagIndex < (int)m_found_tags.size()) {
+      GtkTextIter s_iter, e_iter;
+      gtk_text_buffer_get_iter_at_mark(buffer, &s_iter,
+                                       m_found_tags[m_tagIndex].start_mark);
+      gtk_text_buffer_get_iter_at_mark(buffer, &e_iter,
+                                       m_found_tags[m_tagIndex].end_mark);
+
+      gtk_text_buffer_remove_tag_by_name(buffer, markTag, &s_iter, &e_iter);
+      gtk_text_buffer_apply_tag_by_name(buffer, activeTag, &s_iter, &e_iter);
+      scroll = s_iter;
+    }
+
+    gtk_text_view_scroll_to_iter(GTK_TEXT_VIEW(m_text[TEXTVIEW_MAIN]), &scroll,
+                                 0.0, true, .5, .5);
+
+    setLabel(m_searchTagLabel,
+             std::format("{}/{}", m_tags == 0 ? 0 : m_tagIndex + 1, m_tags));
+    return;
+  }
+
+  GtkTextIter first, scroll, start, end;
+  gint i, j;
+
+  gtk_text_buffer_get_bounds(buffer, &start, &end);
+  gtk_text_buffer_remove_all_tags(buffer, &start, &end);
+  clearTagMarks();
+
+  if (s.empty()) {
+    setLabel(m_searchTagLabel, "");
+    return;
+  }
+
+  VString v = split(gtk_text_iter_get_text(&start, &end), "\n");
+  const gchar *text = s.c_str();
+
+  gtk_text_buffer_get_start_iter(buffer, &first);
+  for (m_tags = 0; gtk_text_iter_forward_search(
+           &first, text,
+           GtkTextSearchFlags(GTK_TEXT_SEARCH_TEXT_ONLY |
+                              GTK_TEXT_SEARCH_CASE_INSENSITIVE |
+                              GTK_TEXT_SEARCH_VISIBLE_ONLY),
+           &start, &end, NULL);
+       gtk_text_buffer_get_iter_at_offset(buffer, &first,
+                                          gtk_text_iter_get_offset(&end))) {
+
+    i = gtk_text_iter_get_line(&start);
+    j = gtk_text_iter_get_line_offset(&start);
+    auto p = v[i].find(OPEN_BRACKET);
+    if (p != std::string::npos && !m_outSplitted) {
+      i = g_utf8_strlen(v[i].c_str(), p);
+      if (j >= i) {
+        continue;
+      }
+    }
+
+    GtkTextMark *sm = gtk_text_buffer_create_mark(buffer, NULL, &start, TRUE);
+    GtkTextMark *em = gtk_text_buffer_create_mark(buffer, NULL, &end, FALSE);
+    m_found_tags.push_back({sm, em});
+
+    if (m_tags == m_tagIndex) {
+      scroll = start;
+    }
+
+    gtk_text_buffer_apply_tag_by_name(
+        buffer, m_tags == m_tagIndex ? activeTag : markTag, &start, &end);
+    m_tags++;
+  }
+
+  if (m_tags > 0) {
+    gtk_text_view_scroll_to_iter(GTK_TEXT_VIEW(m_text[TEXTVIEW_MAIN]), &scroll,
+                                 0.0, true, .5, .5);
+  }
+  setLabel(m_searchTagLabel,
+           std::format("{}/{}", m_tags == 0 ? 0 : m_tagIndex + 1, m_tags));
+  pr(m_tags, m_found_tags.size())
+}
+
+GtkTextBuffer *Frame::tvBuffer(ENUM_TEXTVIEW e) const {
+  return gtk_text_view_get_buffer(GTK_TEXT_VIEW(m_text[e]));
 }

@@ -1,4 +1,5 @@
 # mingw32-make -j $(nproc)
+# mingw32-make -j $(nproc) RUN=1
 # mingw32-make -j$(nproc) CONFIG=console RUN=1
 # mingw32-make clean
 # options CONFIG=release|console RUN=1 CLEAR=1

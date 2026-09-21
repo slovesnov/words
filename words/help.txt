@@ -12,6 +12,13 @@ fixed MENU_LETTER_GROUP_SPLIT bug (in debug mode)
 changed line endings in all text files from CRLF to LF
 а limit on the maximum number of errors during dictionary checking has been added
 
+added debounce functionality for entry/textview fields
+fixed a bug with tag highlighting when the search field was empty
+significantly speed up navigation through tags
+added a list of exceptions for string chain searches
+added a list of words sorted by length in ascending order (the word menu is sorted by descending frequency and ascending length)
+added replacement of 'ё' with 'е' (russian characters)
+
 [ru]
 русский словарь содержит 2,415,399 слов, раньше было 445,342
 английcкий словарь содержит 393,167 слов, раньше было 134,511
@@ -25,6 +32,13 @@ changed line endings in all text files from CRLF to LF
 исправлен баг MENU_LETTER_GROUP_SPLIT (в режиме отладки)
 перевод строки во всех текстовых файлах изменён на LF вместо CRLF
 добавлено ограничение на максимальное число ошибок при проверке словаря
+
+добавлена технология debounce для entry/textview полей
+исправлен баг с подсветкой тагов когда поле поиска стало пустым
+сильно ускорено перемещение по тагам
+добавлен список исключений при поиске цепочек
+добавлен список слов по возрастанию длины (меню cлова по убыванию частоты и возрастанию длины)
+добавлена замена ё на е
 
 ru 'Russian.dic' https://github.com/titoBouzout/Dictionaries
 ru 'ru_RU.txt' https://github.com/Goudron/ru-spelling-dictionary/tree/main/cspell/dictionaries
