@@ -2424,6 +2424,7 @@ bool WordsBase::createRegex(SafeGRegex &r,bool fromEntryText) {
                                          G_REGEX_OPTIMIZE |
                                          G_REGEX_NO_AUTO_CAPTURE),
                       GRegexMatchFlags(0), NULL));
+                    //G_REGEX_UCP
   return r.get() != nullptr;
 }
 
