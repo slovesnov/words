@@ -34,7 +34,7 @@ class WordsBase {
   void setKeyboardOneRow();
   void setKeyboardRowDiagonals();
 protected:
-  Dictionary m_dictionary[LANGUAGES],m_dictionaryRuUtf8;
+  Dictionary m_dictionary[DICTIONARY_SIZE];
   VString m_settings[LANGUAGES]; // m_settings[i] see ENUM_SETTINGS
                                  // {encoding=locale}
   std::string m_keyboardOneRow[256][2];
@@ -130,7 +130,8 @@ public:
 
   void run(bool full = true);
   void run_thread(int nthread);
-  std::pair<DictionaryCI,DictionaryCI> iterators(int lng, int nthread);
+  std::pair<DictionaryCI,DictionaryCI> iterators(int n, int nthread);
+  std::pair<DictionaryCI,DictionaryCI> iterators(ENUM_DICTIONARY e, int nthread);
 
   bool checkPangram(const std::string &s);
   bool checkTemplate(const std::string &s);
@@ -206,7 +207,7 @@ public:
   static StringStringVector
   getAllPairs(std::string const &s, std::string const &low = invalidDifference);
   static std::string pairsToString(StringStringVector const &v, bool p = 0);
-  virtual std::string getEntryString(ENUM_ENTRY e, bool toLocale = true) const;
+  virtual std::string getEntryString(ENUM_ENTRY e) const;
 
   bool createEntryRegex();
   bool createRegex(SafeGRegex &r, ENUM_ENTRY e = ENTRY_TEMPLATE);

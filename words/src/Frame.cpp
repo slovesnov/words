@@ -1095,7 +1095,7 @@ bool Frame::framePrepare() {
   bool hasEntry = isEntryMenu();
   if (hasEntry) {
     // should encode to locale string at first to get valid length
-    m_entryText = getEntryString(ENTRY_TEMPLATE);
+    m_entryText = utf8ToLocale(getEntryString(ENTRY_TEMPLATE));
   }
 
   bool b = prepare();
@@ -1107,12 +1107,11 @@ bool Frame::framePrepare() {
 
 void Frame::connectEntrySignals(ENUM_ENTRY e) {
   GCallback f[] = {G_CALLBACK(entry_insert), G_CALLBACK(entry_delete),
-              G_CALLBACK(entry_focus_in), G_CALLBACK(entry_focus_out)};
+                   G_CALLBACK(entry_focus_in), G_CALLBACK(entry_focus_out)};
   int i = 0;
   for (auto a :
        {"insert-text", "delete-text", "focus-in-event", "focus-out-event"}) {
-    g_signal_connect_after(G_OBJECT(m_entry[e]), a, f[i++],
-                           GP(e));
+    g_signal_connect_after(G_OBJECT(m_entry[e]), a, f[i++], GP(e));
   }
 }
 
@@ -1244,10 +1243,11 @@ void Frame::setLabel(GtkWidget *w, const std::string &s) {
   gtk_label_set_text(GTK_LABEL(w), s.c_str());
 }
 
-std::string Frame::getEntryString(ENUM_ENTRY e, bool toLocale) const {
+// lowercased utf8, changed 'ё' -> 'е'
+std::string Frame::getEntryString(ENUM_ENTRY e) const {
   const gchar *p = gtk_entry_get_text(GTK_ENTRY(m_entry[e]));
   gchar *lower_str = g_utf8_strdown(p, -1);
-  // 'ё' -> 'е'.
+  // 'ё' -> 'е'
   gchar *cursor = lower_str;
   while (*cursor != '\0') {
     if ((guchar)cursor[0] == 0xD1 && (guchar)cursor[1] == 0x91) {
@@ -1257,13 +1257,13 @@ std::string Frame::getEntryString(ENUM_ENTRY e, bool toLocale) const {
     cursor = g_utf8_next_char(cursor);
   }
 
-  std::string s = toLocale ? utf8ToLocale(lower_str) : lower_str;
+  std::string s = lower_str;
   g_free(lower_str);
   return s;
 }
 
 void Frame::entryChanged(ENUM_ENTRY e) {
-  if(oneOf(e,ENTRY_SEARCH,ENTRY_FILTER)){
+  if (oneOf(e, ENTRY_SEARCH, ENTRY_FILTER)) {
     clearTagMarks();
   }
   if (e != ENTRY_SEARCH) {
@@ -1284,7 +1284,7 @@ void Frame::clearTagMarks() {
 
 void Frame::updateTags(int n) {
   GtkTextBuffer *buffer = tvBuffer();
-  std::string s = getEntryString(ENTRY_SEARCH, false);
+  std::string s = getEntryString(ENTRY_SEARCH);
 
   int old_tag_index = m_tagIndex;
   m_tagIndex = n;

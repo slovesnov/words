@@ -141,7 +141,7 @@ public:
 
   void setLabel(GtkWidget *w, ENUM_STRING e);
   void setLabel(GtkWidget *w, const std::string &s);
-  virtual std::string getEntryString(ENUM_ENTRY e, bool toLocale = true) const override;
+  virtual std::string getEntryString(ENUM_ENTRY e) const override;
   void entryChanged(ENUM_ENTRY e);
 
   GtkTextBuffer *tvBuffer(ENUM_TEXTVIEW e = TEXTVIEW_MAIN) const;

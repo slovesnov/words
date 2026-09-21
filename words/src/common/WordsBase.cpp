@@ -44,7 +44,6 @@ std::mutex cout_mutex;
 
 std::string LNG[LANGUAGES];
 std::vector<MapStringStringVector> eqmap;
-
 const std::unordered_map<ENUM_MENU,
                          void (WordsBase::*)(int, DictionaryCI, DictionaryCI)>
     menu2VoidInt = {
@@ -80,19 +79,6 @@ const std::unordered_map<ENUM_MENU,
 MENU_CHAIN, findChain
 MENU_LETTER_GROUP_SPLIT, findLetterGroupSplit
 MENU_CHECK_DICTIONARY, checkDictionary
-
-1 MENU_SIMPLE_WORD_SEQUENCE
-0 9.028 0
-1 MENU_DOUBLE_WORD_SEQUENCE
-0 11.08 0
-
-1 MENU_SIMPLE_WORD_SEQUENCE
-0 9.249 0
-1 MENU_DOUBLE_WORD_SEQUENCE
-0 10.509 0
-
-1192 w116 314
-1061 w764
 */
 
 const std::unordered_map<ENUM_MENU, void (WordsBase::*)()> menu2PostProseeding =
@@ -192,7 +178,7 @@ WordsBase::WordsBase() {
     assert(file.is_open());
     std::string line, s;
     if (i)
-      m_dictionaryRuUtf8.resize(DICTIONARY_SIZE[i]);
+      m_dictionary[DICTIONARY_RU_UTF8].resize(DICTIONARY_SIZE[i]);
     m_dictionary[i].resize(DICTIONARY_SIZE[i]);
     while (std::getline(file, line)) {
       // before std::move
@@ -205,7 +191,7 @@ WordsBase::WordsBase() {
         exit(1);
       }
       if (i)
-        m_dictionaryRuUtf8[k] = fastCp1251ToUtf8(line);
+        m_dictionary[DICTIONARY_RU_UTF8][k] = fastCp1251ToUtf8(line);
       m_dictionary[i][k] = std::move(line);
       k++;
     }
@@ -1401,7 +1387,7 @@ void WordsBase::keyboardWords(int nthread, DictionaryCI, DictionaryCI) {
     }
   }
 
-  auto [it, end] = iterators(0, nthread);
+  auto [it, end] = iterators(DICTIONARY_EN, nthread);
   for (; it != end; it++) {
     auto const &e = *it;
     p = b;
@@ -1968,9 +1954,13 @@ std::string WordsBase::getTimeString() {
   return format("%.2lf", double(m_end - m_begin) / CLOCKS_PER_SEC);
 }
 
-std::pair<DictionaryCI, DictionaryCI> WordsBase::iterators(int lng,
+std::pair<DictionaryCI, DictionaryCI> WordsBase::iterators(int n, int nthread) {
+  return iterators(ENUM_DICTIONARY(n), nthread);
+}
+
+std::pair<DictionaryCI, DictionaryCI> WordsBase::iterators(ENUM_DICTIONARY e,
                                                            int nthread) {
-  Dictionary const &d = m_dictionary[lng];
+  Dictionary const &d = m_dictionary[e];
   int total_size = d.size();
   const int total_threads = g_get_num_processors();
 
@@ -2002,9 +1992,13 @@ void WordsBase::run_thread(int nthread) {
       SafeGRegex r; // have to create separate regex, for every thread otherwise
       // very slow
       createRegex(r);
+      bool isEnglish = getDictionaryIndex() == DICTIONARY_EN;
+      auto n = isEnglish ? DICTIONARY_EN : DICTIONARY_RU_UTF8;
+      auto [it2, end] = iterators(n, nthread);
       for (; it2 != end; it2++) {
-        auto &e = *it2;
-        if (checkRegularExpression(e, r)) {
+        if (checkRegularExpression(*it2, r)) {
+          auto d = std::distance(m_dictionary[n].cbegin(), it2);
+          auto &e = m_dictionary[getDictionaryIndex()][d];
           m_thread_result[nthread].push_back(SearchResult(e, e.length(), 1));
         }
         RETURN_ON_USER_BREAK
@@ -2313,13 +2307,13 @@ int WordsBase::getDictionaryIndex() const {
   return m_comboValue[COMBOBOX_DICTIONARY];
 }
 
-std::string WordsBase::getEntryString(ENUM_ENTRY e, bool toLocale) const {
-  // todo in cgi mode
+std::string WordsBase::getEntryString(ENUM_ENTRY e) const {
+  // todo in cgi mode (lowercased)
   return "";
 }
 
 bool WordsBase::createEntryRegex() {
-  auto s = getEntryString(ENTRY_FILTER, false);
+  auto s = getEntryString(ENTRY_FILTER);
   if (s.empty()) {
     m_regex[1].reset(nullptr); // set nullptr for testFilterRegex()
     return true;
@@ -2327,14 +2321,11 @@ bool WordsBase::createEntryRegex() {
   return createRegex(m_regex[1], ENTRY_FILTER);
 }
 
-// should be in utf-8, but now for ENTRY_TEMPLATE local, ENTRY_FILTER -utf8 TODO
+// utf8
 bool WordsBase::createRegex(SafeGRegex &r, ENUM_ENTRY e) {
   GRegexCompileFlags f =
       (GRegexCompileFlags)(G_REGEX_OPTIMIZE | G_REGEX_NO_AUTO_CAPTURE);
-  if (e == ENTRY_TEMPLATE) {
-    f = (GRegexCompileFlags)(f | G_REGEX_RAW /*| G_REGEX_CASELESS*/);
-  }
-  auto s = getEntryString(e, e == ENTRY_TEMPLATE);
+  auto s = getEntryString(e);
   r.reset(g_regex_new(s.c_str(), f, GRegexMatchFlags(0), NULL));
   return r.get() != nullptr;
 }
