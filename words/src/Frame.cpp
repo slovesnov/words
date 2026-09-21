@@ -907,6 +907,7 @@ void Frame::comboChanged(ENUM_COMBOBOX e) {
   }
 
   if (oneOf(e, COMBOBOX_SORT, COMBOBOX_SORT_ORDER, COMBOBOX_FILTER)) {
+    clearTagMarks();
     sortOrFilterChanged();
     return;
   }
@@ -1281,9 +1282,10 @@ std::string Frame::getEntryString(ENUM_ENTRY e, bool toLocale) const {
 }
 
 void Frame::entryChanged(ENUM_ENTRY e) {
-  if (e == ENTRY_SEARCH) {
+  if(oneOf(e,ENTRY_SEARCH,ENTRY_FILTER)){
     clearTagMarks();
-  } else {
+  }
+  if (e != ENTRY_SEARCH) {
     bool b = framePrepare();
     addRemoveClass(m_entry[e], CERROR, !b);
   }

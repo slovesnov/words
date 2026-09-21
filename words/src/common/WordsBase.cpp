@@ -2205,7 +2205,6 @@ bool WordsBase::differenceOnlyOneChar(const std::string &a,
 }
 
 #ifndef NOGTK
-
 bool WordsBase::testFilterRegex(const std::string &s) {
   return m_regex[1] == nullptr || m_filterText.empty() ||
          g_regex_match(m_regex[1].get(), s.c_str(), GRegexMatchFlags(0), NULL);
@@ -2418,13 +2417,12 @@ int WordsBase::getDictionaryIndex() const {
   return m_comboValue[COMBOBOX_DICTIONARY];
 }
 
-bool WordsBase::createRegex(SafeGRegex &r,bool fromEntryText) {
-  r.reset(g_regex_new((fromEntryText?m_entryText:m_filterText).c_str(),
-                      GRegexCompileFlags(G_REGEX_RAW | G_REGEX_CASELESS |
-                                         G_REGEX_OPTIMIZE |
-                                         G_REGEX_NO_AUTO_CAPTURE),
-                      GRegexMatchFlags(0), NULL));
-                    //G_REGEX_UCP
+//should be in utf-8
+bool WordsBase::createRegex(SafeGRegex &r, bool fromEntryText) {
+  auto &s = fromEntryText ? m_entryText : m_filterText;
+  GRegexCompileFlags f =
+      GRegexCompileFlags(fromEntryText ? G_REGEX_RAW | G_REGEX_CASELESS |G_REGEX_OPTIMIZE | G_REGEX_NO_AUTO_CAPTURE: G_REGEX_OPTIMIZE | G_REGEX_NO_AUTO_CAPTURE);
+  r.reset(g_regex_new(s.c_str(), f, GRegexMatchFlags(0), NULL));
   return r.get() != nullptr;
 }
 
