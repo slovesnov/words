@@ -1112,15 +1112,14 @@ bool Frame::framePrepare() {
 }
 
 void Frame::connectEntrySignals(ENUM_ENTRY e) {
-  GtkWidget *w = m_entry[e];
-  g_signal_connect_after(G_OBJECT(w), "insert-text", G_CALLBACK(entry_insert),
-                         GP(e));
-  g_signal_connect_after(G_OBJECT(w), "delete-text", G_CALLBACK(entry_delete),
-                         GP(e));
-  g_signal_connect_after(G_OBJECT(w), "focus-in-event",
-                         G_CALLBACK(entry_focus_in), GP(e));
-  g_signal_connect_after(G_OBJECT(w), "focus-out-event",
-                         G_CALLBACK(entry_focus_out), GP(e));
+  GCallback f[] = {G_CALLBACK(entry_insert), G_CALLBACK(entry_delete),
+              G_CALLBACK(entry_focus_in), G_CALLBACK(entry_focus_out)};
+  int i = 0;
+  for (auto a :
+       {"insert-text", "delete-text", "focus-in-event", "focus-out-event"}) {
+    g_signal_connect_after(G_OBJECT(m_entry[e]), a, f[i++],
+                           GP(e));
+  }
 }
 
 void Frame::entryFocusChanged(bool in) {
@@ -1256,11 +1255,11 @@ bool Frame::setCheckFilterRegex() {
   if (m_filterText.empty()) {
     return true;
   }
-  return createRegex(m_regex[1],false);
+  return createRegex(m_regex[1], false);
 }
 
-void Frame::setFilterText(){
-  m_filterText = getEntryString(ENTRY_FILTER,false);
+void Frame::setFilterText() {
+  m_filterText = getEntryString(ENTRY_FILTER, false);
 }
 
 std::string Frame::getEntryString(ENUM_ENTRY e, bool toLocale) const {

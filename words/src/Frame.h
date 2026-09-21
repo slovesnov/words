@@ -142,7 +142,7 @@ public:
   void setLabel(GtkWidget *w, ENUM_STRING e);
   void setLabel(GtkWidget *w, const std::string &s);
   bool setCheckFilterRegex();
-  std::string getEntryString(ENUM_ENTRY e, bool toLocale = 1) const;
+  std::string getEntryString(ENUM_ENTRY e, bool toLocale = true) const;
   void entryChanged(ENUM_ENTRY e);
 
   GtkTextBuffer *tvBuffer(ENUM_TEXTVIEW e = TEXTVIEW_MAIN) const;

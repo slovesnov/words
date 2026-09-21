@@ -21,8 +21,8 @@
 #include <regex>
 #endif
 
-//#define USE_SET
-//USE_SET slow down dictionary loading and need 2x memory
+// #define USE_SET
+// USE_SET slow down dictionary loading and need 2x memory
 #ifdef USE_SET
 using Dictionary = StringSet;
 #else
@@ -74,8 +74,8 @@ protected:
                        // m_comboValue[COMBOBOX_DICTIONARY] is not used
   int m_radioValue;    // todo in cgi mode
   bool m_checkValue;
-  std::string m_textViewText;// locale
-  VString m_language; // utf8
+  std::string m_textViewText; // locale
+  VString m_language;         // utf8
   std::string m_addstatus;
 #ifndef NOGTK
   std::string m_filterText; // utf8
@@ -139,7 +139,7 @@ public:
   WordsBase();
   ~WordsBase();
 
-  void run(bool full=true);
+  void run(bool full = true);
   void run_thread(int nthread);
 
   bool checkPangram(const std::string &s);
@@ -216,8 +216,8 @@ public:
   static StringStringVector
   getAllPairs(std::string const &s, std::string const &low = invalidDifference);
   static std::string pairsToString(StringStringVector const &v, bool p = 0);
-  bool createRegex(SafeGRegex &r,bool fromEntryText=true);
+  bool createRegex(SafeGRegex &r, bool fromEntryText = true);
 
-  bool isEntryMenu()const;
-  ENUM_SETTINGS entryEnumString()const;
+  bool isEntryMenu() const;
+  ENUM_SETTINGS entryEnumString() const;
 };

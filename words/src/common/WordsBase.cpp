@@ -1989,10 +1989,6 @@ bool WordsBase::prepare() {
 #endif
   }
 
-  // MENU_MODIFICATION MENU_CHAIN MENU_TEMPLATE MENU_CROSSWORD
-  // MENU_CHARACTER_SEQUENCE
-  // m_entryText = localeToLowerCase(m_entryText);
-
   if (m_menuClick == MENU_MODIFICATION) { // finish with MENU_MODIFICATION
     if (!m_modifications.parse(m_entryText)) {
 #ifdef NOGTK
