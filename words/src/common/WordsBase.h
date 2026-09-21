@@ -43,7 +43,7 @@ class WordsBase {
   void setKeyboardRowDiagonals();
 
 protected:
-  Dictionary m_dictionary[LANGUAGES];
+  Dictionary m_dictionary[LANGUAGES],m_dictionaryRuUtf8;
   VString m_settings[LANGUAGES]; // m_settings[i] see ENUM_SETTINGS
                                  // {encoding=locale}
   std::string m_keyboardOneRow[256][2];

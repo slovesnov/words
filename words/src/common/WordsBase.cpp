@@ -182,6 +182,8 @@ WordsBase::WordsBase() {
   }
 #endif
 
+  clock_t begin = clock();
+
 #ifndef USE_SET
   int k;
   const int DICTIONARY_SIZE[] = {393'167, 2'415'401};
@@ -194,32 +196,17 @@ WordsBase::WordsBase() {
 
     LNG[i] = LANGUAGE[i].substr(0, 2);
     m_settings[i] = readFile(i, "settings");
-    /*
-    //set without optimization
-    0 0.665 src/common/WordsBase.cpp:167 WordsBase::WordsBase()
-    1 4.745 src/common/WordsBase.cpp:167 WordsBase::WordsBase()
-
-    //set with optimization
-    0 0.263 src/common/WordsBase.cpp:168 WordsBase::WordsBase()
-    1 1.694 src/common/WordsBase.cpp:168 WordsBase::WordsBase()
-
-    memory use 244mb
-==============================================================
-vector
-0 0.115 src/common/WordsBase.cpp:203 WordsBase::WordsBase()
-1 0.687 src/common/WordsBase.cpp:203 WordsBase::WordsBase()
-    memory use 122mb
-
-    */
 
     // load dictionaries
     m_longestWordLength[i] = 0;
     std::ifstream file(path(i, "words"));
     assert(file.is_open());
-    std::string line;
+    std::string line, s;
 #ifdef USE_SET
     auto hint = m_dictionary[i].end();
 #else
+    // if (i)
+    //   m_dictionaryRuUtf8.resize(DICTIONARY_SIZE[i]);
     m_dictionary[i].resize(DICTIONARY_SIZE[i]);
 #endif
     while (std::getline(file, line)) {
@@ -229,13 +216,17 @@ vector
         m_longestWordLength[i] = j;
       }
 #ifdef USE_SET
+      // todo m_dictionaryRuUtf8
       hint = m_dictionary[i].insert(hint, std::move(line));
 #else
       if (k == DICTIONARY_SIZE[i]) {
         pr("error invalid dictionary size (file bigger)");
         exit(1);
       }
-      m_dictionary[i][k++] = std::move(line);
+      // if (i)
+      //   m_dictionaryRuUtf8[k] = localeToUtf8(line);
+      m_dictionary[i][k] = std::move(line);
+      k++;
 #endif
     }
     file.close();
@@ -250,6 +241,7 @@ vector
     }
 #endif
   }
+  pr(timeElapse(begin));
 
   int threads = g_get_num_processors(); // std::hardware_concurrency();
   m_tr.resize(threads);
@@ -2436,7 +2428,7 @@ bool WordsBase::createEntryRegex() {
   return createRegex(m_regex[1], ENTRY_FILTER);
 }
 
-// should be in utf-8, but now for ENTRY_TEMPLATE local, ENTRY_FILTER -utf8
+// should be in utf-8, but now for ENTRY_TEMPLATE local, ENTRY_FILTER -utf8 TODO
 bool WordsBase::createRegex(SafeGRegex &r, ENUM_ENTRY e) {
   GRegexCompileFlags f =
       (GRegexCompileFlags)(G_REGEX_OPTIMIZE | G_REGEX_NO_AUTO_CAPTURE);

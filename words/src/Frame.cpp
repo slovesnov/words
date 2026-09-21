@@ -459,11 +459,6 @@ void Frame::clickMenu(ENUM_MENU menu) {
         text = gtk_text_buffer_get_text(buf, &start, &end,
                                         TRUE); // utf8
         gtk_clipboard_set_text(clipboard, text, -1);
-        /* TODO
-         * 4.3 if select search something and then select
-         * MENU_EDIT_SELECT_ALL_AND_COPY_TO_CLIPBOARD then next string gives
-         * warning don't know why (bug? not fixed)
-         */
         gtk_clipboard_store(clipboard); // available for other applications
         g_free(text);
       }
