@@ -174,11 +174,6 @@ WordsBase *wordsBase;
 WordsBase::WordsBase() {
   int i, j;
   wordsBase = this;
-#ifndef USE_STANDARD_REGEX
-  for (auto &a : m_regex) {
-    a = nullptr;
-  }
-#endif
 
   clock_t begin = clock();
 
