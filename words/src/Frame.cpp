@@ -560,7 +560,7 @@ void Frame::aboutDialog() {
   for (i = 0; i < SIZEI(sid); i++) {
     id = sid[i];
     if (id == PROGRAM) {
-      s = m_programVersion;
+      s = getProgramVersionString();
     } else if (id == STRING_SIZE) {
       s = getBuildVersionString(false);
     } else {
@@ -1175,7 +1175,7 @@ void Frame::newVersionMessage() {
       gtk_message_dialog_new(GTK_WINDOW(m_widget), GTK_DIALOG_MODAL,
                              GTK_MESSAGE_INFO, GTK_BUTTONS_YES_NO, s.c_str());
 
-  gtk_window_set_title(GTK_WINDOW(d), m_programVersion.c_str());
+  gtk_window_set_title(GTK_WINDOW(d), getProgramVersionString().c_str());
   gint result = gtk_dialog_run(GTK_DIALOG(d));
   gtk_widget_destroy(d);
 
@@ -1384,4 +1384,8 @@ void Frame::updateTags(int n) {
 
 GtkTextBuffer *Frame::tvBuffer(ENUM_TEXTVIEW e) const {
   return gtk_text_view_get_buffer(GTK_TEXT_VIEW(m_text[e]));
+}
+
+std::string Frame::getProgramVersionString()const{
+  return m_language[PROGRAM] + " " + m_language[VERSION] + " " + WORDS_VERSION;
 }

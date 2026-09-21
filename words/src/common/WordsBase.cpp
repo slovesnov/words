@@ -1773,17 +1773,16 @@ void WordsBase::sortFilterResults() {
 
 void WordsBase::loadLanguages() {
   std::string s;
-  int i, n;
+  int i,j, n;
   bool b;
   for (n = 0; n < LANGUAGES; n++) {
     b = false;
-    i = 0;
+    i = j=0;
     auto &ml = m_languageAll[n];
-    ml.reserve(STRING_SIZE);
     auto v = readFile(n, "language");
     for (auto const &e : v) {
       if (b) {
-        ml.push_back(localeToUtf8(e));
+        ml[j++]=localeToUtf8(e);
         continue;
       }
       if (e.empty()) {
@@ -1806,17 +1805,14 @@ void WordsBase::loadLanguages() {
       m_menuAll[n][i] = s;
       // first item
       if (!i) {
-        ml.push_back(utf8ToLowerCase(s));
+        ml[j++]=utf8ToLowerCase(s);
       }
       i++;
     }
-    // pr(n,ml.size(),STRING_SIZE,i,MENU_SIZE)
+     //pr(n,j,STRING_SIZE,i,MENU_SIZE)
     // assert(i == MENU_SIZE);
-    // assert(ml.size() == STRING_SIZE);
+    // assert(j == STRING_SIZE);
 
-#ifndef NOGTK
-    m_programVersion = ml[PROGRAM] + " " + ml[VERSION] + " " + WORDS_VERSION;
-#endif
     ml[MODIFICATION_HELP] = format(ml[MODIFICATION_HELP].c_str(),
                                    ml[EVERY_MODIFICATION_CHANGES_WORD].c_str());
     /* use only first symbol. In Russian language separator is space, so ignore

@@ -145,4 +145,5 @@ public:
   void entryChanged(ENUM_ENTRY e);
 
   GtkTextBuffer *tvBuffer(ENUM_TEXTVIEW e = TEXTVIEW_MAIN) const;
+  std::string getProgramVersionString()const;
 };
