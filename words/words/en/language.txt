@@ -142,3 +142,17 @@ cr symbol found
 Words in ascending order of length.
 Exception words.
 invalid modification string
+abcdefghijklmnopqrstuvwxyz
+aeiouy
+bcdfghjklmnpqrstvwxyz
+qwertyuiop
+asdfghjkl
+zxcvbnm
+coman comas comps
+dfe
+m***m
+we$
+-2,L-4 a>e +L,d i>0
+woman chick
+mata
+anticodonpall

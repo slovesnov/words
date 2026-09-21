@@ -720,7 +720,7 @@ void Frame::setHelperPanel() {
     gtk_container_add(GTK_CONTAINER(w), m_text[TEXTVIEW_HELPER]);
     gtk_container_add(GTK_CONTAINER(m_helperUp), w);
     updateTextView(TEXTVIEW_HELPER,
-                   localeToUtf8(getSettings(SETTINGS_CHAIN_EXCEPTIONS)));
+                   m_language[SETTINGS_CHAIN_EXCEPTIONS]);
     g_signal_connect(tvBuffer(TEXTVIEW_HELPER), "changed",
                      G_CALLBACK(text_view_changed), NULL);
 
@@ -779,7 +779,15 @@ void Frame::sortFilterAndUpdateResults() {
 }
 
 void Frame::loadAndUpdateCurrentLanguage() {
-  loadLanguage();
+  m_language = m_languageAll[m_languageIndex]; // TODO
+  std::string s;
+  int n = m_languageIndex;
+  auto v = readFile(n, "language");
+  int i = -1;
+  for(auto&a:m_menuAll[n]){
+    i++;
+    setMenuLabel(ENUM_MENU(i), a);
+  }
 
   gtk_widget_set_sensitive(m_menuMap[MENU_ENGLISH_LANGUAGE],
                            m_languageIndex != 0);
@@ -837,14 +845,14 @@ GtkWidget *Frame::createTextCombo(ENUM_COMBOBOX e, ENUM_STRING from,
 
 void Frame::addEntryForTemplate() {
   auto i = entryEnumString();
-  if (i == SETTINGS_SIZE) {
+  if (i == STRING_SIZE) {
     return;
   }
   GtkWidget *w = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 3);
   gtk_container_add(GTK_CONTAINER(w), createLabel(SEARCH));
   m_entry[ENTRY_TEMPLATE] = gtk_entry_new();
   gtk_entry_set_text(GTK_ENTRY(m_entry[ENTRY_TEMPLATE]),
-                     localeToUtf8(getSettings(i)).c_str());
+                     m_language[i].c_str());
   connectEntrySignals(ENTRY_TEMPLATE);
   add(w, m_entry[ENTRY_TEMPLATE]);
   gtk_container_add(GTK_CONTAINER(m_helperUp), w);
@@ -1092,14 +1100,8 @@ bool Frame::framePrepare() {
     g_free(raw_text);
   }
 
-  bool hasEntry = isEntryMenu();
-  if (hasEntry) {
-    // should encode to locale string at first to get valid length
-    m_entryText = utf8ToLocale(getEntryString(ENTRY_TEMPLATE));
-  }
-
   bool b = prepare();
-  if (hasEntry) {
+  if (isEntryMenu()) {
     addRemoveClass(m_entry[ENTRY_TEMPLATE], CERROR, !b);
   }
   return b;

@@ -13,7 +13,7 @@ const std::string WORDS_VERSION = "4.5.0";
 const char OPEN_BRACKET = '(';
 const std::string OPEN_S = std::string(" ") + OPEN_BRACKET;
 
-const ENUM_SETTINGS KEYBOARD_ROW[] = {
+const ENUM_STRING KEYBOARD_ROW[] = {
     SETTINGS_KEYBOARD_ROW1,
     SETTINGS_KEYBOARD_ROW2, // should goes immediately after
                             // SETTINGS_KEYBOARD_ROW1

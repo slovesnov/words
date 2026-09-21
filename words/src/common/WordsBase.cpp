@@ -44,36 +44,34 @@ std::mutex cout_mutex;
 
 std::string LNG[LANGUAGES];
 std::vector<MapStringStringVector> eqmap;
-const std::unordered_map<ENUM_MENU,
-                         void (WordsBase::*)(int, DictionaryCI, DictionaryCI)>
-    menu2VoidInt = {
-        {MENU_ANAGRAM, &WordsBase::findAnagram}, // break implemented
-        {MENU_SIMPLE_WORD_SEQUENCE,
-         &WordsBase::findSimpleWordSequence}, // break implemented
-        {MENU_DOUBLE_WORD_SEQUENCE,
-         &WordsBase::findDoubleWordSequence}, // break implemented
-        {MENU_WORD_SEQUENCE_FULL,
-         &WordsBase::findWordSequenceFull},                // not implemented
-        {MENU_MODIFICATION, &WordsBase::findModification}, // break implemented
-        {MENU_CHAIN, &WordsBase::findChain},               // not implemented
-        {MENU_LETTER_GROUP_SPLIT,
-         &WordsBase::findLetterGroupSplit}, // not implemented
-        {MENU_TWO_DICTIONARIES_SIMPLE,
-         &WordsBase::twoDictionariesSimple}, // break implemented
-        {MENU_TWO_DICTIONARIES_TRANSLIT,
-         &WordsBase::twoDictionariesTranslit}, // break implemented
-        {MENU_TWO_DICTIONARIES_KEYBOARD_WORD,
-         &WordsBase::keyboardWords}, // not implemented
-        {MENU_DICTIONARY_STATISTICS,
-         &WordsBase::dictionaryStatistics},                   // not implemented
-        {MENU_WORD_FREQUENCY, &WordsBase::wordFrequency},     // not implemented
-        {MENU_CHECK_DICTIONARY, &WordsBase::checkDictionary}, // not implemented
-        {MENU_TWO_CHARACTERS_DISTRIBUTION,
-         &WordsBase::twoCharactersDistribution}, // not implemented
-        {MENU_TWO_CHARACTERS_DISTRIBUTION_START,
-         &WordsBase::twoCharactersDistribution}, // not implemented
-        {MENU_TWO_CHARACTERS_DISTRIBUTION_END,
-         &WordsBase::twoCharactersDistribution} // not implemented
+const std::unordered_map<ENUM_MENU, void (WordsBase::*)(int)> menu2VoidInt = {
+    {MENU_ANAGRAM, &WordsBase::findAnagram}, // break implemented
+    {MENU_SIMPLE_WORD_SEQUENCE,
+     &WordsBase::findSimpleWordSequence}, // break implemented
+    {MENU_DOUBLE_WORD_SEQUENCE,
+     &WordsBase::findDoubleWordSequence}, // break implemented
+    {MENU_WORD_SEQUENCE_FULL,
+     &WordsBase::findWordSequenceFull},                // not implemented
+    {MENU_MODIFICATION, &WordsBase::findModification}, // break implemented
+    {MENU_CHAIN, &WordsBase::findChain},               // not implemented
+    {MENU_LETTER_GROUP_SPLIT,
+     &WordsBase::findLetterGroupSplit}, // not implemented
+    {MENU_TWO_DICTIONARIES_SIMPLE,
+     &WordsBase::twoDictionariesSimple}, // break implemented
+    {MENU_TWO_DICTIONARIES_TRANSLIT,
+     &WordsBase::twoDictionariesTranslit}, // break implemented
+    {MENU_TWO_DICTIONARIES_KEYBOARD_WORD,
+     &WordsBase::keyboardWords}, // not implemented
+    {MENU_DICTIONARY_STATISTICS,
+     &WordsBase::dictionaryStatistics},                   // not implemented
+    {MENU_WORD_FREQUENCY, &WordsBase::wordFrequency},     // not implemented
+    {MENU_CHECK_DICTIONARY, &WordsBase::checkDictionary}, // not implemented
+    {MENU_TWO_CHARACTERS_DISTRIBUTION,
+     &WordsBase::twoCharactersDistribution}, // not implemented
+    {MENU_TWO_CHARACTERS_DISTRIBUTION_START,
+     &WordsBase::twoCharactersDistribution}, // not implemented
+    {MENU_TWO_CHARACTERS_DISTRIBUTION_END,
+     &WordsBase::twoCharactersDistribution} // not implemented
 };
 /*
 MENU_CHAIN, findChain
@@ -110,7 +108,7 @@ const std::unordered_map<ENUM_MENU, bool (WordsBase::*)(const std::string &)>
          &WordsBase::checkConsonantVowelSequence},
         {MENU_DENSITY, &WordsBase::checkDensity}};
 
-const std::unordered_map<ENUM_MENU, ENUM_SETTINGS> menu2Settings = {
+const std::unordered_map<ENUM_MENU, ENUM_STRING> menu2Settings = {
     {MENU_TEMPLATE, SETTINGS_TEMPLATE},
     {MENU_CROSSWORD, SETTINGS_CROSSWORD},
     {MENU_REGULAR_EXPRESSIONS, SETTINGS_REGULAR_EXPRESSIONS},
@@ -158,6 +156,7 @@ const ENUM_MENU COMBO_MENU[] = {MENU_ANAGRAM,
 WordsBase *wordsBase;
 
 WordsBase::WordsBase() {
+  pri;
   int i, j;
   wordsBase = this;
 
@@ -170,14 +169,13 @@ WordsBase::WordsBase() {
     // clock_t begin = clock();
 
     LNG[i] = LANGUAGE[i].substr(0, 2);
-    m_settings[i] = readFile(i, "settings");
 
     // load dictionaries
     m_longestWordLength[i] = 0;
     std::ifstream file(path(i, "words"));
     assert(file.is_open());
     std::string line, s;
-    if (i)
+    if (i == DICTIONARY_RU)
       m_dictionary[DICTIONARY_RU_UTF8].resize(DICTIONARY_SIZE[i]);
     m_dictionary[i].resize(DICTIONARY_SIZE[i]);
     while (std::getline(file, line)) {
@@ -190,7 +188,7 @@ WordsBase::WordsBase() {
         pr("error invalid dictionary size (file bigger)");
         exit(1);
       }
-      if (i)
+      if (i == DICTIONARY_RU)
         m_dictionary[DICTIONARY_RU_UTF8][k] = fastCp1251ToUtf8(line);
       m_dictionary[i][k] = std::move(line);
       k++;
@@ -211,6 +209,7 @@ WordsBase::WordsBase() {
   m_ma.resize(threads);
   m_thread_result.resize(threads);
 
+  loadLanguages();
   // test();
 #ifdef NOGTK
   // cgi();TODO uncomment on real cgi query
@@ -346,8 +345,9 @@ bool WordsBase::checkConsonantVowelSequence(const std::string &s) {
   const int searchType = m_comboValue[COMBOBOX_HELPER0];
   const int n = m_comboValue[COMBOBOX_HELPER1];
   const char *q =
-      getSettings(m_comboValue[COMBOBOX_HELPER2] == 0 ? SETTINGS_VOWELS
-                                                      : SETTINGS_CONSONANTS)
+      utf8ToLocale(
+          m_language[m_comboValue[COMBOBOX_HELPER2] == 0 ? SETTINGS_VOWELS
+                                                         : SETTINGS_CONSONANTS])
           .c_str();
   int i, j;
   const int l = s.length();
@@ -386,10 +386,10 @@ bool WordsBase::checkConsonantVowelSequence(const std::string &s) {
 bool WordsBase::checkDensity(const std::string &s) {
   int i, p;
   const char *q =
-      m_settings[getDictionaryIndex()]
-                [m_comboValue[COMBOBOX_HELPER1] == 0 ? SETTINGS_VOWELS
-                                                     : SETTINGS_CONSONANTS]
-                    .c_str();
+      utf8ToLocale(
+          m_language[m_comboValue[COMBOBOX_HELPER1] == 0 ? SETTINGS_VOWELS
+                                                         : SETTINGS_CONSONANTS])
+          .c_str();
   const int percentage = m_comboValue[COMBOBOX_HELPER0];
   for (p = i = 0; i < int(s.length()); i++) {
     if (strchr(q, s[i]) != NULL) {
@@ -475,14 +475,14 @@ void WordsBase::setKeyboardOneRow() {
   size_t j;
   uchar uc;
   for (i = 0; i < KEYBOARD_ROW_SIZE; i++) {
-    std::string const &rs = getSettings(KEYBOARD_ROW[i]);
+    std::string const &rs = m_language[KEYBOARD_ROW[i]];
     for (j = 0; j < rs.length(); j++) {
       uc = rs[j];
 
       m_keyboardOneRow[uc][0] = rs;
       for (k = 0; k < KEYBOARD_ROW_SIZE; k++) {
-        if (getSettings(KEYBOARD_ROW[k]).length() > j) {
-          m_keyboardOneRow[uc][1] += getSettings(KEYBOARD_ROW[k])[j];
+        if (m_language[KEYBOARD_ROW[k]].length() > j) {
+          m_keyboardOneRow[uc][1] += m_language[KEYBOARD_ROW[k]][j];
         }
       }
     }
@@ -494,18 +494,19 @@ void WordsBase::setKeyboardRowDiagonals() {
   size_t j;
   uchar uc;
   char c;
-  const int ROW_LEN = getSettings(SETTINGS_KEYBOARD_ROW1).length() + 1;
+  const int ROW_LEN =
+      utf8ToLocale(m_language[SETTINGS_KEYBOARD_ROW1]).length() + 1;
   const int SZ = ROW_LEN * 5;
   std::vector<char> pu(SZ, 0);
   for (i = 0; i < KEYBOARD_ROW_SIZE; i++) {
-    std::string const &rs = getSettings(KEYBOARD_ROW[i]);
+    std::string const &rs = m_language[KEYBOARD_ROW[i]];
     for (j = 0; j < rs.length(); j++) {
       pu[(i + 1) * ROW_LEN + (j + 1)] = rs[j];
     }
   }
 
   for (i = 0; i < KEYBOARD_ROW_SIZE; i++) {
-    std::string const &rs = getSettings(KEYBOARD_ROW[i]);
+    std::string const &rs = m_language[KEYBOARD_ROW[i]];
     for (j = 0; j < rs.length(); j++) {
       uc = rs[j];
       for (k = -1; k < 2; k++) {
@@ -548,7 +549,7 @@ std::string readBinaryFileToString(const std::string &filename) {
 }
 
 void WordsBase::checkLFAllFiles() {
-  auto v = {"language", "settings"};
+  auto v = {"language"};
 
   auto checkFile = [this](const std::string &filepath) {
     std::string s = readBinaryFileToString(filepath);
@@ -760,7 +761,7 @@ void WordsBase::showLongestDoubleWordSequence() {
 }
 #endif
 
-void WordsBase::findAnagram(int nthread, DictionaryCI it, DictionaryCI end) {
+void WordsBase::findAnagram(int nthread) {
   int i;
   std::string s;
   // can use string or string_view
@@ -774,6 +775,7 @@ void WordsBase::findAnagram(int nthread, DictionaryCI it, DictionaryCI end) {
   // at first make several sets by length is slower
 
   for (i = min; i <= max; i++) {
+    auto [it, end] = iterators(getDictionaryIndex(), nthread);
     for (; it != end; it++) {
       auto const &e = *it;
       if (int(e.length()) != i) {
@@ -801,8 +803,7 @@ void WordsBase::findAnagram(int nthread, DictionaryCI it, DictionaryCI end) {
   }
 }
 
-void WordsBase::findSimpleWordSequence(int nthread, DictionaryCI it,
-                                       DictionaryCI end) {
+void WordsBase::findSimpleWordSequence(int nthread) {
   int i, j;
   std::string s;
   MapStringTwoStringVectors &map = m_ma[nthread];
@@ -813,6 +814,8 @@ void WordsBase::findSimpleWordSequence(int nthread, DictionaryCI it,
     // for (i = m_comboValue[COMBOBOX_HELPER0]; i <=
     // m_comboValue[COMBOBOX_HELPER1];
     //      i++) {
+    auto [it, end] = iterators(getDictionaryIndex(), nthread);
+
     for (; it != end; it++) {
       auto const &e = *it;
       if (int(e.length()) >= i) {
@@ -833,8 +836,7 @@ void WordsBase::findSimpleWordSequence(int nthread, DictionaryCI it,
   }
 }
 
-void WordsBase::findDoubleWordSequence(int nthread, DictionaryCI it,
-                                       DictionaryCI end) {
+void WordsBase::findDoubleWordSequence(int nthread) {
   int i, j;
   std::string q, s, t;
   MapStringTwoStringVectors &map = m_ma[nthread];
@@ -844,8 +846,9 @@ void WordsBase::findDoubleWordSequence(int nthread, DictionaryCI it,
     //  for (i = m_comboValue[COMBOBOX_HELPER0]; i <=
     //  m_comboValue[COMBOBOX_HELPER1];
     //      i++) {
-    for (; it != end; it++) {
+    auto [it, end] = iterators(getDictionaryIndex(), nthread);
 
+    for (; it != end; it++) {
       auto const &e = *it;
       if (int(e.length()) >= i) {
         t = e.substr(0, i);
@@ -957,9 +960,9 @@ void WordsBase::simpleDoubleWordSequencePostProseeding() {
   prsync("time2", timeElapse(begin));
 }
 
-void WordsBase::findWordSequenceFull(int nthread, DictionaryCI it,
-                                     DictionaryCI end) {
+void WordsBase::findWordSequenceFull(int nthread) {
   std::string s;
+  auto [it, end] = iterators(getDictionaryIndex(), nthread);
   for (; it != end; it++) {
     auto const &e = *it;
     if (checkPalindrome(e)) {
@@ -974,9 +977,9 @@ void WordsBase::findWordSequenceFull(int nthread, DictionaryCI it,
   }
 }
 
-void WordsBase::findModification(int nthread, DictionaryCI it,
-                                 DictionaryCI end) {
+void WordsBase::findModification(int nthread) {
   std::string s;
+  auto [it, end] = iterators(getDictionaryIndex(), nthread);
   for (; it != end; it++) {
     auto const &e = *it;
     s = m_modifications.apply(e, m_checkValue);
@@ -988,7 +991,7 @@ void WordsBase::findModification(int nthread, DictionaryCI it,
   }
 }
 
-void WordsBase::findChain(int nthread, DictionaryCI it, DictionaryCI end) {
+void WordsBase::findChain(int nthread) {
   int i, j, k, l, n, mx[2];
   MapStringInt dl;
   VString v, w[2];
@@ -1221,8 +1224,7 @@ l210:
   // pr(timeElapse(begin))
 }
 
-void WordsBase::findLetterGroupSplit(int nthread, DictionaryCI it,
-                                     DictionaryCI end) {
+void WordsBase::findLetterGroupSplit(int nthread) {
   std::string s, s1, t, lng;
   size_t i, j;
   auto charset = getOrderedString(m_entryText);
@@ -1288,8 +1290,7 @@ std::string WordsBase::getTwoDictionariesPath(bool translit) {
                          (translit ? "translit" : "simple") + ".txt");
 }
 
-void WordsBase::twoDictionaries(int nthread, DictionaryCI, DictionaryCI,
-                                bool translit) {
+void WordsBase::twoDictionaries(int nthread, bool translit) {
   VVString to;
   int i, j, m, l, len, n, fromIndex = -1;
   std::string s, alphabetFrom;
@@ -1300,7 +1301,7 @@ void WordsBase::twoDictionaries(int nthread, DictionaryCI, DictionaryCI,
     if (to.empty()) {
       fromIndex = INDEX_OF(s, LNG);
       assert(fromIndex != -1);
-      alphabetFrom = m_settings[fromIndex][SETTINGS_ALPHABET];
+      alphabetFrom = utf8ToLocale(m_languageAll[fromIndex][SETTINGS_ALPHABET]);
       to.resize(alphabetFrom.length());
     } else {
       v = split(s, ' ');
@@ -1370,7 +1371,7 @@ void WordsBase::twoDictionaries(int nthread, DictionaryCI, DictionaryCI,
   }
 }
 
-void WordsBase::keyboardWords(int nthread, DictionaryCI, DictionaryCI) {
+void WordsBase::keyboardWords(int nthread) {
   int i;
   char a[256] = {0}, b[128], *p;
   std::string s;
@@ -1379,11 +1380,10 @@ void WordsBase::keyboardWords(int nthread, DictionaryCI, DictionaryCI) {
   Dictionary const &dt = m_dictionary[1];
 
   for (i = SETTINGS_KEYBOARD_ROW1; i <= SETTINGS_KEYBOARD_ROW3; i++) {
-    s = m_settings[0][i];
-    assert(m_settings[1][i].length() >= s.length());
+    s = utf8ToLocale(m_languageAll[0][i]);
     for (j = 0; j < s.length(); j++) {
       // all english keys have russian char on the same keyboard key
-      a[uchar(s[j])] = m_settings[1][i][j];
+      a[uchar(s[j])] = utf8ToLocale(m_languageAll[1][i])[j];
     }
   }
 
@@ -1409,10 +1409,12 @@ void WordsBase::keyboardWords(int nthread, DictionaryCI, DictionaryCI) {
   }
 }
 
-void WordsBase::wordFrequency(int nthread, DictionaryCI it, DictionaryCI end) {
+void WordsBase::wordFrequency(int nthread) {
   const int MAX = getMaximumWordLength();
   auto &m = m_iv[nthread];
   m.assign(MAX, 0);
+  auto [it, end] = iterators(getDictionaryIndex(), nthread);
+
   for (; it != end; it++) {
     auto const &e = *it;
     m[e.length() - 1]++; // use length-1
@@ -1466,8 +1468,7 @@ void WordsBase::wordFrequencyPostProseeding() {
   }
 }
 
-void WordsBase::checkDictionary(int nthread, DictionaryCI it,
-                                DictionaryCI end) {
+void WordsBase::checkDictionary(int nthread) {
   // NOTE!!! SHOULD CHECK DICTIONARY FILE NOT!!! DICTIONARY SET. Check for
   // duplicates and valid line numbers
   std::string s, p = path(getDictionaryIndex(), "words");
@@ -1527,14 +1528,14 @@ void WordsBase::checkDictionary(int nthread, DictionaryCI it,
   }
 }
 
-void WordsBase::twoCharactersDistribution(int nthread, DictionaryCI it,
-                                          DictionaryCI end) {
+void WordsBase::twoCharactersDistribution(int nthread) {
   int i;
   const int n = getAlphabetSize();
   auto &st = m_tr[nthread];
   st.clear(n);
   int &total = st.total;
   auto &a = st.a;
+  auto [it, end] = iterators(getDictionaryIndex(), nthread);
 
   for (; it != end; it++) {
     auto const &e = *it;
@@ -1604,14 +1605,14 @@ void WordsBase::twoCharactersDistributionPostProseeding() {
   m_addstatus = m_language[PAIRS] + " " + intToStringLocaled(v.size());
 }
 
-void WordsBase::dictionaryStatistics(int nthread, DictionaryCI it,
-                                     DictionaryCI end) {
+void WordsBase::dictionaryStatistics(int nthread) {
   const int SZ_CAPTION = 3;
   const int a = getAlphabetSize();
   auto &st = m_tr[nthread];
   st.clear(SZ_CAPTION, a + 1);
   auto &m = st.a;
   std::string &longestWord = st.s;
+  auto [it, end] = iterators(getDictionaryIndex(), nthread);
 
   for (; it != end; it++) {
     auto const &e = *it;
@@ -1705,7 +1706,7 @@ void WordsBase::dictionaryStatisticsPostProseeding() {
       m_out += "\n\n" + m_language[FREQUENCY_OF_KEYBOARD_CHARACTERS];
       for (i = 0; i < 3; i++) {
         s = "";
-        s2 = m_settings[getDictionaryIndex()][SETTINGS_KEYBOARD_ROW1 + i];
+        s2 = m_language[SETTINGS_KEYBOARD_ROW1 + i];
         for (k = 0; k < s2.length(); k++) {
           s += localeToUtf8(
               format(FORMAT, s2[k], frequency[alphabetIndex(s2[k])]));
@@ -1770,52 +1771,60 @@ void WordsBase::sortFilterResults() {
   }
 }
 
-void WordsBase::loadLanguage() {
+void WordsBase::loadLanguages() {
   std::string s;
-  int i = 0;
-  bool b = false;
-  auto v = readFile(m_languageIndex, "language");
-  m_language.clear();
-  for (auto const &e : v) {
-    if (b) {
-      m_language.push_back(localeToUtf8(e));
-      continue;
+  int i, n;
+  bool b;
+  for (n = 0; n < LANGUAGES; n++) {
+    b = false;
+    i = 0;
+    auto &ml = m_languageAll[n];
+    ml.reserve(STRING_SIZE);
+    auto v = readFile(n, "language");
+    for (auto const &e : v) {
+      if (b) {
+        ml.push_back(localeToUtf8(e));
+        continue;
+      }
+      if (e.empty()) {
+        b = true;
+        continue;
+      }
+      if (e == SEPARATOR || e[0] == '}') {
+        continue;
+      }
+      s = localeToUtf8(e);
+      if (s.back() == '{') {
+        s.pop_back();
+      }
+      // #ifndef NOGTK
+      //       setMenuLabel(ENUM_MENU(i), s);
+      // #endif
+      if (i >= MENU_SIZE) {
+        pr("i>=MENU_SIZE") exit(1);
+      }
+      m_menuAll[n][i] = s;
+      // first item
+      if (!i) {
+        ml.push_back(utf8ToLowerCase(s));
+      }
+      i++;
     }
-    if (e.empty()) {
-      b = true;
-      continue;
-    }
-    if (e == SEPARATOR || e[0] == '}') {
-      continue;
-    }
-    s = localeToUtf8(e);
-    if (s.back() == '{') {
-      s.pop_back();
-    }
+    // pr(n,ml.size(),STRING_SIZE,i,MENU_SIZE)
+    // assert(i == MENU_SIZE);
+    // assert(ml.size() == STRING_SIZE);
+
 #ifndef NOGTK
-    setMenuLabel(ENUM_MENU(i), s);
+    m_programVersion = ml[PROGRAM] + " " + ml[VERSION] + " " + WORDS_VERSION;
 #endif
-    // first item
-    if (!i) {
-      m_language.push_back(utf8ToLowerCase(s));
-    }
-    i++;
+    ml[MODIFICATION_HELP] = format(ml[MODIFICATION_HELP].c_str(),
+                                   ml[EVERY_MODIFICATION_CHANGES_WORD].c_str());
+    /* use only first symbol. In Russian language separator is space, so ignore
+     * comment in language.txt file. Comment in ru/language.txt is important
+     * because otherwise it'll we empty string and looks like a bug
+     */
+    ml[SEPARATOR_SYMBOL] = ml[SEPARATOR_SYMBOL].substr(0, 1);
   }
-
-  assert(m_language.size() == STRING_SIZE);
-
-#ifndef NOGTK
-  m_programVersion =
-      m_language[PROGRAM] + " " + m_language[VERSION] + " " + WORDS_VERSION;
-#endif
-  m_language[MODIFICATION_HELP] =
-      format(m_language[MODIFICATION_HELP].c_str(),
-             m_language[EVERY_MODIFICATION_CHANGES_WORD].c_str());
-  /* use only first symbol. In Russian language separator is space, so ignore
-   * comment in language.txt file. Comment in ru/language.txt is important
-   * because otherwise it'll we empty string and looks like a bug
-   */
-  m_language[SEPARATOR_SYMBOL] = m_language[SEPARATOR_SYMBOL].substr(0, 1);
 }
 
 bool WordsBase::prepare() {
@@ -1834,9 +1843,9 @@ bool WordsBase::prepare() {
   if (!isEntryMenu()) {
     return true;
   }
+  // should encode to locale string at first to get valid length
+  m_entryText = utf8ToLocale(getEntryString(ENTRY_TEMPLATE));
 
-  // MENU_REGULAR_EXPRESSIONS MENU_MODIFICATION MENU_CHAIN MENU_TEMPLATE
-  // MENU_CROSSWORD MENU_CHARACTER_SEQUENCE
   if (m_entryText.empty()) {
     return false;
   }
@@ -1976,13 +1985,12 @@ std::pair<DictionaryCI, DictionaryCI> WordsBase::iterators(ENUM_DICTIONARY e,
 void WordsBase::run_thread(int nthread) {
   auto begin = clock();
   m_thread_result[nthread].clear();
-  auto [it2, end] = iterators(getDictionaryIndex(), nthread);
 
   auto it = menu2VoidInt.find(m_menuClick);
   if (it != menu2VoidInt.end()) {
     auto f = it->second;
     // call inside funcntion     twoDictionaries=fromindex, keyboardWords=0
-    (this->*f)(nthread, it2, end);
+    (this->*f)(nthread);
   }
 
   auto it1 = menu2BoolString.find(m_menuClick);
@@ -2005,6 +2013,7 @@ void WordsBase::run_thread(int nthread) {
       }
 
     } else {
+      auto [it2, end] = iterators(getDictionaryIndex(), nthread);
       for (; it2 != end; it++) {
         auto &e = *it2;
         if ((this->*f)(e)) {
@@ -2187,8 +2196,6 @@ void WordsBase::cgi() {
     }
   }
 
-  loadLanguage();
-
   if (!prepare()) {
     printf(" %s", getTimeString().c_str());
     return;
@@ -2332,11 +2339,9 @@ bool WordsBase::createRegex(SafeGRegex &r, ENUM_ENTRY e) {
 
 WordsBase::~WordsBase() {}
 
-bool WordsBase::isEntryMenu() const {
-  return entryEnumString() != SETTINGS_SIZE;
-}
+bool WordsBase::isEntryMenu() const { return entryEnumString() != STRING_SIZE; }
 
-ENUM_SETTINGS WordsBase::entryEnumString() const {
+ENUM_STRING WordsBase::entryEnumString() const {
   auto it = menu2Settings.find(m_menuClick);
-  return it == menu2Settings.end() ? SETTINGS_SIZE : it->second;
+  return it == menu2Settings.end() ? STRING_SIZE : it->second;
 }

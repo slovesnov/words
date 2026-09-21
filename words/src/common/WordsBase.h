@@ -33,10 +33,9 @@ class WordsBase {
   // prepare addons before search;
   void setKeyboardOneRow();
   void setKeyboardRowDiagonals();
+  std::string m_entryText; // locale
 protected:
   Dictionary m_dictionary[DICTIONARY_SIZE];
-  VString m_settings[LANGUAGES]; // m_settings[i] see ENUM_SETTINGS
-                                 // {encoding=locale}
   std::string m_keyboardOneRow[256][2];
   std::string m_keyboardRowDiagonals[256];
   ENUM_MENU m_menuClick; // last search option
@@ -55,7 +54,6 @@ protected:
 #endif
 
   int m_languageIndex;
-  std::string m_entryText; // locale
   char m_templateHelper[256];
   std::vector<std::vector<char>> m_template_a;
   Modification m_modifications;
@@ -67,6 +65,8 @@ protected:
   bool m_checkValue;
   std::string m_textViewText; // locale
   VString m_language;         // utf8
+  VString m_languageAll[LANGUAGES];         // utf8
+  std::array<std::string,MENU_SIZE> m_menuAll[LANGUAGES];         // utf8
   std::string m_addstatus;
 #ifndef NOGTK
   int m_filteredWordsCount;
@@ -103,8 +103,8 @@ protected:
   virtual void endJobThread() = 0;
   bool testFilterRegex(const std::string &s);
 #endif
-  const std::string &getAlphabet() const {
-    return m_settings[getDictionaryIndex()][SETTINGS_ALPHABET];
+  const std::string getAlphabet() const {
+    return utf8ToLocale(m_language[SETTINGS_ALPHABET]);
   }
 
   int getAlphabetSize() const { return getAlphabet().length(); }
@@ -148,20 +148,20 @@ public:
   bool checkKeyboardWordSimple(const std::string &s);
   bool checkKeyboardWordComplex(const std::string &s);
 
-  void findAnagram(int nthread,DictionaryCI it,DictionaryCI end);
-  void findSimpleWordSequence(int nthread,DictionaryCI it,DictionaryCI end);
-  void findDoubleWordSequence(int nthread,DictionaryCI it,DictionaryCI end);
-  void findWordSequenceFull(int nthread,DictionaryCI it,DictionaryCI end);
-  void findModification(int nthread,DictionaryCI it,DictionaryCI end);
-  void findChain(int nthread,DictionaryCI it,DictionaryCI end);
-  void findLetterGroupSplit(int nthread,DictionaryCI it,DictionaryCI end);
-  void twoDictionariesSimple(int nthread,DictionaryCI it,DictionaryCI end) { twoDictionaries(nthread,it,end, false); }
-  void twoDictionariesTranslit(int nthread,DictionaryCI it,DictionaryCI end) { twoDictionaries(nthread,it,end, true); }
-  void keyboardWords(int nthread,DictionaryCI it,DictionaryCI end);
-  void dictionaryStatistics(int nthread,DictionaryCI it,DictionaryCI end);
-  void wordFrequency(int nthread,DictionaryCI it,DictionaryCI end);
-  void checkDictionary(int nthread,DictionaryCI it,DictionaryCI end);
-  void twoCharactersDistribution(int nthread,DictionaryCI it,DictionaryCI end);
+  void findAnagram(int nthread);
+  void findSimpleWordSequence(int nthread);
+  void findDoubleWordSequence(int nthread);
+  void findWordSequenceFull(int nthread);
+  void findModification(int nthread);
+  void findChain(int nthread);
+  void findLetterGroupSplit(int nthread);
+  void twoDictionariesSimple(int nthread) { twoDictionaries(nthread,false); }
+  void twoDictionariesTranslit(int nthread) { twoDictionaries(nthread,true); }
+  void keyboardWords(int nthread);
+  void dictionaryStatistics(int nthread);
+  void wordFrequency(int nthread);
+  void checkDictionary(int nthread);
+  void twoCharactersDistribution(int nthread);
 
   void dictionaryStatisticsPostProseeding();
   void wordFrequencyPostProseeding();
@@ -169,7 +169,7 @@ public:
   void simpleDoubleWordSequencePostProseeding();
 
   static std::string getTwoDictionariesPath(bool translit);
-  void twoDictionaries(int nthread,DictionaryCI it,DictionaryCI end, bool translit);
+  void twoDictionaries(int nthread, bool translit);
 
   static int differentChars(std::string_view s);
   static bool spanIncluding(std::string_view p, std::string_view pattern) {
@@ -180,11 +180,7 @@ public:
   const char getAlphabetChar(int i) { return getAlphabet()[i]; }
 
   const std::string &getVowelConsonant(bool consonant) {
-    return getSettings(consonant ? SETTINGS_CONSONANTS : SETTINGS_VOWELS);
-  }
-
-  inline const std::string &getSettings(ENUM_SETTINGS e) {
-    return m_settings[getDictionaryIndex()][e];
+    return m_language[consonant ? SETTINGS_CONSONANTS : SETTINGS_VOWELS];
   }
 
   inline Dictionary const &getDictionary() const {
@@ -198,7 +194,7 @@ public:
   std::string intToStringLocaled(int v);
   void sortFilterResults();
 
-  void loadLanguage();
+  void loadLanguages();
 
   static std::string sub(std::string const &minuend,
                          std::string const &subtrahend);
@@ -213,5 +209,5 @@ public:
   bool createRegex(SafeGRegex &r, ENUM_ENTRY e = ENTRY_TEMPLATE);
 
   bool isEntryMenu() const;
-  ENUM_SETTINGS entryEnumString() const;
+  ENUM_STRING entryEnumString() const;
 };
