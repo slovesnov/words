@@ -21,13 +21,7 @@
 #include <regex>
 #endif
 
-// #define USE_SET
-// USE_SET slow down dictionary loading and need 2x memory
-#ifdef USE_SET
-using Dictionary = StringSet;
-#else
 using Dictionary = VString;
-#endif
 
 const char SEPARATOR[] = "SEPARATOR";
 constexpr std::string LANGUAGE[] = {"english", "russian"};

@@ -32,3 +32,22 @@ bool sortIntDouble(const IntDouble &r1, const IntDouble &r2) {
 bool sortStringInt(const StringInt &r1, const StringInt &r2) {
   return r1.second == r2.second ? (r1.first < r2.first) : r1.second > r2.second;
 }
+
+std::string fastCp1251ToUtf8(const std::string &src) {
+  std::string result;
+  result.reserve(src.length() * 2);
+  for (unsigned char c : src) {
+    if (c >= 0xF0) {
+      result.push_back(0xD1);
+      result.push_back(c - 0x70);
+    }
+    else if (c >= 0xE0) {
+      result.push_back(0xD0);
+      result.push_back(c - 0x30);
+    }
+    else {
+      result.push_back(c);
+    }
+  }
+  return result;
+}

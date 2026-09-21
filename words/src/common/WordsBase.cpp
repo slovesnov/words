@@ -24,11 +24,7 @@ std::mutex cout_mutex;
   print_variables(__VA_ARGS__);                                                \
   std::cout << "\n";
 
-#ifdef USE_SET
-#define CONTAINS(v, s) v.contains(s)
-#else
 #define CONTAINS(v, s) std::ranges::binary_search(v, s)
-#endif
 
 #ifdef NOGTK
 #define RETURN_ON_USER_BREAK
@@ -184,14 +180,10 @@ WordsBase::WordsBase() {
 
   clock_t begin = clock();
 
-#ifndef USE_SET
   int k;
   const int DICTIONARY_SIZE[] = {393'167, 2'415'401};
-#endif
   for (i = 0; i < LANGUAGES; i++) {
-#ifndef USE_SET
     k = 0;
-#endif
     // clock_t begin = clock();
 
     LNG[i] = LANGUAGE[i].substr(0, 2);
@@ -202,44 +194,31 @@ WordsBase::WordsBase() {
     std::ifstream file(path(i, "words"));
     assert(file.is_open());
     std::string line, s;
-#ifdef USE_SET
-    auto hint = m_dictionary[i].end();
-#else
-    // if (i)
-    //   m_dictionaryRuUtf8.resize(DICTIONARY_SIZE[i]);
+    if (i)
+      m_dictionaryRuUtf8.resize(DICTIONARY_SIZE[i]);
     m_dictionary[i].resize(DICTIONARY_SIZE[i]);
-#endif
     while (std::getline(file, line)) {
       // before std::move
       j = line.size();
       if (j > m_longestWordLength[i]) {
         m_longestWordLength[i] = j;
       }
-#ifdef USE_SET
-      // todo m_dictionaryRuUtf8
-      hint = m_dictionary[i].insert(hint, std::move(line));
-#else
       if (k == DICTIONARY_SIZE[i]) {
         pr("error invalid dictionary size (file bigger)");
         exit(1);
       }
-      // if (i)
-      //   m_dictionaryRuUtf8[k] = localeToUtf8(line);
+      if (i)
+        m_dictionaryRuUtf8[k] = fastCp1251ToUtf8(line);
       m_dictionary[i][k] = std::move(line);
       k++;
-#endif
     }
     file.close();
 
-#ifdef USE_SET
-    // pr(i, timeElapse(begin));
-#else
     // pr(i, timeElapse(begin), k, DICTIONARY_SIZE[i]);
     if (k != DICTIONARY_SIZE[i]) {
       pr("error invalid dictionary size after");
       exit(1);
     }
-#endif
   }
   pr(timeElapse(begin));
 
