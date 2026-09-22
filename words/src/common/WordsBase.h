@@ -187,8 +187,8 @@ public:
   virtual std::string getTextViewString() const;
   virtual bool getCheck() const;
 
-  bool createFilterRegex();
-  bool createRegex(SafeGRegex &r, ENUM_ENTRY e = ENTRY_TEMPLATE);
+  bool createRegex(ENUM_ENTRY e);
+  bool createRegex(ENUM_ENTRY e,SafeGRegex &r);
 
   bool isEntryMenu() const;
   ENUM_STRING entryEnumString() const;

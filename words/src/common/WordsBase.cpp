@@ -369,9 +369,9 @@ bool WordsBase::checkRegularExpression(const std::string &s,
                                        const SafeGRegex &r) {
 #ifdef USE_STANDARD_REGEX
   // todo always m_regex
-  std::ptrdiff_t const matches(
-      std::distance(std::sregex_iterator(s.begin(), s.end(), m_regex[0]),
-                    std::sregex_iterator()));
+  std::ptrdiff_t const matches(std::distance(
+      std::sregex_iterator(s.begin(), s.end(), m_regex[ENTRY_TEMPLATE]),
+      std::sregex_iterator()));
   return matches >= m_comboValue[COMBOBOX_HELPER0] &&
          matches <= m_comboValue[COMBOBOX_HELPER1];
 #else
@@ -1799,13 +1799,13 @@ bool WordsBase::prepare() {
     try {
       m_regex =
           std::regex(m_entryValue.c_str(), std::regex_constants::icase |
-                                              std::regex_constants::extended);
+                                               std::regex_constants::extended);
       return true;
     } catch (std::regex_error &) {
       return false;
     }
 #else
-    return createRegex(m_regex[0]);
+    return createRegex(ENTRY_TEMPLATE);
 #endif
   }
 
@@ -1943,7 +1943,7 @@ void WordsBase::run_thread(int nthread) {
     if (m_menuClick == MENU_REGULAR_EXPRESSIONS) {
       SafeGRegex r; // have to create separate regex, for every thread otherwise
       // very slow
-      createRegex(r);
+      createRegex(ENTRY_TEMPLATE, r);
       bool isEnglish = getDictionaryIndex() == DICTIONARY_EN;
       auto n = isEnglish ? DICTIONARY_EN : DICTIONARY_RU_UTF8;
       auto [it2, end] = iterators(n, nthread);
@@ -2049,8 +2049,9 @@ bool WordsBase::differenceOnlyOneChar(const std::string &a,
 
 #ifndef NOGTK
 bool WordsBase::testFilterRegex(const std::string &s) {
-  return !m_regex[1] ||
-         g_regex_match(m_regex[1].get(), s.c_str(), GRegexMatchFlags(0), NULL);
+  return !m_regex[ENTRY_FILTER] ||
+         g_regex_match(m_regex[ENTRY_FILTER].get(), s.c_str(),
+                       GRegexMatchFlags(0), NULL);
 }
 #endif
 
@@ -2263,26 +2264,17 @@ std::string WordsBase::getEntryString(ENUM_ENTRY e) const {
   return "";
 }
 
-std::string WordsBase::getTextViewString() const{
-  return "";
-}
+std::string WordsBase::getTextViewString() const { return ""; }
 
-bool WordsBase::getCheck() const{
-  return false;
-}
+bool WordsBase::getCheck() const { return false; }
 
-
-bool WordsBase::createFilterRegex() {
-  auto s = getEntryString(ENTRY_FILTER);
-  if (s.empty()) {
-    m_regex[1].reset(nullptr); // set nullptr for testFilterRegex()
-    return true;
-  }
-  return createRegex(m_regex[1], ENTRY_FILTER);
+bool WordsBase::createRegex(ENUM_ENTRY e) {
+  assert(int(e) < SIZEI(m_regex));
+  return createRegex(e, m_regex[e]);
 }
 
 // utf8
-bool WordsBase::createRegex(SafeGRegex &r, ENUM_ENTRY e) {
+bool WordsBase::createRegex(ENUM_ENTRY e, SafeGRegex &r) {
   GRegexCompileFlags f =
       (GRegexCompileFlags)(G_REGEX_OPTIMIZE | G_REGEX_NO_AUTO_CAPTURE);
   auto s = getEntryString(e);

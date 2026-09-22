@@ -625,7 +625,7 @@ void Frame::aboutDialog() {
 
 void Frame::routine() {
   startJob(true);
-  if (framePrepare()) {
+  if (prepare()) {
     startThread(true);
   } else {
     m_end = clock();
@@ -1060,14 +1060,6 @@ void Frame::updateComboValue(ENUM_COMBOBOX e) {
   m_comboValue[e] = v;
 }
 
-bool Frame::framePrepare() {
-  bool b = prepare();
-  if (isEntryMenu()) {
-    addRemoveClass(m_entry[ENTRY_TEMPLATE], CERROR, !b);
-  }
-  return b;
-}
-
 void Frame::connectEntrySignals(ENUM_ENTRY e) {
   GCallback f[] = {G_CALLBACK(entry_insert), G_CALLBACK(entry_delete),
                    G_CALLBACK(entry_focus_in), G_CALLBACK(entry_focus_out)};
@@ -1174,7 +1166,6 @@ void Frame::setDebounceTimer(ENUM_ENTRY e) {
 void Frame::debounceTimeout(ENUM_ENTRY e) {
   // pr(magic_enum::enum_name(e));
   m_debounce_timer_id = 0;
-  bool b;
   switch (e) {
   case ENTRY_TEMPLATE:
     stopThreadAndNewRoutine();
@@ -1185,9 +1176,7 @@ void Frame::debounceTimeout(ENUM_ENTRY e) {
     break;
 
   case ENTRY_FILTER:
-    b = createFilterRegex();
-    addRemoveClass(m_entry[ENTRY_FILTER], CERROR, !b);
-    if (b) {
+    if (m_regex[ENTRY_FILTER]) {
       sortOrFilterChanged();
     }
     break;
@@ -1239,8 +1228,8 @@ void Frame::entryChanged(ENUM_ENTRY e) {
   if (oneOf(e, ENTRY_SEARCH, ENTRY_FILTER)) {
     clearTagMarks();
   }
-  if (e != ENTRY_SEARCH) {
-    bool b = framePrepare();
+  if (oneOf(e, ENTRY_TEMPLATE, ENTRY_FILTER)) {
+    bool b = createRegex(e);
     addRemoveClass(m_entry[e], CERROR, !b);
   }
   setDebounceTimer(e);

@@ -92,7 +92,6 @@ public:
 
   void startJob(bool clearResult);
   void endJob();
-  bool framePrepare(); // return true if entry data is valid
 
   void routine();
   void sortFilterAndUpdateResults();
