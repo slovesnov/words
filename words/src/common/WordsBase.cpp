@@ -1683,7 +1683,7 @@ void WordsBase::sortFilterResults() {
                             m_comboValue[COMBOBOX_SORT_ORDER]]);
   }
   for (auto const &e : m_result) {
-    s = localeToUtf8(e.s);
+    s = fastLocaleToUtf8(e.s);
 #ifndef NOGTK
     if (find != testFilterRegex(s)) {
       continue;
@@ -1696,20 +1696,20 @@ void WordsBase::sortFilterResults() {
 
     m_out += s;
     if (!m_outSplitted) {
-      m_out += OPEN_S + string(CHARACTERS) + format(" %d", e.length);
+      m_out += OPEN_S + string(CHARACTERS) +std::format(" {}", e.length);
 
       if (e.words > 1) {
-        m_out += format(" %s %d", string(WORDS).c_str(), e.words);
+        m_out += std::format(" {} {}", string(WORDS), e.words);
       }
 
       i = m_comboValue[COMBOBOX_SORT] - (NUMBER_OF_SORTS - 3);
       if (i == 0 || i == 1) { // sort by vowels, consonants
         m_out += " " + string(VOWELS + i) +
-                 format(" %.1lf%%",
+                 std::format(" {:.1f}%",
                         e.percent[i]); // show percent of vowels or consonants
       } else if (i == 2) {
         m_out += " " + string(DIFFERENT_CHARACTERS) +
-                 format(" %d", e.differentCharacters);
+                 std::format(" {}", e.differentCharacters);
       }
 
       m_out += ")";
@@ -2016,7 +2016,7 @@ void WordsBase::run(bool full) {
     if ((m_outSplitted = m_result.empty())) {
       auto v = split(m_out, "\n");
       for (auto &e : v) {
-        m_result.push_back(SearchResult(utf8ToLocale(e), 0, 0));
+        m_result.push_back(SearchResult(fastUtf8ToLocale(e), 0, 0));
       }
     }
   }
