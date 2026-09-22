@@ -31,17 +31,15 @@ class WordsBase;
 extern WordsBase *wordsBase;
 
 class WordsBase {
-  // prepare addons before search;
   void setKeyboardOneRow();
   void setKeyboardRowDiagonals();
-  std::string m_entryValue; // locale
+  std::string m_entryValue;    // locale
   std::string m_textViewValue; // locale
   bool m_checkValue;
+
 protected:
-  int m_comboValue
-      [COMBOBOX_SIZE]; // Note use helper value is faster and thread safe, note
-                       // m_comboValue[COMBOBOX_DICTIONARY] is not used
-  int m_radioValue;    // todo in cgi mode
+  int m_comboValue[COMBOBOX_SIZE];//set in frame.cpp
+  int m_radioValue;//set in frame.cpp
 
   Dictionary m_dictionary[DICTIONARY_SIZE];
   std::string m_keyboardOneRow[256][2];
@@ -64,7 +62,7 @@ protected:
   char m_templateHelper[256];
   std::vector<std::vector<char>> m_template_a;
   Modification m_modifications;
-  std::string m_chainHelper[2]; // locale
+  std::string m_chainHelper[2];                                    // locale
   std::array<std::string, STRING_SIZE> m_languageAll[LANGUAGES];   // utf8
   std::array<std::string, MENU_SIZE> m_menuAll[LANGUAGES];         // utf8
   std::array<std::string, SETTINGS_SIZE> m_settingsAll[LANGUAGES]; // locale
@@ -188,7 +186,7 @@ public:
   virtual bool getCheck() const;
 
   bool createRegex(ENUM_ENTRY e);
-  bool createRegex(ENUM_ENTRY e,SafeGRegex &r);
+  bool createRegex(ENUM_ENTRY e, SafeGRegex &r);
 
   bool isEntryMenu() const;
   ENUM_STRING entryEnumString() const;
@@ -197,7 +195,7 @@ public:
   int alphabetIndex(char c) const;
   const std::string &vowelConsonant(bool consonant);
   bool isAlphabetChar(char c) const;
-  const std::string &string(ENUM_STRING e) const;  
+  const std::string &string(ENUM_STRING e) const;
   const std::string &string(int i) const;
-  const std::string &settings(ENUM_STRING e,int i=0) const; 
+  const std::string &settings(ENUM_STRING e, int i = 0) const;
 };
