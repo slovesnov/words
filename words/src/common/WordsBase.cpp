@@ -1563,7 +1563,6 @@ void WordsBase::dictionaryStatistics(int nthread) {
   auto &m = st.a;
   std::string &longestWord = st.s;
   auto [it, end] = iterators(getDictionaryIndex(), nthread);
-
   for (; it != end; it++) {
     auto const &e = *it;
     m[0][a] += e.length();
@@ -1610,22 +1609,21 @@ void WordsBase::dictionaryStatisticsPostProseeding() {
   }
 
   m_out = string(PROCEED_SYMBOLS) + " " + intToStringLocaled(m[0][a]) + ", " +
-          string(WORDS) + " " + intToStringLocaled(m[1][a]);
-
-  m_out += "\n" + string(AVERAGE_WORD_LENGTH_EQUALS) +
-           format(" %.2lf", (double(m[0][a])) / m[1][a]);
+          string(WORDS) + " " + intToStringLocaled(m[1][a]) + "\n" +
+          string(AVERAGE_WORD_LENGTH_EQUALS) +
+          std::format(" {:.2f}", (double(m[0][a])) / m[1][a]);
 
   IntDouble ve[a];
   const int COLUMNS = a / 3;
   std::vector<double> frequency(alphabetSize());
-  const char FORMAT[] = "%c %6.3lf  ";
+  constexpr std::string_view F = "{} {:>6.3f}  ";
 
   for (j = 0; j < SZ_CAPTION; j++) {
     m_out += "\n\n" + caption[j] + additionalCaption[0];
 
     for (s = "", i = 0; i < a; ++i) {
       v = 100. * m[j][i] / m[j][a];
-      s += localeToUtf8(format(FORMAT, alphabet()[i], v));
+      s += std::format(F, localeToUtf8(alphabet().substr(i, 1)), v);
 
       if ((i + 1) % COLUMNS == 0 || i == a - 1) {
         m_out += "\n" + s;
@@ -1642,7 +1640,8 @@ void WordsBase::dictionaryStatisticsPostProseeding() {
 
     s = "";
     for (i = 0; i < a; i++) {
-      s += localeToUtf8(format(FORMAT, alphabet()[ve[i].first], ve[i].second));
+      s2 = localeToUtf8(alphabet().substr(ve[i].first, 1));
+      s += std::format(F, s2, ve[i].second);
 
       if ((i + 1) % COLUMNS == 0 || i == a - 1) {
         m_out += "\n" + s;
@@ -1654,19 +1653,18 @@ void WordsBase::dictionaryStatisticsPostProseeding() {
       m_out += "\n\n" + string(FREQUENCY_OF_KEYBOARD_CHARACTERS);
       for (i = 0; i < 3; i++) {
         s = "";
-        s2 = string(SETTINGS_KEYBOARD_ROW1 + i);
-        for (k = 0; k < s2.length(); k++) {
-          s += localeToUtf8(
-              format(FORMAT, s2[k], frequency[alphabetIndex(s2[k])]));
+        s2=settings(SETTINGS_KEYBOARD_ROW1, i);
+        for (k = 0; k < s2.length(); k++) {          
+          s += std::format(F, localeToUtf8(s2.substr(k, 1)), frequency[alphabetIndex(s2[k])]);
         }
         m_out += "\n" + s;
       }
     }
   }
 
-  m_out += "\n\n" + string(THE_LONGEST_WORD_IS) +
-           format(" - %s (%s %d).", localeToUtf8(longestWord).c_str(),
-                  string(LENGTH).c_str(), longestWord.length());
+  m_out += std::format("\n\n{} - {} ({} {}).", string(THE_LONGEST_WORD_IS),
+                       localeToUtf8(longestWord), string(LENGTH),
+                       longestWord.length());
 }
 
 void WordsBase::sortFilterResults() {
