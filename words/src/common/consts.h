@@ -13,7 +13,6 @@ const std::string WORDS_VERSION = "4.5.0";
 const char OPEN_BRACKET = '(';
 const std::string OPEN_S = std::string(" ") + OPEN_BRACKET;
 const int KEYBOARD_ROWS = 3;
-const int SETTINGS_SIZE = SETTINGS_KEYBOARD_ROW3 + 1;
 
 #ifdef NOGTK
 // should match with ENUM_POST

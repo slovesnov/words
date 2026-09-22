@@ -19,6 +19,7 @@ endif
 TARGET   := words
 ASLOV    := ../../aslov/aslov/src/aslov
 CXX      := g++
+#-DNDEBUG
 CXXFLAGS := -O3 -DNDEBUG -Wall -std=c++23 -Isrc/common -I$(ASLOV)
 SRCS     := src/main.cpp $(wildcard src/*/*.cpp) $(ASLOV)/aslov.cpp
 

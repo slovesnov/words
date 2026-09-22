@@ -1653,9 +1653,10 @@ void WordsBase::dictionaryStatisticsPostProseeding() {
       m_out += "\n\n" + string(FREQUENCY_OF_KEYBOARD_CHARACTERS);
       for (i = 0; i < 3; i++) {
         s = "";
-        s2=settings(SETTINGS_KEYBOARD_ROW1, i);
-        for (k = 0; k < s2.length(); k++) {          
-          s += std::format(F, localeToUtf8(s2.substr(k, 1)), frequency[alphabetIndex(s2[k])]);
+        s2 = settings(SETTINGS_KEYBOARD_ROW1, i);
+        for (k = 0; k < s2.length(); k++) {
+          s += std::format(F, localeToUtf8(s2.substr(k, 1)),
+                           frequency[alphabetIndex(s2[k])]);
         }
         m_out += "\n" + s;
       }
@@ -1729,11 +1730,12 @@ void WordsBase::loadLanguages() {
     for (auto const &e : v) {
       if (b) {
         if (j < SETTINGS_SIZE) {
-          m_settingsAll[n][j] = e;
-        }
-        ml[j++] = localeToUtf8(e);
-        if (j == SEARCH) {
-          ml[j++] = utf8ToLowerCase(search);
+          m_settingsAll[n][j++] = e;
+        } else {
+          if (j - SETTINGS_SIZE == SEARCH) {
+            ml[(j++) - SETTINGS_SIZE] = utf8ToLowerCase(search);
+          }
+          ml[(j++) - SETTINGS_SIZE] = localeToUtf8(e);
         }
         continue;
       }
@@ -1757,7 +1759,7 @@ void WordsBase::loadLanguages() {
       i++;
     }
     assert(i == MENU_SIZE);
-    assert(j == STRING_SIZE);
+    assert(j - SETTINGS_SIZE == STRING_SIZE);
 
     ml[MODIFICATION_HELP] = format(ml[MODIFICATION_HELP].c_str(),
                                    ml[EVERY_MODIFICATION_CHANGES_WORD].c_str());
@@ -2313,8 +2315,12 @@ const std::string &WordsBase::string(int i) const {
   return string(ENUM_STRING(i));
 }
 
-const std::string &WordsBase::settings(ENUM_STRING e, int i) const {
+const std::string &WordsBase::stringUsingDictionary(ENUM_STRING e) const {
+  return m_languageAll[getDictionaryIndex()][e];
+}
+
+const std::string &WordsBase::settings(ENUM_SETTINGS e, int i) const {
   int n = int(e) + i;
   assert(n < SETTINGS_SIZE);
-  return m_settingsAll[getDictionaryIndex()][ENUM_STRING(n)];
+  return m_settingsAll[getDictionaryIndex()][ENUM_SETTINGS(n)];
 }

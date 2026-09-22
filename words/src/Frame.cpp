@@ -662,8 +662,7 @@ void Frame::setHelperPanel() {
     w = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 3);
     gtk_container_add(GTK_CONTAINER(w), createLabel(SEARCH));
     m_entry[ENTRY_TEMPLATE] = w1 = gtk_entry_new();
-    gtk_entry_set_text(GTK_ENTRY(w1),
-                       m_languageAll[getDictionaryIndex()][e].c_str());
+    gtk_entry_set_text(GTK_ENTRY(w1), stringUsingDictionary(e).c_str());
     connectEntrySignals(ENTRY_TEMPLATE);
     add(w, w1);
     gtk_container_add(GTK_CONTAINER(m_helperUp), w);
@@ -712,7 +711,8 @@ void Frame::setHelperPanel() {
                                 GTK_WRAP_WORD);
     gtk_container_add(GTK_CONTAINER(w), m_text[TEXTVIEW_HELPER]);
     gtk_container_add(GTK_CONTAINER(m_helperUp), w);
-    updateTextView(TEXTVIEW_HELPER, string(SETTINGS_CHAIN_EXCEPTIONS));
+    updateTextView(TEXTVIEW_HELPER,
+                   stringUsingDictionary(SETTINGS_CHAIN_EXCEPTIONS));
     g_signal_connect(tvBuffer(TEXTVIEW_HELPER), "changed",
                      G_CALLBACK(text_view_changed), NULL);
 
