@@ -433,13 +433,13 @@ void WordsBase::setKeyboardOneRow() {
   size_t j;
   uchar uc;
   for (i = 0; i < KEYBOARD_ROWS; i++) {
-    std::string const &rs = m_language[SETTINGS_KEYBOARD_ROW1 + i];
+    std::string const &rs = string(SETTINGS_KEYBOARD_ROW1 + i);
     for (j = 0; j < rs.length(); j++) {
       uc = rs[j];
       m_keyboardOneRow[uc][0] = rs;
       for (k = 0; k < KEYBOARD_ROWS; k++) {
-        if (m_language[SETTINGS_KEYBOARD_ROW1 + k].length() > j) {
-          m_keyboardOneRow[uc][1] += m_language[SETTINGS_KEYBOARD_ROW1 + k][j];
+        if (string(SETTINGS_KEYBOARD_ROW1 + k).length() > j) {
+          m_keyboardOneRow[uc][1] += string(SETTINGS_KEYBOARD_ROW1 + k)[j];
         }
       }
     }
@@ -456,14 +456,14 @@ void WordsBase::setKeyboardRowDiagonals() {
   const int SZ = ROW_LEN * 5;
   std::vector<char> pu(SZ, 0);
   for (i = 0; i < KEYBOARD_ROWS; i++) {
-    std::string const &rs = m_language[SETTINGS_KEYBOARD_ROW1 + i];
+    std::string const &rs = string(SETTINGS_KEYBOARD_ROW1 + i);
     for (j = 0; j < rs.length(); j++) {
       pu[(i + 1) * ROW_LEN + (j + 1)] = rs[j];
     }
   }
 
   for (i = 0; i < KEYBOARD_ROWS; i++) {
-    std::string const &rs = m_language[SETTINGS_KEYBOARD_ROW1 + i];
+    std::string const &rs = string(SETTINGS_KEYBOARD_ROW1 + i);
     for (j = 0; j < rs.length(); j++) {
       uc = rs[j];
       for (k = -1; k < 2; k++) {
@@ -962,7 +962,7 @@ void WordsBase::findChain(int nthread) {
 
   if (differenceOnlyOneChar(m_chainHelper[0], m_chainHelper[1])) {
     m_out = localeToUtf8(m_chainHelper[0] + " " + m_chainHelper[1]) + OPEN_S +
-            m_language[WORDS] + "2)";
+            string(WORDS) + "2)";
     return;
   }
 
@@ -1039,7 +1039,7 @@ void WordsBase::findChain(int nthread) {
 
 l210:
   if (vs[0].empty()) {
-    m_out = m_language[NO_CHAINS_FOUND];
+    m_out = string(NO_CHAINS_FOUND);
     return;
   }
 
@@ -1229,10 +1229,10 @@ void WordsBase::findLetterGroupSplit(int nthread) {
     }
   }
   if (m_out.empty()) {
-    m_out = m_language[SPLITS_NOT_FOUND];
+    m_out = string(SPLITS_NOT_FOUND);
   } else {
     for (i = 0; i < 2; i++) {
-      m_addstatus += m_language[i ? TRIPLETS : PAIRS] + " " +
+      m_addstatus += string(i ? TRIPLETS : PAIRS) + " " +
                      intToStringLocaled(n[i]) + (i ? "" : ", ");
     }
   }
@@ -1410,12 +1410,12 @@ void WordsBase::wordFrequencyPostProseeding() {
           std::format("{:2d} {:6.3f}% {:>{}}/{}", e.second, 100. * e.first / sz,
                       toString(e.first, ','), w, toString(sz, ','));
       if (i == 0 && j == 0) {
-        s1 = m_language[WORD_LENGTH_FREQUENCY];
+        s1 = string(WORD_LENGTH_FREQUENCY);
         k = s.length() + SP - g_utf8_strlen(s1.c_str(), -1);
         if (k > 0) {
           s1 += std::string(k, ' ');
         }
-        m_out = s1 + m_language[WORD_LENGTH_FREQUENCY1];
+        m_out = s1 + string(WORD_LENGTH_FREQUENCY1);
       }
       m_out += (j ? separator : "\n") + s;
     }
@@ -1431,8 +1431,8 @@ void WordsBase::checkDictionary(int nthread) {
   const int MAX_ERRORS = 100;
 
   auto addError = [&line, &errors, this](ENUM_STRING error) {
-    m_out += (m_out.empty() ? "" : "\n") + m_language[STRING_ERROR] + ", " +
-             m_language[error] + " " + m_language[LINE] + " " +
+    m_out += (m_out.empty() ? "" : "\n") + string(STRING_ERROR) + ", " +
+             string(error) + " " + string(LINE) + " " +
              intToStringLocaled(line);
     if (++errors == MAX_ERRORS) {
       throw std::runtime_error("");
@@ -1441,7 +1441,7 @@ void WordsBase::checkDictionary(int nthread) {
 
   FILE *file = std::fopen(p.c_str(), "rb");
   if (!file) {
-    m_out = m_language[STRING_ERROR];
+    m_out = string(STRING_ERROR);
     return;
   }
   try {
@@ -1475,7 +1475,7 @@ void WordsBase::checkDictionary(int nthread) {
     }
     std::fclose(file);
     if (m_out.empty()) {
-      m_out = m_language[DICTIONARY_CHECK_FINISHED_SUCCESSFULLY];
+      m_out = string(DICTIONARY_CHECK_FINISHED_SUCCESSFULLY);
     }
   } catch (const std::runtime_error &) {
     std::fclose(file);
@@ -1556,7 +1556,7 @@ void WordsBase::twoCharactersDistributionPostProseeding() {
                                  intToStringLocaled(p->second).c_str(),
                                  intToStringLocaled(total).c_str()));
   }
-  m_addstatus = m_language[PAIRS] + " " + intToStringLocaled(v.size());
+  m_addstatus = string(PAIRS) + " " + intToStringLocaled(v.size());
 }
 
 void WordsBase::dictionaryStatistics(int nthread) {
@@ -1603,21 +1603,21 @@ void WordsBase::dictionaryStatisticsPostProseeding() {
   std::string additionalCaption[2];
   for (i = 0; i < SZ_CAPTION; i++) {
     caption[i] =
-        m_language[i == 0
+      string(i == 0
                        ? CHARACTER_FREQUENCY_PERCENTS
                        : (i == 1 ? CHARACTER_FREQUENCY_AT_THE_BEGINNING_PERCENTS
-                                 : CHARACTER_FREQUENCY_AT_THE_END_PERCENTS)];
+                                 : CHARACTER_FREQUENCY_AT_THE_END_PERCENTS));
   }
 
   for (i = 0; i < SIZEI(additionalCaption); i++) {
     additionalCaption[i] =
-        " " + m_language[i == 0 ? SORTED_BY_ALPHABET : SORTED_BY_FREQUENCY];
+        " " + string(i == 0 ? SORTED_BY_ALPHABET : SORTED_BY_FREQUENCY);
   }
 
-  m_out = m_language[PROCEED_SYMBOLS] + " " + intToStringLocaled(m[0][a]) +
-          ", " + m_language[WORDS] + " " + intToStringLocaled(m[1][a]);
+  m_out = string(PROCEED_SYMBOLS) + " " + intToStringLocaled(m[0][a]) +
+          ", " + string(WORDS) + " " + intToStringLocaled(m[1][a]);
 
-  m_out += "\n" + m_language[AVERAGE_WORD_LENGTH_EQUALS] +
+  m_out += "\n" + string(AVERAGE_WORD_LENGTH_EQUALS) +
            format(" %.2lf", (double(m[0][a])) / m[1][a]);
 
   IntDouble ve[a];
@@ -1656,10 +1656,10 @@ void WordsBase::dictionaryStatisticsPostProseeding() {
     }
 
     if (j == 0) {
-      m_out += "\n\n" + m_language[FREQUENCY_OF_KEYBOARD_CHARACTERS];
+      m_out += "\n\n" + string(FREQUENCY_OF_KEYBOARD_CHARACTERS);
       for (i = 0; i < 3; i++) {
         s = "";
-        s2 = m_language[SETTINGS_KEYBOARD_ROW1 + i];
+        s2 = string(SETTINGS_KEYBOARD_ROW1 + i);
         for (k = 0; k < s2.length(); k++) {
           s += localeToUtf8(
               format(FORMAT, s2[k], frequency[alphabetIndex(s2[k])]));
@@ -1669,9 +1669,9 @@ void WordsBase::dictionaryStatisticsPostProseeding() {
     }
   }
 
-  m_out += "\n\n" + m_language[THE_LONGEST_WORD_IS] +
+  m_out += "\n\n" + string(THE_LONGEST_WORD_IS) +
            format(" - %s (%s %d).", localeToUtf8(longestWord).c_str(),
-                  m_language[LENGTH].c_str(), longestWord.length());
+                  string(LENGTH).c_str(), longestWord.length());
 }
 
 void WordsBase::sortFilterResults() {
@@ -1702,19 +1702,19 @@ void WordsBase::sortFilterResults() {
 
     m_out += s;
     if (!m_outSplitted) {
-      m_out += OPEN_S + m_language[CHARACTERS] + format(" %d", e.length);
+      m_out += OPEN_S + string(CHARACTERS) + format(" %d", e.length);
 
       if (e.words > 1) {
-        m_out += format(" %s %d", m_language[WORDS].c_str(), e.words);
+        m_out += format(" %s %d", string(WORDS).c_str(), e.words);
       }
 
       i = m_comboValue[COMBOBOX_SORT] - (NUMBER_OF_SORTS - 3);
       if (i == 0 || i == 1) { // sort by vowels, consonants
-        m_out += " " + m_language[VOWELS + i] +
+        m_out += " " + string(VOWELS + i) +
                  format(" %.1lf%%",
                         e.percent[i]); // show percent of vowels or consonants
       } else if (i == 2) {
-        m_out += " " + m_language[DIFFERENT_CHARACTERS] +
+        m_out += " " + string(DIFFERENT_CHARACTERS) +
                  format(" %d", e.differentCharacters);
       }
 
@@ -1740,7 +1740,7 @@ void WordsBase::loadLanguages() {
           m_settingsAll[n][k] = e;
         }
         ml[j++] = localeToUtf8(e);
-        if(j==SEARCH){
+        if (j == SEARCH) {
           ml[j++] = utf8ToLowerCase(search);
         }
         continue;
@@ -1818,7 +1818,7 @@ bool WordsBase::prepare() {
   if (m_menuClick == MENU_MODIFICATION) { // finish with MENU_MODIFICATION
     if (!m_modifications.parse(m_entryText)) {
 #ifdef NOGTK
-      printf(m_language[CGI_STRING_ERROR_INVALID_MODIFICATION_STRING].c_str());
+      printf(string(CGI_STRING_ERROR_INVALID_MODIFICATION_STRING).c_str());
 #endif
       return false;
     }
@@ -1899,14 +1899,14 @@ std::string WordsBase::getStatusString() {
     s += ", ";
   }
   if (!m_outSplitted) {
-    s = m_language[NUMBER_OF_WORDS] + " " +
+    s = string(NUMBER_OF_WORDS) + " " +
         intToStringLocaled(m_result.size()) + ", ";
 #ifndef NOGTK
-    s += m_language[WITH_FILTER] + " " +
+    s += string(WITH_FILTER) + " " +
          intToStringLocaled(m_filteredWordsCount) + ", ";
 #endif
   }
-  return s + m_language[TIME_OF_LAST_OPERATION] + " " + getTimeString();
+  return s + string(TIME_OF_LAST_OPERATION) + " " + getTimeString();
 }
 
 std::string WordsBase::getTimeString() {
@@ -2061,7 +2061,7 @@ bool WordsBase::testFilterRegex(const std::string &s) {
 #endif
 
 std::string WordsBase::intToStringLocaled(int v) {
-  return toString(v, m_language[SEPARATOR_SYMBOL][0]);
+  return toString(v, string(SEPARATOR_SYMBOL)[0]);
 }
 
 std::string WordsBase::path(int i, std::string s) {
@@ -2311,3 +2311,12 @@ const std::string &WordsBase::vowelConsonant(bool consonant) {
 }
 
 bool WordsBase::isAlphabetChar(char c) const { return alphabetIndex(c) != -1; }
+
+const std::string &WordsBase::string(ENUM_STRING e) const {
+  return m_languageAll[m_languageIndex][e];
+}
+
+const std::string &WordsBase::string(int i) const{
+  assert(i>=0 && i<STRING_SIZE);
+  return string(ENUM_STRING(i));
+}

@@ -547,10 +547,10 @@ void Frame::aboutDialog() {
     } else if (id == STRING_SIZE) {
       s = getBuildVersionString(false);
     } else {
-      s = m_language[id];
+      s = string(id);
 
       if (id == AUTHOR) {
-        s += " " + m_language[EMAIL_STRING] + " " + MAIL;
+        s += " " + string(EMAIL_STRING) + " " + MAIL;
       } else if (id == HOMEPAGE_STRING || id == HOMEPAGE_ONLINE_STRING) {
         s += " " + (id == HOMEPAGE_STRING ? HOMEPAGE : HOMEPAGE_ONLINE);
       } else if (id == COPYRIGHT) {
@@ -569,7 +569,7 @@ void Frame::aboutDialog() {
                             : "");
       label = gtk_label_new(NULL);
       markup = g_markup_printf_escaped("%s <a href=\"%s\">\%s</a>",
-                                       m_language[id].c_str(), s1.c_str(),
+                                       string(id).c_str(), s1.c_str(),
                                        s1.c_str());
       gtk_label_set_markup(GTK_LABEL(label), markup);
       g_free(markup);
@@ -651,7 +651,7 @@ void Frame::setHelperPanel() {
     gtk_label_set_line_wrap(GTK_LABEL(w), TRUE);
     gtk_label_set_max_width_chars(GTK_LABEL(w), 40);
 
-    s = replaceAll(m_language[it->second], "<br>", "\n");
+    s = replaceAll(string(it->second), "<br>", "\n");
     p = g_markup_printf_escaped(s.c_str());
     gtk_label_set_markup(GTK_LABEL(w), p);
     g_free(p);
@@ -675,7 +675,7 @@ void Frame::setHelperPanel() {
 
   case MENU_PANGRAM:
     w = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, COMBOLINE_MARGIN);
-    add(w, m_language[MINIMUM] + " " + m_language[DIFFERENT_CHARACTERS]);
+    add(w, string(MINIMUM) + " " + string(DIFFERENT_CHARACTERS));
     add(w, createTextCombo(COMBOBOX_HELPER0, 10, MAX_PANGRAM_LENGTH, 5));
     gtk_container_add(GTK_CONTAINER(m_helperUp), w);
     break;
@@ -692,7 +692,7 @@ void Frame::setHelperPanel() {
 
   case MENU_MODIFICATION:
     m_check = gtk_check_button_new_with_label(
-        m_language[EVERY_MODIFICATION_CHANGES_WORD].c_str());
+        string(EVERY_MODIFICATION_CHANGES_WORD).c_str());
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(m_check), TRUE);
     gtk_container_add(GTK_CONTAINER(m_helperUp), m_check);
     g_signal_connect(m_check, "toggled", G_CALLBACK(check_changed), NULL);
@@ -711,7 +711,7 @@ void Frame::setHelperPanel() {
                                 GTK_WRAP_WORD);
     gtk_container_add(GTK_CONTAINER(w), m_text[TEXTVIEW_HELPER]);
     gtk_container_add(GTK_CONTAINER(m_helperUp), w);
-    updateTextView(TEXTVIEW_HELPER, m_language[SETTINGS_CHAIN_EXCEPTIONS]);
+    updateTextView(TEXTVIEW_HELPER, string(SETTINGS_CHAIN_EXCEPTIONS));
     g_signal_connect(tvBuffer(TEXTVIEW_HELPER), "changed",
                      G_CALLBACK(text_view_changed), NULL);
 
@@ -770,8 +770,7 @@ void Frame::sortFilterAndUpdateResults() {
 }
 
 void Frame::loadAndUpdateCurrentLanguage() {
-  m_language = m_languageAll[m_languageIndex]; // TODO
-  printlo(m_languageIndex) std::string s;
+  std::string s;
   int i = -1;
   for (auto &a : m_menuAll[m_languageIndex]) {
     i++;
@@ -786,10 +785,10 @@ void Frame::loadAndUpdateCurrentLanguage() {
   setLabel(m_searchLabel, SEARCH);
   setLabel(m_currentDictionary, DICTIONARY);
 
-  gtk_window_set_title(GTK_WINDOW(m_widget), m_language[PROGRAM].c_str());
+  gtk_window_set_title(GTK_WINDOW(m_widget), string(PROGRAM).c_str());
 
   gtk_frame_set_label(GTK_FRAME(m_filterFrame),
-                      m_language[RESULTS_FILTER].c_str());
+                      string(RESULTS_FILTER).c_str());
 
   refillCombo(COMBOBOX_SORT, SORT_BY_ALPHABET, NUMBER_OF_SORTS);
   refillCombo(COMBOBOX_FILTER, FOUND, 2);
@@ -827,15 +826,15 @@ GtkWidget *Frame::createTextCombo(ENUM_COMBOBOX e, ENUM_STRING from,
   VString v;
   int i;
   for (i = from; i <= to; i++) {
-    v.push_back(m_language[i]);
+    v.push_back(string(i));
   }
   return createTextCombo(e, v, active);
 }
 
 void Frame::addComboLineToHelper(ENUM_STRING id, int from, int to, int active,
                                  ENUM_STRING eid, bool any) {
-  addComboLineToHelper(id, from, to, active, m_language[id], m_language[TO],
-                       eid == STRING_SIZE ? "" : m_language[eid], any);
+  addComboLineToHelper(id, from, to, active, string(id), string(TO),
+                       eid == STRING_SIZE ? "" : string(eid), any);
 }
 
 void Frame::addComboLineToHelper(ENUM_STRING id, int from, int to, int active,
@@ -844,16 +843,16 @@ void Frame::addComboLineToHelper(ENUM_STRING id, int from, int to, int active,
   int i, j;
   GtkWidget *w = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, COMBOLINE_MARGIN), *r;
   for (i = 0; i < 2; i++) {
-    add(w, i == 0 ? s1 + (any ? "" : " " + m_language[FROM]) : s2);
+    add(w, i == 0 ? s1 + (any ? "" : " " + string(FROM)) : s2);
     if (!i && any) {
       m_radioValue = 0;
       for (j = 0; j < 2; j++) {
         if (j == 0) {
           m_radio = r =
-              gtk_radio_button_new_with_label(NULL, m_language[ANY].c_str());
+              gtk_radio_button_new_with_label(NULL, string(ANY).c_str());
         } else {
           r = gtk_radio_button_new_with_label_from_widget(
-              GTK_RADIO_BUTTON(m_radio), m_language[FROM].c_str());
+              GTK_RADIO_BUTTON(m_radio), string(FROM).c_str());
         }
         add(w, r);
         g_signal_connect(r, "toggled", G_CALLBACK(radio_changed), NULL);
@@ -971,7 +970,7 @@ void Frame::startJob(bool clearResult) {
   m_filteredWordsCount = 0; // need to set always because in case of error
                             // need m_filteredWordsCount = 0
   setLabel(m_searchTagLabel, "");
-  setStatus(m_language[ONE_OF(m_menuClick, MENU_WAITING) ? WAITING : SEARCH] +
+  setStatus(string(ONE_OF(m_menuClick, MENU_WAITING) ? WAITING : SEARCH) +
             "...");
   updateTextView();
 }
@@ -1136,7 +1135,7 @@ void Frame::refillCombo(ENUM_COMBOBOX e, ENUM_STRING first, int length) {
   auto c = GTK_COMBO_BOX_TEXT(m_combo[e]);
   gtk_combo_box_text_remove_all(c);
   for (i = 0; i < length; i++) {
-    gtk_combo_box_text_append_text(c, m_language[first + i].c_str());
+    gtk_combo_box_text_append_text(c, string(first + i).c_str());
   }
   setComboIndex(e, j);
   unlockSignals();
@@ -1144,7 +1143,7 @@ void Frame::refillCombo(ENUM_COMBOBOX e, ENUM_STRING first, int length) {
 
 void Frame::newVersionMessage() {
   std::string s =
-      m_language[NEW_VERSION_MESSAGE] + "\n" + m_newVersion.m_message;
+      string(NEW_VERSION_MESSAGE) + "\n" + m_newVersion.m_message;
   GtkWidget *d =
       gtk_message_dialog_new(GTK_WINDOW(m_widget), GTK_DIALOG_MODAL,
                              GTK_MESSAGE_INFO, GTK_BUTTONS_YES_NO, s.c_str());
@@ -1212,7 +1211,7 @@ void Frame::debounceTimeout(ENUM_ENTRY e) {
 }
 
 void Frame::setLabel(GtkWidget *w, ENUM_STRING e) {
-  setLabel(w, m_language[e]);
+  setLabel(w, string(e));
 }
 
 void Frame::setLabel(GtkWidget *w, const std::string &s) {
@@ -1360,5 +1359,5 @@ GtkTextBuffer *Frame::tvBuffer(ENUM_TEXTVIEW e) const {
 }
 
 std::string Frame::getProgramVersionString() const {
-  return m_language[PROGRAM] + " " + m_language[VERSION] + " " + WORDS_VERSION;
+  return string(PROGRAM) + " " + string(VERSION) + " " + WORDS_VERSION;
 }

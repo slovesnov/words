@@ -53,7 +53,6 @@ protected:
 #else
   SafeGRegex m_regex[2];
 #endif
-
   int m_languageIndex;
   char m_templateHelper[256];
   std::vector<std::vector<char>> m_template_a;
@@ -65,7 +64,6 @@ protected:
   int m_radioValue;    // todo in cgi mode
   bool m_checkValue;
   std::string m_textViewText;                                      // locale
-  std::array<std::string, STRING_SIZE> m_language;                 // utf8
   std::array<std::string, STRING_SIZE> m_languageAll[LANGUAGES];   // utf8
   std::array<std::string, MENU_SIZE> m_menuAll[LANGUAGES];         // utf8
   std::array<std::string, SETTINGS_SIZE> m_settingsAll[LANGUAGES]; // locale
@@ -196,4 +194,6 @@ public:
   int alphabetIndex(char c) const;
   const std::string &vowelConsonant(bool consonant);
   bool isAlphabetChar(char c) const;
+  const std::string &string(ENUM_STRING e) const;  
+  const std::string &string(int i) const;  
 };

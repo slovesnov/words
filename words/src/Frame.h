@@ -75,7 +75,7 @@ class Frame : WordsBase {
 
   /*make non static because other createLabel() functions is not static*/
   GtkWidget *createLabel(std::string s) { return gtk_label_new(s.c_str()); }
-  GtkWidget *createLabel(ENUM_STRING e) { return createLabel(m_language[e]); }
+  GtkWidget *createLabel(ENUM_STRING e) { return createLabel(string(e)); }
 
   /*make non static because other add() functions are not static*/
   void add(GtkWidget *w, GtkWidget *a) {
