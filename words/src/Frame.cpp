@@ -568,9 +568,9 @@ void Frame::aboutDialog() {
            (m_languageIndex ? ',' + getShortLanguageString(m_languageIndex)
                             : "");
       label = gtk_label_new(NULL);
-      markup = g_markup_printf_escaped("%s <a href=\"%s\">\%s</a>",
-                                       string(id).c_str(), s1.c_str(),
-                                       s1.c_str());
+      markup =
+          g_markup_printf_escaped("%s <a href=\"%s\">\%s</a>",
+                                  string(id).c_str(), s1.c_str(), s1.c_str());
       gtk_label_set_markup(GTK_LABEL(label), markup);
       g_free(markup);
       g_signal_connect(label, "activate-link", G_CALLBACK(label_clicked),
@@ -662,7 +662,8 @@ void Frame::setHelperPanel() {
     w = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 3);
     gtk_container_add(GTK_CONTAINER(w), createLabel(SEARCH));
     m_entry[ENTRY_TEMPLATE] = w1 = gtk_entry_new();
-    gtk_entry_set_text(GTK_ENTRY(w1), m_languageAll[getDictionaryIndex()][e].c_str());
+    gtk_entry_set_text(GTK_ENTRY(w1),
+                       m_languageAll[getDictionaryIndex()][e].c_str());
     connectEntrySignals(ENTRY_TEMPLATE);
     add(w, w1);
     gtk_container_add(GTK_CONTAINER(m_helperUp), w);
@@ -787,8 +788,7 @@ void Frame::loadAndUpdateCurrentLanguage() {
 
   gtk_window_set_title(GTK_WINDOW(m_widget), string(PROGRAM).c_str());
 
-  gtk_frame_set_label(GTK_FRAME(m_filterFrame),
-                      string(RESULTS_FILTER).c_str());
+  gtk_frame_set_label(GTK_FRAME(m_filterFrame), string(RESULTS_FILTER).c_str());
 
   refillCombo(COMBOBOX_SORT, SORT_BY_ALPHABET, NUMBER_OF_SORTS);
   refillCombo(COMBOBOX_FILTER, FOUND, 2);
@@ -1061,18 +1061,6 @@ void Frame::updateComboValue(ENUM_COMBOBOX e) {
 }
 
 bool Frame::framePrepare() {
-  if (m_menuClick == MENU_MODIFICATION) {
-    m_checkValue =
-        gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(m_check)) == TRUE;
-  } else if (m_menuClick == MENU_CHAIN) {
-    GtkTextBuffer *buffer = tvBuffer(TEXTVIEW_HELPER);
-    GtkTextIter start, end;
-    gtk_text_buffer_get_bounds(buffer, &start, &end);
-    gchar *raw_text = gtk_text_buffer_get_text(buffer, &start, &end, FALSE);
-    m_textViewText = utf8ToLocale(raw_text);
-    g_free(raw_text);
-  }
-
   bool b = prepare();
   if (isEntryMenu()) {
     addRemoveClass(m_entry[ENTRY_TEMPLATE], CERROR, !b);
@@ -1142,8 +1130,7 @@ void Frame::refillCombo(ENUM_COMBOBOX e, ENUM_STRING first, int length) {
 }
 
 void Frame::newVersionMessage() {
-  std::string s =
-      string(NEW_VERSION_MESSAGE) + "\n" + m_newVersion.m_message;
+  std::string s = string(NEW_VERSION_MESSAGE) + "\n" + m_newVersion.m_message;
   GtkWidget *d =
       gtk_message_dialog_new(GTK_WINDOW(m_widget), GTK_DIALOG_MODAL,
                              GTK_MESSAGE_INFO, GTK_BUTTONS_YES_NO, s.c_str());
@@ -1198,7 +1185,7 @@ void Frame::debounceTimeout(ENUM_ENTRY e) {
     break;
 
   case ENTRY_FILTER:
-    b = createEntryRegex();
+    b = createFilterRegex();
     addRemoveClass(m_entry[ENTRY_FILTER], CERROR, !b);
     if (b) {
       sortOrFilterChanged();
@@ -1210,9 +1197,7 @@ void Frame::debounceTimeout(ENUM_ENTRY e) {
   }
 }
 
-void Frame::setLabel(GtkWidget *w, ENUM_STRING e) {
-  setLabel(w, string(e));
-}
+void Frame::setLabel(GtkWidget *w, ENUM_STRING e) { setLabel(w, string(e)); }
 
 void Frame::setLabel(GtkWidget *w, const std::string &s) {
   gtk_label_set_text(GTK_LABEL(w), s.c_str());
@@ -1231,10 +1216,23 @@ std::string Frame::getEntryString(ENUM_ENTRY e) const {
     }
     cursor = g_utf8_next_char(cursor);
   }
-
   std::string s = lower_str;
   g_free(lower_str);
   return s;
+}
+
+std::string Frame::getTextViewString() const {
+  GtkTextBuffer *buffer = tvBuffer(TEXTVIEW_HELPER);
+  GtkTextIter start, end;
+  gtk_text_buffer_get_bounds(buffer, &start, &end);
+  gchar *raw_text = gtk_text_buffer_get_text(buffer, &start, &end, FALSE);
+  auto s = utf8ToLocale(raw_text);
+  g_free(raw_text);
+  return s;
+}
+
+bool Frame::getCheck() const {
+  return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(m_check)) == TRUE;
 }
 
 void Frame::entryChanged(ENUM_ENTRY e) {
