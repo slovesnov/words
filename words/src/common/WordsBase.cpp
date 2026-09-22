@@ -174,16 +174,8 @@ WordsBase::WordsBase() {
 
   loadLanguages();
 
-  i = m_languageIndex;
+  // clearLog();
 
-  m_languageIndex = 1;
-  clearLog();
-  printlo(alphabet());
-  printlo(alphabetIndex(0xe0));
-  printlo(alphabetIndex(0xff));
-  printlo(alphabetIndex('a'));
-
-  m_languageIndex = i;
   // test();
 #ifdef NOGTK
   // cgi();TODO uncomment on real cgi query
@@ -1737,7 +1729,6 @@ void WordsBase::loadLanguages() {
   int i, j, k, n;
   bool b;
   for (n = 0; n < LANGUAGES; n++) {
-    printlo("loading", n);
     b = false;
     i = j = 0;
     auto &ml = m_languageAll[n];
@@ -1747,7 +1738,6 @@ void WordsBase::loadLanguages() {
         k = j - SETTINGS_FIRST;
         if (k < SETTINGS_SIZE) {
           m_settingsAll[n][k] = e;
-          printlo(k, e);
         }
         ml[j++] = localeToUtf8(e);
         if(j==SEARCH){
@@ -1776,9 +1766,6 @@ void WordsBase::loadLanguages() {
     }
     assert(i == MENU_SIZE);
     assert(j == STRING_SIZE);
-
-    printlo(m_settingsAll[n][SETTINGS_ALPHABET]);
-    printlo(ml[SEARCH], ml[MINIMUM],ml[SETTINGS_LETTER_GROUP_SPLIT]);
 
     ml[MODIFICATION_HELP] = format(ml[MODIFICATION_HELP].c_str(),
                                    ml[EVERY_MODIFICATION_CHANGES_WORD].c_str());
