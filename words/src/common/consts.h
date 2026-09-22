@@ -12,20 +12,43 @@ const std::string WORDS_VERSION = "4.5.0";
 
 const char OPEN_BRACKET = '(';
 const std::string OPEN_S = std::string(" ") + OPEN_BRACKET;
+const int KEYBOARD_ROWS = 3;
+const int SETTINGS_FIRST = SETTINGS_ALPHABET;
+const int SETTINGS_LAST = SETTINGS_KEYBOARD_ROW3;
+const int SETTINGS_SIZE = SETTINGS_LAST - SETTINGS_FIRST + 1;
 
-const ENUM_STRING KEYBOARD_ROW[] = {
-    SETTINGS_KEYBOARD_ROW1,
-    SETTINGS_KEYBOARD_ROW2, // should goes immediately after
-                            // SETTINGS_KEYBOARD_ROW1
-    SETTINGS_KEYBOARD_ROW3  // should goes immediately after
-                            // SETTINGS_KEYBOARD_ROW2
-};
-static_assert(SETTINGS_KEYBOARD_ROW2 == SETTINGS_KEYBOARD_ROW1 + 1);
-static_assert(SETTINGS_KEYBOARD_ROW3 == SETTINGS_KEYBOARD_ROW1 + 2);
-const int KEYBOARD_ROW_SIZE = SIZE(KEYBOARD_ROW);
+#ifdef NOGTK
+// should match with ENUM_POST
+const std::string POST_NAME[] = {
+    "searchType", "entry",  "dictionary", "sortType", "sortOrder",
+    "language",   "combo0", "combo1",     "combo2",   "check"};
 
-#ifndef NOGTK
+const ENUM_MENU COMBO_MENU[] = {MENU_ANAGRAM,
+                                MENU_PANGRAM,
+                                MENU_TEMPLATE,
+                                MENU_PALINDROME,
+                                MENU_CROSSWORD,
+                                MENU_REGULAR_EXPRESSIONS,
+                                MENU_MODIFICATION,
+                                MENU_CHAIN,
+                                MENU_CHARACTER_SEQUENCE,
+                                MENU_SIMPLE_WORD_SEQUENCE,
+                                MENU_DOUBLE_WORD_SEQUENCE,
+                                MENU_WORD_SEQUENCE_FULL,
+                                MENU_KEYBOARD_WORD_SIMPLE,
+                                MENU_KEYBOARD_WORD_COMPLEX,
+                                MENU_CONSONANT_VOWEL_SEQUENCE,
+                                MENU_DENSITY,
 
+                                MENU_TWO_DICTIONARIES_SIMPLE,
+                                MENU_TWO_DICTIONARIES_TRANSLIT,
+                                MENU_TWO_DICTIONARIES_KEYBOARD_WORD,
+
+                                MENU_DICTIONARY_STATISTICS,
+                                MENU_WORD_FREQUENCY,
+                                MENU_CHECK_DICTIONARY,
+                                MENU_TWO_CHARACTERS_DISTRIBUTION};
+#else
 const ENUM_COMBOBOX HELPER_COMBOBOX[] = {COMBOBOX_HELPER0, COMBOBOX_HELPER1,
                                          COMBOBOX_HELPER2};
 

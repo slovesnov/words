@@ -33,19 +33,35 @@ bool sortStringInt(const StringInt &r1, const StringInt &r2) {
   return r1.second == r2.second ? (r1.first < r2.first) : r1.second > r2.second;
 }
 
-std::string fastCp1251ToUtf8(const std::string &src) {
+std::string fastLocaleToUtf8(const std::string &src) {
   std::string result;
   result.reserve(src.length() * 2);
-  for (unsigned char c : src) {
+  for (uchar c : src) {
     if (c >= 0xF0) {
       result.push_back(0xD1);
       result.push_back(c - 0x70);
-    }
-    else if (c >= 0xE0) {
+    } else if (c >= 0xE0) {
       result.push_back(0xD0);
       result.push_back(c - 0x30);
+    } else {
+      result.push_back(c);
     }
-    else {
+  }
+  return result;
+}
+
+std::string fastUtf8ToLocale(const std::string &src) {
+  std::string result;
+  result.reserve(src.length());
+  for (size_t i = 0; i < src.length(); ++i) {
+    uchar c = src[i];
+    if (c == 0xD0 && (i + 1) < src.length()) {
+      uchar next = src[++i];
+      result.push_back(next + 0x30);
+    } else if (c == 0xD1 && (i + 1) < src.length()) {
+      uchar next = src[++i];
+      result.push_back(next + 0x70);
+    } else {
       result.push_back(c);
     }
   }

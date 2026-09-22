@@ -176,23 +176,6 @@ Frame::Frame() : WordsBase() {
   std::vector<GtkMenuItem *> subMenu;
   std::string s;
 
-#ifndef NDEBUG
-  // No intersection between FUNCTION_MENU & BOOL_VOID_MENU
-  i = 0;
-  for (auto &a : FUNCTION_MENU) {
-    if (ONE_OF(a, BOOL_VOID_MENU)) {
-      pr(a, i);
-      j = 0;
-      for (auto &a : BOOL_VOID_MENU) {
-        pr(std::format("{} {}", int(a), j));
-        j++;
-      }
-      assert(0);
-    }
-    i++;
-  }
-#endif
-
   frame = this;
   m_menuClick = MENU_SEARCH;
   // set dot as decimal separator, standard locale
@@ -651,7 +634,7 @@ void Frame::routine() {
 }
 
 void Frame::setHelperPanel() {
-  GtkWidget *w;
+  GtkWidget *w, *w1;
   gchar *p;
   std::string s;
 
@@ -674,7 +657,16 @@ void Frame::setHelperPanel() {
     g_free(p);
   }
 
-  addEntryForTemplate();
+  ENUM_STRING e = entryEnumString();
+  if (e != STRING_SIZE) {
+    w = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 3);
+    gtk_container_add(GTK_CONTAINER(w), createLabel(SEARCH));
+    m_entry[ENTRY_TEMPLATE] = w1 = gtk_entry_new();
+    gtk_entry_set_text(GTK_ENTRY(w1), m_languageAll[getDictionaryIndex()][e].c_str());
+    connectEntrySignals(ENTRY_TEMPLATE);
+    add(w, w1);
+    gtk_container_add(GTK_CONTAINER(m_helperUp), w);
+  }
 
   switch (m_menuClick) {
   case MENU_ANAGRAM:
@@ -719,8 +711,7 @@ void Frame::setHelperPanel() {
                                 GTK_WRAP_WORD);
     gtk_container_add(GTK_CONTAINER(w), m_text[TEXTVIEW_HELPER]);
     gtk_container_add(GTK_CONTAINER(m_helperUp), w);
-    updateTextView(TEXTVIEW_HELPER,
-                   m_language[SETTINGS_CHAIN_EXCEPTIONS]);
+    updateTextView(TEXTVIEW_HELPER, m_language[SETTINGS_CHAIN_EXCEPTIONS]);
     g_signal_connect(tvBuffer(TEXTVIEW_HELPER), "changed",
                      G_CALLBACK(text_view_changed), NULL);
 
@@ -780,10 +771,9 @@ void Frame::sortFilterAndUpdateResults() {
 
 void Frame::loadAndUpdateCurrentLanguage() {
   m_language = m_languageAll[m_languageIndex]; // TODO
-  printlo(m_languageIndex)
-  std::string s;
+  printlo(m_languageIndex) std::string s;
   int i = -1;
-  for(auto&a:m_menuAll[m_languageIndex]){
+  for (auto &a : m_menuAll[m_languageIndex]) {
     i++;
     setMenuLabel(ENUM_MENU(i), a);
   }
@@ -840,22 +830,6 @@ GtkWidget *Frame::createTextCombo(ENUM_COMBOBOX e, ENUM_STRING from,
     v.push_back(m_language[i]);
   }
   return createTextCombo(e, v, active);
-}
-
-void Frame::addEntryForTemplate() {
-  auto i = entryEnumString();
-  if (i == STRING_SIZE) {
-    return;
-  }
-  GtkWidget *w = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 3);
-  gtk_container_add(GTK_CONTAINER(w), createLabel(SEARCH));
-  m_entry[ENTRY_TEMPLATE] = gtk_entry_new();
-  gtk_entry_set_text(GTK_ENTRY(m_entry[ENTRY_TEMPLATE]),
-                     m_language[i].c_str());
-   printlo(i,m_language[i],m_languageAll[0][i],m_languageAll[1][i])
-  connectEntrySignals(ENTRY_TEMPLATE);
-  add(w, m_entry[ENTRY_TEMPLATE]);
-  gtk_container_add(GTK_CONTAINER(m_helperUp), w);
 }
 
 void Frame::addComboLineToHelper(ENUM_STRING id, int from, int to, int active,
@@ -1385,6 +1359,6 @@ GtkTextBuffer *Frame::tvBuffer(ENUM_TEXTVIEW e) const {
   return gtk_text_view_get_buffer(GTK_TEXT_VIEW(m_text[e]));
 }
 
-std::string Frame::getProgramVersionString()const{
+std::string Frame::getProgramVersionString() const {
   return m_language[PROGRAM] + " " + m_language[VERSION] + " " + WORDS_VERSION;
 }

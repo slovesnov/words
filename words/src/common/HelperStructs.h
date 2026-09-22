@@ -83,4 +83,5 @@ using SafeGRegex = std::unique_ptr<GRegex, GRegexDeleter>;
 
 bool sortIntDouble(const IntDouble &r1, const IntDouble &r2);
 bool sortStringInt(const StringInt &r1, const StringInt &r2);
-std::string fastCp1251ToUtf8(const std::string &src);
+std::string fastLocaleToUtf8(const std::string &src);
+std::string fastUtf8ToLocale(const std::string &src);

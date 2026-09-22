@@ -11,6 +11,7 @@
 #include "Modification.h"
 #include "SearchResult.h"
 #include "aslov.h"
+#include "consts.h"
 #include <algorithm>
 #include <array>
 #include <cstring>
@@ -63,10 +64,11 @@ protected:
                        // m_comboValue[COMBOBOX_DICTIONARY] is not used
   int m_radioValue;    // todo in cgi mode
   bool m_checkValue;
-  std::string m_textViewText; // locale
-  std::array<std::string,STRING_SIZE> m_language;         // utf8
-  std::array<std::string,STRING_SIZE> m_languageAll[LANGUAGES];         // utf8
-  std::array<std::string,MENU_SIZE> m_menuAll[LANGUAGES];         // utf8
+  std::string m_textViewText;                                      // locale
+  std::array<std::string, STRING_SIZE> m_language;                 // utf8
+  std::array<std::string, STRING_SIZE> m_languageAll[LANGUAGES];   // utf8
+  std::array<std::string, MENU_SIZE> m_menuAll[LANGUAGES];         // utf8
+  std::array<std::string, SETTINGS_SIZE> m_settingsAll[LANGUAGES]; // locale
   std::string m_addstatus;
 #ifndef NOGTK
   int m_filteredWordsCount;
@@ -80,7 +82,7 @@ protected:
   std::string getStatusString();
   std::string getTimeString();
 
-  inline int getMaximumWordLength() {
+  int getMaximumWordLength() {
     return m_longestWordLength[getDictionaryIndex()];
   }
 
@@ -102,16 +104,6 @@ protected:
   virtual void endJobThread() = 0;
   bool testFilterRegex(const std::string &s);
 #endif
-  const std::string getAlphabet() const {
-    return utf8ToLocale(m_language[SETTINGS_ALPHABET]);
-  }
-
-  int getAlphabetSize() const { return getAlphabet().length(); }
-
-  inline int alphabetIndex(char c) const {
-    std::string::size_type k = getAlphabet().find(c);
-    return k == std::string::npos ? -1 : k;
-  }
 
   // todo
   void test();
@@ -125,12 +117,12 @@ protected:
 
 public:
   WordsBase();
-  ~WordsBase();
 
   void run(bool full = true);
   void run_thread(int nthread);
-  std::pair<DictionaryCI,DictionaryCI> iterators(int n, int nthread);
-  std::pair<DictionaryCI,DictionaryCI> iterators(ENUM_DICTIONARY e, int nthread);
+  std::pair<DictionaryCI, DictionaryCI> iterators(int n, int nthread);
+  std::pair<DictionaryCI, DictionaryCI> iterators(ENUM_DICTIONARY e,
+                                                  int nthread);
 
   bool checkPangram(const std::string &s);
   bool checkTemplate(const std::string &s);
@@ -154,8 +146,8 @@ public:
   void findModification(int nthread);
   void findChain(int nthread);
   void findLetterGroupSplit(int nthread);
-  void twoDictionariesSimple(int nthread) { twoDictionaries(nthread,false); }
-  void twoDictionariesTranslit(int nthread) { twoDictionaries(nthread,true); }
+  void twoDictionariesSimple(int nthread) { twoDictionaries(nthread, false); }
+  void twoDictionariesTranslit(int nthread) { twoDictionaries(nthread, true); }
   void keyboardWords(int nthread);
   void dictionaryStatistics(int nthread);
   void wordFrequency(int nthread);
@@ -176,18 +168,8 @@ public:
   }
   static bool differenceOnlyOneChar(std::string const &a, std::string const &b);
 
-  const char getAlphabetChar(int i) { return getAlphabet()[i]; }
-
-  const std::string &getVowelConsonant(bool consonant) {
-    return m_language[consonant ? SETTINGS_CONSONANTS : SETTINGS_VOWELS];
-  }
-
-  inline Dictionary const &getDictionary() const {
+  Dictionary const &getDictionary() const {
     return m_dictionary[getDictionaryIndex()];
-  }
-
-  bool isAlphabetChar(const char p) {
-    return getAlphabet().find(p) != std::string::npos;
   }
 
   std::string intToStringLocaled(int v);
@@ -209,4 +191,9 @@ public:
 
   bool isEntryMenu() const;
   ENUM_STRING entryEnumString() const;
+  const std::string &alphabet() const;
+  int alphabetSize() const;
+  int alphabetIndex(char c) const;
+  const std::string &vowelConsonant(bool consonant);
+  bool isAlphabetChar(char c) const;
 };

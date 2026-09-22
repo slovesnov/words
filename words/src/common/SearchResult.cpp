@@ -20,7 +20,7 @@ SearchResult::SearchResult(std::string _s, int _length, int _words) {
 	for (i = 0; i < VOWELS_CONSONANTS_SIZE; i++) {
 		percent[i] = 0;
 		p[i] =
-				wordsBase->getVowelConsonant(i == VOWELS_CONSONANTS_CONSONANTS).c_str();
+				wordsBase->vowelConsonant(i == VOWELS_CONSONANTS_CONSONANTS).c_str();
 	}
 
 	for (l = 0, q = s.c_str(); *q != 0 && *q != ' '; q++, l++) { //for many words goes until first space
