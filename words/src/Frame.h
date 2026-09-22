@@ -90,11 +90,9 @@ public:
 
   void destroy();
 
-  void startJob(bool clearResult);
   void endJob();
 
-  void routine();
-  void sortFilterAndUpdateResults();
+  void routine(bool full=true);
 
   bool isSignalsLocked() { return m_lockSignals; }
 
@@ -115,21 +113,17 @@ public:
   virtual void endJobThread() override;
   std::string getMenuLabel(ENUM_MENU e);
 
-  void stopThreadAndNewRoutine();
+  void stopThreadAndNewRoutine(bool full=true);
   void stopThread();
   // void waitThread();
   void startThread(bool full); // false - only sort/filter
 
-  void updateTextView();
   void updateTextView(ENUM_TEXTVIEW e, std::string const &s);
-  void setStatus(std::string const &s);
 
   void connectEntrySignals(ENUM_ENTRY e);
   void entryFocusChanged(bool in);
   void removeAccelerators();
   void addAccelerators();
-
-  void sortOrFilterChanged();
 
   void refillCombo(ENUM_COMBOBOX e, ENUM_STRING first, int length);
   void newVersionMessage();
@@ -148,4 +142,6 @@ public:
 
   GtkTextBuffer *tvBuffer(ENUM_TEXTVIEW e = TEXTVIEW_MAIN) const;
   std::string getProgramVersionString()const;
+  void updateStatus();
+  void setSensitiveOrderFilter(bool b);
 };

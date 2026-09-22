@@ -175,9 +175,11 @@ Frame::Frame() : WordsBase() {
   int i, j;
   std::vector<GtkMenuItem *> subMenu;
   std::string s;
+  m_newVersion.start(WORDS_VERSION, new_version_message);
 
   frame = this;
   m_menuClick = MENU_SEARCH;
+
   // set dot as decimal separator, standard locale
   setlocale(LC_NUMERIC, "C");
   m_lockSignals = false;
@@ -388,6 +390,7 @@ Frame::Frame() : WordsBase() {
 ////notebook resolution 1366x768 40pixels low pane+title
 #endif
 
+  setSensitiveOrderFilter(false);
   gtk_widget_show_all(m_widget);
 
 #if WINDOW_SIZE_TYPE == 1 || WINDOW_SIZE_TYPE == 2
@@ -410,8 +413,6 @@ Frame::Frame() : WordsBase() {
   gtk_widget_set_size_request(m_widget, width - (rect.right - rect.left),
                               height - (rect.bottom - rect.top));
 #endif
-
-  m_newVersion.start(WORDS_VERSION, new_version_message);
 }
 
 void Frame::clickMenu(ENUM_MENU menu) {
@@ -623,13 +624,26 @@ void Frame::aboutDialog() {
   gtk_widget_destroy(dialog);
 }
 
-void Frame::routine() {
-  startJob(true);
-  if (prepare()) {
-    startThread(true);
-  } else {
+void Frame::routine(bool full) {
+  bool b = prepare();
+  m_state = b ? STATUS_PROCEEDING : STATUS_ERROR;
+  if (full) {
+    SearchResult::out = "";
+    m_result.clear();
+  }
+  clearTagMarks();
+  m_begin = clock();
+  m_addstatus = "";
+  m_filteredWordsCount = 0; // need to set always because in case of error
+                            // need m_filteredWordsCount = 0
+  setLabel(m_searchTagLabel, "");
+  if (!b) {
     m_end = clock();
-    endJob();
+  }
+  updateStatus(); // before thread
+
+  if (b) {
+    startThread(full);
   }
 }
 
@@ -761,15 +775,6 @@ void Frame::setHelperPanel() {
   gtk_widget_show_all(m_helperUp);
 }
 
-/**
- * Note function can be called from thread
- */
-void Frame::sortFilterAndUpdateResults() {
-  sortFilterResults();
-  m_end = clock();
-  gdk_threads_add_idle(end_job, NULL);
-}
-
 void Frame::loadAndUpdateCurrentLanguage() {
   std::string s;
   int i = -1;
@@ -883,8 +888,7 @@ void Frame::comboChanged(ENUM_COMBOBOX e) {
   }
 
   if (oneOf(e, COMBOBOX_SORT, COMBOBOX_SORT_ORDER, COMBOBOX_FILTER)) {
-    clearTagMarks();
-    sortOrFilterChanged();
+    stopThreadAndNewRoutine(false);
     return;
   }
 
@@ -960,65 +964,41 @@ std::string Frame::getMenuLabel(ENUM_MENU e) {
     return gtk_menu_item_get_label(GTK_MENU_ITEM(w));
   }
 }
-void Frame::startJob(bool clearResult) {
-  if (clearResult) {
-    m_result.clear();
-  }
-  m_begin = clock();
-  m_out = "";
-  m_addstatus = "";
-  m_filteredWordsCount = 0; // need to set always because in case of error
-                            // need m_filteredWordsCount = 0
-  setLabel(m_searchTagLabel, "");
-  setStatus(string(ONE_OF(m_menuClick, MENU_WAITING) ? WAITING : SEARCH) +
-            "...");
-  updateTextView();
-}
-
 void Frame::endJob() {
-  setStatus(getStatusString());
-  updateTextView();
+  updateStatus();
   // update tags if user searched something
   updateTags(0);
 }
 
-void Frame::stopThreadAndNewRoutine() {
+void Frame::stopThreadAndNewRoutine(bool full) {
+  if (!full && m_result.empty()) { // only sort
+    return;
+  }
   stopThread();
-  routine();
+  routine(full);
 }
 
 /**
  * if thread runs stop it
  */
 void Frame::stopThread() {
-  // pr("try stop", m_thread.joinable());
   m_thread.request_stop();
   if (m_thread.joinable()) {
     m_thread.join();
   }
-  // pr("stopped")
 }
 
 bool Frame::userBreakThread() {
   // Sleep(1);//to slowdown check user break
   if (m_token.stop_requested()) {
-    // pr2("thread exit");
     m_result.clear();
-    m_out = "";
+    m_state = STATUS_USER_BREAK;
     return true;
   } else {
     return false;
   }
 }
 
-/* void Frame::waitThread() {
-  if (m_thread.joinable()) {
-    m_thread.join();
-    // update status & GtkTextBuffer
-    endJob();
-  }
-}
- */
 void Frame::startThread(bool full) {
   if (!m_thread.joinable()) {
     // GCC bug #100612 so use lambda if call class member
@@ -1094,12 +1074,6 @@ void Frame::addAccelerators() {
   }
 }
 
-void Frame::sortOrFilterChanged() {
-  stopThread();
-  startJob(false);
-  startThread(false);
-}
-
 void Frame::refillCombo(ENUM_COMBOBOX e, ENUM_STRING first, int length) {
   int i, j = getComboIndex(e);
   if (j == -1) { // was empty combo
@@ -1145,13 +1119,6 @@ void Frame::radioChanged(GtkWidget *w) {
   }
 }
 
-void Frame::setStatus(std::string const &s) {
-  // add " " at the beginning for nice view
-  setLabel(m_statusMessage, " " + s);
-}
-
-void Frame::updateTextView() { updateTextView(TEXTVIEW_MAIN, m_out); }
-
 void Frame::updateTextView(ENUM_TEXTVIEW e, std::string const &s) {
   gtk_text_buffer_set_text(tvBuffer(e), s.c_str(), -1);
 }
@@ -1177,7 +1144,7 @@ void Frame::debounceTimeout(ENUM_ENTRY e) {
 
   case ENTRY_FILTER:
     if (m_regex[ENTRY_FILTER]) {
-      sortOrFilterChanged();
+      stopThreadAndNewRoutine(false);
     }
     break;
 
@@ -1225,13 +1192,18 @@ bool Frame::getCheck() const {
 }
 
 void Frame::entryChanged(ENUM_ENTRY e) {
-  if (oneOf(e, ENTRY_SEARCH, ENTRY_FILTER)) {
+  bool b;
+  if (e == ENTRY_TEMPLATE) {
+    b = prepare();
+    addRemoveClass(m_entry[e], CERROR, !b);
+  } else if (e == ENTRY_FILTER) {
+    clearTagMarks();
+    b = createRegex(e);
+    addRemoveClass(m_entry[e], CERROR, !b);
+  } else if (e == ENTRY_SEARCH) {
     clearTagMarks();
   }
-  if (oneOf(e, ENTRY_TEMPLATE, ENTRY_FILTER)) {
-    bool b = createRegex(e);
-    addRemoveClass(m_entry[e], CERROR, !b);
-  }
+
   setDebounceTimer(e);
 }
 
@@ -1244,6 +1216,7 @@ void Frame::clearTagMarks() {
   m_found_tags.clear();
 }
 
+// n - number of active tag
 void Frame::updateTags(int n) {
   GtkTextBuffer *buffer = tvBuffer();
   std::string s = getEntryString(ENTRY_SEARCH);
@@ -1313,7 +1286,7 @@ void Frame::updateTags(int n) {
     i = gtk_text_iter_get_line(&start);
     j = gtk_text_iter_get_line_offset(&start);
     auto p = v[i].find(OPEN_BRACKET);
-    if (p != std::string::npos && !m_outSplitted) {
+    if (p != std::string::npos) {
       i = g_utf8_strlen(v[i].c_str(), p);
       if (j >= i) {
         continue;
@@ -1347,4 +1320,50 @@ GtkTextBuffer *Frame::tvBuffer(ENUM_TEXTVIEW e) const {
 
 std::string Frame::getProgramVersionString() const {
   return string(PROGRAM) + " " + string(VERSION) + " " + WORDS_VERSION;
+}
+
+void Frame::updateStatus() {
+  // pr(magic_enum::enum_name(m_state));
+  bool b = true;
+  switch (m_state) {
+  case STATUS_OK:
+    if (SearchResult::out.size()) {
+      // SearchResult::out can be too big so can't copy
+      // m_out = std::move(SearchResult::out); also not possible need to store
+      // SearchResult::out
+      b = false;
+    } else {
+      m_out = string(NO_RESULTS_FOUND);
+    }
+    break;
+
+  case STATUS_PROCEEDING:
+    m_out = string(ONE_OF(m_menuClick, MENU_WAITING) ? WAITING : SEARCH) +
+            "…"; //"...";
+    break;
+
+  case STATUS_ERROR:
+    m_out = string(STRING_ERROR);
+    break;
+
+  case STATUS_USER_BREAK:
+    m_out = string(STATUS_USER_BREAK);
+    break;
+  }
+
+  std::string s = m_state == STATUS_OK ? getStatusString() : m_out;
+  // add " " at the beginning for nice view
+  setLabel(m_statusMessage, " " + s);
+
+  updateTextView(TEXTVIEW_MAIN, b ? m_out : SearchResult::out);
+
+  b = m_state == STATUS_OK && !m_result.empty();
+  setSensitiveOrderFilter(b);
+}
+
+void Frame::setSensitiveOrderFilter(bool b) {
+  for (auto &e : {COMBOBOX_SORT, COMBOBOX_SORT_ORDER, COMBOBOX_FILTER}) {
+    gtk_widget_set_sensitive(m_combo[e], b);
+  }
+  gtk_widget_set_sensitive(m_entry[ENTRY_FILTER], b);
 }

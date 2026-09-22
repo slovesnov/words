@@ -19,6 +19,7 @@ public:
   double percent[VOWELS_CONSONANTS_SIZE]; // percent of vowels,consonants
   int differentCharacters;
 
+  static std::string out;
   SearchResult(std::string _s, int _length, int _words);
 };
 

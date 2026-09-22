@@ -50,9 +50,6 @@ protected:
   std::vector<SearchResultVector> m_thread_result;
   int m_longestWordLength[LANGUAGES];
   clock_t m_begin, m_end;
-  bool m_outSplitted;
-  // need fast compile so not include gtk files and use std::regex in console
-  // mode
 #ifdef USE_STANDARD_REGEX
   std::regex m_regex;
 #else
@@ -75,6 +72,7 @@ protected:
   std::vector<MapStringTwoStringVectors> m_ma;
 
   std::stop_token m_token;
+  ENUM_STATUS m_state;
 
   std::string getStatusString();
   std::string getTimeString();
