@@ -208,15 +208,17 @@ Frame::Frame() : WordsBase() {
 
   createTextCombo(COMBOBOX_FILTER);
 
-  m_searchLabel = gtk_label_new("");
   m_entry[ENTRY_SEARCH] = gtk_entry_new();
   m_searchTagLabel = gtk_label_new("");
   gtk_widget_set_size_request(m_searchTagLabel, 40, -1);
-  for (i = 0; i < SIZEI(m_searchButton); i++) {
-    m_searchButton[i] = gtk_button_new();
-    gtk_button_set_image(GTK_BUTTON(m_searchButton[i]),
-                         image(i == 0 ? "down.png" : "up.png"));
+
+  std::string im[] = {"down.png", "up.png", "play.png"};
+  i = 0;
+  for (auto &a : m_button) {
+    a = gtk_button_new();
+    gtk_button_set_image(GTK_BUTTON(a), image(im[i++]));
   }
+
   m_currentDictionary = gtk_label_new("");
   m_entry[ENTRY_FILTER] = gtk_entry_new();
 
@@ -232,29 +234,36 @@ Frame::Frame() : WordsBase() {
 
   // sort combo has many items so place it into the middle
   w = gtk_box_new(GTK_ORIENTATION_VERTICAL, 3);
+  gtk_widget_set_size_request(w, 420, -1);
+  //gtk_widget_set_margin_bottom(GTK_WIDGET(w), 40);
 
-  w1 = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, margin);
-  add(w1, m_combo[COMBOBOX_SORT]);
-  gtk_container_add(GTK_CONTAINER(w1), m_combo[COMBOBOX_SORT_ORDER]);
-  gtk_container_add(GTK_CONTAINER(w), w1);
+  for (i = 0; i < 4; i++) {
+    w1 = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, margin);
+    if (i == 0) {
+      add(w1, m_button[BUTTON_STARTSTOP], false);
+      w2 = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+      add(w1, w2);
+      add(w1, m_currentDictionary, false);
+      add(w1, m_combo[COMBOBOX_DICTIONARY], false);
 
-  w1 = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, margin);
-  gtk_container_add(GTK_CONTAINER(w1), m_searchLabel);
-  add(w1, m_entry[ENTRY_SEARCH]); // stretch
-  gtk_container_add(GTK_CONTAINER(w1), m_searchTagLabel);
-  for (i = 0; i < SIZEI(m_searchButton); i++) {
-    gtk_container_add(GTK_CONTAINER(w1), m_searchButton[i]);
+    } else if (i == 1) {
+      add(w1, m_combo[COMBOBOX_SORT]);
+      gtk_container_add(GTK_CONTAINER(w1), m_combo[COMBOBOX_SORT_ORDER]);
+
+    } else if (i == 2) {
+      add(w1, m_entry[ENTRY_FILTER]); // stretch
+      gtk_container_add(GTK_CONTAINER(w1), m_combo[COMBOBOX_FILTER]);
+    } else {
+      // if move row with combobox at the bottom then it's not good view when
+      // opened
+      add(w1, m_entry[ENTRY_SEARCH]); // stretch
+      gtk_container_add(GTK_CONTAINER(w1), m_searchTagLabel);
+      for (auto e : {BUTTON_NEXT, BUTTON_PREVIOUS}) {
+        gtk_container_add(GTK_CONTAINER(w1), m_button[e]);
+      }
+    }
+    gtk_container_add(GTK_CONTAINER(w), w1);
   }
-  gtk_container_add(GTK_CONTAINER(w1), m_currentDictionary);
-  gtk_container_add(GTK_CONTAINER(w1), m_combo[COMBOBOX_DICTIONARY]);
-  gtk_container_add(GTK_CONTAINER(w), w1);
-
-  w1 = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, margin);
-  // gtk_container_add(GTK_CONTAINER(w1), m_filterLabel);
-  add(w1, m_entry[ENTRY_FILTER]); // stretch
-  gtk_container_add(GTK_CONTAINER(w1), m_combo[COMBOBOX_FILTER]);
-
-  gtk_container_add(GTK_CONTAINER(w), w1);
 
   w1 = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, margin);
   w2 = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
@@ -369,7 +378,7 @@ Frame::Frame() : WordsBase() {
   connectEntrySignals(ENTRY_SEARCH);
   connectEntrySignals(ENTRY_FILTER);
 
-  for (auto &a : m_searchButton) {
+  for (auto &a : m_button) {
     g_signal_connect(a, "clicked", G_CALLBACK(button_clicked), NULL);
   }
 
@@ -387,7 +396,8 @@ Frame::Frame() : WordsBase() {
 ////notebook resolution 1366x768 40pixels low pane+title
 #endif
 
-  setSensitiveOrderFilter(false);
+  // todo
+  // setSensitiveOrderFilter(false);
   gtk_widget_show_all(m_widget);
 
 #if WINDOW_SIZE_TYPE == 1 || WINDOW_SIZE_TYPE == 2
@@ -499,9 +509,11 @@ void Frame::destroy() {
 }
 
 void Frame::setDictionary() {
-  int i = getDictionaryIndex();
-  gtk_widget_set_sensitive(m_menuMap[MENU_LOAD_ENGLISH_DICTIONARY], i != 0);
-  gtk_widget_set_sensitive(m_menuMap[MENU_LOAD_RUSSIAN_DICTIONARY], i != 1);
+  int i = getDictionaryIndex(), j = -1;
+  for (auto a : {MENU_LOAD_ENGLISH_DICTIONARY, MENU_LOAD_RUSSIAN_DICTIONARY}) {
+    j++;
+    gtk_widget_set_sensitive(m_menuMap[a], j != i);
+  }
 
   /* additions 4.3
    * need to make new search for every option
@@ -780,18 +792,16 @@ void Frame::loadAndUpdateCurrentLanguage() {
     setMenuLabel(ENUM_MENU(i), a);
   }
 
-  gtk_widget_set_sensitive(m_menuMap[MENU_ENGLISH_LANGUAGE],
-                           m_languageIndex != 0);
-  gtk_widget_set_sensitive(m_menuMap[MENU_RUSSIAN_LANGUAGE],
-                           m_languageIndex != 1);
+  i = -1;
+  for (auto &a : {MENU_ENGLISH_LANGUAGE, MENU_RUSSIAN_LANGUAGE}) {
+    i++;
+    gtk_widget_set_sensitive(m_menuMap[a], m_languageIndex != i);
+  }
 
-  setLabel(m_searchLabel, SEARCH);
+  setPlaceholder(ENTRY_SEARCH, SEARCH);
   setLabel(m_currentDictionary, DICTIONARY);
-
   gtk_window_set_title(GTK_WINDOW(m_widget), string(PROGRAM).c_str());
-
-  gtk_entry_set_placeholder_text(GTK_ENTRY(m_entry[ENTRY_FILTER]), string(RESULTS_FILTER).c_str());
-
+  setPlaceholder(ENTRY_FILTER, RESULTS_FILTER);
   refillCombo(COMBOBOX_SORT, SORT_BY_ALPHABET, NUMBER_OF_SORTS);
   refillCombo(COMBOBOX_FILTER, FOUND, 2);
 }
@@ -928,11 +938,16 @@ void Frame::createImageCombo(ENUM_COMBOBOX e) {
 }
 
 void Frame::clickButton(GtkWidget *button) {
-  if (m_tags < 2) {
-    return;
+  int i, n = INDEX_OF(button, m_button);
+  prs(n);
+  if (n == BUTTON_STARTSTOP) {
+  } else {
+    if (m_tags < 2) {
+      return;
+    }
+    i = m_tagIndex + (n == BUTTON_NEXT ? 1 : m_tags - 1);
+    updateTags(i % m_tags);
   }
-  int i = m_tagIndex + (button == m_searchButton[1] ? m_tags - 1 : 1);
-  updateTags(i % m_tags);
 }
 
 void Frame::setMenuLabel(ENUM_MENU e, std::string const &text) {
@@ -1363,4 +1378,8 @@ void Frame::setSensitiveOrderFilter(bool b) {
     gtk_widget_set_sensitive(m_combo[e], b);
   }
   gtk_widget_set_sensitive(m_entry[ENTRY_FILTER], b);
+}
+
+void Frame::setPlaceholder(ENUM_ENTRY e, ENUM_STRING s) {
+  gtk_entry_set_placeholder_text(GTK_ENTRY(m_entry[e]), string(s).c_str());
 }

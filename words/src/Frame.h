@@ -23,9 +23,8 @@ class Frame : WordsBase {
   GtkWidget *m_entry[ENTRY_SIZE];
   GtkWidget *m_status;
   GtkWidget *m_statusMessage;
-  GtkWidget *m_searchLabel;
   GtkWidget *m_searchTagLabel;
-  GtkWidget *m_searchButton[2]; // next, previous buttons
+  GtkWidget *m_button[BUTTON_SIZE];
   GtkWidget *m_currentDictionary;
   GtkWidget *m_check;
   GtkWidget *m_comboline;
@@ -77,8 +76,8 @@ class Frame : WordsBase {
   GtkWidget *createLabel(ENUM_STRING e) { return createLabel(string(e)); }
 
   /*make non static because other add() functions are not static*/
-  void add(GtkWidget *w, GtkWidget *a) {
-    gtk_box_pack_start(GTK_BOX(w), a, TRUE, TRUE, 0);
+  void add(GtkWidget *w, GtkWidget *a,bool b=true) {
+    gtk_box_pack_start(GTK_BOX(w), a, b, b, 0);
   }
 
   void add(GtkWidget *w, std::string s) { add(w, createLabel(s)); }
@@ -143,4 +142,5 @@ public:
   std::string getProgramVersionString()const;
   void updateStatus();
   void setSensitiveOrderFilter(bool b);
+  void setPlaceholder(ENUM_ENTRY e, ENUM_STRING s);
 };
