@@ -179,7 +179,7 @@ Frame::Frame() : WordsBase() {
   frame = this;
   m_menuClick = MENU_SEARCH;
   // set dot as decimal separator, standard locale
-  //?? setlocale(LC_NUMERIC, "C");
+  setlocale(LC_NUMERIC, "C");//needs double to string 
   m_lockSignals = false;
 
   // load configuration file
@@ -255,14 +255,8 @@ Frame::Frame() : WordsBase() {
   gtk_widget_set_halign(m_statusMessage, GTK_ALIGN_START);
 
   // sort combo has many items so place it into the middle
-  w = gtk_box_new(GTK_ORIENTATION_VERTICAL, 3);
-  // gtk_widget_set_size_request(w, 420, -1);
-  //  gtk_widget_set_margin_bottom(GTK_WIDGET(w), 40);
-  using T = std::vector<std::pair<GtkWidget *, bool>>;
-
-  std::vector<std::pair<GtkWidget *, bool>> A[] = {
+  std::initializer_list<std::pair<GtkWidget *, bool>> A[] = {
       {{m_button[BUTTON_STARTSTOP], false},
-       //{gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0), true},
        {m_currentDictionary, false},
        {m_button[BUTTON_DICTIONARY], false}},
 
@@ -275,43 +269,37 @@ Frame::Frame() : WordsBase() {
        {m_button[BUTTON_NEXT], false},
        {m_button[BUTTON_PREVIOUS], false}}};
 
+  w = gtk_box_new(GTK_ORIENTATION_VERTICAL, 3);
   for (auto &a : A) {
-    w1 = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, margin);
-    for (auto &e : a) {
-      add(w1, e.first, e.second);
-    }
+    w1 = createBox(GTK_ORIENTATION_HORIZONTAL, margin, a);
     gtk_container_add(GTK_CONTAINER(w), w1);
   }
   // todo
 
+  w1 = gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
   // left part
-  GtkWidget *paned = gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
-  w2 = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-  add(w2, scroll);
-  gtk_container_add(GTK_CONTAINER(w2), m_status);
-  gtk_paned_pack1(GTK_PANED(paned), w2, TRUE, FALSE);
+  w2 = createBox(GTK_ORIENTATION_VERTICAL, 0,
+                 {{scroll, true}, {m_status, false}});
   gtk_widget_set_size_request(w2, 800, -1); // minimum width
+  gtk_paned_pack1(GTK_PANED(w1), w2, TRUE, FALSE);
 
   // right part
-  w2 = gtk_box_new(GTK_ORIENTATION_VERTICAL, 3);
-  gtk_container_add(GTK_CONTAINER(w2), m_helperUp);
-  add(w2, ""); // use as glue on java
-  gtk_container_add(GTK_CONTAINER(w2), w);
+  w2 = createBox(GTK_ORIENTATION_VERTICAL, 3,
+                 {{m_helperUp, false},
+                  {gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0), true},
+                  {w, false}});
   gtk_widget_set_size_request(w2, 420, -1); // minimum width
-
-  gtk_paned_pack2(GTK_PANED(paned), w2, TRUE, FALSE);
+  gtk_paned_pack2(GTK_PANED(w1), w2, TRUE, FALSE);
 
   g_signal_connect(
-      paned, "realize", G_CALLBACK(+[](GtkWidget *widget, gpointer data) {
+      w1, "realize", G_CALLBACK(+[](GtkWidget *widget, gpointer data) {
         gtk_paned_set_position(
             GTK_PANED(widget),
             1200); // initial width of left part (divider coordinates)
       }),
       NULL);
 
-  w = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-  gtk_container_add(GTK_CONTAINER(w), m_menu);
-  add(w, paned);
+  w = createBox(GTK_ORIENTATION_VERTICAL, 0, {{m_menu, false}, {w1, true}});
   gtk_container_add(GTK_CONTAINER(m_widget), w);
 
   // load menu
@@ -401,15 +389,17 @@ Frame::Frame() : WordsBase() {
   m_state = STATE_BEGIN;
   updateStatus();
   gtk_widget_show_all(m_widget);
+  gtk_window_set_focus(GTK_WINDOW(m_widget),
+                       NULL); // no focus
 
 #if WINDOW_SIZE_TYPE == 1 || WINDOW_SIZE_TYPE == 2
-  // after gtk_widget_show_all
+                              //  after gtk_widget_show_all
 #if WINDOW_SIZE_TYPE == 1
   const int height = 720; // notebook resolution 1366x768 40pixels low pane,
                           // height - full height of window with title
   const int width = 16 * height / 9; // full hd - 1280x720
 #else
-  // for screenshots on site
+                              //  for screenshots on site
   const int width = 780;
   const int height = 10 * width / 16;
 #endif
@@ -1413,14 +1403,10 @@ StartStopButtonState Frame::getStartStopState() const {
           !oneOf(m_state, STATE_ERROR, STATE_BEGIN)};
 }
 
-GtkWidget *Frame::createBox(GtkOrientation o,int margin,int margin1, WB wb) {
+GtkWidget *Frame::createBox(GtkOrientation o, int margin, WB wb) {
   auto w = gtk_box_new(o, margin);
-  for (auto &a : wb) {
-    w1 = gtk_box_new(o==GTK_ORIENTATION_HORIZONTAL?GTK_ORIENTATION_VERTICAL:GTK_ORIENTATION_HORIZONTAL, margin1);
-    for (auto &e : a) {
-      add(w1, e.first, e.second);
-    }
-    gtk_container_add(GTK_CONTAINER(w), w1);
+  for (auto &e : wb) {
+    add(w, e.first, e.second);
   }
   return w;
 }

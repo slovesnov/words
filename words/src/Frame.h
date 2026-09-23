@@ -10,8 +10,10 @@
 #include "CheckNewVersion.h"
 #include "common/WordsBase.h"
 #include "common/consts.h"
+#include <initializer_list>
+
 using MenuMap = std::map<ENUM_MENU, GtkWidget *>;
-using WB = std::vector<std::pair<GtkWidget *, bool>>;
+using WB = std::initializer_list<std::pair<GtkWidget *, bool>>;
 
 class Frame : WordsBase {
   static const int COMBOLINE_MARGIN = 3;
@@ -77,13 +79,13 @@ class Frame : WordsBase {
   GtkWidget *createLabel(ENUM_STRING e) { return createLabel(string(e)); }
 
   /*make non static because other add() functions are not static*/
-  void add(GtkWidget *w, GtkWidget *a, bool b = true) {
+  static void add(GtkWidget *w, GtkWidget *a, bool b = true) {
     gtk_box_pack_start(GTK_BOX(w), a, b, b, 0);
   }
 
   void add(GtkWidget *w, std::string s) { add(w, createLabel(s)); }
   void add(GtkWidget *w, ENUM_STRING e) { add(w, createLabel(e)); }
-  static GtkWidget *createBox(GtkOrientation o,int margin,int margin1, WB wb);
+  static GtkWidget *createBox(GtkOrientation o,int margin, WB wb);
 
 public:
   Frame();
