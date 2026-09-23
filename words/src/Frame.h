@@ -11,6 +11,7 @@
 #include "common/WordsBase.h"
 #include "common/consts.h"
 using MenuMap = std::map<ENUM_MENU, GtkWidget *>;
+using WB = std::vector<std::pair<GtkWidget *, bool>>;
 
 class Frame : WordsBase {
   static const int COMBOLINE_MARGIN = 3;
@@ -76,12 +77,13 @@ class Frame : WordsBase {
   GtkWidget *createLabel(ENUM_STRING e) { return createLabel(string(e)); }
 
   /*make non static because other add() functions are not static*/
-  void add(GtkWidget *w, GtkWidget *a,bool b=true) {
+  void add(GtkWidget *w, GtkWidget *a, bool b = true) {
     gtk_box_pack_start(GTK_BOX(w), a, b, b, 0);
   }
 
   void add(GtkWidget *w, std::string s) { add(w, createLabel(s)); }
   void add(GtkWidget *w, ENUM_STRING e) { add(w, createLabel(e)); }
+  static GtkWidget *createBox(GtkOrientation o,int margin,int margin1, WB wb);
 
 public:
   Frame();
@@ -90,7 +92,7 @@ public:
 
   void endJob();
 
-  void routine(bool full=true);
+  void routine(bool full = true);
 
   bool isSignalsLocked() { return m_lockSignals; }
 
@@ -110,7 +112,7 @@ public:
   virtual void endJobThread() override;
   std::string getMenuLabel(ENUM_MENU e);
 
-  void stopThreadAndNewRoutine(bool full=true);
+  void stopThreadAndNewRoutine(bool full = true);
   void stopThread();
   void startThread(bool full); // false - only sort/filter
 
@@ -137,11 +139,11 @@ public:
   void entryChanged(ENUM_ENTRY e);
 
   GtkTextBuffer *tvBuffer(ENUM_TEXTVIEW e = TEXTVIEW_MAIN) const;
-  std::string getProgramVersionString()const;
+  std::string getProgramVersionString() const;
   void updateStatus();
   void setSensitiveOrderFilter(bool b);
   void setPlaceholder(ENUM_ENTRY e, ENUM_STRING s);
   void updateButton(ENUM_BUTTON e);
 
-  StartStopButtonState getStartStopState()const;
+  StartStopButtonState getStartStopState() const;
 };

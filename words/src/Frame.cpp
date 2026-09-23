@@ -256,8 +256,9 @@ Frame::Frame() : WordsBase() {
 
   // sort combo has many items so place it into the middle
   w = gtk_box_new(GTK_ORIENTATION_VERTICAL, 3);
-  gtk_widget_set_size_request(w, 420, -1);
-  // gtk_widget_set_margin_bottom(GTK_WIDGET(w), 40);
+  // gtk_widget_set_size_request(w, 420, -1);
+  //  gtk_widget_set_margin_bottom(GTK_WIDGET(w), 40);
+  using T = std::vector<std::pair<GtkWidget *, bool>>;
 
   std::vector<std::pair<GtkWidget *, bool>> A[] = {
       {{m_button[BUTTON_STARTSTOP], false},
@@ -281,27 +282,32 @@ Frame::Frame() : WordsBase() {
     }
     gtk_container_add(GTK_CONTAINER(w), w1);
   }
+  // todo
 
-
-GtkWidget *vbox=w2 = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+  // left part
+  GtkWidget *paned = gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
+  w2 = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
   add(w2, scroll);
   gtk_container_add(GTK_CONTAINER(w2), m_status);
-// Задаем ему начальную или минимальную ширину, чтобы он не схлопывался в 0
-gtk_widget_set_size_request(vbox, 200, -1); 
+  gtk_paned_pack1(GTK_PANED(paned), w2, TRUE, FALSE);
+  gtk_widget_set_size_request(w2, 800, -1); // minimum width
 
-// 3. Создаем правый виджет (это может быть другой бокс, сетка или текстовое поле)
- w2 = gtk_box_new(GTK_ORIENTATION_VERTICAL, 3);
+  // right part
+  w2 = gtk_box_new(GTK_ORIENTATION_VERTICAL, 3);
   gtk_container_add(GTK_CONTAINER(w2), m_helperUp);
   add(w2, ""); // use as glue on java
   gtk_container_add(GTK_CONTAINER(w2), w);
+  gtk_widget_set_size_request(w2, 420, -1); // minimum width
 
-GtkWidget *paned = gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
-gtk_paned_pack1(GTK_PANED(paned), 
-                 vbox, 
-                 TRUE,   // resize = TRUE (бокс будет плавно менять размер при перетаскивании)
-                 FALSE); // shrink = FALSE (запрещает сжимать бокс меньше его минимального size_request)
+  gtk_paned_pack2(GTK_PANED(paned), w2, TRUE, FALSE);
 
-gtk_paned_pack2(GTK_PANED(paned), w2, TRUE, FALSE);
+  g_signal_connect(
+      paned, "realize", G_CALLBACK(+[](GtkWidget *widget, gpointer data) {
+        gtk_paned_set_position(
+            GTK_PANED(widget),
+            1200); // initial width of left part (divider coordinates)
+      }),
+      NULL);
 
   w = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
   gtk_container_add(GTK_CONTAINER(w), m_menu);
@@ -1405,4 +1411,16 @@ void Frame::updateButton(ENUM_BUTTON e) {
 StartStopButtonState Frame::getStartStopState() const {
   return {m_state != STATE_PROCEEDING,
           !oneOf(m_state, STATE_ERROR, STATE_BEGIN)};
+}
+
+GtkWidget *Frame::createBox(GtkOrientation o,int margin,int margin1, WB wb) {
+  auto w = gtk_box_new(o, margin);
+  for (auto &a : wb) {
+    w1 = gtk_box_new(o==GTK_ORIENTATION_HORIZONTAL?GTK_ORIENTATION_VERTICAL:GTK_ORIENTATION_HORIZONTAL, margin1);
+    for (auto &e : a) {
+      add(w1, e.first, e.second);
+    }
+    gtk_container_add(GTK_CONTAINER(w), w1);
+  }
+  return w;
 }
