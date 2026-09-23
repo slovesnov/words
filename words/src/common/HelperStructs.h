@@ -46,6 +46,7 @@ using MapStringStringVectorI = MapStringStringVector::iterator;
 using MapStringInt = std::map<std::string, int>;
 using MapStringIntI = MapStringInt::iterator;
 using MapStringTwoStringVectors = std::map<std::string, TwoStringVectors>;
+using VMapStringTwoStringVectors = std::vector<MapStringTwoStringVectors>;
 
 // Sets
 using StringSet = std::set<std::string>;

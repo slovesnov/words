@@ -69,10 +69,10 @@ protected:
 #endif
   ThreadResultVector m_tr;
   std::vector<IntVector> m_iv;
-  std::vector<MapStringTwoStringVectors> m_ma;
+  std::vector<VMapStringTwoStringVectors> m_ma;
 
   std::stop_token m_token;
-  ENUM_STATUS m_state;
+  ENUM_STATE m_state;
 
   std::string getStatusString();
   std::string getTimeString();

@@ -626,7 +626,7 @@ void Frame::aboutDialog() {
 
 void Frame::routine(bool full) {
   bool b = prepare();
-  m_state = b ? STATUS_PROCEEDING : STATUS_ERROR;
+  m_state = b ? STATE_PROCEEDING : STATE_ERROR;
   if (full) {
     SearchResult::out = "";
     m_result.clear();
@@ -992,7 +992,7 @@ bool Frame::userBreakThread() {
   // Sleep(1);//to slowdown check user break
   if (m_token.stop_requested()) {
     m_result.clear();
-    m_state = STATUS_USER_BREAK;
+    m_state = STATE_USER_BREAK;
     return true;
   } else {
     return false;
@@ -1326,7 +1326,7 @@ void Frame::updateStatus() {
   // pr(magic_enum::enum_name(m_state));
   bool b = true;
   switch (m_state) {
-  case STATUS_OK:
+  case STATE_OK:
     if (SearchResult::out.size()) {
       // SearchResult::out can be too big so can't copy
       // m_out = std::move(SearchResult::out); also not possible need to store
@@ -1337,27 +1337,27 @@ void Frame::updateStatus() {
     }
     break;
 
-  case STATUS_PROCEEDING:
+  case STATE_PROCEEDING:
     m_out = string(ONE_OF(m_menuClick, MENU_WAITING) ? WAITING : SEARCH) +
             "…"; //"...";
     break;
 
-  case STATUS_ERROR:
+  case STATE_ERROR:
     m_out = string(STRING_ERROR);
     break;
 
-  case STATUS_USER_BREAK:
-    m_out = string(STATUS_USER_BREAK);
+  case STATE_USER_BREAK:
+    m_out = string(STATE_USER_BREAK);
     break;
   }
 
-  std::string s = m_state == STATUS_OK ? getStatusString() : m_out;
+  std::string s = m_state == STATE_OK ? getStatusString() : m_out;
   // add " " at the beginning for nice view
   setLabel(m_statusMessage, " " + s);
 
   updateTextView(TEXTVIEW_MAIN, b ? m_out : SearchResult::out);
 
-  b = m_state == STATUS_OK && !m_result.empty();
+  b = m_state == STATE_OK && !m_result.empty();
   setSensitiveOrderFilter(b);
 }
 

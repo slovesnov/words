@@ -136,7 +136,6 @@ WordsBase *wordsBase;
 WordsBase::WordsBase() {
   int i, j;
   wordsBase = this;
-  m_state = STATUS_OK;
   // clock_t begin = clock();
 
   int k;
@@ -758,16 +757,15 @@ void WordsBase::findAnagram(int nthread) {
 }
 
 void WordsBase::findSimpleWordSequence(int nthread) {
-  int i, j;
+  const int min = m_comboValue[COMBOBOX_HELPER0];
+  const int max = m_comboValue[COMBOBOX_HELPER1];
+  int i = min - 1, j;
   std::string s;
-  MapStringTwoStringVectors &map = m_ma[nthread];
-  map.clear();
-  i = m_comboValue[COMBOBOX_HELPER0];
-  {
-    // TODO
-    // for (i = m_comboValue[COMBOBOX_HELPER0]; i <=
-    // m_comboValue[COMBOBOX_HELPER1];
-    //      i++) {
+  auto &v = m_ma[nthread];
+  v.resize(max - min + 1);
+  for (auto &map : v) {
+    i++;
+    map.clear();
     auto [it, end] = iterators(getDictionaryIndex(), nthread);
     for (; it != end; it++) {
       auto const &e = *it;
@@ -790,15 +788,15 @@ void WordsBase::findSimpleWordSequence(int nthread) {
 }
 
 void WordsBase::findDoubleWordSequence(int nthread) {
-  int i, j;
+  const int min = m_comboValue[COMBOBOX_HELPER0];
+  const int max = m_comboValue[COMBOBOX_HELPER1];
+  int i = min - 1, j;
   std::string q, s, t;
-  MapStringTwoStringVectors &map = m_ma[nthread];
-  map.clear();
-  i = m_comboValue[COMBOBOX_HELPER0];
-  {
-    //  for (i = m_comboValue[COMBOBOX_HELPER0]; i <=
-    //  m_comboValue[COMBOBOX_HELPER1];
-    //      i++) {
+  auto &v = m_ma[nthread];
+  v.resize(max - min + 1);
+  for (auto &map : v) {
+    i++;
+    map.clear();
     auto [it, end] = iterators(getDictionaryIndex(), nthread);
     for (; it != end; it++) {
       auto const &e = *it;
@@ -840,52 +838,51 @@ void WordsBase::findDoubleWordSequence(int nthread) {
 }
 
 void WordsBase::simpleDoubleWordSequencePostProseeding() {
-  MapStringTwoStringVectors &map = m_ma[0];
+  for (auto &vma : m_ma) {
+    auto &map = vma[0];
+    for (size_t i = 1; i < vma.size(); i++) {
+      for (auto &[e, a] : vma[i]) {
+        auto it = map.find(e);
+        if (it == map.end()) {
+          map[e] = std::move(a);
+        } else {
+          auto &dest_array = it->second;
 
-  for (size_t i = 1; i < m_ma.size(); i++) {
-    for (auto &[e, a] : m_ma[i]) {
-      auto it = map.find(e);
-      if (it == map.end()) {
-        map[e] = std::move(a);
-      } else {
-        auto &dest_array = it->second;
+          auto &dest_v0 = dest_array[0];
+          auto &src_v0 = a[0];
+          dest_v0.reserve(dest_v0.size() + src_v0.size());
+          dest_v0.insert(dest_v0.end(), std::make_move_iterator(src_v0.begin()),
+                         std::make_move_iterator(src_v0.end()));
 
-        auto &dest_v0 = dest_array[0];
-        auto &src_v0 = a[0];
-        dest_v0.reserve(dest_v0.size() + src_v0.size());
-        dest_v0.insert(dest_v0.end(), std::make_move_iterator(src_v0.begin()),
-                       std::make_move_iterator(src_v0.end()));
-
-        auto &dest_v1 = dest_array[1];
-        auto &src_v1 = a[1];
-        dest_v1.reserve(dest_v1.size() + src_v1.size());
-        dest_v1.insert(dest_v1.end(), std::make_move_iterator(src_v1.begin()),
-                       std::make_move_iterator(src_v1.end()));
-      }
-    }
-  }
-
-  const size_t len = m_comboValue[COMBOBOX_HELPER0];
-
-  m_result.reserve(m_result.size() + map.size() / 2);
-
-  for (auto &[_, v] : map) {
-    const auto &v0 = v[0];
-    const auto &v1 = v[1];
-
-    const size_t size_v0 = v0.size();
-    const size_t size_v1 = v1.size();
-
-    if (size_v0 != 0 && size_v1 != 0) {
-      if (size_v0 == 1 && size_v1 == 1) {
-        if (v0[0] == v1[0] && v0[0].length() == len) {
-          continue;
+          auto &dest_v1 = dest_array[1];
+          auto &src_v1 = a[1];
+          dest_v1.reserve(dest_v1.size() + src_v1.size());
+          dest_v1.insert(dest_v1.end(), std::make_move_iterator(src_v1.begin()),
+                         std::make_move_iterator(src_v1.end()));
         }
       }
+    }
 
-      size_t word_len = v0[0].length();
-      std::string s = joinV(v0) + " - " + joinV(v1);
-      m_result.emplace_back(std::move(s), word_len, size_v0 + size_v1);
+    const size_t len = m_comboValue[COMBOBOX_HELPER0];
+    m_result.reserve(m_result.size() + map.size() / 2);
+    for (auto &[_, v] : map) {
+      const auto &v0 = v[0];
+      const auto &v1 = v[1];
+
+      const size_t size_v0 = v0.size();
+      const size_t size_v1 = v1.size();
+
+      if (size_v0 != 0 && size_v1 != 0) {
+        if (size_v0 == 1 && size_v1 == 1) {
+          if (v0[0] == v1[0] && v0[0].length() == len) {
+            continue;
+          }
+        }
+
+        size_t word_len = v0[0].length();
+        std::string s = joinV(v0) + " - " + joinV(v1);
+        m_result.emplace_back(std::move(s), word_len, size_v0 + size_v1);
+      }
     }
   }
 }
@@ -1979,17 +1976,17 @@ void WordsBase::run(bool full) {
     }
 
     b = m_token.stop_requested();
+    if (b) { // was user break
+      m_end = clock();
+      return;
+    }
   }
-  if (b) { // was user break
-    m_end = clock();
-  } else {
-    sortFilterResults();
-    m_end = clock();
+  sortFilterResults();
+  m_end = clock();
 #ifndef NOGTK
-    m_state = STATUS_OK;
-    endJobThread();
+  m_state = STATE_OK;
+  endJobThread();
 #endif
-  }
 }
 
 bool WordsBase::differenceOnlyOneChar(const std::string &a,
