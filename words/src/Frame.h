@@ -100,7 +100,7 @@ public:
 
   void clickMenu(ENUM_MENU menu);
 
-  void setDictionary();
+  void updateDictionary();
   void loadAndUpdateCurrentLanguage();
   void comboChanged(ENUM_COMBOBOX e);
   void radioChanged(GtkWidget *w);
@@ -143,4 +143,7 @@ public:
   void updateStatus();
   void setSensitiveOrderFilter(bool b);
   void setPlaceholder(ENUM_ENTRY e, ENUM_STRING s);
+  void updateButton(ENUM_BUTTON e);
+
+  StartStopButtonState getStartStopState()const;
 };

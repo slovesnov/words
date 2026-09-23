@@ -22,6 +22,14 @@
 #include <regex>
 #endif
 
+#include <mutex> //TODO
+extern std::mutex cout_mutex;
+#define prsync(...)                                                            \
+  {                                                                            \
+    std::lock_guard<std::mutex> lock(cout_mutex);                              \
+    prs(__VA_ARGS__);                                                          \
+  }
+
 const char SEPARATOR[] = "SEPARATOR";
 constexpr std::string LANGUAGE[] = {"english", "russian"};
 constexpr int LANGUAGES = SIZEI(LANGUAGE);
@@ -56,6 +64,7 @@ protected:
   SafeGRegex m_regex[2];
 #endif
   int m_languageIndex;
+  int m_dictionaryIndex;
   char m_templateHelper[256];
   std::vector<std::vector<char>> m_template_a;
   Modification m_modifications;

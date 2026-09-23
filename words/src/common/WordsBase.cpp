@@ -7,45 +7,17 @@
 
 #include "WordsBase.h"
 #include "consts.h"
-#include "magic_enum.hpp" //TODO
 #include <cassert>
-#include <mutex> //TODO
 #include <ranges>
-
-std::mutex cout_mutex;
-/*
-#define prsync(...)                                                            \
-  {                                                                            \
-    std::lock_guard<std::mutex> lock(cout_mutex);                              \
-    print_variables(__VA_ARGS__);                                              \
-    std::cout << "\n";                                                         \
-  }
-
-#define pr2(...)                                                               \
-  print_variables(__VA_ARGS__);                                                \
-  std::cout << "\n";
-
-*/
-#define prsync(...)                                                            \
-  {                                                                            \
-    std::lock_guard<std::mutex> lock(cout_mutex);                              \
-    prs(__VA_ARGS__);                                                          \
-  }
+#include "magic_enum.hpp" //TODO
 
 #define CONTAINS(v, s) std::ranges::binary_search(v, s)
 
 #ifdef NOGTK
 #define RETURN_ON_USER_BREAK
-#define RETURN_ON_USER_BREAK1
 #else
 #define RETURN_ON_USER_BREAK                                                   \
   if (userBreakThread()) {                                                     \
-    pr("user break", nthread);                                                 \
-    return;                                                                    \
-  }
-#define RETURN_ON_USER_BREAK1                                                  \
-  if (userBreakThread()) {                                                     \
-    pr("user break sort");                                                     \
     return;                                                                    \
   }
 #endif
@@ -1662,7 +1634,7 @@ void WordsBase::sortFilterResults() {
   std::sort(m_result.begin(), m_result.end(),
             SORT_FUNCTION[m_comboValue[COMBOBOX_SORT] * 2 +
                           m_comboValue[COMBOBOX_SORT_ORDER]]);
-  pr(timeElapse(begin))
+  auto te = timeElapse(begin);
   for (auto const &e : m_result) {
     s = fastLocaleToUtf8(e.s);
 #ifndef NOGTK
@@ -1674,7 +1646,6 @@ void WordsBase::sortFilterResults() {
     if (!SearchResult::out.empty()) {
       SearchResult::out += "\n";
     }
-
     SearchResult::out +=
         s + OPEN_S + string(CHARACTERS) + std::format(" {}", e.length);
 
@@ -1692,11 +1663,10 @@ void WordsBase::sortFilterResults() {
       SearchResult::out += " " + string(DIFFERENT_CHARACTERS) +
                            std::format(" {}", e.differentCharacters);
     }
-
     SearchResult::out += ")";
-    RETURN_ON_USER_BREAK1
+    RETURN_ON_USER_BREAK
   }
-  pr(timeElapse(begin))
+  prsync(te, timeElapse(begin))
 }
 
 void WordsBase::loadLanguages() {
@@ -1952,7 +1922,7 @@ void WordsBase::run_thread(int nthread) {
 }
 
 void WordsBase::run(bool full) {
-  bool b = false;
+  bool userbreak = false;
   if (full) {
     std::vector<std::jthread> workers;
     int threads = oneOf(m_menuClick, MENU_CHAIN, MENU_LETTER_GROUP_SPLIT,
@@ -1981,16 +1951,17 @@ void WordsBase::run(bool full) {
                  std::ranges::to<SearchResultVector>();
     }
 
-    b = m_token.stop_requested();
-    if (b) { // was user break
-      m_end = clock();
-      return;
-    }
+    userbreak = m_token.stop_requested();
   }
-  sortFilterResults();
+
+  if (!userbreak) {
+    sortFilterResults();
+    // can be inside sortFilterResults
+    userbreak = m_token.stop_requested();
+  }
   m_end = clock();
 #ifndef NOGTK
-  m_state = STATE_OK;
+  m_state = userbreak ? STATE_USER_BREAK : STATE_OK;
   endJobThread();
 #endif
 }
@@ -2213,14 +2184,10 @@ std::string WordsBase::getShortLanguageString(int i) {
 
 void WordsBase::setDictionaryIndex(int i) {
   assert(i >= 0 && i < LANGUAGES);
-  m_comboValue[COMBOBOX_DICTIONARY] = i;
+  m_dictionaryIndex = i;
 }
 
-int WordsBase::getDictionaryIndex() const {
-  assert(m_comboValue[COMBOBOX_DICTIONARY] >= 0 &&
-         m_comboValue[COMBOBOX_DICTIONARY] < LANGUAGES);
-  return m_comboValue[COMBOBOX_DICTIONARY];
-}
+int WordsBase::getDictionaryIndex() const { return m_dictionaryIndex; }
 
 std::string WordsBase::getEntryString(ENUM_ENTRY e) const { return ""; }
 

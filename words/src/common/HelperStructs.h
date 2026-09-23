@@ -11,16 +11,16 @@
 #include <set>
 
 #ifdef NOGTK
-//#define USE_STANDARD_REGEX
+// #define USE_STANDARD_REGEX
 #endif
 
-//if use gtk regex
+// if use gtk regex
 #if defined(NOGTK) && !defined(USE_STANDARD_REGEX)
 #include <glib.h>
 #endif
 
 using Dictionary = VString;
-using DictionaryCI=Dictionary::const_iterator;
+using DictionaryCI = Dictionary::const_iterator;
 using uchar = unsigned char;
 using TwoStringVectors = std::array<VString, 2>;
 
@@ -81,6 +81,10 @@ struct GRegexDeleter {
 };
 using SafeGRegex = std::unique_ptr<GRegex, GRegexDeleter>;
 #endif
+
+struct StartStopButtonState {
+  bool imageStart, enable;
+};
 
 bool sortIntDouble(const IntDouble &r1, const IntDouble &r2);
 bool sortStringInt(const StringInt &r1, const StringInt &r2);
