@@ -972,6 +972,9 @@ std::string Frame::getMenuLabel(ENUM_MENU e) {
 }
 
 void Frame::endJob() {
+  // make unjoinable
+  if (m_thread.joinable())
+    m_thread.join();
   updateStatus();
   // update tags if user searched something
   updateTags(0);
@@ -1359,10 +1362,8 @@ void Frame::updateStatus() {
   setLabel(m_statusMessage, " " + s);
 
   if (b && m_state != STATE_BEGIN) {
-    m_out = capitalizeFirstUtf8(m_out) +(
-                    oneOf(m_state, STATE_PROCEEDING, STATE_STOPPING)
-                ? "…"
-                : ".");
+    m_out = capitalizeFirstUtf8(m_out) +
+            (oneOf(m_state, STATE_PROCEEDING, STATE_STOPPING) ? "…" : ".");
   }
   updateTextView(TEXTVIEW_MAIN, b ? m_out : SearchResult::out);
 
