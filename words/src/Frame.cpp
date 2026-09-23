@@ -179,7 +179,7 @@ Frame::Frame() : WordsBase() {
   frame = this;
   m_menuClick = MENU_SEARCH;
   // set dot as decimal separator, standard locale
-  setlocale(LC_NUMERIC, "C");
+  //?? setlocale(LC_NUMERIC, "C");
   m_lockSignals = false;
 
   // load configuration file
@@ -282,24 +282,30 @@ Frame::Frame() : WordsBase() {
     gtk_container_add(GTK_CONTAINER(w), w1);
   }
 
-  w1 = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, margin);
-  w2 = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+
+GtkWidget *vbox=w2 = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
   add(w2, scroll);
   gtk_container_add(GTK_CONTAINER(w2), m_status);
+// Задаем ему начальную или минимальную ширину, чтобы он не схлопывался в 0
+gtk_widget_set_size_request(vbox, 200, -1); 
 
-  add(w1, w2);
-
-  w2 = gtk_box_new(GTK_ORIENTATION_VERTICAL, 3);
+// 3. Создаем правый виджет (это может быть другой бокс, сетка или текстовое поле)
+ w2 = gtk_box_new(GTK_ORIENTATION_VERTICAL, 3);
   gtk_container_add(GTK_CONTAINER(w2), m_helperUp);
   add(w2, ""); // use as glue on java
   gtk_container_add(GTK_CONTAINER(w2), w);
 
-  gtk_container_add(GTK_CONTAINER(w1), w2);
-  gtk_widget_set_margin_end(m_helperUp, margin);
+GtkWidget *paned = gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
+gtk_paned_pack1(GTK_PANED(paned), 
+                 vbox, 
+                 TRUE,   // resize = TRUE (бокс будет плавно менять размер при перетаскивании)
+                 FALSE); // shrink = FALSE (запрещает сжимать бокс меньше его минимального size_request)
+
+gtk_paned_pack2(GTK_PANED(paned), w2, TRUE, FALSE);
 
   w = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
   gtk_container_add(GTK_CONTAINER(w), m_menu);
-  add(w, w1);
+  add(w, paned);
   gtk_container_add(GTK_CONTAINER(m_widget), w);
 
   // load menu
