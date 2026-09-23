@@ -27,7 +27,6 @@ class Frame : WordsBase {
   GtkWidget *m_searchTagLabel;
   GtkWidget *m_searchButton[2]; // next, previous buttons
   GtkWidget *m_currentDictionary;
-  GtkWidget *m_filterFrame;
   GtkWidget *m_check;
   GtkWidget *m_comboline;
   GtkWidget *m_radio;

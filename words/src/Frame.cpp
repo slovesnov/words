@@ -254,10 +254,7 @@ Frame::Frame() : WordsBase() {
   add(w1, m_entry[ENTRY_FILTER]); // stretch
   gtk_container_add(GTK_CONTAINER(w1), m_combo[COMBOBOX_FILTER]);
 
-  m_filterFrame = gtk_frame_new("");
-  gtk_container_add(GTK_CONTAINER(m_filterFrame), w1);
-  gtk_frame_set_label_align(GTK_FRAME(m_filterFrame), 0.15, 0.5);
-  gtk_container_add(GTK_CONTAINER(w), m_filterFrame);
+  gtk_container_add(GTK_CONTAINER(w), w1);
 
   w1 = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, margin);
   w2 = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
@@ -793,7 +790,7 @@ void Frame::loadAndUpdateCurrentLanguage() {
 
   gtk_window_set_title(GTK_WINDOW(m_widget), string(PROGRAM).c_str());
 
-  gtk_frame_set_label(GTK_FRAME(m_filterFrame), string(RESULTS_FILTER).c_str());
+  gtk_entry_set_placeholder_text(GTK_ENTRY(m_entry[ENTRY_FILTER]), string(RESULTS_FILTER).c_str());
 
   refillCombo(COMBOBOX_SORT, SORT_BY_ALPHABET, NUMBER_OF_SORTS);
   refillCombo(COMBOBOX_FILTER, FOUND, 2);

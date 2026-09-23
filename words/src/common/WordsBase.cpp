@@ -1662,6 +1662,7 @@ void WordsBase::sortFilterResults() {
   std::sort(m_result.begin(), m_result.end(),
             SORT_FUNCTION[m_comboValue[COMBOBOX_SORT] * 2 +
                           m_comboValue[COMBOBOX_SORT_ORDER]]);
+  pr(timeElapse(begin))
   for (auto const &e : m_result) {
     s = fastLocaleToUtf8(e.s);
 #ifndef NOGTK
