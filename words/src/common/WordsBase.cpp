@@ -7,9 +7,11 @@
 
 #include "WordsBase.h"
 #include "consts.h"
+#include "magic_enum.hpp" //TODO
 #include <cassert>
 #include <ranges>
-#include "magic_enum.hpp" //TODO
+
+extern std::mutex cout_mutex;
 
 #define CONTAINS(v, s) std::ranges::binary_search(v, s)
 
@@ -17,7 +19,7 @@
 #define RETURN_ON_USER_BREAK
 #else
 #define RETURN_ON_USER_BREAK                                                   \
-  if (userBreakThread()) {                                                     \
+  if (m_token.stop_requested()) {                                              \
     return;                                                                    \
   }
 #endif
@@ -1960,6 +1962,7 @@ void WordsBase::run(bool full) {
     userbreak = m_token.stop_requested();
   }
   m_end = clock();
+  // m_result.clear();??
 #ifndef NOGTK
   m_state = userbreak ? STATE_USER_BREAK : STATE_OK;
   endJobThread();

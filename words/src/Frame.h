@@ -106,14 +106,12 @@ public:
   void radioChanged(GtkWidget *w);
   void clickButton(GtkWidget *button);
 
-  virtual bool userBreakThread() override;
   virtual void setMenuLabel(ENUM_MENU e, std::string const &text) override;
   virtual void endJobThread() override;
   std::string getMenuLabel(ENUM_MENU e);
 
   void stopThreadAndNewRoutine(bool full=true);
   void stopThread();
-  // void waitThread();
   void startThread(bool full); // false - only sort/filter
 
   void updateTextView(ENUM_TEXTVIEW e, std::string const &s);

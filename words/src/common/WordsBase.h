@@ -103,7 +103,6 @@ protected:
   static std::string getResourcePath(std::string name);
   void cgi();
 #else
-  virtual bool userBreakThread() = 0;
   virtual void setMenuLabel(ENUM_MENU e, std::string const &text) = 0;
   virtual void endJobThread() = 0;
   bool testFilterRegex(const std::string &s);

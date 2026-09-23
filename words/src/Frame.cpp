@@ -927,14 +927,12 @@ void Frame::clickButton(GtkWidget *button) {
     updateDictionary();
   } else if (n == BUTTON_STARTSTOP) {
     auto b = getStartStopState();
-    if(b.imageStart){
+    if (b.imageStart) {
       routine();
-    }
-    else{
-      auto begin=clock();
-      prsync(magic_enum::enum_name(m_state));
-      stopThread();
-      prsync(magic_enum::enum_name(m_state),timeElapse(begin));
+    } else {
+      auto begin = clock();
+      m_thread.request_stop();
+      prsync(magic_enum::enum_name(m_state), timeElapse(begin));
     }
   } else {
     if (m_tags < 2) {
@@ -996,16 +994,19 @@ void Frame::stopThread() {
   }
 }
 
-bool Frame::userBreakThread() {
-  // Sleep(1);//to slowdown check user break
-  if (m_token.stop_requested()) {
-    m_result.clear();
-    m_state = STATE_USER_BREAK;
-    return true;
+/*
+void Frame::stopThreadAsync() {
+  if (!m_stopthread.joinable()) {
+    // GCC bug #100612 so use lambda if call class member
+    m_stopthread = std::jthread([this]() {
+      auto begin = clock();
+      stopThread();
+      prsync(timeElapse(begin));
+    });
   } else {
-    return false;
+    pr("error start thread joinable")
   }
-}
+}*/
 
 void Frame::startThread(bool full) {
   if (!m_thread.joinable()) {
@@ -1359,7 +1360,7 @@ void Frame::updateStatus() {
     break;
 
   case STATE_USER_BREAK:
-    m_out = string(STATE_USER_BREAK);
+    m_out = string(OPERATION_CANCELED_BY_USER);
     break;
   }
 
