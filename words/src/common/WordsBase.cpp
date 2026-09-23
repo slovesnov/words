@@ -838,10 +838,13 @@ void WordsBase::findDoubleWordSequence(int nthread) {
 }
 
 void WordsBase::simpleDoubleWordSequencePostProseeding() {
-  for (auto &vma : m_ma) {
-    auto &map = vma[0];
-    for (size_t i = 1; i < vma.size(); i++) {
-      for (auto &[e, a] : vma[i]) {
+  const int min = m_comboValue[COMBOBOX_HELPER0];
+  const int max = m_comboValue[COMBOBOX_HELPER1];
+  int n;
+  for (n = 0; n <= max - min; n++) {
+    auto &map = m_ma[0][n];
+    for (size_t i = 1; i < m_ma.size(); i++) {
+      for (auto &[e, a] : m_ma[i][n]) {
         auto it = map.find(e);
         if (it == map.end()) {
           map[e] = std::move(a);
@@ -880,7 +883,7 @@ void WordsBase::simpleDoubleWordSequencePostProseeding() {
         }
 
         size_t word_len = v0[0].length();
-        std::string s = joinV(v0) + " - " + joinV(v1);
+        std::string s = joinV(v0) + " - " + joinV(v1); //" - "
         m_result.emplace_back(std::move(s), word_len, size_v0 + size_v1);
       }
     }
@@ -1655,6 +1658,7 @@ void WordsBase::sortFilterResults() {
     return;
   }
   SearchResult::out = "";
+  auto begin = clock();
   std::sort(m_result.begin(), m_result.end(),
             SORT_FUNCTION[m_comboValue[COMBOBOX_SORT] * 2 +
                           m_comboValue[COMBOBOX_SORT_ORDER]]);
@@ -1691,6 +1695,7 @@ void WordsBase::sortFilterResults() {
     SearchResult::out += ")";
     RETURN_ON_USER_BREAK1
   }
+  pr(timeElapse(begin))
 }
 
 void WordsBase::loadLanguages() {
@@ -1738,9 +1743,9 @@ void WordsBase::loadLanguages() {
 
     ml[MODIFICATION_HELP] = format(ml[MODIFICATION_HELP].c_str(),
                                    ml[EVERY_MODIFICATION_CHANGES_WORD].c_str());
-    /* use only first symbol. In Russian language separator is space, so ignore
-     * comment in language.txt file. Comment in ru/language.txt is important
-     * because otherwise it'll we empty string and looks like a bug
+    /* use only first symbol. In Russian language separator is space, so
+     * ignore comment in language.txt file. Comment in ru/language.txt is
+     * important because otherwise it'll we empty string and looks like a bug
      */
     ml[SEPARATOR_SYMBOL] = ml[SEPARATOR_SYMBOL].substr(0, 1);
   }
