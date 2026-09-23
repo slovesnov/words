@@ -39,7 +39,11 @@ class Frame : WordsBase {
   std::jthread m_thread;
   CheckNewVersion m_newVersion;
   guint m_debounce_timer_id = 0;
-
+  public:
+ gulong m_positionSignalId = 0; 
+   int m_separatorPosition;
+GtkWidget* m_panedWidget = nullptr; 
+private:
   int m_tagIndex = 0;
   int m_tags = 0;
   struct TagRange {

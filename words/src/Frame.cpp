@@ -31,9 +31,14 @@ const char markTag[] = "mark";
 const char activeTag[] = "active";
 const char CERROR[] = "cerror";
 const int TIMER = 400; // milliseconds
-
+const int MIN_LEFT_PANEL_WIDTH = 800;
+const int MIN_RIGHT_PANEL_WIDTH = 420;
+const int DEFAULT_SEPARATOR_POSITION = 1200;
+const std::string CONFIG_TAGS[] = {"version", "language", "dictionary",
+                                   "separator"};
 const char DOWNLOAD_URL[] =
     "http://sourceforge.net/projects/javawords/files/latest/download";
+extern std::string LNG[LANGUAGES];
 
 /* too many items in combobox, so set maximum bound.
   constants calculated in functions
@@ -48,8 +53,6 @@ const int MAX_ANAGRAM_LENGTH = 31;              //{22 31}
 const int MAX_PANGRAM_LENGTH = 21;              //{16 21}
 const int MAX_SIMPLE_WORD_SEQUENCE_LENGTH = 30; //{25 30}
 const int MAX_DOUBLE_WORD_SEQUENCE_LENGTH = 14; //{7 14}
-
-const std::string CONFIG_TAGS[] = {"version", "language", "dictionary"};
 
 const std::unordered_map<ENUM_MENU, ENUM_STRING> MENU_TO_HELP_STRING = {
     {MENU_ANAGRAM, ANAGRAM_HELP},
@@ -98,75 +101,91 @@ const std::unordered_map<ENUM_MENU, int> MENU_TO_ACCEL_KEY = {
     {MENU_EDIT_COPY_TO_CLIPBOARD, GDK_KEY_C}};
 Frame *frame;
 
-static gboolean end_job(gpointer) {
+gboolean end_job(gpointer) {
   frame->endJob();
   return G_SOURCE_REMOVE;
 }
 
-static void menu_activate(GtkWidget *widget, ENUM_MENU menu) {
+void menu_activate(GtkWidget *widget, ENUM_MENU menu) {
   frame->clickMenu(menu);
 }
 
-static void combo_changed(GtkComboBox *comboBox, ENUM_COMBOBOX e) {
+void combo_changed(GtkComboBox *comboBox, ENUM_COMBOBOX e) {
   if (!frame->isSignalsLocked()) {
     frame->comboChanged(e);
   }
 }
 
-static void entry_insert(GtkWidget *entry, gchar *new_text,
-                         gint new_text_length, gpointer position,
-                         ENUM_ENTRY e) {
+void entry_insert(GtkWidget *entry, gchar *new_text, gint new_text_length,
+                  gpointer position, ENUM_ENTRY e) {
   frame->entryChanged(e);
 }
 
-static void entry_delete(GtkWidget *entry, gint start_pos, gint end_pos,
-                         ENUM_ENTRY e) {
+void entry_delete(GtkWidget *entry, gint start_pos, gint end_pos,
+                  ENUM_ENTRY e) {
   frame->entryChanged(e);
 }
 
-static gboolean entry_focus_in(GtkWidget *widget, GdkEvent *event, gpointer) {
+gboolean entry_focus_in(GtkWidget *widget, GdkEvent *event, gpointer) {
   frame->entryFocusChanged(true);
   return TRUE;
 }
 
-static gboolean entry_focus_out(GtkWidget *widget, GdkEvent *event, gpointer) {
+gboolean entry_focus_out(GtkWidget *widget, GdkEvent *event, gpointer) {
   frame->entryFocusChanged(false);
   return TRUE;
 }
 
-static void button_clicked(GtkWidget *button, gpointer) {
-  frame->clickButton(button);
-}
+void button_clicked(GtkWidget *button, gpointer) { frame->clickButton(button); }
 
-static gboolean label_clicked(GtkWidget *label, const gchar *uri, gpointer) {
+gboolean label_clicked(GtkWidget *label, const gchar *uri, gpointer) {
   openURL(uri);
   return TRUE;
 }
 
-static void check_changed(GtkWidget *check, gpointer) {
+void check_changed(GtkWidget *check, gpointer) {
   frame->stopThreadAndNewRoutine();
 }
 
-static void radio_changed(GtkWidget *radio, gpointer) {
-  frame->radioChanged(radio);
-}
+void radio_changed(GtkWidget *radio, gpointer) { frame->radioChanged(radio); }
 
-static void text_view_changed(GtkTextBuffer *buffer, gpointer) {
+void text_view_changed(GtkTextBuffer *buffer, gpointer) {
   // proceed same as template entry changed
   frame->setDebounceTimer(ENTRY_TEMPLATE);
 }
 
-static void destroy_window(GtkWidget *object, gpointer) { frame->destroy(); }
+void destroy_window(GtkWidget *object, gpointer) { frame->destroy(); }
 
-static gboolean on_debounce_timeout(gpointer user_data) {
+gboolean on_debounce_timeout(gpointer user_data) {
   frame->debounceTimeout(ENUM_ENTRY(GP2INT(user_data)));
   return G_SOURCE_REMOVE;
 }
 
-static gboolean new_version_message(gpointer) {
+gboolean new_version_message(gpointer) {
   frame->newVersionMessage();
   return G_SOURCE_REMOVE;
 }
+
+// TODO
+static gboolean reset_paned_position_delayed(gpointer data) {
+    Frame *self = static_cast<Frame *>(data);
+    GtkPaned *paned = GTK_PANED(self->m_panedWidget); 
+    
+    // Берем значение, которое мы загрузили из файла при старте (например, 1489)
+    int target_position = self->m_separatorPosition;
+    pr(frame->m_separatorPosition)
+    
+    
+    // Принудительно выставляем сохраненную позицию (1489)
+    gtk_paned_set_position(paned, target_position);
+    
+    // Разблокируем сигнал. Теперь, когда интерфейс полностью готов и стабилен,
+    // любые ручные перемещения ползунка пользователем будут корректно записываться.
+    g_signal_handler_unblock(paned, self->m_positionSignalId);
+    
+    return G_SOURCE_REMOVE; 
+}
+
 
 Frame::Frame() : WordsBase() {
   GtkWidget *w, *w1, *w2, *scroll;
@@ -179,28 +198,29 @@ Frame::Frame() : WordsBase() {
   frame = this;
   m_menuClick = MENU_SEARCH;
   // set dot as decimal separator, standard locale
-  setlocale(LC_NUMERIC, "C");//needs double to string 
+  setlocale(LC_NUMERIC, "C"); // needs double to string
   m_lockSignals = false;
 
   // load configuration file
   m_languageIndex = 0;
   m_dictionaryIndex = 0;
-  MapStringString m;
-  MapStringString::iterator it;
-  if (loadConfig(m)) {
-    for (j = 0; j < 2; j++) {
-      if ((it = m.find(j == 0 ? "language" : "dictionary")) != m.end()) {
-        for (i = 0; i < LANGUAGES; i++) {
-          if (getShortLanguageString(i) == it->second) {
-            if (j == 0) {
-              m_languageIndex = i;
-            } else {
-              m_dictionaryIndex = i;
-            }
-            break;
-          }
-        }
+  m_separatorPosition = DEFAULT_SEPARATOR_POSITION;
+  auto v = READ_CONFIG(CONFIG_TAGS);
+  if (v.empty()) {
+    if (getSystemLanguage() == "ru") {
+      m_languageIndex = m_dictionaryIndex = 1;
+    }
+  } else {
+    int *p[] = {&m_languageIndex, &m_dictionaryIndex};
+    i = 1; // start from 1
+    for (auto a : p) {
+      j = INDEX_OF(v[i++], LNG);
+      if (j != -1) {
+        *a = j;
       }
+    }
+    if (parseString(v[3], i)) {
+      m_separatorPosition = i;
     }
   }
 
@@ -221,10 +241,8 @@ Frame::Frame() : WordsBase() {
   m_statusMessage = gtk_label_new("");
 
   createImageCombo(COMBOBOX_SORT_ORDER);
-
   createTextCombo(COMBOBOX_SORT);
   setComboIndex(COMBOBOX_SORT_ORDER, 1);
-
   createTextCombo(COMBOBOX_FILTER);
 
   m_entry[ENTRY_SEARCH] = gtk_entry_new();
@@ -255,7 +273,7 @@ Frame::Frame() : WordsBase() {
   gtk_widget_set_halign(m_statusMessage, GTK_ALIGN_START);
 
   // sort combo has many items so place it into the middle
-  std::initializer_list<std::pair<GtkWidget *, bool>> A[] = {
+  WB A[] = {
       {{m_button[BUTTON_STARTSTOP], false},
        {m_currentDictionary, false},
        {m_button[BUTTON_DICTIONARY], false}},
@@ -274,30 +292,49 @@ Frame::Frame() : WordsBase() {
     w1 = createBox(GTK_ORIENTATION_HORIZONTAL, margin, a);
     gtk_container_add(GTK_CONTAINER(w), w1);
   }
-  // todo
 
   w1 = gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
   // left part
   w2 = createBox(GTK_ORIENTATION_VERTICAL, 0,
                  {{scroll, true}, {m_status, false}});
-  gtk_widget_set_size_request(w2, 800, -1); // minimum width
-  gtk_paned_pack1(GTK_PANED(w1), w2, TRUE, FALSE);
+  gtk_widget_set_size_request(w2, MIN_LEFT_PANEL_WIDTH, -1);
+  gtk_paned_pack1(GTK_PANED(w1), w2, FALSE, FALSE);
+  //gtk_paned_pack1(GTK_PANED(w1), w2, TRUE, FALSE);
 
   // right part
   w2 = createBox(GTK_ORIENTATION_VERTICAL, 3,
                  {{m_helperUp, false},
                   {gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0), true},
                   {w, false}});
-  gtk_widget_set_size_request(w2, 420, -1); // minimum width
+  gtk_widget_set_size_request(w2, MIN_RIGHT_PANEL_WIDTH, -1);
   gtk_paned_pack2(GTK_PANED(w1), w2, TRUE, FALSE);
+  gtk_widget_set_margin_start(GTK_WIDGET(w2), 5);
+  gtk_widget_set_margin_end(GTK_WIDGET(w2), 5);
 
-  g_signal_connect(
-      w1, "realize", G_CALLBACK(+[](GtkWidget *widget, gpointer data) {
-        gtk_paned_set_position(
-            GTK_PANED(widget),
-            1200); // initial width of left part (divider coordinates)
-      }),
-      NULL);
+  pr(m_separatorPosition);
+  // gtk_paned_pack2(GTK_PANED(paned), right, TRUE, FALSE);
+ // GtkWidget *paned = w1;
+this->m_panedWidget = w1;
+
+// 3. Подключаем сигнал
+this->m_positionSignalId = g_signal_connect(
+    w1, "notify::position",
+    G_CALLBACK(+[](GObject *object, GParamSpec *pspec, gpointer data) {
+        Frame *self = static_cast<Frame *>(data);
+        int current_pos = gtk_paned_get_position(GTK_PANED(object));
+        
+         pr(current_pos);
+        self->m_separatorPosition = current_pos;
+    }),
+    this);
+
+// 🔥 ВАЖНО: Сразу блокируем сигнал, чтобы GTK своими внутренними 
+// просчетами (включая дефолтные 800) не затер наше значение из файла!
+g_signal_handler_block(w1, this->m_positionSignalId);
+
+
+// 5. Запускаем таймер, передавая указатель на текущий объект класса
+g_timeout_add(50, reset_paned_position_delayed, this);
 
   w = createBox(GTK_ORIENTATION_VERTICAL, 0, {{m_menu, false}, {w1, true}});
   gtk_container_add(GTK_CONTAINER(m_widget), w);
@@ -491,10 +528,11 @@ void Frame::clickMenu(ENUM_MENU menu) {
 }
 
 void Frame::destroy() {
-  // const std::string CONFIG_TAGS[]={"version","language","dictionary"};
-  WRITE_CONFIG(CONFIG_TAGS, WORDS_VERSION,
-               getShortLanguageString(m_languageIndex),
-               getShortLanguageString(getDictionaryIndex()));
+  pr("destroy", m_separatorPosition);
+
+  WRITE_CONFIG(
+      CONFIG_TAGS, WORDS_VERSION, getShortLanguageString(m_languageIndex),
+      getShortLanguageString(getDictionaryIndex()), m_separatorPosition);
   stopThread();
   gtk_main_quit();
 }
