@@ -261,7 +261,7 @@ Frame::Frame() : WordsBase() {
 
   std::vector<std::pair<GtkWidget *, bool>> A[] = {
       {{m_button[BUTTON_STARTSTOP], false},
-       {gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0), true},
+       //{gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0), true},
        {m_currentDictionary, false},
        {m_button[BUTTON_DICTIONARY], false}},
 
@@ -928,11 +928,12 @@ void Frame::clickButton(GtkWidget *button) {
   } else if (n == BUTTON_STARTSTOP) {
     auto b = getStartStopState();
     if (b.imageStart) {
+      prsync("start");
       routine();
     } else {
-      auto begin = clock();
       m_thread.request_stop();
-      prsync(magic_enum::enum_name(m_state), timeElapse(begin));
+      m_state = STATE_STOPPING;
+      updateStatus();
     }
   } else {
     if (m_tags < 2) {
@@ -993,20 +994,6 @@ void Frame::stopThread() {
     m_thread.join();
   }
 }
-
-/*
-void Frame::stopThreadAsync() {
-  if (!m_stopthread.joinable()) {
-    // GCC bug #100612 so use lambda if call class member
-    m_stopthread = std::jthread([this]() {
-      auto begin = clock();
-      stopThread();
-      prsync(timeElapse(begin));
-    });
-  } else {
-    pr("error start thread joinable")
-  }
-}*/
 
 void Frame::startThread(bool full) {
   if (!m_thread.joinable()) {
@@ -1351,8 +1338,7 @@ void Frame::updateStatus() {
     break;
 
   case STATE_PROCEEDING:
-    m_out = string(ONE_OF(m_menuClick, MENU_WAITING) ? WAITING : SEARCH) +
-            "…"; //"...";
+    m_out = string(ONE_OF(m_menuClick, MENU_WAITING) ? WAITING : SEARCH);
     break;
 
   case STATE_ERROR:
@@ -1362,12 +1348,22 @@ void Frame::updateStatus() {
   case STATE_USER_BREAK:
     m_out = string(OPERATION_CANCELED_BY_USER);
     break;
+
+  case STATE_STOPPING:
+    m_out = string(STOPPING_PROCESS);
+    break;
   }
 
   std::string s = m_state == STATE_OK ? getStatusString() : m_out;
   // add " " at the beginning for nice view
   setLabel(m_statusMessage, " " + s);
 
+  if (b && m_state != STATE_BEGIN) {
+    m_out = capitalizeFirstUtf8(m_out) +(
+                    oneOf(m_state, STATE_PROCEEDING, STATE_STOPPING)
+                ? "…"
+                : ".");
+  }
   updateTextView(TEXTVIEW_MAIN, b ? m_out : SearchResult::out);
 
   b = m_state == STATE_OK && !m_result.empty();

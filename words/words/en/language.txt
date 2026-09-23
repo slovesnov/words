@@ -156,5 +156,6 @@ cr symbol found
 Words in ascending order of length.
 Exception words.
 invalid modification string
-Operation canceled by user.
-No results found.
+operation canceled by user
+no results found
+stopping process

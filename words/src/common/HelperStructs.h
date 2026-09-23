@@ -90,3 +90,4 @@ bool sortIntDouble(const IntDouble &r1, const IntDouble &r2);
 bool sortStringInt(const StringInt &r1, const StringInt &r2);
 std::string fastLocaleToUtf8(const std::string &src);
 std::string fastUtf8ToLocale(const std::string &src);
+std::string capitalizeFirstUtf8(const std::string& src);

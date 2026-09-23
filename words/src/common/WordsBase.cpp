@@ -11,9 +11,7 @@
 #include <cassert>
 #include <ranges>
 
-extern std::mutex cout_mutex;
-
-#define CONTAINS(v, s) std::ranges::binary_search(v, s)
+std::mutex cout_mutex;
 
 #ifdef NOGTK
 #define RETURN_ON_USER_BREAK
@@ -874,7 +872,7 @@ void WordsBase::findWordSequenceFull(int nthread) {
     }
     s = e;
     std::reverse(s.begin(), s.end());
-    if (s > e && CONTAINS(getDictionary(), s)) {
+    if (s > e && std::ranges::binary_search(getDictionary(), s)) {
       m_thread_result[nthread].push_back(
           SearchResult(e + " " + s, e.length(), 2));
     }
@@ -887,7 +885,8 @@ void WordsBase::findModification(int nthread) {
   for (; it != end; it++) {
     auto const &e = *it;
     s = m_modifications.apply(e, m_checkValue);
-    if (!s.empty() && s != e && CONTAINS(getDictionary(), s)) {
+    if (!s.empty() && s != e &&
+        std::ranges::binary_search(getDictionary(), s)) {
       m_thread_result[nthread].push_back(
           SearchResult(e + " " + s, e.length(), 1));
     }
@@ -1257,7 +1256,7 @@ void WordsBase::twoDictionaries(int nthread, bool translit) {
         s += k[i][l % m];
         l /= m;
       }
-      if (CONTAINS(dt, s)) {
+      if (std::ranges::binary_search(dt, s)) {
         // first word should be in current dictionary language, for correct
         // sorting vowels/consonant percent
         if (di == fromIndex) {
@@ -1306,7 +1305,7 @@ void WordsBase::keyboardWords(int nthread) {
     }
     *p = 0;
 
-    if (CONTAINS(dt, b)) {
+    if (std::ranges::binary_search(dt, b)) {
       s = di ? b + (" " + e) : e + " " + b;
       m_thread_result[nthread].push_back(SearchResult(s, len, 1));
     }
@@ -1668,7 +1667,7 @@ void WordsBase::sortFilterResults() {
     SearchResult::out += ")";
     RETURN_ON_USER_BREAK
   }
-  prsync(te, timeElapse(begin))
+  prsync("sort", te, timeElapse(begin))
 }
 
 void WordsBase::loadLanguages() {
