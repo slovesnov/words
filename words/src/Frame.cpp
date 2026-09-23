@@ -235,32 +235,27 @@ Frame::Frame() : WordsBase() {
   // sort combo has many items so place it into the middle
   w = gtk_box_new(GTK_ORIENTATION_VERTICAL, 3);
   gtk_widget_set_size_request(w, 420, -1);
-  //gtk_widget_set_margin_bottom(GTK_WIDGET(w), 40);
+  // gtk_widget_set_margin_bottom(GTK_WIDGET(w), 40);
 
-  for (i = 0; i < 4; i++) {
+  std::vector<std::pair<GtkWidget *, bool>> A[] = {
+      {{m_button[BUTTON_STARTSTOP], false},
+       {gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0), true},
+       {m_currentDictionary, false},
+       {m_combo[COMBOBOX_DICTIONARY], false}},
+
+      {{m_combo[COMBOBOX_SORT], true}, {m_combo[COMBOBOX_SORT_ORDER], false}},
+
+      {{m_entry[ENTRY_FILTER], true}, {m_combo[COMBOBOX_FILTER], false}},
+
+      {{m_entry[ENTRY_SEARCH], true},
+       {m_searchTagLabel, false},
+       {m_button[BUTTON_NEXT], false},
+       {m_button[BUTTON_PREVIOUS], false}}};
+
+  for (auto &a : A) {
     w1 = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, margin);
-    if (i == 0) {
-      add(w1, m_button[BUTTON_STARTSTOP], false);
-      w2 = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-      add(w1, w2);
-      add(w1, m_currentDictionary, false);
-      add(w1, m_combo[COMBOBOX_DICTIONARY], false);
-
-    } else if (i == 1) {
-      add(w1, m_combo[COMBOBOX_SORT]);
-      gtk_container_add(GTK_CONTAINER(w1), m_combo[COMBOBOX_SORT_ORDER]);
-
-    } else if (i == 2) {
-      add(w1, m_entry[ENTRY_FILTER]); // stretch
-      gtk_container_add(GTK_CONTAINER(w1), m_combo[COMBOBOX_FILTER]);
-    } else {
-      // if move row with combobox at the bottom then it's not good view when
-      // opened
-      add(w1, m_entry[ENTRY_SEARCH]); // stretch
-      gtk_container_add(GTK_CONTAINER(w1), m_searchTagLabel);
-      for (auto e : {BUTTON_NEXT, BUTTON_PREVIOUS}) {
-        gtk_container_add(GTK_CONTAINER(w1), m_button[e]);
-      }
+    for (const auto &e : a) {
+      add(w1, e.first, e.second);
     }
     gtk_container_add(GTK_CONTAINER(w), w1);
   }
