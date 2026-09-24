@@ -468,6 +468,7 @@ void WordsBase::checkDictionaryPreProseeding() {
   int filesize = file.tellg();
   int i, start;
   char c;
+  m_chd.clear();
   for (i = 0; i < threads; ++i) {
     start = i * (filesize / threads);
     // adjust start
@@ -1429,13 +1430,15 @@ void WordsBase::checkDictionary(int nthread) {
   const int MAX_ERRORS = 100 / THREADS;
   int line = 0, errors = MAX_ERRORS;
   const bool lastThread = nthread == THREADS - 1;
+  m_chdv[nthread] = "";
 
   auto addError = [&line, &errors, nthread, this](ENUM_STRING error) {
     m_chdv[nthread] += (m_chdv[nthread].empty() ? "" : "\n") +
                        capitalizeFirstUtf8(string(STRING_ERROR)) + " " +
                        string(error) + ", " + string(THREAD) + " " +
                        std::to_string(nthread + 1) + ", " + string(LINE) + " " +
-                       intToStringLocaled(line) + ".";
+                       intToStringLocaled(line) + "." +
+                       (nthread == 0 ? "" : " " + string(THREAD_NOTE));
     if (!(--errors)) {
       throw std::runtime_error("");
     }
@@ -1765,7 +1768,7 @@ void WordsBase::loadLanguages() {
       }
       assert(i < MENU_SIZE);
       m_menuAll[n][i] = s;
-      // first item "search"
+      //  first item "search"
       if (!i) {
         search = s;
       }
@@ -1788,13 +1791,6 @@ bool WordsBase::prepare() {
   std::string s;
   int i;
   std::string::size_type pb, pe;
-  auto it = menuPreProseeding.find(m_menuClick);
-  // pr(magic_enum::enum_name(m_menuClick), it != menuPreProseeding.end());
-  if (it != menuPreProseeding.end()) {
-    auto f = it->second;
-    (this->*f)();
-    return true;
-  }
 
   if (!isEntryMenu()) {
     return true;
@@ -1984,6 +1980,12 @@ void WordsBase::run_thread(int nthread) {
 void WordsBase::run(ENUM_JOB_TYPE e) {
   bool userbreak = false;
   if (e == JOB_TYPE_FULL) {
+    auto it = menuPreProseeding.find(m_menuClick);
+    if (it != menuPreProseeding.end()) {
+      auto f = it->second;
+      (this->*f)();
+    }
+
     std::vector<std::jthread> workers;
     int threads = oneOf(m_menuClick, MENU_CHAIN, MENU_LETTER_GROUP_SPLIT)
                       ? 1
@@ -1998,7 +2000,7 @@ void WordsBase::run(ENUM_JOB_TYPE e) {
       }
     }
 
-    auto it = menuPostProseeding.find(m_menuClick);
+    it = menuPostProseeding.find(m_menuClick);
     if (it != menuPostProseeding.end()) {
       auto f = it->second;
       (this->*f)();

@@ -8,6 +8,8 @@ regular expressions
 modifications of words
 chains of words
 characters sequence
+SEPARATOR
+words split
 letter group split
 SEPARATOR
 simple sequence words
@@ -160,3 +162,5 @@ operation canceled by user
 no results found
 stopping process
 thread
+Note: Line numbers are valid for the first thread only.
+Split words help.
