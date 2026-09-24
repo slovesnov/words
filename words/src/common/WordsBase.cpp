@@ -53,13 +53,19 @@ const std::unordered_map<ENUM_MENU, void (WordsBase::*)(int)> menu2VoidInt = {
     {MENU_TWO_CHARACTERS_DISTRIBUTION_END,
      &WordsBase::twoCharactersDistribution} // not implemented
 };
-/*
+/*TODO
 MENU_CHAIN, findChain
 MENU_LETTER_GROUP_SPLIT, findLetterGroupSplit
-MENU_CHECK_DICTIONARY, checkDictionary
 */
 
-const std::unordered_map<ENUM_MENU, void (WordsBase::*)()> menu2PostProseeding =
+const std::unordered_map<ENUM_MENU, void (WordsBase::*)()> menuPreProseeding = {
+    {MENU_KEYBOARD_WORD_SIMPLE,
+     &WordsBase::checkKeyboardWordSimplePreProseeding},
+    {MENU_KEYBOARD_WORD_COMPLEX,
+     &WordsBase::checkKeyboardWordComplexPreProseeding},
+    {MENU_CHECK_DICTIONARY, &WordsBase::checkDictionaryPreProseeding}};
+
+const std::unordered_map<ENUM_MENU, void (WordsBase::*)()> menuPostProseeding =
     {{MENU_WORD_FREQUENCY, &WordsBase::wordFrequencyPostProseeding},
      {MENU_DICTIONARY_STATISTICS,
       &WordsBase::dictionaryStatisticsPostProseeding},
@@ -72,7 +78,8 @@ const std::unordered_map<ENUM_MENU, void (WordsBase::*)()> menu2PostProseeding =
      {MENU_TWO_CHARACTERS_DISTRIBUTION_START,
       &WordsBase::twoCharactersDistributionPostProseeding},
      {MENU_TWO_CHARACTERS_DISTRIBUTION_END,
-      &WordsBase::twoCharactersDistributionPostProseeding}};
+      &WordsBase::twoCharactersDistributionPostProseeding},
+     {MENU_CHECK_DICTIONARY, &WordsBase::checkDictionaryPostProseeding}};
 
 const std::unordered_map<ENUM_MENU, bool (WordsBase::*)(const std::string &)>
     menu2BoolString = {
@@ -148,6 +155,7 @@ WordsBase::WordsBase() {
   m_tr.resize(threads);
   m_iv.resize(threads);
   m_ma.resize(threads);
+  m_chdv.resize(threads);
   m_thread_result.resize(threads);
 
   loadLanguages();
@@ -399,7 +407,7 @@ bool WordsBase::checkRegularExpression(const std::string &s,
 #endif
 }
 
-void WordsBase::setKeyboardOneRow() {
+void WordsBase::checkKeyboardWordSimplePreProseeding() {
   int i, k;
   size_t j;
   uchar uc;
@@ -417,7 +425,7 @@ void WordsBase::setKeyboardOneRow() {
   }
 }
 
-void WordsBase::setKeyboardRowDiagonals() {
+void WordsBase::checkKeyboardWordComplexPreProseeding() {
   int i, k, l;
   size_t j;
   uchar uc;
@@ -445,6 +453,50 @@ void WordsBase::setKeyboardRowDiagonals() {
         }
       }
     }
+  }
+}
+
+void WordsBase::checkDictionaryPreProseeding() {
+  std::string filename = path(getDictionaryIndex(), "words");
+  int threads = g_get_num_processors();
+  std::ifstream file(filename, std::ios::binary);
+  if (!file.is_open()) {
+    assert(0);
+    return;
+  }
+  file.seekg(0, std::ios::end);
+  int filesize = file.tellg();
+  int i, start;
+  char c;
+  for (i = 0; i < threads; ++i) {
+    start = i * (filesize / threads);
+    // adjust start
+    // last char in chunk '\n'
+    if (i) {
+      file.seekg(start, std::ios::beg);
+      while (file.get(c) && c != '\n') {
+        start++;
+      }
+      start++;
+    }
+    m_chd.push_back(start);
+  }
+  m_chd.push_back(filesize);
+  file.close();
+}
+
+void WordsBase::checkDictionaryPostProseeding() {
+  SearchResult::out = ""; // cann't use joinV
+  for (auto &a : m_chdv) {
+    if (!a.empty()) {
+      if (!SearchResult::out.empty()) {
+        SearchResult::out += "\n";
+      }
+      SearchResult::out += a;
+    }
+  }
+  if (SearchResult::out.empty()) {
+    SearchResult::out = string(DICTIONARY_CHECK_FINISHED_SUCCESSFULLY);
   }
 }
 
@@ -1317,7 +1369,6 @@ void WordsBase::wordFrequency(int nthread) {
   auto &m = m_iv[nthread];
   m.assign(MAX, 0);
   auto [it, end] = iterators(getDictionaryIndex(), nthread);
-
   for (; it != end; it++) {
     auto const &e = *it;
     m[e.length() - 1]++; // use length-1
@@ -1371,17 +1422,21 @@ void WordsBase::wordFrequencyPostProseeding() {
   }
 }
 
-void WordsBase::checkDictionary(int nthread) {
+void WordsBase::checkDictionary(int nthread) { 
   std::string s, p = path(getDictionaryIndex(), "words");
-  int line = 0, errors = 0;
   char buffer[256];
-  const int MAX_ERRORS = 100;
+  const int THREADS = m_chdv.size();
+  const int MAX_ERRORS = 100 / THREADS;
+  int line = 0, errors = MAX_ERRORS;
+  const bool lastThread = nthread == THREADS - 1;
 
-  auto addError = [&line, &errors, this](ENUM_STRING error) {
-    SearchResult::out += (SearchResult::out.empty() ? "" : "\n") +
-                         string(STRING_ERROR) + ", " + string(error) + " " +
-                         string(LINE) + " " + intToStringLocaled(line);
-    if (++errors == MAX_ERRORS) {
+  auto addError = [&line, &errors, nthread, this](ENUM_STRING error) {
+    m_chdv[nthread] += (m_chdv[nthread].empty() ? "" : "\n") +
+                       capitalizeFirstUtf8(string(STRING_ERROR)) + " " +
+                       string(error) + ", " + string(THREAD) + " " +
+                       std::to_string(nthread + 1) + ", " + string(LINE) + " " +
+                       intToStringLocaled(line) + ".";
+    if (!(--errors)) {
       throw std::runtime_error("");
     }
   };
@@ -1389,9 +1444,13 @@ void WordsBase::checkDictionary(int nthread) {
   FILE *file = std::fopen(p.c_str(), "rb");
   if (file) {
     try {
+      int pos = m_chd[nthread];
+      fseek(file, pos, SEEK_SET);
       while (std::fgets(buffer, sizeof(buffer), file) != nullptr) {
         line++;
         std::string a(buffer);
+        // ftell long function so count pos manuallly
+        pos += a.size();
         if (a.empty()) {
           addError(EMPTY_WORD_FOUND);
         } else {
@@ -1416,17 +1475,17 @@ void WordsBase::checkDictionary(int nthread) {
             }
           }
         }
-      }
-      std::fclose(file);
-      if (SearchResult::out.empty()) {
-        SearchResult::out = string(DICTIONARY_CHECK_FINISHED_SUCCESSFULLY);
+        // pos==m_chd[nthread + 1] finish, but if not lastThread we should do
+        // additional check between chunks
+        if ((lastThread && pos == m_chd[nthread + 1]) ||
+            (!lastThread && pos > m_chd[nthread + 1]))
+          break;
       }
     } catch (const std::runtime_error &) {
-      std::fclose(file);
     }
+    std::fclose(file);
   } else {
-    SearchResult::out =
-        string(STRING_ERROR) + " strange error cann't open file";
+    assert(0);
   }
 }
 
@@ -1727,12 +1786,11 @@ bool WordsBase::prepare() {
   std::string s;
   int i;
   std::string::size_type pb, pe;
-
-  if (m_menuClick == MENU_KEYBOARD_WORD_SIMPLE) {
-    setKeyboardOneRow();
-    return true;
-  } else if (m_menuClick == MENU_KEYBOARD_WORD_COMPLEX) {
-    setKeyboardRowDiagonals();
+  auto it = menuPreProseeding.find(m_menuClick);
+  // pr(magic_enum::enum_name(m_menuClick), it != menuPreProseeding.end());
+  if (it != menuPreProseeding.end()) {
+    auto f = it->second;
+    (this->*f)();
     return true;
   }
 
@@ -1926,8 +1984,7 @@ void WordsBase::run(bool full) {
   bool userbreak = false;
   if (full) {
     std::vector<std::jthread> workers;
-    int threads = oneOf(m_menuClick, MENU_CHAIN, MENU_LETTER_GROUP_SPLIT,
-                        MENU_CHECK_DICTIONARY)
+    int threads = oneOf(m_menuClick, MENU_CHAIN, MENU_LETTER_GROUP_SPLIT)
                       ? 1
                       : g_get_num_processors();
     prsync(threads, magic_enum::enum_name(m_menuClick));
@@ -1940,8 +1997,8 @@ void WordsBase::run(bool full) {
       }
     }
 
-    auto it = menu2PostProseeding.find(m_menuClick);
-    if (it != menu2PostProseeding.end()) {
+    auto it = menuPostProseeding.find(m_menuClick);
+    if (it != menuPostProseeding.end()) {
       auto f = it->second;
       (this->*f)();
     }

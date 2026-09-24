@@ -39,15 +39,13 @@ class WordsBase;
 extern WordsBase *wordsBase;
 
 class WordsBase {
-  void setKeyboardOneRow();
-  void setKeyboardRowDiagonals();
   std::string m_entryValue;    // locale
   std::string m_textViewValue; // locale
   bool m_checkValue;
 
 protected:
-  int m_comboValue[COMBOBOX_SIZE];//set in frame.cpp
-  int m_radioValue;//set in frame.cpp
+  int m_comboValue[COMBOBOX_SIZE]; // set in frame.cpp
+  int m_radioValue;                // set in frame.cpp
 
   Dictionary m_dictionary[DICTIONARY_SIZE];
   std::string m_keyboardOneRow[256][2];
@@ -76,9 +74,12 @@ protected:
 #ifndef NOGTK
   int m_filteredWordsCount;
 #endif
+  // multithread variables
   ThreadResultVector m_tr;
   std::vector<IntVector> m_iv;
   std::vector<VMapStringTwoStringVectors> m_ma;
+  VString m_chdv;
+  std::vector<int> m_chd;
 
   std::stop_token m_token;
   ENUM_STATE m_state;
@@ -157,10 +158,15 @@ public:
   void checkDictionary(int nthread);
   void twoCharactersDistribution(int nthread);
 
+  void checkKeyboardWordSimplePreProseeding();
+  void checkKeyboardWordComplexPreProseeding();
+  void checkDictionaryPreProseeding();
+
   void dictionaryStatisticsPostProseeding();
   void wordFrequencyPostProseeding();
   void twoCharactersDistributionPostProseeding();
   void simpleDoubleWordSequencePostProseeding();
+  void checkDictionaryPostProseeding();
 
   static std::string getTwoDictionariesPath(bool translit);
   void twoDictionaries(int nthread, bool translit);

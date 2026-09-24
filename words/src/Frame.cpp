@@ -186,8 +186,8 @@ Frame::Frame() : WordsBase() {
   GdkRectangle geometry;
   gdk_monitor_get_geometry(monitor, &geometry);
   m_separatorPosition = geometry.width - MIN_RIGHT_PANEL_WIDTH;
-  READ_CONFIG(CONFIG_TAGS, s, m_languageIndex, m_dictionaryIndex,
-              m_separatorPosition);
+  readConfig(CONFIG_TAGS, s, m_languageIndex, m_dictionaryIndex,
+             m_separatorPosition);
 
   m_widget = gtk_window_new(GTK_WINDOW_TOPLEVEL);
   m_menu = gtk_menu_bar_new();
@@ -453,7 +453,7 @@ void Frame::clickMenu(ENUM_MENU menu) {
 
   case MENU_LOAD_ENGLISH_DICTIONARY:
   case MENU_LOAD_RUSSIAN_DICTIONARY:
-    setDictionaryIndex(menu == MENU_LOAD_ENGLISH_DICTIONARY);
+    clickButton(m_button[BUTTON_DICTIONARY]);
     break;
 
   case MENU_ABOUT:
@@ -494,8 +494,8 @@ void Frame::clickMenu(ENUM_MENU menu) {
 }
 
 void Frame::destroy() {
-  WRITE_CONFIG(CONFIG_TAGS, WORDS_VERSION, m_languageIndex, m_dictionaryIndex,
-               m_separatorPosition);
+  writeConfig(CONFIG_TAGS, WORDS_VERSION, m_languageIndex, m_dictionaryIndex,
+              m_separatorPosition);
   stopThread();
   gtk_main_quit();
 }
