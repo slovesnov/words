@@ -82,7 +82,6 @@ protected:
   std::vector<int> m_chd;
 
   std::stop_token m_token;
-  ENUM_STATE m_state;
 
   std::string getStatusString();
   std::string getTimeString();
@@ -104,8 +103,6 @@ protected:
   static std::string getResourcePath(std::string name);
   void cgi();
 #else
-  virtual void setMenuLabel(ENUM_MENU e, std::string const &text) = 0;
-  virtual void endJobThread() = 0;
   bool testFilterRegex(const std::string &s);
 #endif
 
@@ -122,11 +119,10 @@ protected:
 public:
   WordsBase();
 
-  void run(bool full = true);
+  void run(ENUM_JOB_TYPE e);
   void run_thread(int nthread);
-  std::pair<DictionaryCI, DictionaryCI> iterators(int n, int nthread);
-  std::pair<DictionaryCI, DictionaryCI> iterators(ENUM_DICTIONARY e,
-                                                  int nthread);
+  PairDCIDCI iterators(int n, int nthread);
+  PairDCIDCI iterators(ENUM_DICTIONARY e, int nthread);
 
   bool checkPangram(const std::string &s);
   bool checkTemplate(const std::string &s);
@@ -182,7 +178,7 @@ public:
   }
 
   std::string intToStringLocaled(int v);
-  void sortFilterResults();
+  void sortFilterResults(ENUM_JOB_TYPE e);
 
   void loadLanguages();
 

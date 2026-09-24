@@ -626,10 +626,10 @@ void Frame::aboutDialog() {
   gtk_widget_destroy(dialog);
 }
 
-void Frame::routine(bool full) {
+void Frame::routine(ENUM_JOB_TYPE e) {
   bool b = prepare();
   m_state = b ? STATE_PROCEEDING : STATE_ERROR;
-  if (full) {
+  if (e == JOB_TYPE_FULL) {
     SearchResult::out = "";
     m_result.clear();
   }
@@ -645,7 +645,7 @@ void Frame::routine(bool full) {
   updateStatus(); // before thread
 
   if (b) {
-    startThread(full);
+    startThread(e);
   }
 }
 
@@ -888,7 +888,8 @@ void Frame::comboChanged(ENUM_COMBOBOX e) {
   }
 
   if (oneOf(e, COMBOBOX_SORT, COMBOBOX_SORT_ORDER, COMBOBOX_FILTER)) {
-    stopThreadAndNewRoutine(false);
+    stopThreadAndNewRoutine(e == COMBOBOX_FILTER ? JOB_TYPE_FILTER
+                                                 : JOB_TYPE_SORT_AND_FILTER);
     return;
   }
 
@@ -960,8 +961,6 @@ void Frame::setMenuLabel(ENUM_MENU e, std::string const &text) {
   }
 }
 
-void Frame::endJobThread() { gdk_threads_add_idle(end_job, NULL); }
-
 std::string Frame::getMenuLabel(ENUM_MENU e) {
   GtkWidget *w = m_menuMap[e];
   if (MENU_TO_ICON_FILE.contains(e)) {
@@ -981,7 +980,8 @@ void Frame::endJob() {
   updateStatus();
   // update tags if user searched something
   updateTags(0);
-  if (m_currentEntry != ENTRY_SIZE) { // means calls from entry changed,restor focus and position
+  if (m_currentEntry !=
+      ENTRY_SIZE) { // means calls from entry changed,restor focus and position
     gtk_widget_grab_focus(m_entry[m_currentEntry]);
     gtk_editable_set_position(GTK_EDITABLE(m_entry[m_currentEntry]),
                               m_currentEntryPos);
@@ -989,12 +989,12 @@ void Frame::endJob() {
   }
 }
 
-void Frame::stopThreadAndNewRoutine(bool full) {
-  if (!full && m_result.empty()) { // only sort
+void Frame::stopThreadAndNewRoutine(ENUM_JOB_TYPE e) {
+  if (e != JOB_TYPE_FULL && m_result.empty()) { // only sort
     return;
   }
   stopThread();
-  routine(full);
+  routine(e);
 }
 
 /**
@@ -1007,12 +1007,14 @@ void Frame::stopThread() {
   }
 }
 
-void Frame::startThread(bool full) {
+void Frame::startThread(ENUM_JOB_TYPE e) {
   if (!m_thread.joinable()) {
     // GCC bug #100612 so use lambda if call class member
-    m_thread = std::jthread([this, full](std::stop_token token) {
+    m_thread = std::jthread([this, e](std::stop_token token) {
       m_token = token;
-      run(full);
+      run(e);
+      m_state = m_token.stop_requested() ? STATE_USER_BREAK : STATE_OK;
+      gdk_threads_add_idle(end_job, NULL);
     });
   } else {
     pr("error start thread joinable")
@@ -1141,8 +1143,8 @@ void Frame::setDebounceTimer(ENUM_ENTRY e) {
 
 void Frame::debounceTimeout(ENUM_ENTRY e) {
   m_debounceTimerId = 0;
-  m_currentEntry =
-      e; // store current entry, because after thread loose focus and cursor
+  // store current entry, because after thread loose focus and cursor position
+  m_currentEntry = e;
   m_currentEntryPos = gtk_editable_get_position(GTK_EDITABLE(m_entry[e]));
   prs(m_currentEntryPos);
 
@@ -1157,7 +1159,7 @@ void Frame::debounceTimeout(ENUM_ENTRY e) {
 
   case ENTRY_FILTER:
     if (m_regex[ENTRY_FILTER]) {
-      stopThreadAndNewRoutine(false);
+      stopThreadAndNewRoutine(JOB_TYPE_FILTER);
     }
     break;
 

@@ -1422,7 +1422,7 @@ void WordsBase::wordFrequencyPostProseeding() {
   }
 }
 
-void WordsBase::checkDictionary(int nthread) { 
+void WordsBase::checkDictionary(int nthread) {
   std::string s, p = path(getDictionaryIndex(), "words");
   char buffer[256];
   const int THREADS = m_chdv.size();
@@ -1679,7 +1679,7 @@ void WordsBase::dictionaryStatisticsPostProseeding() {
       localeToUtf8(longestWord), string(LENGTH), longestWord.length());
 }
 
-void WordsBase::sortFilterResults() {
+void WordsBase::sortFilterResults(ENUM_JOB_TYPE e) {
   int i;
   std::string s;
 
@@ -1691,9 +1691,11 @@ void WordsBase::sortFilterResults() {
   }
   SearchResult::out = "";
   auto begin = clock();
-  std::sort(m_result.begin(), m_result.end(),
-            SORT_FUNCTION[m_comboValue[COMBOBOX_SORT] * 2 +
-                          m_comboValue[COMBOBOX_SORT_ORDER]]);
+  if (e != JOB_TYPE_FILTER) {
+    std::sort(m_result.begin(), m_result.end(),
+              SORT_FUNCTION[m_comboValue[COMBOBOX_SORT] * 2 +
+                            m_comboValue[COMBOBOX_SORT_ORDER]]);
+  }
   auto te = timeElapse(begin);
   for (auto const &e : m_result) {
     s = fastLocaleToUtf8(e.s);
@@ -1917,12 +1919,11 @@ std::string WordsBase::getTimeString() {
   return format("%.2lf", double(m_end - m_begin) / CLOCKS_PER_SEC);
 }
 
-std::pair<DictionaryCI, DictionaryCI> WordsBase::iterators(int n, int nthread) {
+PairDCIDCI WordsBase::iterators(int n, int nthread) {
   return iterators(ENUM_DICTIONARY(n), nthread);
 }
 
-std::pair<DictionaryCI, DictionaryCI> WordsBase::iterators(ENUM_DICTIONARY e,
-                                                           int nthread) {
+PairDCIDCI WordsBase::iterators(ENUM_DICTIONARY e, int nthread) {
   Dictionary const &d = m_dictionary[e];
   int total_size = d.size();
   const int total_threads = g_get_num_processors();
@@ -1980,9 +1981,9 @@ void WordsBase::run_thread(int nthread) {
   prsync(nthread, timeElapse(begin));
 }
 
-void WordsBase::run(bool full) {
+void WordsBase::run(ENUM_JOB_TYPE e) {
   bool userbreak = false;
-  if (full) {
+  if (e == JOB_TYPE_FULL) {
     std::vector<std::jthread> workers;
     int threads = oneOf(m_menuClick, MENU_CHAIN, MENU_LETTER_GROUP_SPLIT)
                       ? 1
@@ -2013,16 +2014,12 @@ void WordsBase::run(bool full) {
   }
 
   if (!userbreak) {
-    sortFilterResults();
+    sortFilterResults(e);
     // can be inside sortFilterResults
     userbreak = m_token.stop_requested();
   }
   m_end = clock();
   // m_result.clear();??
-#ifndef NOGTK
-  m_state = userbreak ? STATE_USER_BREAK : STATE_OK;
-  endJobThread();
-#endif
 }
 
 bool WordsBase::differenceOnlyOneChar(const std::string &a,

@@ -21,6 +21,7 @@
 
 using Dictionary = VString;
 using DictionaryCI = Dictionary::const_iterator;
+using PairDCIDCI=std::pair<DictionaryCI, DictionaryCI>;
 using uchar = unsigned char;
 using TwoStringVectors = std::array<VString, 2>;
 

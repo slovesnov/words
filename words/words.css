@@ -64,3 +64,10 @@ frame border{
  	border-radius: .4em;
 	border-color: black;
 }
+
+menu separator {
+    background-color: #585858; 
+    min-height: 1px;
+    margin-top: 1px;
+    margin-bottom: 1px;
+}

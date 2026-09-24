@@ -48,6 +48,7 @@ public:
   GtkWidget *m_panedWidget = nullptr;
 
 private:
+  ENUM_STATE m_state;
   int m_tagIndex = 0;
   int m_tags = 0;
   struct TagRange {
@@ -99,15 +100,10 @@ public:
   Frame();
 
   void destroy();
-
   void endJob();
-
-  void routine(bool full = true);
-
+  void routine(ENUM_JOB_TYPE e = JOB_TYPE_FULL);
   bool isSignalsLocked() { return m_lockSignals; }
-
   void lockSignals() { m_lockSignals = true; }
-
   void unlockSignals() { m_lockSignals = false; }
 
   void clickMenu(ENUM_MENU menu);
@@ -118,13 +114,12 @@ public:
   void radioChanged(GtkWidget *w);
   void clickButton(GtkWidget *button);
 
-  virtual void setMenuLabel(ENUM_MENU e, std::string const &text) override;
-  virtual void endJobThread() override;
+  void setMenuLabel(ENUM_MENU e, std::string const &text);
   std::string getMenuLabel(ENUM_MENU e);
 
-  void stopThreadAndNewRoutine(bool full = true);
+  void stopThreadAndNewRoutine(ENUM_JOB_TYPE e = JOB_TYPE_FULL);
   void stopThread();
-  void startThread(bool full); // false - only sort/filter
+  void startThread(ENUM_JOB_TYPE e);
 
   void updateTextView(ENUM_TEXTVIEW e, std::string const &s);
 
