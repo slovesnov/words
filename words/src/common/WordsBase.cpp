@@ -1202,7 +1202,7 @@ void WordsBase::twoDictionaries(int nthread, bool translit) {
   s = getTwoDictionariesPath(translit);
   for (auto &s : readFile(s)) {
     if (to.empty()) {
-      fromIndex = INDEX_OF(s, LNG);
+      fromIndex = indexOf(s, LNG);
       assert(fromIndex != -1);
       alphabetFrom = m_settingsAll[fromIndex][SETTINGS_ALPHABET];
       to.resize(alphabetFrom.length());
