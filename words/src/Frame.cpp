@@ -981,6 +981,12 @@ void Frame::endJob() {
   updateStatus();
   // update tags if user searched something
   updateTags(0);
+  if (m_currentEntry != ENTRY_SIZE) { // means calls from entry changed,restor focus and position
+    gtk_widget_grab_focus(m_entry[m_currentEntry]);
+    gtk_editable_set_position(GTK_EDITABLE(m_entry[m_currentEntry]),
+                              m_currentEntryPos);
+    m_currentEntry = ENTRY_SIZE; // reset value
+  }
 }
 
 void Frame::stopThreadAndNewRoutine(bool full) {
@@ -1126,16 +1132,20 @@ void Frame::updateTextView(ENUM_TEXTVIEW e, std::string const &s) {
 }
 
 void Frame::setDebounceTimer(ENUM_ENTRY e) {
-  if (m_debounce_timer_id) {
-    g_source_remove(m_debounce_timer_id);
+  if (m_debounceTimerId) {
+    g_source_remove(m_debounceTimerId);
   }
-  m_debounce_timer_id =
+  m_debounceTimerId =
       g_timeout_add(TIMER, on_debounce_timeout, GINT_TO_POINTER(e));
 }
 
 void Frame::debounceTimeout(ENUM_ENTRY e) {
-  // pr(magic_enum::enum_name(e));
-  m_debounce_timer_id = 0;
+  m_debounceTimerId = 0;
+  m_currentEntry =
+      e; // store current entry, because after thread loose focus and cursor
+  m_currentEntryPos = gtk_editable_get_position(GTK_EDITABLE(m_entry[e]));
+  prs(m_currentEntryPos);
+
   switch (e) {
   case ENTRY_TEMPLATE:
     stopThreadAndNewRoutine();

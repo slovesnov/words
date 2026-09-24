@@ -38,11 +38,15 @@ class Frame : WordsBase {
   bool m_lockSignals;
   std::jthread m_thread;
   CheckNewVersion m_newVersion;
-  guint m_debounce_timer_id = 0;
-  public:
- gulong m_positionSignalId = 0; 
-   int m_separatorPosition;
-GtkWidget* m_panedWidget = nullptr; 
+  guint m_debounceTimerId = 0;
+  ENUM_ENTRY m_currentEntry = ENTRY_SIZE;
+  gint m_currentEntryPos;
+
+public:
+  gulong m_positionSignalId = 0;
+  int m_separatorPosition;
+  GtkWidget *m_panedWidget = nullptr;
+
 private:
   int m_tagIndex = 0;
   int m_tags = 0;
@@ -89,7 +93,7 @@ private:
 
   void add(GtkWidget *w, std::string s) { add(w, createLabel(s)); }
   void add(GtkWidget *w, ENUM_STRING e) { add(w, createLabel(e)); }
-  static GtkWidget *createBox(GtkOrientation o,int margin, WB wb);
+  static GtkWidget *createBox(GtkOrientation o, int margin, WB wb);
 
 public:
   Frame();
