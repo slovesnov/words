@@ -40,17 +40,16 @@ menuitem:disabled{
 	color:#8e8e8e;
 }
 
-textview {
+/*textview {
 	font-size: 10pt;
 	font-family: Monospace;
 }
 
-/*same for menu & label on status bar.*/
-label,combobox{
+label,combobox,entry{
 	font-size: 10pt;
 	font-family: Tahoma;
 }
-
+*/
 .cerror{
 	color:rgb(255,0,0);
 }

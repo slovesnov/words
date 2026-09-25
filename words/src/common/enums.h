@@ -275,4 +275,10 @@ enum ENUM_BUTTON {
   BUTTON_SIZE
 };
 
+enum ENUM_FONT {
+FONT_OUT,
+FONT_CONTROLS,
+
+FONT_SIZE
+};
 #endif
