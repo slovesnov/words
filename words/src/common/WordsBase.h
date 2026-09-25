@@ -196,8 +196,6 @@ public:
   bool createRegex(ENUM_ENTRY e);
   bool createRegex(ENUM_ENTRY e, SafeGRegex &r);
 
-  bool isEntryMenu() const;
-  ENUM_STRING entryEnumString() const;
   const std::string &alphabet() const;
   int alphabetSize() const;
   int alphabetIndex(char c) const;

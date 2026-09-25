@@ -568,8 +568,7 @@ void Frame::setHelperPanel() {
     g_free(p);
   }
 
-  ENUM_STRING e = entryEnumString();
-  if (e != STRING_SIZE) {
+  if (MENU_TO_SETTINGS.has(m_menuClick)) {
     w = createBox(GTK_ORIENTATION_HORIZONTAL, 3, SEARCH, false,
                   createEntry(ENTRY_TEMPLATE), true);
     gtk_container_add(GTK_CONTAINER(m_helperUp), w);
@@ -1331,7 +1330,7 @@ GtkWidget *Frame::createEntry(ENUM_ENTRY e) {
   auto w = m_entry[e] = gtk_entry_new();
   if (e == ENTRY_TEMPLATE) {
     gtk_entry_set_text(GTK_ENTRY(w),
-                       stringUsingDictionary(entryEnumString()).c_str());
+                       stringUsingDictionary(*MENU_TO_SETTINGS.get(m_menuClick)).c_str());
   }
   GCallback f[] = {G_CALLBACK(entry_insert), G_CALLBACK(entry_delete),
                    G_CALLBACK(entry_focus_in), G_CALLBACK(entry_focus_out)};

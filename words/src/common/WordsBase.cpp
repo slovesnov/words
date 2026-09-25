@@ -1779,7 +1779,7 @@ bool WordsBase::prepare() {
   int i;
   std::string::size_type pb, pe;
 
-  if (!isEntryMenu()) {
+  if (!MENU_TO_SETTINGS.get(m_menuClick)) {
     return true;
   }
   // should encode to locale string at first to get valid length
@@ -2245,19 +2245,6 @@ bool WordsBase::createRegex(ENUM_ENTRY e, SafeGRegex &r) {
   auto s = getEntryString(e);
   r.reset(g_regex_new(s.c_str(), f, GRegexMatchFlags(0), NULL));
   return r.get() != nullptr;
-}
-
-bool WordsBase::isEntryMenu() const { return entryEnumString() != STRING_SIZE; }
-
-ENUM_STRING WordsBase::entryEnumString() const {//TODO
-      if (auto it = MENU_TO_SETTINGS.get(m_menuClick)) {
-        return *it;
-      }
-      else{
-        return STRING_SIZE;
-      }
-  // auto it = MENU_TO_SETTINGS.find(m_menuClick);
-  // return it == MENU_TO_SETTINGS.end() ? STRING_SIZE : it->second;
 }
 
 const std::string &WordsBase::alphabet() const {
