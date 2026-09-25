@@ -28,10 +28,14 @@ matched words (transliteration)
 keyboard words
 }
 }
-Edit{
+Options{
 select all and copy to clipboard
 select all
 copy to clipboard
+SEPARATOR
+select the font for the output window
+select the font for the controls
+reset settings
 }
 Additions{
 load dictionary{
@@ -45,9 +49,6 @@ SEPARATOR
 two nearby characters distribution
 two nearby characters distribution at the beginning of a word
 two nearby characters distribution at the end of a word
-SEPARATOR
-select the font for the output window
-select the font for the controls
 }
 Language{
 english

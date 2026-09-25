@@ -29,6 +29,7 @@ const char CERROR[] = "cerror";
 const int TIMER = 400; // milliseconds
 const int MIN_LEFT_PANEL_WIDTH = 800;
 const int MIN_RIGHT_PANEL_WIDTH = 420;
+const int DEFAULT_SEPARATOR_POSITION = 1340;
 const int TEXT_VIEW_MARGIN = 5;
 const std::string CONFIG_TAGS[] = {"version",   "language", "dictionary",
                                    "separator", "fontout",  "fontcontrols"};
@@ -123,7 +124,7 @@ Frame::Frame() : WordsBase() {
   bool bSubMenu;
   int i;
   std::vector<GtkMenuItem *> subMenu;
-  std::string s, s1, s2;
+  std::string s, q[2];
   m_newVersion.start(WORDS_VERSION, new_version_message);
   frame = this;
   m_menuClick = MENU_SEARCH;
@@ -131,24 +132,14 @@ Frame::Frame() : WordsBase() {
   setlocale(LC_NUMERIC, "C"); // needs double to string when output time
   m_lockSignals = false;
 
-  // load configuration file
-  m_languageIndex = m_dictionaryIndex = getSystemLanguage() == "ru";
-  GdkDisplay *display = gdk_display_get_default();
-  GdkMonitor *monitor = gdk_display_get_primary_monitor(display);
-  GdkRectangle geometry;
-  gdk_monitor_get_geometry(monitor, &geometry);
-  m_separatorPosition = geometry.width - MIN_RIGHT_PANEL_WIDTH;
-  // TODO "Monospace 19px"
-  m_font[0].reset(pango_font_description_from_string("Monospace 14px"));
-  m_font[1].reset(pango_font_description_from_string("Tahoma 14px"));
-
-  readConfig(CONFIG_TAGS, s, m_languageIndex, m_dictionaryIndex,
-             m_separatorPosition, s1, s2);
-             
-  m_font[0].reset(pango_font_description_from_string(s1.c_str()));
-  m_font[1].reset(pango_font_description_from_string(s2.c_str()));
-  // updateFont(FONT_OUT); later
-  // updateFont(FONT_CONTROLS); later
+  resetSettings(false);
+  if (readConfig(CONFIG_TAGS, s, m_languageIndex, m_dictionaryIndex,
+                 m_separatorPosition, q[0], q[1])) {
+    for (i = 0; i < 2; i++) {
+      m_font[i].reset(pango_font_description_from_string(q[i].c_str()));
+    }
+  }
+  // update font later
 
   m_widget = gtk_window_new(GTK_WINDOW_TOPLEVEL);
   m_menu = gtk_menu_bar_new();
@@ -303,8 +294,9 @@ Frame::Frame() : WordsBase() {
   updateDictionary();
 
   loadCSS();
-  updateFont(FONT_OUT);
-  updateFont(FONT_CONTROLS);
+  for (i = 0; i < 2; i++) {
+    updateFont(ENUM_FONT(i));//after load css
+  }
 
   for (auto &a : m_button) {
     g_signal_connect(a, "clicked", G_CALLBACK(button_clicked), NULL);
@@ -388,14 +380,18 @@ void Frame::clickMenu(ENUM_MENU menu) {
   case MENU_FONT_FOR_THE_OUTPUT_WINDOW:
   case MENU_FONT_FOR_THE_CONTROLS:
     e = menu == MENU_FONT_FOR_THE_OUTPUT_WINDOW ? FONT_OUT : FONT_CONTROLS;
-    if (selectFont(string(menu), e)) { // todo
+    if (selectFont(string(menu), e)) {
       updateFont(e);
     }
     break;
 
+  case MENU_RESET_SETTINGS:
+    resetSettings(true);
+    break;
+
   case MENU_LOAD_ENGLISH_DICTIONARY:
   case MENU_LOAD_RUSSIAN_DICTIONARY:
-    clickButton(m_button[BUTTON_DICTIONARY]);
+    switchDictionary();
     break;
 
   case MENU_ABOUT:
@@ -862,8 +858,7 @@ void Frame::createImageCombo(ENUM_COMBOBOX e) {
 void Frame::clickButton(GtkWidget *button) {
   int i, n = indexOf(button, m_button);
   if (n == BUTTON_DICTIONARY) {
-    m_dictionaryIndex = !m_dictionaryIndex;
-    updateDictionary();
+    switchDictionary();
   } else if (n == BUTTON_STARTSTOP) {
     auto b = getStartStopState();
     if (b.imageStart) {
@@ -1412,9 +1407,7 @@ bool Frame::selectFont(const std::string &s, ENUM_FONT e) {
   auto &font = m_font[e];
   GtkWidget *dialog =
       gtk_font_chooser_dialog_new(s.c_str(), GTK_WINDOW(m_widget));
-  pri;
   gtk_font_chooser_set_font_desc(GTK_FONT_CHOOSER(dialog), font.get());
-  pri;
   gint result = gtk_dialog_run(GTK_DIALOG(dialog));
   bool r = (result == GTK_RESPONSE_OK || result == GTK_RESPONSE_APPLY);
 
@@ -1422,9 +1415,7 @@ bool Frame::selectFont(const std::string &s, ENUM_FONT e) {
     const PangoFontDescription *new_font =
         gtk_font_chooser_get_font_desc(GTK_FONT_CHOOSER(dialog));
     if (new_font) {
-      pri;
       font.reset(pango_font_description_copy(new_font));
-      pri;
     }
   }
 
@@ -1444,10 +1435,10 @@ std::string Frame::getCssFromPango(ENUM_FONT e) {
   // 2. Extract the font size
   double size = pango_font_description_get_size(font.get()) /
                 static_cast<double>(PANGO_SCALE);
-                pr(pango_font_description_get_size(font.get()))
+  pr(pango_font_description_get_size(font.get()))
 
-  // 3. Detect Style (Italic / Oblique)
-  std::string font_style = "normal";
+      // 3. Detect Style (Italic / Oblique)
+      std::string font_style = "normal";
   PangoStyle style = pango_font_description_get_style(font.get());
   if (style == PANGO_STYLE_ITALIC || style == PANGO_STYLE_OBLIQUE) {
     font_style = "italic";
@@ -1474,4 +1465,33 @@ std::string Frame::getCssFromPango(ENUM_FONT e) {
 void Frame::updateFont(ENUM_FONT e) {
   pr(getCssFromPango(e));
   loadCSS(getCssFromPango(e));
+}
+
+void Frame::resetSettings(bool update) {
+  int oldLanguage = m_languageIndex;
+  int oldDictoinary = m_dictionaryIndex;
+  m_languageIndex = m_dictionaryIndex = getSystemLanguage() == "ru";
+  m_separatorPosition = DEFAULT_SEPARATOR_POSITION;
+  int i = 0;
+  for (auto a : {"Monospace 14px", "Tahoma 14px"}) {
+    m_font[i++].reset(pango_font_description_from_string(a));
+  }
+
+  if (!update)
+    return;
+
+  for (i = 0; i < FONT_SIZE; i++) {
+    updateFont(ENUM_FONT(i));
+  }
+  if (oldDictoinary != m_dictionaryIndex)
+    updateDictionary();
+  if (oldLanguage != m_languageIndex)
+    loadAndUpdateCurrentLanguage();
+
+  gtk_paned_set_position(GTK_PANED(m_panedWidget), m_separatorPosition);
+}
+
+void Frame::switchDictionary() {
+  m_dictionaryIndex = !m_dictionaryIndex;
+  updateDictionary();
 }

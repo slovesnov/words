@@ -77,6 +77,21 @@ public:
 using ThreadResultVector = std::vector<ThreadResult>;
 
 #ifndef USE_STANDARD_REGEX
+template <typename T, auto FreeFunc>
+struct GtkResourceDeleter {
+    void operator()(T* resource) const {
+        if (resource) {
+            FreeFunc(resource);
+        }
+    }
+};
+
+// Generic smart pointer type alias to simplify unique_ptr creation
+template <typename T, auto FreeFunc>
+using UniqueGtkResource = std::unique_ptr<T, GtkResourceDeleter<T, FreeFunc>>;
+using SafeGRegex         = UniqueGtkResource<GRegex, g_regex_unref>;
+using SafePangoFontDesc = UniqueGtkResource<PangoFontDescription, pango_font_description_free>;
+/*
 struct GRegexDeleter {
   void operator()(GRegex *r) const {
     if (r)
@@ -94,7 +109,7 @@ struct PangoFontDescDeleter {
 };
 
 using SafePangoFontDesc = std::unique_ptr<PangoFontDescription, PangoFontDescDeleter>;
-
+*/
 #endif
 
 struct StartStopButtonState {

@@ -71,11 +71,6 @@ const LookupTable<ENUM_STRING, std::string> MAP_URL = {
     {SOURCE_CODE, SOURCE_URL}};
 
     const LookupTable<ENUM_MENU, std::string> MENU_TO_ICON_FILE={
-    {MENU_SEARCH, "search.png"},
-    {MENU_EDIT, "edit.png"},
-    {MENU_ADDITIONS, "add.png"},
-    {MENU_LANGUAGE, "language.png"},
-    {MENU_HELP, "help.png"},
     {MENU_EDIT_SELECT_ALL_AND_COPY_TO_CLIPBOARD, "select_all_copy.png"},
     {MENU_EDIT_SELECT_ALL, "select_all.png"},
     {MENU_EDIT_COPY_TO_CLIPBOARD, "copy.png"},

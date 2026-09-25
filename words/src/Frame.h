@@ -176,5 +176,6 @@ public:
   bool selectFont(const std::string&s, ENUM_FONT e);
   std::string getCssFromPango(ENUM_FONT e) ;
   void updateFont(ENUM_FONT e) ;
-
+  void resetSettings(bool update);
+  void switchDictionary();
 };
