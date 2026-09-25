@@ -68,12 +68,28 @@ std::string fastUtf8ToLocale(const std::string &src) {
   return result;
 }
 
-std::string capitalizeFirstUtf8(const std::string& src) {
-    if (src.empty()) return src;
-    gunichar first_char = g_utf8_get_char(src.c_str());
-    gunichar upper_char = g_unichar_toupper(first_char);
-    char utf8_buf[6] = {0};
-    int len = g_unichar_to_utf8(upper_char, utf8_buf);
-    const char* rest_of_string = g_utf8_next_char(src.c_str());
-    return std::string(utf8_buf, len) + rest_of_string;
+std::string capitalizeFirstUtf8(const std::string &src) {
+  if (src.empty())
+    return src;
+  gunichar first_char = g_utf8_get_char(src.c_str());
+  gunichar upper_char = g_unichar_toupper(first_char);
+  char utf8_buf[6] = {0};
+  int len = g_unichar_to_utf8(upper_char, utf8_buf);
+  const char *rest_of_string = g_utf8_next_char(src.c_str());
+  return std::string(utf8_buf, len) + rest_of_string;
+}
+
+ENUM_STRING getLetterDeclension(int number) {
+  int n = std::abs(number);
+  int mod100 = n % 100;
+  int mod10 = n % 10;
+
+  if (mod100 < 10 && mod100 > 20) {
+    if (mod10 == 1) {
+      return CHARACTERS1;
+    } else if (mod10 >= 2 && mod10 <= 4) {
+      return CHARACTERS2;
+    }
+  }
+  return CHARACTERS;
 }

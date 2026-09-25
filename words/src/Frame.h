@@ -10,7 +10,7 @@
 #include "CheckNewVersion.h"
 #include "common/WordsBase.h"
 #include "common/consts.h"
-//#include <initializer_list>
+// #include <initializer_list>
 
 using MenuMap = std::map<ENUM_MENU, GtkWidget *>;
 
@@ -77,9 +77,8 @@ private:
                             ENUM_STRING eid, bool any = false);
   void addComboLineToHelper(std::string s, int from, int to, int active,
                             ENUM_STRING eid, bool any = false);
-  void addComboLineToHelper(int from, int to, int active,
-                            std::string s1, std::string s2, std::string s3,
-                            bool any = false);
+  void addComboLineToHelper(int from, int to, int active, std::string s1,
+                            std::string s2, std::string s3, bool any = false);
   void addComboToHelper(ENUM_STRING from, ENUM_STRING to, int active,
                         ENUM_COMBOBOX comboboxId = COMBOBOX_HELPER0);
 
@@ -171,4 +170,5 @@ public:
   StartStopButtonState getStartStopState() const;
   GtkWidget *createTextView(ENUM_TEXTVIEW e);
   GtkWidget *createEntry(ENUM_ENTRY e);
+  void updateCharactersLabel();
 };

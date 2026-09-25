@@ -52,6 +52,7 @@ russian
 Help{
 about
 homepage
+source code
 }
 
 abcdefghijklmnopqrstuvwxyz
@@ -87,6 +88,8 @@ All characters of the word should be on one horizontal or vertical keyboard row.
 All neighbour characters of the word should be adjacent keys (horizontally, vertically or diagonally) on keyboard.
 Full sequence words are pair of words. If read the first word backward one got the second word and vice versa. For example, <i>kramer</i> - <i>remark</i>. Palindromes are ignored.
 different characters
+characters
+character
 characters
 vowels
 consonants
