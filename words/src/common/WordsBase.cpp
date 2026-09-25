@@ -2277,6 +2277,11 @@ const std::string &WordsBase::string(int i) const {
   return string(ENUM_STRING(i));
 }
 
+const std::string &WordsBase::string(ENUM_MENU e) const {
+  pr("menu string");
+  return m_menuAll[m_languageIndex][e];
+}
+
 const std::string &WordsBase::stringUsingDictionary(ENUM_STRING e) const {
   return m_languageAll[getDictionaryIndex()][e];
 }

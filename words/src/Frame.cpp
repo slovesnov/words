@@ -140,8 +140,7 @@ Frame::Frame() : WordsBase() {
   m_separatorPosition = geometry.width - MIN_RIGHT_PANEL_WIDTH;
   //TODO
   //m_font = pango_font_description_from_string("Monospace 14px");
-  m_font = pango_font_description_from_string("Tahoma 14px");
-  pr(m_font,pango_font_description_to_string());
+  m_font.reset( pango_font_description_from_string("Tahoma 14px"));
 
   readConfig(CONFIG_TAGS, s, m_languageIndex, m_dictionaryIndex,
              m_separatorPosition);
@@ -380,9 +379,8 @@ void Frame::clickMenu(ENUM_MENU menu) {
 
   case MENU_FONT_FOR_THE_OUTPUT_WINDOW:
   case MENU_FONT_FOR_THE_CONTROLS:
-  		if (selectFont(string(menu).c_str(), m_font)) {//todo
+  		if (selectFont(string(menu), m_font)) {//todo
 			loadCSS();
-			//updateFontSelection();
 		}
     break;
 
@@ -422,7 +420,6 @@ void Frame::destroy() {
   //pango_font_description_to_string()//TODO
   writeConfig(CONFIG_TAGS, WORDS_VERSION, m_languageIndex, m_dictionaryIndex,
               m_separatorPosition);
-  pango_font_description_free(m_font);
   stopThread();
   gtk_main_quit();
 }
@@ -1402,16 +1399,25 @@ ENUM_COMBOBOX Frame::getLastCombobox() {
   return COMBOBOX_SIZE;
 }
 
-bool Frame::selectFont(const char *s, UniquePangoFontDesc &font) {
-    GtkWidget *dialog = gtk_font_chooser_dialog_new(s, GTK_WINDOW(m_widget));    
+bool Frame::selectFont(const std::string&s, SafePangoFontDesc &font) {
+  pri
+    GtkWidget *dialog = gtk_font_chooser_dialog_new(s.c_str(), GTK_WINDOW(m_widget));    
+  pri
     gtk_font_chooser_set_font_desc(GTK_FONT_CHOOSER(dialog), font.get());
+  pri
     gint result = gtk_dialog_run(GTK_DIALOG(dialog));
+  pri
     bool r = (result == GTK_RESPONSE_OK || result == GTK_RESPONSE_APPLY);
+  pri
     
     if (r) {
+  pri
         const PangoFontDescription *new_font = gtk_font_chooser_get_font_desc(GTK_FONT_CHOOSER(dialog));
+  pri
         if (new_font) {
+  pri
             font.reset(pango_font_description_copy(new_font));
+  pri
         }
     }
     
@@ -1419,58 +1425,51 @@ bool Frame::selectFont(const char *s, UniquePangoFontDesc &font) {
     return r;
 }
 
-#include <string>
-#include <sstream>
-
-std::string get_css_from_pango(const UniquePangoFontDesc& font) {
+std::string get_css_from_pango(const SafePangoFontDesc& font) {
     if (!font) return "";
 
-    // 1. Extract the family name (e.g., "Tahoma", "Monospace")
+    // 1. Extract the family name
     const char* family = pango_font_description_get_family(font.get());
     std::string family_name = family ? family : "Monospace";
 
     // 2. Extract the font size
-    // Note: Pango stores sizes multiplied by PANGO_SCALE (1024)
     double size = pango_font_description_get_size(font.get()) / static_cast<double>(PANGO_SCALE);
 
-    // 3. Format it cleanly into a CSS string using 'pt' units
+    // 3. Detect Style (Italic / Oblique)
+    std::string font_style = "normal";
+    PangoStyle style = pango_font_description_get_style(font.get());
+    if (style == PANGO_STYLE_ITALIC || style == PANGO_STYLE_OBLIQUE) {
+        font_style = "italic";
+    }
+
+    // 4. Detect Weight (Bold)
+    std::string font_weight = "normal";
+    PangoWeight weight = pango_font_description_get_weight(font.get());
+    if (weight >= PANGO_WEIGHT_BOLD) {
+        font_weight = "bold"; // Maps to standard CSS bold
+    }
+
+    // 5. Generate beautiful multi-line CSS using a Raw String Literal
     std::stringstream ss;
     ss << "textview {\n"
        << "    font-family: \"" << family_name << "\";\n"
-       << "    font-size: " << size << "pt;\n" // Using 'pt' prevents the "Assuming 'px'" warning
+       << "    font-size: " << size << "pt;\n"
+       << "    font-style: " << font_style << ";\n"
+       << "    font-weight: " << font_weight << ";\n"
        << "}\n";
 
     return ss.str();
 }
+//label,combobox{
 
 void Frame::loadCSS() {
-  std::string p, t;
-  PangoStyle ps = pango_font_description_get_style(m_font);
-  switch (ps) {
-  case PANGO_STYLE_NORMAL:
-    t = "normal";
-    break;
-  case PANGO_STYLE_OBLIQUE:
-    t = "oblique";
-    break;
-  case PANGO_STYLE_ITALIC:
-    t = "italic";
-    break;
-  }
-
-  bool a = pango_font_description_get_size_is_absolute(m_font);
-  std::string s =
-      std::string("textview{") +
-      +"font-size:" + std::to_string(getFontHeight()) + (a ? "px" : "") + ";" +
-      "font-family:" + pango_font_description_get_family(m_font) + ";" +
-      "font-style:" + t + ";" + "font-weight:" +
-      std::to_string(int(pango_font_description_get_weight(m_font))) + ";" +
-      "}";
-  // printl(s)
-
-  ::loadCSS(s);
-
-  //init
-  m_font = pango_font_description_from_string(s.c_str());
+  // pri
+  // pr( pango_font_description_to_string(m_font.get()));
+  // pri
+  // auto s=get_css_from_pango(m_font);
+  // pr(s);
+  // ::loadCSS(s);
+  // pri
+  // m_font.reset(pango_font_description_from_string(s.c_str()));
 }
 

@@ -40,12 +40,14 @@ russian
 }
 dictionary statistics
 words in descending order of frequency and increasing length
+check dictionary
+SEPARATOR
 two nearby characters distribution
 two nearby characters distribution at the beginning of a word
 two nearby characters distribution at the end of a word
+SEPARATOR
 select the font for the output window
 select the font for the controls
-check dictionary
 }
 Language{
 english

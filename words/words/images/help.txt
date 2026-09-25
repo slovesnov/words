@@ -17,10 +17,13 @@ http://www.iconarchive.com/show/oxygen-icons-by-oxygen-icons.org/Actions-go-down
 http://www.iconarchive.com/show/oxygen-icons-by-oxygen-icons.org/Actions-go-up-icon.html
 
 [search]
-D:\soft\иконы\kde\modero_icons\new_linyx\32x32\actions\viewmag.png
+D:\soft\...\kde\modero_icons\new_linyx\32x32\actions\viewmag.png
 
 [play]
 http://www.iconarchive.com/show/must-have-icons-by-visualpharm/Play-icon.html
 
 [stop]
 http://www.iconarchive.com/show/must-have-icons-by-visualpharm/Stop-icon.html
+
+[source]
+https://icons8.ru/icon/19294/%D0%B8%D1%81%D1%85%D0%BE%D0%B4%D0%BD%D1%8B%D0%B9-%D0%BA%D0%BE%D0%B4

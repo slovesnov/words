@@ -32,7 +32,7 @@ class Frame : WordsBase {
   GtkWidget *m_comboline;
   GtkWidget *m_radio;
   GtkWidget *m_charactersLabel;
-  UniquePangoFontDesc m_font;
+  SafePangoFontDesc m_font;
 
   MenuMap m_menuMap;
   std::vector<GtkAccelGroup *> m_accelGroup;
@@ -173,10 +173,7 @@ public:
   GtkWidget *createEntry(ENUM_ENTRY e);
   void updateCharactersLabel();
   ENUM_COMBOBOX getLastCombobox();
-  bool selectFont(const char *s, PangoFontDescription *&font);
+  bool selectFont(const std::string&s, SafePangoFontDesc &font);
   void loadCSS();
-  int getFontHeight() const {
-  return pango_font_description_get_size(m_font) / PANGO_SCALE;
-}
 
 };

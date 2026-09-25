@@ -84,7 +84,8 @@ const LookupTable<ENUM_STRING, std::string> MAP_URL = {
     {MENU_LOAD_RUSSIAN_DICTIONARY, "ru.gif"},
     {MENU_RUSSIAN_LANGUAGE, "ru.gif"},
     {MENU_ABOUT, "word16.png"},
-    {MENU_HOMEPAGE, "web.png"}};
+    {MENU_HOMEPAGE, "web.png"},
+    {MENU_SOURCE_CODE,"source.png"}};
 
 const LookupTable<ENUM_MENU, ENUM_STRING> MENU_TO_HELP_STRING = {
     {MENU_ANAGRAM, ANAGRAM_HELP},

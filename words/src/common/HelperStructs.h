@@ -93,7 +93,7 @@ struct PangoFontDescDeleter {
     }
 };
 
-using UniquePangoFontDesc = std::unique_ptr<PangoFontDescription, PangoFontDescDeleter>;
+using SafePangoFontDesc = std::unique_ptr<PangoFontDescription, PangoFontDescDeleter>;
 
 #endif
 
