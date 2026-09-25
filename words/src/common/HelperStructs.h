@@ -86,30 +86,10 @@ struct GtkResourceDeleter {
     }
 };
 
-// Generic smart pointer type alias to simplify unique_ptr creation
 template <typename T, auto FreeFunc>
 using UniqueGtkResource = std::unique_ptr<T, GtkResourceDeleter<T, FreeFunc>>;
 using SafeGRegex         = UniqueGtkResource<GRegex, g_regex_unref>;
 using SafePangoFontDesc = UniqueGtkResource<PangoFontDescription, pango_font_description_free>;
-/*
-struct GRegexDeleter {
-  void operator()(GRegex *r) const {
-    if (r)
-      g_regex_unref(r);
-  }
-};
-using SafeGRegex = std::unique_ptr<GRegex, GRegexDeleter>;
-
-struct PangoFontDescDeleter {
-    void operator()(PangoFontDescription* desc) const {
-        if (desc) {
-            pango_font_description_free(desc);
-        }
-    }
-};
-
-using SafePangoFontDesc = std::unique_ptr<PangoFontDescription, PangoFontDescDeleter>;
-*/
 #endif
 
 struct StartStopButtonState {

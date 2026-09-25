@@ -61,21 +61,21 @@ const LookupTable<ENUM_MENU, void (WordsBase::*)()> menuPreProseeding = {
      &WordsBase::checkKeyboardWordComplexPreProseeding},
     {MENU_CHECK_DICTIONARY, &WordsBase::checkDictionaryPreProseeding}};
 
-const LookupTable<ENUM_MENU, void (WordsBase::*)()> menuPostProseeding =
-    {{MENU_WORD_FREQUENCY, &WordsBase::wordFrequencyPostProseeding},
-     {MENU_DICTIONARY_STATISTICS,
-      &WordsBase::dictionaryStatisticsPostProseeding},
-     {MENU_SIMPLE_WORD_SEQUENCE,
-      &WordsBase::simpleDoubleWordSequencePostProseeding},
-     {MENU_DOUBLE_WORD_SEQUENCE,
-      &WordsBase::simpleDoubleWordSequencePostProseeding},
-     {MENU_TWO_CHARACTERS_DISTRIBUTION,
-      &WordsBase::twoCharactersDistributionPostProseeding},
-     {MENU_TWO_CHARACTERS_DISTRIBUTION_START,
-      &WordsBase::twoCharactersDistributionPostProseeding},
-     {MENU_TWO_CHARACTERS_DISTRIBUTION_END,
-      &WordsBase::twoCharactersDistributionPostProseeding},
-     {MENU_CHECK_DICTIONARY, &WordsBase::checkDictionaryPostProseeding}};
+const LookupTable<ENUM_MENU, void (WordsBase::*)()> menuPostProseeding = {
+    {MENU_WORD_FREQUENCY, &WordsBase::wordFrequencyPostProseeding},
+    {MENU_DICTIONARY_STATISTICS,
+     &WordsBase::dictionaryStatisticsPostProseeding},
+    {MENU_SIMPLE_WORD_SEQUENCE,
+     &WordsBase::simpleDoubleWordSequencePostProseeding},
+    {MENU_DOUBLE_WORD_SEQUENCE,
+     &WordsBase::simpleDoubleWordSequencePostProseeding},
+    {MENU_TWO_CHARACTERS_DISTRIBUTION,
+     &WordsBase::twoCharactersDistributionPostProseeding},
+    {MENU_TWO_CHARACTERS_DISTRIBUTION_START,
+     &WordsBase::twoCharactersDistributionPostProseeding},
+    {MENU_TWO_CHARACTERS_DISTRIBUTION_END,
+     &WordsBase::twoCharactersDistributionPostProseeding},
+    {MENU_CHECK_DICTIONARY, &WordsBase::checkDictionaryPostProseeding}};
 
 const LookupTable<ENUM_MENU, bool (WordsBase::*)(const std::string &)>
     menu2BoolString = {
@@ -1899,7 +1899,11 @@ std::string WordsBase::getStatusString() {
 }
 
 std::string WordsBase::getTimeString() {
-  return format("%.2lf", double(m_end - m_begin) / CLOCKS_PER_SEC);
+  return std::format(
+      "{:.2f}", double(m_end - m_begin) /
+                    CLOCKS_PER_SEC); // locale independent
+                                     //  return format("%.2lf", double(m_end -
+                                     //  m_begin) / CLOCKS_PER_SEC);
 }
 
 PairDCIDCI WordsBase::iterators(int n, int nthread) {
@@ -1928,7 +1932,6 @@ void WordsBase::run_thread(int nthread) {
     (this->*(*it))(nthread);
   }
 
-  
   if (auto it = menu2BoolString.get(m_menuClick)) {
     if (m_menuClick == MENU_REGULAR_EXPRESSIONS) {
       SafeGRegex r; // have to create separate regex, for every thread otherwise
@@ -1963,13 +1966,13 @@ void WordsBase::run_thread(int nthread) {
 
 void WordsBase::run(ENUM_JOB_TYPE e) {
   bool userbreak = false;
-  if (e == JOB_TYPE_FULL) {    
+  if (e == JOB_TYPE_FULL) {
     if (auto it = menuPreProseeding.get(m_menuClick)) {
       (this->*(*it))();
     }
 
     std::vector<std::jthread> workers;
-    int threads = oneOf(m_menuClick, MENU_CHAIN, MENU_LETTER_GROUP_SPLIT)
+    int threads = oneOf(m_menuClick, MENU_CHAIN, MENU_LETTER_GROUP_SPLIT,MENU_WORDS_SPLIT)
                       ? 1
                       : g_get_num_processors();
     prsync(threads, magic_enum::enum_name(m_menuClick));
@@ -2278,7 +2281,6 @@ const std::string &WordsBase::string(int i) const {
 }
 
 const std::string &WordsBase::string(ENUM_MENU e) const {
-  pr("menu string");
   return m_menuAll[m_languageIndex][e];
 }
 

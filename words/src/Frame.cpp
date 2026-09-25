@@ -124,19 +124,23 @@ Frame::Frame() : WordsBase() {
   bool bSubMenu;
   int i;
   std::vector<GtkMenuItem *> subMenu;
-  std::string s, q[2];
+  std::string s;
+  std::array<PangoFontDescription *, FONT_SIZE> p;
   m_newVersion.start(WORDS_VERSION, new_version_message);
   frame = this;
   m_menuClick = MENU_SEARCH;
   // set dot as decimal separator, standard locale
-  setlocale(LC_NUMERIC, "C"); // needs double to string when output time
+  // setlocale(LC_NUMERIC, "C"); // needs double to string when output time
   m_lockSignals = false;
 
   resetSettings(false);
   if (readConfig(CONFIG_TAGS, s, m_languageIndex, m_dictionaryIndex,
-                 m_separatorPosition, q[0], q[1])) {
-    for (i = 0; i < 2; i++) {
-      m_font[i].reset(pango_font_description_from_string(q[i].c_str()));
+                 m_separatorPosition, p[0], p[1])) {
+    i = -1;
+    for (auto &a : p) {
+      i++;
+      if (a)
+        m_font[i].reset(a);
     }
   }
   // update font later
@@ -295,7 +299,7 @@ Frame::Frame() : WordsBase() {
 
   loadCSS();
   for (i = 0; i < 2; i++) {
-    updateFont(ENUM_FONT(i));//after load css
+    updateFont(ENUM_FONT(i)); // after load css
   }
 
   for (auto &a : m_button) {
@@ -423,9 +427,7 @@ void Frame::clickMenu(ENUM_MENU menu) {
 
 void Frame::destroy() {
   writeConfig(CONFIG_TAGS, WORDS_VERSION, m_languageIndex, m_dictionaryIndex,
-              m_separatorPosition,
-              pango_font_description_to_string(m_font[0].get()),
-              pango_font_description_to_string(m_font[1].get()));
+              m_separatorPosition, m_font[0].get(), m_font[1].get());
   stopThread();
   gtk_main_quit();
 }
@@ -1435,10 +1437,9 @@ std::string Frame::getCssFromPango(ENUM_FONT e) {
   // 2. Extract the font size
   double size = pango_font_description_get_size(font.get()) /
                 static_cast<double>(PANGO_SCALE);
-  pr(pango_font_description_get_size(font.get()))
 
-      // 3. Detect Style (Italic / Oblique)
-      std::string font_style = "normal";
+  // 3. Detect Style (Italic / Oblique)
+  std::string font_style = "normal";
   PangoStyle style = pango_font_description_get_style(font.get());
   if (style == PANGO_STYLE_ITALIC || style == PANGO_STYLE_OBLIQUE) {
     font_style = "italic";
@@ -1462,10 +1463,7 @@ std::string Frame::getCssFromPango(ENUM_FONT e) {
       font_style, font_weight);
 }
 
-void Frame::updateFont(ENUM_FONT e) {
-  pr(getCssFromPango(e));
-  loadCSS(getCssFromPango(e));
-}
+void Frame::updateFont(ENUM_FONT e) { loadCSS(getCssFromPango(e)); }
 
 void Frame::resetSettings(bool update) {
   int oldLanguage = m_languageIndex;

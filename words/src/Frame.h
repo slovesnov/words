@@ -10,7 +10,6 @@
 #include "CheckNewVersion.h"
 #include "common/WordsBase.h"
 #include "common/consts.h"
-// #include <initializer_list>
 
 using MenuMap = std::map<ENUM_MENU, GtkWidget *>;
 
