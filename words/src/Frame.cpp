@@ -33,6 +33,7 @@ const char CERROR[] = "cerror";
 const int TIMER = 400; // milliseconds
 const int MIN_LEFT_PANEL_WIDTH = 800;
 const int MIN_RIGHT_PANEL_WIDTH = 420;
+const int TEXT_VIEW_MARGIN = 5;
 const std::string CONFIG_TAGS[] = {"version", "language", "dictionary",
                                    "separator"};
 const char DOWNLOAD_URL[] =
@@ -166,7 +167,7 @@ gboolean new_version_message(gpointer) {
 }
 
 Frame::Frame() : WordsBase() {
-  GtkWidget *w, *w1, *w2, *scroll;
+  GtkWidget *w, *w1, *w2;
   GtkWidget *item;
   bool bSubMenu;
   int i, j;
@@ -191,20 +192,6 @@ Frame::Frame() : WordsBase() {
 
   m_widget = gtk_window_new(GTK_WINDOW_TOPLEVEL);
   m_menu = gtk_menu_bar_new();
-  m_text[TEXTVIEW_MAIN] = gtk_text_view_new();
-  gtk_text_view_set_editable(GTK_TEXT_VIEW(m_text[TEXTVIEW_MAIN]), FALSE);
-  gtk_text_view_set_cursor_visible(GTK_TEXT_VIEW(m_text[TEXTVIEW_MAIN]), FALSE);
-  gtk_text_buffer_create_tag(tvBuffer(), markTag, "background", "lightblue",
-                             NULL);
-  gtk_text_buffer_create_tag(tvBuffer(), activeTag, "background", "Khaki",
-                             NULL);
-  const int TEXT_VIEW_MARGIN = 5;
-  gtk_text_view_set_left_margin(GTK_TEXT_VIEW(m_text[TEXTVIEW_MAIN]),
-                                TEXT_VIEW_MARGIN); // TODO
-  gtk_text_view_set_right_margin(GTK_TEXT_VIEW(m_text[TEXTVIEW_MAIN]),
-                                 TEXT_VIEW_MARGIN);
-  scroll = gtk_scrolled_window_new(NULL, NULL);
-  gtk_container_add(GTK_CONTAINER(scroll), m_text[TEXTVIEW_MAIN]);
 
   m_helperUp = gtk_box_new(GTK_ORIENTATION_VERTICAL, 3);
   m_status = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 2);
@@ -241,49 +228,34 @@ Frame::Frame() : WordsBase() {
   const int margin = 4;
   add(m_status, m_statusMessage);
   gtk_widget_set_halign(m_statusMessage, GTK_ALIGN_START);
-  gtk_widget_set_margin_start(
-      GTK_WIDGET(m_statusMessage),
-      TEXT_VIEW_MARGIN); // TODO add margin for nice view
-
-  // sort combo has many items so place it into the middle
-  WB A[] = {
-      {{m_button[BUTTON_STARTSTOP], false},
-       {m_currentDictionary, false},
-       {m_button[BUTTON_DICTIONARY], false}},
-
-      {{m_combo[COMBOBOX_SORT], true}, {m_combo[COMBOBOX_SORT_ORDER], false}},
-
-      {{m_entry[ENTRY_FILTER], true}, {m_combo[COMBOBOX_FILTER], false}},
-
-      {{m_entry[ENTRY_SEARCH], true},
-       {m_searchTagLabel, false},
-       {m_button[BUTTON_NEXT], false},
-       {m_button[BUTTON_PREVIOUS], false}}};
+  gtk_widget_set_margin_start(GTK_WIDGET(m_statusMessage), TEXT_VIEW_MARGIN);
 
   w = gtk_box_new(GTK_ORIENTATION_VERTICAL, 3);
-  for (auto &a : A) {
-    w1 = createBox(GTK_ORIENTATION_HORIZONTAL, margin, a);
-    gtk_container_add(GTK_CONTAINER(w), w1);
-  }
+  auto createRow = [&](auto &&...args) {
+    GtkWidget *row = createBox(GTK_ORIENTATION_HORIZONTAL, margin,
+                               std::forward<decltype(args)>(args)...);
+    gtk_container_add(GTK_CONTAINER(w), row);
+  };
+  createRow(m_button[BUTTON_STARTSTOP], false, m_currentDictionary, false,
+            m_button[BUTTON_DICTIONARY], false);
+  createRow(m_combo[COMBOBOX_SORT], true, m_combo[COMBOBOX_SORT_ORDER], false);
+  createRow(m_entry[ENTRY_FILTER], true, m_combo[COMBOBOX_FILTER], false);
+  createRow(m_entry[ENTRY_SEARCH], true, m_searchTagLabel, false,
+            m_button[BUTTON_NEXT], false, m_button[BUTTON_PREVIOUS], false);
 
-  w1 = gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
+  m_panedWidget = w1 = gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
   // left part
-  w2 = createBox(GTK_ORIENTATION_VERTICAL, 0,
-                 {{scroll, true}, {m_status, false}});
+  w2 = createBox(GTK_ORIENTATION_VERTICAL, 0, createTextView(TEXTVIEW_MAIN), true, m_status, false);
   gtk_widget_set_size_request(w2, MIN_LEFT_PANEL_WIDTH, -1);
   gtk_paned_pack1(GTK_PANED(w1), w2, FALSE, FALSE);
 
   // right part
-  w2 = createBox(GTK_ORIENTATION_VERTICAL, 3,
-                 {{m_helperUp, false},
-                  {gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0), true},
-                  {w, false}});
+  w2 = createBox(GTK_ORIENTATION_VERTICAL, 3, m_helperUp, false,
+                 gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0), true, w, false);
   gtk_widget_set_size_request(w2, MIN_RIGHT_PANEL_WIDTH, -1);
   gtk_paned_pack2(GTK_PANED(w1), w2, TRUE, FALSE);
   gtk_widget_set_margin_start(GTK_WIDGET(w2), 5);
   gtk_widget_set_margin_end(GTK_WIDGET(w2), 5);
-
-  m_panedWidget = w1;
 
   m_positionSignalId = g_signal_connect(
       w1, "notify::position",
@@ -301,7 +273,7 @@ Frame::Frame() : WordsBase() {
                 }),
                 NULL);
 
-  w = createBox(GTK_ORIENTATION_VERTICAL, 0, {{m_menu, false}, {w1, true}});
+  w = createBox(GTK_ORIENTATION_VERTICAL, 0, m_menu, false, w1, true);
   gtk_container_add(GTK_CONTAINER(m_widget), w);
 
   // load menu
@@ -465,27 +437,12 @@ void Frame::clickMenu(ENUM_MENU menu) {
     break;
 
   default:
-    /* 4.1
-     * fixed bug with regular expressions
-     * m_menuClick needs only for helper panel
-     * other functions should not change m_menuClick
-     *
-     * earlier user click MENU_REGULAR_EXPRESSIONS, then click MENU_ABOUT and
-     * m_menuClick=MENU_ABOUT and if later make some changes for regular
-     * expression entry  got exception because m_menuClick=MENU_ABOUT
-     *
-     * Note if MENU_ENGLISH_LANGUAGE || MENU_RUSSIAN_LANGUAGE
-     * need to clear helper so call routine();
-     * */
     if (menu == MENU_ENGLISH_LANGUAGE || menu == MENU_RUSSIAN_LANGUAGE) {
       m_languageIndex = menu - MENU_ENGLISH_LANGUAGE;
       loadAndUpdateCurrentLanguage();
     } else {
       m_menuClick = menu;
     }
-    /* call only if was last search option, because MENU_ENGLISH_LANGUAGE ||
-     * MENU_RUSSIAN_LANGUAGE can be clicked first
-     */
     if (m_menuClick != MENU_SEARCH) {
       setHelperPanel();
       routine();
@@ -658,9 +615,7 @@ void Frame::setHelperPanel() {
 
   // set label
   auto it = MENU_TO_HELP_STRING.find(m_menuClick);
-  if (it !=
-      MENU_TO_HELP_STRING
-          .end()) { // for some of menu items only needs clear helper panel
+  if (it != MENU_TO_HELP_STRING.end()) {
     w = gtk_label_new("");
     gtk_container_add(GTK_CONTAINER(m_helperUp), w);
     gtk_label_set_justify(GTK_LABEL(w), GTK_JUSTIFY_FILL);
@@ -690,15 +645,14 @@ void Frame::setHelperPanel() {
     break;
 
   case MENU_PANGRAM:
-    w = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, COMBOLINE_MARGIN);
-    add(w, string(MINIMUM) + " " + string(DIFFERENT_CHARACTERS));
-    add(w, createTextCombo(COMBOBOX_HELPER0, 10, MAX_PANGRAM_LENGTH, 5));
+    w = createBox(GTK_ORIENTATION_HORIZONTAL, COMBOLINE_MARGIN,
+                  string(MINIMUM) + " " + string(DIFFERENT_CHARACTERS), true,
+                  createTextCombo(COMBOBOX_HELPER0, 10, MAX_PANGRAM_LENGTH, 5),
+                  true);
     gtk_container_add(GTK_CONTAINER(m_helperUp), w);
     break;
 
   case MENU_TEMPLATE:
-    // i've changed first selection (since version 4.0) from 2 to 0 for
-    // description & combobox agreement
     addComboToHelper(TEMPLATE1, TEMPLATE3, 0);
     break;
 
@@ -718,20 +672,10 @@ void Frame::setHelperPanel() {
     w = createLabel(EXCEPTION_WORDS);
     gtk_widget_set_halign(w, GTK_ALIGN_START);
     gtk_container_add(GTK_CONTAINER(m_helperUp), w);
-
-    w = gtk_scrolled_window_new(NULL, NULL);
-    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(w), GTK_POLICY_AUTOMATIC,
-                                   GTK_POLICY_AUTOMATIC);
-    m_text[TEXTVIEW_HELPER] = gtk_text_view_new();
-    gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(m_text[TEXTVIEW_HELPER]),
-                                GTK_WRAP_WORD);
-    gtk_container_add(GTK_CONTAINER(w), m_text[TEXTVIEW_HELPER]);
+    w = createTextView(TEXTVIEW_HELPER);
     gtk_container_add(GTK_CONTAINER(m_helperUp), w);
     updateTextView(TEXTVIEW_HELPER,
                    stringUsingDictionary(SETTINGS_CHAIN_EXCEPTIONS));
-    g_signal_connect(tvBuffer(TEXTVIEW_HELPER), "changed",
-                     G_CALLBACK(text_view_changed), NULL);
-
     break;
 
   case MENU_CHARACTER_SEQUENCE:
@@ -1416,10 +1360,26 @@ StartStopButtonState Frame::getStartStopState() const {
           !oneOf(m_state, STATE_ERROR, STATE_BEGIN)};
 }
 
-GtkWidget *Frame::createBox(GtkOrientation o, int margin, WB wb) {
-  auto w = gtk_box_new(o, margin);
-  for (auto &e : wb) {
-    add(w, e.first, e.second);
+GtkWidget *Frame::createTextView(ENUM_TEXTVIEW e) {
+  auto t = m_text[e] = gtk_text_view_new();
+  auto w = gtk_scrolled_window_new(NULL, NULL);
+  gtk_container_add(GTK_CONTAINER(w), t);
+  gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(t), GTK_WRAP_WORD);
+  gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(w), GTK_POLICY_AUTOMATIC,
+                                 GTK_POLICY_AUTOMATIC);
+
+  if (e == TEXTVIEW_MAIN) {
+    gtk_text_view_set_editable(GTK_TEXT_VIEW(t), FALSE);
+    gtk_text_view_set_cursor_visible(GTK_TEXT_VIEW(t), FALSE);
+    gtk_text_buffer_create_tag(tvBuffer(), markTag, "background", "lightblue",
+                               NULL);
+    gtk_text_buffer_create_tag(tvBuffer(), activeTag, "background", "Khaki",
+                               NULL);
+    gtk_text_view_set_left_margin(GTK_TEXT_VIEW(t), TEXT_VIEW_MARGIN);
+    gtk_text_view_set_right_margin(GTK_TEXT_VIEW(t), TEXT_VIEW_MARGIN);
+  } else {
+    g_signal_connect(tvBuffer(e), "changed", G_CALLBACK(text_view_changed),
+                     NULL);
   }
   return w;
 }

@@ -83,18 +83,37 @@ private:
 
   void updateTags(int n);
 
-  /*make non static because other createLabel() functions is not static*/
   GtkWidget *createLabel(std::string s) { return gtk_label_new(s.c_str()); }
   GtkWidget *createLabel(ENUM_STRING e) { return createLabel(string(e)); }
 
-  /*make non static because other add() functions are not static*/
-  static void add(GtkWidget *w, GtkWidget *a, bool b = true) {
-    gtk_box_pack_start(GTK_BOX(w), a, b, b, 0);
+  //todo add, appendpairs
+  template <typename T> void add(GtkWidget *box, T &&arg, bool expand = true) {
+    using CleanT = std::decay_t<T>;
+    GtkWidget *w;
+    if constexpr (std::is_convertible_v<CleanT, GtkWidget *>) {
+      w = GTK_WIDGET(arg);
+    } else {
+      w = createLabel(std::forward<T>(arg));
+    }
+    gtk_box_pack_start(GTK_BOX(box), w, expand, expand, 0);
   }
 
-  void add(GtkWidget *w, std::string s) { add(w, createLabel(s)); }
-  void add(GtkWidget *w, ENUM_STRING e) { add(w, createLabel(e)); }
-  static GtkWidget *createBox(GtkOrientation o, int margin, WB wb);
+  inline void appendPairs(GtkWidget *box) {}
+
+  template <typename WidgetT, typename... Args>
+  void appendPairs(GtkWidget *box, WidgetT &&widget, bool expand,
+                   Args &&...rest) {
+    add(box, std::forward<WidgetT>(widget), expand);
+    appendPairs(box, std::forward<Args>(rest)...);
+  }
+
+  template <typename... T>
+  GtkWidget *createBox(GtkOrientation o, int margin, T &&...p) {
+    static_assert(sizeof...(T) % 2 == 0);
+    GtkWidget *w = gtk_box_new(o, margin);
+    appendPairs(w, std::forward<T>(p)...);
+    return w;
+  }
 
 public:
   Frame();
@@ -151,4 +170,5 @@ public:
   void updateButton(ENUM_BUTTON e);
 
   StartStopButtonState getStartStopState() const;
+  GtkWidget* createTextView(ENUM_TEXTVIEW e);
 };
