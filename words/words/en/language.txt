@@ -43,6 +43,8 @@ words in descending order of frequency and increasing length
 two nearby characters distribution
 two nearby characters distribution at the beginning of a word
 two nearby characters distribution at the end of a word
+select the font for the output window
+select the font for the controls
 check dictionary
 }
 Language{
@@ -90,7 +92,6 @@ Full sequence words are pair of words. If read the first word backward one got t
 different characters
 characters
 character
-characters
 vowels
 consonants
 search in any place of the word

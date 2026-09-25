@@ -18,7 +18,7 @@
 #include <windows.h>
 #endif
 
-#include "magic_enum.hpp" //TODO
+#include "magic_enum.hpp"
 #include <format>
 #include <unordered_map>
 
@@ -138,6 +138,11 @@ Frame::Frame() : WordsBase() {
   GdkRectangle geometry;
   gdk_monitor_get_geometry(monitor, &geometry);
   m_separatorPosition = geometry.width - MIN_RIGHT_PANEL_WIDTH;
+  //TODO
+  //m_font = pango_font_description_from_string("Monospace 14px");
+  m_font = pango_font_description_from_string("Tahoma 14px");
+  pr(m_font,pango_font_description_to_string());
+
   readConfig(CONFIG_TAGS, s, m_languageIndex, m_dictionaryIndex,
              m_separatorPosition);
 
@@ -373,6 +378,14 @@ void Frame::clickMenu(ENUM_MENU menu) {
     }
     break;
 
+  case MENU_FONT_FOR_THE_OUTPUT_WINDOW:
+  case MENU_FONT_FOR_THE_CONTROLS:
+  		if (selectFont(string(menu).c_str(), m_font)) {//todo
+			loadCSS();
+			//updateFontSelection();
+		}
+    break;
+
   case MENU_LOAD_ENGLISH_DICTIONARY:
   case MENU_LOAD_RUSSIAN_DICTIONARY:
     clickButton(m_button[BUTTON_DICTIONARY]);
@@ -406,8 +419,10 @@ void Frame::clickMenu(ENUM_MENU menu) {
 }
 
 void Frame::destroy() {
+  //pango_font_description_to_string()//TODO
   writeConfig(CONFIG_TAGS, WORDS_VERSION, m_languageIndex, m_dictionaryIndex,
               m_separatorPosition);
+  pango_font_description_free(m_font);
   stopThread();
   gtk_main_quit();
 }
@@ -559,6 +574,7 @@ void Frame::setHelperPanel() {
   std::string s;
 
   clearContainer(m_helperUp);
+  m_charactersLabel = nullptr;
 
   // set label
   if (auto it = MENU_TO_HELP_STRING.get(m_menuClick)) {
@@ -630,13 +646,12 @@ void Frame::setHelperPanel() {
     break;
 
   case MENU_WORDS_SPLIT:
-    m_charactersLabel = createLabel("");
+    m_charactersLabel = createLabel(""); // TODO
     w = createBox(GTK_ORIENTATION_HORIZONTAL, COMBOLINE_MARGIN,
                   string(LENGTH, OF_WORD), true,
                   createTextCombo(COMBOBOX_HELPER0, 6, 20, 7 - 6), true,
                   m_charactersLabel, true);
     gtk_container_add(GTK_CONTAINER(m_helperUp), w);
-    updateCharactersLabel();
     break;
 
   case MENU_SIMPLE_WORD_SEQUENCE:
@@ -671,6 +686,11 @@ void Frame::setHelperPanel() {
 
     // otherwise nothing to do
   default:;
+  }
+
+  if (m_charactersLabel) {
+    updateCharactersLabel();
+    pr(m_comboValue[getLastCombobox()]);
   }
 
   gtk_widget_show_all(m_helperUp);
@@ -797,13 +817,9 @@ void Frame::comboChanged(ENUM_COMBOBOX e) {
                                                  : JOB_TYPE_SORT_AND_FILTER);
     return;
   }
-  pr(magic_enum::enum_name(e), m_comboValue[e]); // todo
-  if ((m_menuClick == MENU_WORDS_SPLIT && e == COMBOBOX_HELPER0) ||
-      (oneOf(m_menuClick, MENU_ANAGRAM, MENU_SIMPLE_WORD_SEQUENCE,
-             MENU_DOUBLE_WORD_SEQUENCE) &&
-       e == COMBOBOX_HELPER1)) {
+  pr(m_comboValue[e]);
+  if (getLastCombobox() == e) {
     updateCharactersLabel();
-    // m_charactersLabel
   }
 
   // TODO stopThread();
@@ -1361,7 +1377,72 @@ GtkWidget *Frame::createEntry(ENUM_ENTRY e) {
 }
 
 void Frame::updateCharactersLabel() {
-  updateComboValue(COMBOBOX_HELPER0);
-  pr(m_combo[COMBOBOX_HELPER0]);
-  // todo
+  bool b;
+  const int n = m_comboValue[getLastCombobox()];
+  const int mod100 = n % 100;
+  const int mod10 = n % 10;
+  // in the genitive case [ru] в родительном падеже
+  ENUM_STRING e;
+  if (m_languageIndex == 0) {
+    b = n == 1;
+  } else {
+    b = (mod100 < 10 || mod100 > 20) && mod10 == 1;
+  }
+  e = b ? CHARACTERS1 : CHARACTERS;
+  gtk_label_set_text(GTK_LABEL(m_charactersLabel), string(e).c_str());
 }
+
+ENUM_COMBOBOX Frame::getLastCombobox() {
+  // use only for MENU_WORDS_SPLIT..., to update characterslabel
+  if (m_menuClick == MENU_WORDS_SPLIT)
+    return COMBOBOX_HELPER0;
+  if (oneOf(m_menuClick, MENU_ANAGRAM, MENU_SIMPLE_WORD_SEQUENCE,
+            MENU_DOUBLE_WORD_SEQUENCE))
+    return COMBOBOX_HELPER1;
+  return COMBOBOX_SIZE;
+}
+
+bool Frame::selectFont(const char *s, PangoFontDescription *&font) {
+  GtkWidget *dialog = gtk_font_chooser_dialog_new(s, GTK_WINDOW(m_widget));
+  gtk_font_chooser_set_font_desc(GTK_FONT_CHOOSER(dialog), font);
+
+  gint result = gtk_dialog_run(GTK_DIALOG(dialog));
+  bool r = result == GTK_RESPONSE_OK || result == GTK_RESPONSE_APPLY;
+  if (r) {
+    font = gtk_font_chooser_get_font_desc(GTK_FONT_CHOOSER(dialog));
+  }
+  gtk_widget_destroy(dialog);
+  return r;
+}
+
+void Frame::loadCSS() {
+  std::string p, t;
+  PangoStyle ps = pango_font_description_get_style(m_font);
+  switch (ps) {
+  case PANGO_STYLE_NORMAL:
+    t = "normal";
+    break;
+  case PANGO_STYLE_OBLIQUE:
+    t = "oblique";
+    break;
+  case PANGO_STYLE_ITALIC:
+    t = "italic";
+    break;
+  }
+
+  bool a = pango_font_description_get_size_is_absolute(m_font);
+  std::string s =
+      std::string("textview{") +
+      +"font-size:" + std::to_string(getFontHeight()) + (a ? "px" : "") + ";" +
+      "font-family:" + pango_font_description_get_family(m_font) + ";" +
+      "font-style:" + t + ";" + "font-weight:" +
+      std::to_string(int(pango_font_description_get_weight(m_font))) + ";" +
+      "}";
+  // printl(s)
+
+  ::loadCSS(s);
+
+  //init
+  m_font = pango_font_description_from_string(s.c_str());
+}
+
