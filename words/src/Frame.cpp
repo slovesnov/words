@@ -1402,17 +1402,45 @@ ENUM_COMBOBOX Frame::getLastCombobox() {
   return COMBOBOX_SIZE;
 }
 
-bool Frame::selectFont(const char *s, PangoFontDescription *&font) {
-  GtkWidget *dialog = gtk_font_chooser_dialog_new(s, GTK_WINDOW(m_widget));
-  gtk_font_chooser_set_font_desc(GTK_FONT_CHOOSER(dialog), font);
+bool Frame::selectFont(const char *s, UniquePangoFontDesc &font) {
+    GtkWidget *dialog = gtk_font_chooser_dialog_new(s, GTK_WINDOW(m_widget));    
+    gtk_font_chooser_set_font_desc(GTK_FONT_CHOOSER(dialog), font.get());
+    gint result = gtk_dialog_run(GTK_DIALOG(dialog));
+    bool r = (result == GTK_RESPONSE_OK || result == GTK_RESPONSE_APPLY);
+    
+    if (r) {
+        const PangoFontDescription *new_font = gtk_font_chooser_get_font_desc(GTK_FONT_CHOOSER(dialog));
+        if (new_font) {
+            font.reset(pango_font_description_copy(new_font));
+        }
+    }
+    
+    gtk_widget_destroy(dialog);
+    return r;
+}
 
-  gint result = gtk_dialog_run(GTK_DIALOG(dialog));
-  bool r = result == GTK_RESPONSE_OK || result == GTK_RESPONSE_APPLY;
-  if (r) {
-    font = gtk_font_chooser_get_font_desc(GTK_FONT_CHOOSER(dialog));
-  }
-  gtk_widget_destroy(dialog);
-  return r;
+#include <string>
+#include <sstream>
+
+std::string get_css_from_pango(const UniquePangoFontDesc& font) {
+    if (!font) return "";
+
+    // 1. Extract the family name (e.g., "Tahoma", "Monospace")
+    const char* family = pango_font_description_get_family(font.get());
+    std::string family_name = family ? family : "Monospace";
+
+    // 2. Extract the font size
+    // Note: Pango stores sizes multiplied by PANGO_SCALE (1024)
+    double size = pango_font_description_get_size(font.get()) / static_cast<double>(PANGO_SCALE);
+
+    // 3. Format it cleanly into a CSS string using 'pt' units
+    std::stringstream ss;
+    ss << "textview {\n"
+       << "    font-family: \"" << family_name << "\";\n"
+       << "    font-size: " << size << "pt;\n" // Using 'pt' prevents the "Assuming 'px'" warning
+       << "}\n";
+
+    return ss.str();
 }
 
 void Frame::loadCSS() {

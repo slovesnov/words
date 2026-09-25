@@ -84,6 +84,17 @@ struct GRegexDeleter {
   }
 };
 using SafeGRegex = std::unique_ptr<GRegex, GRegexDeleter>;
+
+struct PangoFontDescDeleter {
+    void operator()(PangoFontDescription* desc) const {
+        if (desc) {
+            pango_font_description_free(desc);
+        }
+    }
+};
+
+using UniquePangoFontDesc = std::unique_ptr<PangoFontDescription, PangoFontDescDeleter>;
+
 #endif
 
 struct StartStopButtonState {

@@ -32,7 +32,7 @@ class Frame : WordsBase {
   GtkWidget *m_comboline;
   GtkWidget *m_radio;
   GtkWidget *m_charactersLabel;
-  PangoFontDescription*m_font;
+  UniquePangoFontDesc m_font;
 
   MenuMap m_menuMap;
   std::vector<GtkAccelGroup *> m_accelGroup;
