@@ -2295,6 +2295,10 @@ const std::string &WordsBase::string(ENUM_STRING e) const {
   return m_languageAll[m_languageIndex][e];
 }
 
+const std::string WordsBase::string(ENUM_STRING e, ENUM_STRING e1) const {
+  return string(e) + " " + string(e1);
+}
+
 const std::string &WordsBase::string(int i) const {
   assert(i >= 0 && i < STRING_SIZE);
   return string(ENUM_STRING(i));

@@ -95,7 +95,6 @@ search in beginning of the word
 search in end of the word
 minimum
 maximum
-sequence
 Simple sequence words. Search two sets of words such that some number of last characters for any word of first set are  first characters of any word from second set. Consider two sets. The first one consists of two words <i>animated</i> and <i>exanimated</i>. The second one also has two words <i>animated</i> and <i>animatedly</i>. Last eight letters of any word <i>animated</i> or <i>exanimated</i>, agree with first eight letters of words <i>animated</i> and <i>animatedly</i>.<br><i>Note.</i> Word <i>animated</i> has eight characters and first eight characters are the same with last eight characters. So any word is a sequence of itself. If there are no words found which starts from <i>animated</i> or ended by <i>animated</i> then set is not consider as trivial.
 Search characters sequence. For sequence <i>mata</i> program finds next words <i>matador</i>, <i>razzmatazz</i> and so on.
 Shows two nearby characters distribution in the words of dictionary, sorted in descending order.
@@ -125,6 +124,8 @@ Characters frequency at the end of the word
 Average word length is
 Frequency of characters on keyboard
 length
+of word
+of sequence
 The longest word is
 dictionary
 Search words which write in english the same as in transliterate russian. For example, <i>administrator</i> (english word) - <i>�������������</i> (russian word).
@@ -164,3 +165,4 @@ stopping process
 thread
 Note: Line numbers are valid for the first thread only.
 Split words help.
+source code

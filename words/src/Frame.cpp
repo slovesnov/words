@@ -23,10 +23,6 @@
 #include <unordered_map>
 
 // Note WORDS_VERSION defined in consts.h
-const char MAIL[] = "slovesnov@yandex.ru";
-const std::string URL = "https://slovesnov.rf.gd/";
-const std::string HOMEPAGE = URL + "?words";
-const std::string HOMEPAGE_ONLINE = URL + "?words_online";
 const char markTag[] = "mark";
 const char activeTag[] = "active";
 const char CERROR[] = "cerror";
@@ -54,51 +50,6 @@ const int MAX_PANGRAM_LENGTH = 21;              //{16 21}
 const int MAX_SIMPLE_WORD_SEQUENCE_LENGTH = 30; //{25 30}
 const int MAX_DOUBLE_WORD_SEQUENCE_LENGTH = 14; //{7 14}
 
-const std::unordered_map<ENUM_MENU, ENUM_STRING> MENU_TO_HELP_STRING = {
-    {MENU_ANAGRAM, ANAGRAM_HELP},
-    {MENU_PANGRAM, PANGRAM_HELP},
-    {MENU_TEMPLATE, TEMPLATE_HELP},
-    {MENU_PALINDROME, PALINDROME_HELP},
-    {MENU_CROSSWORD, CROSSWORD_HELP},
-    {MENU_REGULAR_EXPRESSIONS, REGULAR_EXPRESSION_HELP},
-    {MENU_MODIFICATION, MODIFICATION_HELP},
-    {MENU_CHAIN, CHAIN_HELP},
-    {MENU_CHARACTER_SEQUENCE, CHARACTERS_SEQUENCE_HELP},
-    {MENU_LETTER_GROUP_SPLIT, LETTER_GROUP_SPLIT_HELP},
-    {MENU_SIMPLE_WORD_SEQUENCE, WORD_SEQUENCE_HELP},
-    {MENU_DOUBLE_WORD_SEQUENCE, DOUBLE_WORD_SEQUENCE_HELP},
-    {MENU_WORD_SEQUENCE_FULL, WORD_SEQUENCE_FULL_HELP},
-    {MENU_KEYBOARD_WORD_SIMPLE, KEYBOARD_WORD_SIMPLE_HELP},
-    {MENU_KEYBOARD_WORD_COMPLEX, KEYBOARD_WORD_DIAGONAL_HELP},
-    {MENU_CONSONANT_VOWEL_SEQUENCE, CONSONANT_VOWEL_CHARACTER_SEQUENCE_HELP},
-    {MENU_DENSITY, DENSITY_HELP},
-    {MENU_TWO_DICTIONARIES_SIMPLE, TWO_DICTIONARIES_SIMPLE_HELP},
-    {MENU_TWO_DICTIONARIES_TRANSLIT, TWO_DICTIONARIES_TRANSLIT_HELP},
-    {MENU_TWO_DICTIONARIES_KEYBOARD_WORD, TWO_DICTIONARIES_KEYBOARD_WORD_HELP},
-    {MENU_TWO_CHARACTERS_DISTRIBUTION, TWO_CHARACTERS_DISTRIBUTION_HELP},
-    {MENU_TWO_CHARACTERS_DISTRIBUTION_START, TWO_CHARACTERS_DISTRIBUTION_HELP},
-    {MENU_TWO_CHARACTERS_DISTRIBUTION_END, TWO_CHARACTERS_DISTRIBUTION_HELP}};
-
-const std::unordered_map<ENUM_MENU, std::string> MENU_TO_ICON_FILE = {
-    {MENU_SEARCH, "search.png"},
-    {MENU_EDIT, "edit.png"},
-    {MENU_ADDITIONS, "add.png"},
-    {MENU_LANGUAGE, "language.png"},
-    {MENU_HELP, "help.png"},
-    {MENU_EDIT_SELECT_ALL_AND_COPY_TO_CLIPBOARD, "select_all_copy.png"},
-    {MENU_EDIT_SELECT_ALL, "select_all.png"},
-    {MENU_EDIT_COPY_TO_CLIPBOARD, "copy.png"},
-    {MENU_LOAD_ENGLISH_DICTIONARY, "en.gif"},
-    {MENU_ENGLISH_LANGUAGE, "en.gif"},
-    {MENU_LOAD_RUSSIAN_DICTIONARY, "ru.gif"},
-    {MENU_RUSSIAN_LANGUAGE, "ru.gif"},
-    {MENU_ABOUT, "word16.png"},
-    {MENU_HOMEPAGE, "web.png"}};
-
-const std::unordered_map<ENUM_MENU, int> MENU_TO_ACCEL_KEY = {
-    {MENU_EDIT_SELECT_ALL_AND_COPY_TO_CLIPBOARD, GDK_KEY_B},
-    {MENU_EDIT_SELECT_ALL, GDK_KEY_A},
-    {MENU_EDIT_COPY_TO_CLIPBOARD, GDK_KEY_C}};
 Frame *frame;
 
 gboolean end_job(gpointer) {
@@ -170,7 +121,7 @@ Frame::Frame() : WordsBase() {
   GtkWidget *w, *w1, *w2;
   GtkWidget *item;
   bool bSubMenu;
-  int i, j;
+  int i;
   std::vector<GtkMenuItem *> subMenu;
   std::string s;
   m_newVersion.start(WORDS_VERSION, new_version_message);
@@ -202,7 +153,10 @@ Frame::Frame() : WordsBase() {
   setComboIndex(COMBOBOX_SORT_ORDER, 1);
   createTextCombo(COMBOBOX_FILTER);
 
-  m_entry[ENTRY_SEARCH] = gtk_entry_new();
+  for (auto a : {ENTRY_SEARCH, ENTRY_FILTER}) {
+    createEntry(a);
+  }
+
   m_searchTagLabel = gtk_label_new("");
   gtk_widget_set_size_request(m_searchTagLabel, 40, -1);
 
@@ -217,7 +171,6 @@ Frame::Frame() : WordsBase() {
   updateButton(BUTTON_DICTIONARY);
 
   m_currentDictionary = gtk_label_new("");
-  m_entry[ENTRY_FILTER] = gtk_entry_new();
 
   for (i = 0; i < int(MENU_TO_ACCEL_KEY.size()); i++) {
     m_accelGroup.push_back(gtk_accel_group_new());
@@ -245,7 +198,8 @@ Frame::Frame() : WordsBase() {
 
   m_panedWidget = w1 = gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
   // left part
-  w2 = createBox(GTK_ORIENTATION_VERTICAL, 0, createTextView(TEXTVIEW_MAIN), true, m_status, false);
+  w2 = createBox(GTK_ORIENTATION_VERTICAL, 0, createTextView(TEXTVIEW_MAIN),
+                 true, m_status, false);
   gtk_widget_set_size_request(w2, MIN_LEFT_PANEL_WIDTH, -1);
   gtk_paned_pack1(GTK_PANED(w1), w2, FALSE, FALSE);
 
@@ -297,14 +251,13 @@ Frame::Frame() : WordsBase() {
 
     bSubMenu = s.find('{') != std::string::npos;
 
-    auto it = MENU_TO_ICON_FILE.find(ENUM_MENU(i));
-    if (it == MENU_TO_ICON_FILE.end()) {
+    if (auto it = MENU_TO_ICON_FILE.get(ENUM_MENU(i))) {
       item = gtk_menu_item_new_with_label("");
     } else {
       item = gtk_menu_item_new();
       w = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
       w1 = gtk_accel_label_new("");
-      gtk_container_add(GTK_CONTAINER(w), image(it->second));
+      gtk_container_add(GTK_CONTAINER(w), image(*it));
       gtk_label_set_use_underline(GTK_LABEL(w1), TRUE);
       gtk_label_set_xalign(GTK_LABEL(w1), 0.0);
       gtk_accel_label_set_accel_widget(GTK_ACCEL_LABEL(w1), item);
@@ -318,10 +271,9 @@ Frame::Frame() : WordsBase() {
                            : gtk_menu_item_get_submenu(subMenu.back())),
         item);
 
-    auto it1 = MENU_TO_ACCEL_KEY.find(ENUM_MENU(i));
-    if (it1 != MENU_TO_ACCEL_KEY.end()) {
-      j = std::distance(MENU_TO_ACCEL_KEY.begin(), it1);
-      gtk_widget_add_accelerator(item, "activate", m_accelGroup[j], it1->second,
+    if (auto res = MENU_TO_ACCEL_KEY.getWithIndex(ENUM_MENU(i))) {
+      auto [val, index] = *res;
+      gtk_widget_add_accelerator(item, "activate", m_accelGroup[index], val,
                                  GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
     }
 
@@ -342,9 +294,6 @@ Frame::Frame() : WordsBase() {
   updateDictionary();
 
   loadCSS();
-
-  connectEntrySignals(ENTRY_SEARCH);
-  connectEntrySignals(ENTRY_FILTER);
 
   for (auto &a : m_button) {
     g_signal_connect(a, "clicked", G_CALLBACK(button_clicked), NULL);
@@ -497,6 +446,7 @@ void Frame::aboutDialog() {
                        COPYRIGHT,
                        HOMEPAGE_STRING,
                        HOMEPAGE_ONLINE_STRING,
+                       SOURCE_CODE,
                        STRING_SIZE /*build info*/,
                        EXECUTABLE_FILE_SIZE};
   ENUM_STRING id;
@@ -523,10 +473,10 @@ void Frame::aboutDialog() {
       }
     }
 
-    if (id == HOMEPAGE_STRING || id == HOMEPAGE_ONLINE_STRING) {
-      s1 = (id == HOMEPAGE_STRING ? HOMEPAGE : HOMEPAGE_ONLINE) +
-           (m_languageIndex ? ',' + getShortLanguageString(m_languageIndex)
-                            : "");
+    if (auto key_opt = MAP_URL.get(id)) {
+      s1 = *key_opt + (m_languageIndex && id != SOURCE_CODE
+                           ? ',' + getShortLanguageString(m_languageIndex)
+                           : "");
       label = gtk_label_new(NULL);
       markup =
           g_markup_printf_escaped("%s <a href=\"%s\">\%s</a>",
@@ -535,16 +485,6 @@ void Frame::aboutDialog() {
       g_free(markup);
       g_signal_connect(label, "activate-link", G_CALLBACK(label_clicked),
                        gpointer(NULL));
-
-      /*
-       //Extra spaces I cann't remove them
-       label= gtk_link_button_new (format("%s",HOMEPAGE).c_str());
-       g_signal_connect(label, "activate-link",G_CALLBACK(label_clicked), NULL
-       );
-       //g_object_set (G_OBJECT (label),"image-spacing", 10,NULL);
-       addClass(label,"url");
-       //css file .url{padding:0px;margin:0px;border:0px;}
-       */
     } else {
 #ifndef NDEBUG
       // output that NDEBUG is not defined
@@ -607,22 +547,22 @@ void Frame::routine(ENUM_JOB_TYPE e) {
 }
 
 void Frame::setHelperPanel() {
-  GtkWidget *w, *w1;
+  int i;
+  GtkWidget *w;
   gchar *p;
   std::string s;
 
   clearContainer(m_helperUp);
 
   // set label
-  auto it = MENU_TO_HELP_STRING.find(m_menuClick);
-  if (it != MENU_TO_HELP_STRING.end()) {
+  if (auto it = MENU_TO_HELP_STRING.get(m_menuClick)) {
     w = gtk_label_new("");
     gtk_container_add(GTK_CONTAINER(m_helperUp), w);
     gtk_label_set_justify(GTK_LABEL(w), GTK_JUSTIFY_FILL);
     gtk_label_set_line_wrap(GTK_LABEL(w), TRUE);
     gtk_label_set_max_width_chars(GTK_LABEL(w), 40);
 
-    s = replaceAll(string(it->second), "<br>", "\n");
+    s = replaceAll(string(*it), "<br>", "\n");
     p = g_markup_printf_escaped(s.c_str());
     gtk_label_set_markup(GTK_LABEL(w), p);
     g_free(p);
@@ -630,23 +570,20 @@ void Frame::setHelperPanel() {
 
   ENUM_STRING e = entryEnumString();
   if (e != STRING_SIZE) {
-    w = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 3);
-    gtk_container_add(GTK_CONTAINER(w), createLabel(SEARCH));
-    m_entry[ENTRY_TEMPLATE] = w1 = gtk_entry_new();
-    gtk_entry_set_text(GTK_ENTRY(w1), stringUsingDictionary(e).c_str());
-    connectEntrySignals(ENTRY_TEMPLATE);
-    add(w, w1);
+    w = createBox(GTK_ORIENTATION_HORIZONTAL, 3, SEARCH, false,
+                  createEntry(ENTRY_TEMPLATE), true);
     gtk_container_add(GTK_CONTAINER(m_helperUp), w);
   }
 
   switch (m_menuClick) {
   case MENU_ANAGRAM:
-    addComboLineToHelper(LENGTH, 2, MAX_ANAGRAM_LENGTH, 6, CHARACTERS);
+    addComboLineToHelper(string(LENGTH, OF_WORD), 2, MAX_ANAGRAM_LENGTH, 6,
+                         CHARACTERS);
     break;
 
   case MENU_PANGRAM:
     w = createBox(GTK_ORIENTATION_HORIZONTAL, COMBOLINE_MARGIN,
-                  string(MINIMUM) + " " + string(DIFFERENT_CHARACTERS), true,
+                  string(MINIMUM, DIFFERENT_CHARACTERS), true,
                   createTextCombo(COMBOBOX_HELPER0, 10, MAX_PANGRAM_LENGTH, 5),
                   true);
     gtk_container_add(GTK_CONTAINER(m_helperUp), w);
@@ -669,11 +606,14 @@ void Frame::setHelperPanel() {
     break;
 
   case MENU_CHAIN:
-    w = createLabel(EXCEPTION_WORDS);
-    gtk_widget_set_halign(w, GTK_ALIGN_START);
-    gtk_container_add(GTK_CONTAINER(m_helperUp), w);
-    w = createTextView(TEXTVIEW_HELPER);
-    gtk_container_add(GTK_CONTAINER(m_helperUp), w);
+    i = -1;
+    for (auto a :
+         {createLabel(EXCEPTION_WORDS), createTextView(TEXTVIEW_HELPER)}) {
+      i++;
+      if (!i)
+        gtk_widget_set_halign(a, GTK_ALIGN_START);
+      gtk_container_add(GTK_CONTAINER(m_helperUp), a);
+    }
     updateTextView(TEXTVIEW_HELPER,
                    stringUsingDictionary(SETTINGS_CHAIN_EXCEPTIONS));
     break;
@@ -684,33 +624,41 @@ void Frame::setHelperPanel() {
     addComboLineToHelper(NUMBER_OF_MATCHES, 1, 10, 0, STRING_SIZE, true);
     break;
 
+  case MENU_WORDS_SPLIT:
+    w = createBox(GTK_ORIENTATION_HORIZONTAL, COMBOLINE_MARGIN,
+                  string(LENGTH, OF_WORD), true,
+                  createTextCombo(COMBOBOX_HELPER0, 6, 20, 7 - 6), true,
+                  CHARACTERS, true);
+    gtk_container_add(GTK_CONTAINER(m_helperUp), w);
+    break;
+
   case MENU_SIMPLE_WORD_SEQUENCE:
-    addComboLineToHelper(SEQUENCE, 8, MAX_SIMPLE_WORD_SEQUENCE_LENGTH, 0,
-                         CHARACTERS);
+    addComboLineToHelper(string(LENGTH, OF_SEQUENCE), 8,
+                         MAX_SIMPLE_WORD_SEQUENCE_LENGTH, 0, CHARACTERS);
     break;
 
   case MENU_DOUBLE_WORD_SEQUENCE:
-    addComboLineToHelper(LENGTH, 2, MAX_DOUBLE_WORD_SEQUENCE_LENGTH, 2,
-                         CHARACTERS);
+    addComboLineToHelper(string(LENGTH, OF_SEQUENCE), 2,
+                         MAX_DOUBLE_WORD_SEQUENCE_LENGTH, 2, CHARACTERS);
     break;
 
   case MENU_CONSONANT_VOWEL_SEQUENCE:
-    w = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, COMBOLINE_MARGIN);
-    assert(VOWELS + 1 == CONSONANTS);
-    add(w, createTextCombo(COMBOBOX_HELPER0, SEARCH_IN_ANY_PLACE_OF_WORD,
-                           SEARCH_IN_END_OF_WORD, 0));
-    add(w, createTextCombo(COMBOBOX_HELPER1, 3, 10, 0));
-    add(w, createTextCombo(COMBOBOX_HELPER2, VOWELS, CONSONANTS, 0));
+    w = createBox(GTK_ORIENTATION_HORIZONTAL, COMBOLINE_MARGIN,
+                  createTextCombo(COMBOBOX_HELPER0, SEARCH_IN_ANY_PLACE_OF_WORD,
+                                  SEARCH_IN_END_OF_WORD, 0),
+                  true,
+
+                  createTextCombo(COMBOBOX_HELPER1, 3, 10, 0), true,
+                  createTextCombo(COMBOBOX_HELPER2, VOWELS, CONSONANTS, 0),
+                  true);
     gtk_container_add(GTK_CONTAINER(m_helperUp), w);
     break;
 
   case MENU_DENSITY:
-    w = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, COMBOLINE_MARGIN);
-    add(w, MAXIMUM);
-    add(w, createTextCombo(COMBOBOX_HELPER0, 0, 25, 25));
-    add(w, "%");
-    add(w, createTextCombo(COMBOBOX_HELPER1, VOWELS, CONSONANTS, 0));
-    add(w, CHARACTERS);
+    w = createBox(GTK_ORIENTATION_HORIZONTAL, COMBOLINE_MARGIN, MAXIMUM, true,
+                  createTextCombo(COMBOBOX_HELPER0, 0, 25, 25), true, "%", true,
+                  createTextCombo(COMBOBOX_HELPER1, VOWELS, CONSONANTS, 0),
+                  true, CHARACTERS, true);
     gtk_container_add(GTK_CONTAINER(m_helperUp), w);
     break;
 
@@ -782,13 +730,17 @@ GtkWidget *Frame::createTextCombo(ENUM_COMBOBOX e, ENUM_STRING from,
 
 void Frame::addComboLineToHelper(ENUM_STRING id, int from, int to, int active,
                                  ENUM_STRING eid, bool any) {
-  addComboLineToHelper(id, from, to, active, string(id), string(TO),
+  addComboLineToHelper(string(id), from, to, active, eid, any);
+}
+
+void Frame::addComboLineToHelper(std::string s, int from, int to, int active,
+                                 ENUM_STRING eid, bool any) {
+  addComboLineToHelper(from, to, active, s, string(TO),
                        eid == STRING_SIZE ? "" : string(eid), any);
 }
 
-void Frame::addComboLineToHelper(ENUM_STRING id, int from, int to, int active,
-                                 std::string s1, std::string s2, std::string s3,
-                                 bool any) {
+void Frame::addComboLineToHelper(int from, int to, int active, std::string s1,
+                                 std::string s2, std::string s3, bool any) {
   int i, j;
   GtkWidget *w = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, COMBOLINE_MARGIN), *r;
   for (i = 0; i < 2; i++) {
@@ -810,7 +762,8 @@ void Frame::addComboLineToHelper(ENUM_STRING id, int from, int to, int active,
     add(w, createTextCombo(HELPER_COMBOBOX[i], from, to, active));
   }
   if (!s3.empty()) {
-    add(w, s3);
+    m_charactersLabel = createLabel(s3);
+    add(w, m_charactersLabel);
   }
   gtk_container_add(GTK_CONTAINER(m_helperUp), w);
   m_comboline = w;
@@ -894,7 +847,7 @@ void Frame::clickButton(GtkWidget *button) {
 
 void Frame::setMenuLabel(ENUM_MENU e, std::string const &text) {
   GtkWidget *w = m_menuMap[e];
-  if (MENU_TO_ICON_FILE.contains(e)) {
+  if (MENU_TO_ICON_FILE.has(e)) {
     w = gtk_bin_get_child(GTK_BIN(w));
     GList *list = gtk_container_get_children(GTK_CONTAINER(w));
     assert(g_list_length(list) == 2);
@@ -907,7 +860,7 @@ void Frame::setMenuLabel(ENUM_MENU e, std::string const &text) {
 
 std::string Frame::getMenuLabel(ENUM_MENU e) {
   GtkWidget *w = m_menuMap[e];
-  if (MENU_TO_ICON_FILE.contains(e)) {
+  if (MENU_TO_ICON_FILE.has(e)) {
     w = gtk_bin_get_child(GTK_BIN(w));
     GList *list = gtk_container_get_children(GTK_CONTAINER(w));
     assert(g_list_length(list) == 2);
@@ -992,16 +945,6 @@ void Frame::updateComboValue(ENUM_COMBOBOX e) {
     // v can be =-1 when combobox just created
   }
   m_comboValue[e] = v;
-}
-
-void Frame::connectEntrySignals(ENUM_ENTRY e) {
-  GCallback f[] = {G_CALLBACK(entry_insert), G_CALLBACK(entry_delete),
-                   G_CALLBACK(entry_focus_in), G_CALLBACK(entry_focus_out)};
-  int i = 0;
-  for (auto a :
-       {"insert-text", "delete-text", "focus-in-event", "focus-out-event"}) {
-    g_signal_connect_after(G_OBJECT(m_entry[e]), a, f[i++], GINT_TO_POINTER(e));
-  }
 }
 
 void Frame::entryFocusChanged(bool in) {
@@ -1278,7 +1221,7 @@ GtkTextBuffer *Frame::tvBuffer(ENUM_TEXTVIEW e) const {
 }
 
 std::string Frame::getProgramVersionString() const {
-  return string(PROGRAM) + " " + string(VERSION) + " " + WORDS_VERSION;
+  return string(PROGRAM, VERSION) + " " + WORDS_VERSION;
 }
 
 void Frame::updateStatus() {
@@ -1380,6 +1323,22 @@ GtkWidget *Frame::createTextView(ENUM_TEXTVIEW e) {
   } else {
     g_signal_connect(tvBuffer(e), "changed", G_CALLBACK(text_view_changed),
                      NULL);
+  }
+  return w;
+}
+
+GtkWidget *Frame::createEntry(ENUM_ENTRY e) {
+  auto w = m_entry[e] = gtk_entry_new();
+  if (e == ENTRY_TEMPLATE) {
+    gtk_entry_set_text(GTK_ENTRY(w),
+                       stringUsingDictionary(entryEnumString()).c_str());
+  }
+  GCallback f[] = {G_CALLBACK(entry_insert), G_CALLBACK(entry_delete),
+                   G_CALLBACK(entry_focus_in), G_CALLBACK(entry_focus_out)};
+  int i = 0;
+  for (auto a :
+       {"insert-text", "delete-text", "focus-in-event", "focus-out-event"}) {
+    g_signal_connect_after(G_OBJECT(m_entry[e]), a, f[i++], GINT_TO_POINTER(e));
   }
   return w;
 }

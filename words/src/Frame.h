@@ -10,10 +10,9 @@
 #include "CheckNewVersion.h"
 #include "common/WordsBase.h"
 #include "common/consts.h"
-#include <initializer_list>
+//#include <initializer_list>
 
 using MenuMap = std::map<ENUM_MENU, GtkWidget *>;
-using WB = std::initializer_list<std::pair<GtkWidget *, bool>>;
 
 class Frame : WordsBase {
   static const int COMBOLINE_MARGIN = 3;
@@ -32,6 +31,7 @@ class Frame : WordsBase {
   GtkWidget *m_check;
   GtkWidget *m_comboline;
   GtkWidget *m_radio;
+  GtkWidget *m_charactersLabel;
 
   MenuMap m_menuMap;
   std::vector<GtkAccelGroup *> m_accelGroup;
@@ -75,7 +75,9 @@ private:
 
   void addComboLineToHelper(ENUM_STRING id, int from, int to, int active,
                             ENUM_STRING eid, bool any = false);
-  void addComboLineToHelper(ENUM_STRING id, int from, int to, int active,
+  void addComboLineToHelper(std::string s, int from, int to, int active,
+                            ENUM_STRING eid, bool any = false);
+  void addComboLineToHelper(int from, int to, int active,
                             std::string s1, std::string s2, std::string s3,
                             bool any = false);
   void addComboToHelper(ENUM_STRING from, ENUM_STRING to, int active,
@@ -86,33 +88,31 @@ private:
   GtkWidget *createLabel(std::string s) { return gtk_label_new(s.c_str()); }
   GtkWidget *createLabel(ENUM_STRING e) { return createLabel(string(e)); }
 
-  //todo add, appendpairs
-  template <typename T> void add(GtkWidget *box, T &&arg, bool expand = true) {
-    using CleanT = std::decay_t<T>;
-    GtkWidget *w;
-    if constexpr (std::is_convertible_v<CleanT, GtkWidget *>) {
-      w = GTK_WIDGET(arg);
-    } else {
-      w = createLabel(std::forward<T>(arg));
-    }
-    gtk_box_pack_start(GTK_BOX(box), w, expand, expand, 0);
-  }
-
-  inline void appendPairs(GtkWidget *box) {}
+  inline GtkWidget *add(GtkWidget *box) { return box; }
 
   template <typename WidgetT, typename... Args>
-  void appendPairs(GtkWidget *box, WidgetT &&widget, bool expand,
-                   Args &&...rest) {
-    add(box, std::forward<WidgetT>(widget), expand);
-    appendPairs(box, std::forward<Args>(rest)...);
+  GtkWidget *add(GtkWidget *box, WidgetT &&widget, bool expand = true,
+                 Args &&...rest) {
+    if (sizeof...(Args)) {
+      add(box, widget, expand);
+      return add(box, std::forward<Args>(rest)...);
+    }
+    using CleanT = std::decay_t<WidgetT>;
+    GtkWidget *w;
+    if constexpr (std::is_convertible_v<CleanT, GtkWidget *>) {
+      w = GTK_WIDGET(widget);
+    } else {
+      w = createLabel(std::forward<WidgetT>(widget));
+    }
+    gtk_box_pack_start(GTK_BOX(box), w, expand, expand, 0);
+    return box;
   }
 
   template <typename... T>
   GtkWidget *createBox(GtkOrientation o, int margin, T &&...p) {
     static_assert(sizeof...(T) % 2 == 0);
     GtkWidget *w = gtk_box_new(o, margin);
-    appendPairs(w, std::forward<T>(p)...);
-    return w;
+    return add(w, std::forward<T>(p)...);
   }
 
 public:
@@ -142,7 +142,6 @@ public:
 
   void updateTextView(ENUM_TEXTVIEW e, std::string const &s);
 
-  void connectEntrySignals(ENUM_ENTRY e);
   void entryFocusChanged(bool in);
   void removeAccelerators();
   void addAccelerators();
@@ -170,5 +169,6 @@ public:
   void updateButton(ENUM_BUTTON e);
 
   StartStopButtonState getStartStopState() const;
-  GtkWidget* createTextView(ENUM_TEXTVIEW e);
+  GtkWidget *createTextView(ENUM_TEXTVIEW e);
+  GtkWidget *createEntry(ENUM_ENTRY e);
 };

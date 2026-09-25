@@ -45,7 +45,6 @@ enum ENUM_STRING {
   SEARCH_IN_END_OF_WORD,
   MINIMUM,
   MAXIMUM,
-  SEQUENCE,
   WORD_SEQUENCE_HELP,
   CHARACTERS_SEQUENCE_HELP,
   TWO_CHARACTERS_DISTRIBUTION_HELP,
@@ -75,6 +74,8 @@ enum ENUM_STRING {
   AVERAGE_WORD_LENGTH_EQUALS,
   FREQUENCY_OF_KEYBOARD_CHARACTERS,
   LENGTH,
+  OF_WORD,//in the genitive case
+  OF_SEQUENCE,//in the genitive case
   THE_LONGEST_WORD_IS,
   DICTIONARY, // rename from "current dictionary" because too many tools in
               // status bar
@@ -115,6 +116,7 @@ enum ENUM_STRING {
   THREAD,
   THREAD_NOTE,
   WORDS_SPLIT_HELP,
+  SOURCE_CODE,
 
   STRING_SIZE
 };
