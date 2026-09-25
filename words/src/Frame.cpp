@@ -252,8 +252,6 @@ Frame::Frame() : WordsBase() {
     bSubMenu = s.find('{') != std::string::npos;
 
     if (auto it = MENU_TO_ICON_FILE.get(ENUM_MENU(i))) {
-      item = gtk_menu_item_new_with_label("");
-    } else {
       item = gtk_menu_item_new();
       w = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
       w1 = gtk_accel_label_new("");
@@ -263,6 +261,8 @@ Frame::Frame() : WordsBase() {
       gtk_accel_label_set_accel_widget(GTK_ACCEL_LABEL(w1), item);
       gtk_box_pack_end(GTK_BOX(w), w1, TRUE, TRUE, 0);
       gtk_container_add(GTK_CONTAINER(item), w);
+    } else {
+      item = gtk_menu_item_new_with_label("");
     }
 
     gtk_menu_shell_append(

@@ -24,7 +24,7 @@ std::mutex cout_mutex;
 
 std::string LNG[LANGUAGES];
 std::vector<MapStringStringVector> eqmap;
-const std::unordered_map<ENUM_MENU, void (WordsBase::*)(int)> menu2VoidInt = {
+const LookupTable<ENUM_MENU, void (WordsBase::*)(int)> menu2VoidInt = {
     {MENU_ANAGRAM, &WordsBase::findAnagram}, // break implemented
     {MENU_SIMPLE_WORD_SEQUENCE,
      &WordsBase::findSimpleWordSequence}, // break implemented
@@ -53,19 +53,15 @@ const std::unordered_map<ENUM_MENU, void (WordsBase::*)(int)> menu2VoidInt = {
     {MENU_TWO_CHARACTERS_DISTRIBUTION_END,
      &WordsBase::twoCharactersDistribution} // not implemented
 };
-/*TODO
-MENU_CHAIN, findChain
-MENU_LETTER_GROUP_SPLIT, findLetterGroupSplit
-*/
 
-const std::unordered_map<ENUM_MENU, void (WordsBase::*)()> menuPreProseeding = {
+const LookupTable<ENUM_MENU, void (WordsBase::*)()> menuPreProseeding = {
     {MENU_KEYBOARD_WORD_SIMPLE,
      &WordsBase::checkKeyboardWordSimplePreProseeding},
     {MENU_KEYBOARD_WORD_COMPLEX,
      &WordsBase::checkKeyboardWordComplexPreProseeding},
     {MENU_CHECK_DICTIONARY, &WordsBase::checkDictionaryPreProseeding}};
 
-const std::unordered_map<ENUM_MENU, void (WordsBase::*)()> menuPostProseeding =
+const LookupTable<ENUM_MENU, void (WordsBase::*)()> menuPostProseeding =
     {{MENU_WORD_FREQUENCY, &WordsBase::wordFrequencyPostProseeding},
      {MENU_DICTIONARY_STATISTICS,
       &WordsBase::dictionaryStatisticsPostProseeding},
@@ -81,7 +77,7 @@ const std::unordered_map<ENUM_MENU, void (WordsBase::*)()> menuPostProseeding =
       &WordsBase::twoCharactersDistributionPostProseeding},
      {MENU_CHECK_DICTIONARY, &WordsBase::checkDictionaryPostProseeding}};
 
-const std::unordered_map<ENUM_MENU, bool (WordsBase::*)(const std::string &)>
+const LookupTable<ENUM_MENU, bool (WordsBase::*)(const std::string &)>
     menu2BoolString = {
         {MENU_PANGRAM, &WordsBase::checkPangram},
         {MENU_TEMPLATE, &WordsBase::checkTemplate},
@@ -94,15 +90,6 @@ const std::unordered_map<ENUM_MENU, bool (WordsBase::*)(const std::string &)>
         {MENU_CONSONANT_VOWEL_SEQUENCE,
          &WordsBase::checkConsonantVowelSequence},
         {MENU_DENSITY, &WordsBase::checkDensity}};
-
-const std::unordered_map<ENUM_MENU, ENUM_STRING> menu2Settings = {
-    {MENU_TEMPLATE, SETTINGS_TEMPLATE},
-    {MENU_CROSSWORD, SETTINGS_CROSSWORD},
-    {MENU_REGULAR_EXPRESSIONS, SETTINGS_REGULAR_EXPRESSIONS},
-    {MENU_MODIFICATION, SETTINGS_MODIFICATION},
-    {MENU_CHAIN, SETTINGS_CHAIN},
-    {MENU_CHARACTER_SEQUENCE, SETTINGS_CHARACTER_SEQUENCE},
-    {MENU_LETTER_GROUP_SPLIT, SETTINGS_LETTER_GROUP_SPLIT}};
 
 #ifdef NOGTK
 // use cgi project
@@ -1937,15 +1924,12 @@ void WordsBase::run_thread(int nthread) {
   auto begin = clock();
   m_thread_result[nthread].clear();
 
-  auto it = menu2VoidInt.find(m_menuClick);
-  if (it != menu2VoidInt.end()) {
-    auto f = it->second;
-    (this->*f)(nthread);
+  if (auto it = menu2VoidInt.get(m_menuClick)) {
+    (this->*(*it))(nthread);
   }
 
-  auto it1 = menu2BoolString.find(m_menuClick);
-  if (it1 != menu2BoolString.end()) {
-    auto f = it1->second;
+  
+  if (auto it = menu2BoolString.get(m_menuClick)) {
     if (m_menuClick == MENU_REGULAR_EXPRESSIONS) {
       SafeGRegex r; // have to create separate regex, for every thread otherwise
       // very slow
@@ -1966,7 +1950,7 @@ void WordsBase::run_thread(int nthread) {
       auto [it2, end] = iterators(getDictionaryIndex(), nthread);
       for (; it2 != end; it2++) {
         auto &e = *it2;
-        if ((this->*f)(e)) {
+        if ((this->*(*it))(e)) {
           m_thread_result[nthread].push_back(SearchResult(e, e.length(), 1));
         }
         RETURN_ON_USER_BREAK
@@ -1979,11 +1963,9 @@ void WordsBase::run_thread(int nthread) {
 
 void WordsBase::run(ENUM_JOB_TYPE e) {
   bool userbreak = false;
-  if (e == JOB_TYPE_FULL) {
-    auto it = menuPreProseeding.find(m_menuClick);
-    if (it != menuPreProseeding.end()) {
-      auto f = it->second;
-      (this->*f)();
+  if (e == JOB_TYPE_FULL) {    
+    if (auto it = menuPreProseeding.get(m_menuClick)) {
+      (this->*(*it))();
     }
 
     std::vector<std::jthread> workers;
@@ -2000,10 +1982,8 @@ void WordsBase::run(ENUM_JOB_TYPE e) {
       }
     }
 
-    it = menuPostProseeding.find(m_menuClick);
-    if (it != menuPostProseeding.end()) {
-      auto f = it->second;
-      (this->*f)();
+    if (auto it = menuPostProseeding.get(m_menuClick)) {
+      (this->*(*it))();
     }
 
     if (threads > 1 && !oneOf(m_menuClick, MENU_SIMPLE_WORD_SEQUENCE,
@@ -2269,9 +2249,15 @@ bool WordsBase::createRegex(ENUM_ENTRY e, SafeGRegex &r) {
 
 bool WordsBase::isEntryMenu() const { return entryEnumString() != STRING_SIZE; }
 
-ENUM_STRING WordsBase::entryEnumString() const {
-  auto it = menu2Settings.find(m_menuClick);
-  return it == menu2Settings.end() ? STRING_SIZE : it->second;
+ENUM_STRING WordsBase::entryEnumString() const {//TODO
+      if (auto it = MENU_TO_SETTINGS.get(m_menuClick)) {
+        return *it;
+      }
+      else{
+        return STRING_SIZE;
+      }
+  // auto it = MENU_TO_SETTINGS.find(m_menuClick);
+  // return it == MENU_TO_SETTINGS.end() ? STRING_SIZE : it->second;
 }
 
 const std::string &WordsBase::alphabet() const {
