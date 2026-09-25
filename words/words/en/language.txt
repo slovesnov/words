@@ -171,5 +171,5 @@ no results found
 stopping process
 thread
 Note: Line numbers are valid for the first thread only.
-Split words help.
+Search for words that can be broken down into other words found in the dictionary. For example, the word <i>gadgets</i> can be broken down into three words: <i>gad,</i> <i>get,</i> and <i>ts</i>. We are looking for breakdowns into two or three words. 
 source code
