@@ -13,6 +13,8 @@ const std::string URL = "https://slovesnov.rf.gd/";
 const std::string SOURCE_URL = "https://github.com/slovesnov/words";
 const std::string HOMEPAGE = URL + "?words";
 const std::string HOMEPAGE_ONLINE = URL + "?words_online";
+const char DOWNLOAD_URL[] =
+    "http://sourceforge.net/projects/javawords/files/latest/download";
 const char OPEN_BRACKET = '(';
 const std::string OPEN_S = std::string(" ") + OPEN_BRACKET;
 const int KEYBOARD_ROWS = 3;

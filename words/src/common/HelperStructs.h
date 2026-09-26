@@ -145,3 +145,4 @@ std::string fastLocaleToUtf8(const std::string &src);
 std::string fastUtf8ToLocale(const std::string &src);
 std::string capitalizeFirstUtf8(const std::string &src);
 ENUM_STRING getLetterDeclension(int number);
+std::vector<IntVector> &sum(ThreadResultVector &v);

@@ -20,9 +20,7 @@
 
 #include "magic_enum.hpp"
 #include <format>
-#include <unordered_map>
 
-// Note WORDS_VERSION defined in consts.h
 const char markTag[] = "mark";
 const char activeTag[] = "active";
 const char CERROR[] = "cerror";
@@ -33,8 +31,6 @@ const int DEFAULT_SEPARATOR_POSITION = 1340;
 const int TEXT_VIEW_MARGIN = 5;
 const std::string CONFIG_TAGS[] = {"version",   "language", "dictionary",
                                    "separator", "fontout",  "fontcontrols"};
-const char DOWNLOAD_URL[] =
-    "http://sourceforge.net/projects/javawords/files/latest/download";
 extern std::string LNG[LANGUAGES];
 
 /* too many items in combobox, so set maximum bound.
@@ -694,7 +690,6 @@ void Frame::setHelperPanel() {
 
   if (m_charactersLabel) {
     updateCharactersLabel();
-    pr(m_comboValue[getLastCombobox()]);
   }
 
   gtk_widget_show_all(m_helperUp);

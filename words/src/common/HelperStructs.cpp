@@ -78,3 +78,11 @@ std::string capitalizeFirstUtf8(const std::string &src) {
   const char *rest_of_string = g_utf8_next_char(src.c_str());
   return std::string(utf8_buf, len) + rest_of_string;
 }
+
+std::vector<IntVector> &sum(ThreadResultVector &v) {
+  auto &a = v[0].a;
+  for (size_t i = 1; i < v.size(); i++) {
+    v[i].add(a);
+  }
+  return a;
+}

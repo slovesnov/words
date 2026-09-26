@@ -153,6 +153,7 @@ public:
   void wordFrequency(int nthread);
   void checkDictionary(int nthread);
   void twoCharactersDistribution(int nthread);
+  void findWordsSplit(int nthread);
 
   void checkKeyboardWordSimplePreProseeding();
   void checkKeyboardWordComplexPreProseeding();

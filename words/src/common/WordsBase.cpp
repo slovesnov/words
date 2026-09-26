@@ -34,6 +34,7 @@ const LookupTable<ENUM_MENU, void (WordsBase::*)(int)> menu2VoidInt = {
      &WordsBase::findWordSequenceFull},                // not implemented
     {MENU_MODIFICATION, &WordsBase::findModification}, // break implemented
     {MENU_CHAIN, &WordsBase::findChain},               // not implemented
+    {MENU_WORDS_SPLIT, &WordsBase::findWordsSplit},    // break implemented
     {MENU_LETTER_GROUP_SPLIT,
      &WordsBase::findLetterGroupSplit}, // not implemented
     {MENU_TWO_DICTIONARIES_SIMPLE,
@@ -1479,6 +1480,56 @@ void WordsBase::checkDictionary(int nthread) {
   }
 }
 
+void WordsBase::findWordsSplit(int nthread) { // TODO
+  //   auto [it, end] = iterators(getDictionaryIndex(), nthread);
+  // for (; it != end; it++) {
+
+  std::string t;
+  int words;
+  std::size_t i, j;
+  //auto t2=utf8ToLocale("гаджеты");
+  Dictionary const &r = getDictionary();
+  for (auto it = r.begin(); it != r.end(); it++) {
+    if (int(it->size()) != m_comboValue[COMBOBOX_HELPER0]) {
+      continue;
+    }
+    auto const &e = *it;
+    t = "";
+    words = 0;
+
+    for (i = 1; i < e.size(); i++) {
+         std::string_view s1(e.data(), i);
+            std::string_view s2(e.data() + i,  e.size() - i);
+      if (std::ranges::binary_search(getDictionary(), s1) &&
+          std::ranges::binary_search(getDictionary(), s2)) {
+        t += std::format("{}{{{} {}}}", words ? " " : "", s1, s2);
+        words++;
+      }
+    }
+
+    for (i = 1; i < e.size() - 1; i++) {
+      for (j = i + 1; j < e.size(); j++) {
+         std::string_view s1(e.data(), i);
+            std::string_view s2(e.data() + i, j - i);
+            std::string_view s3(e.data() + j, e.size() - j);
+
+        if (std::ranges::binary_search(getDictionary(), s1) &&
+            std::ranges::binary_search(getDictionary(), s2) &&
+            std::ranges::binary_search(getDictionary(), s3)) {
+          t += std::format("{}{{{} {} {}}}[{} {}]", words ? " " : "", s1, s2, s3,i,j);
+          words++;
+        }
+      }
+    }
+    if (words) {
+      m_result.push_back(SearchResult(t, e.length(), words));
+      // m_thread_result[nthread].push_back(
+      //     SearchResult(t, e.length(), 1));
+    }
+    RETURN_ON_USER_BREAK
+  }
+}
+
 void WordsBase::twoCharactersDistribution(int nthread) {
   int i;
   const int n = alphabetSize();
@@ -1505,14 +1556,6 @@ void WordsBase::twoCharactersDistribution(int nthread) {
       total++;
     }
   }
-}
-
-std::vector<IntVector> &sum(ThreadResultVector &v) {
-  auto &a = v[0].a;
-  for (size_t i = 1; i < v.size(); i++) {
-    v[i].add(a);
-  }
-  return a;
 }
 
 void WordsBase::twoCharactersDistributionPostProseeding() {
@@ -1972,7 +2015,8 @@ void WordsBase::run(ENUM_JOB_TYPE e) {
     }
 
     std::vector<std::jthread> workers;
-    int threads = oneOf(m_menuClick, MENU_CHAIN, MENU_LETTER_GROUP_SPLIT,MENU_WORDS_SPLIT)
+    int threads = oneOf(m_menuClick, MENU_CHAIN, MENU_LETTER_GROUP_SPLIT,
+                        MENU_WORDS_SPLIT)
                       ? 1
                       : g_get_num_processors();
     prsync(threads, magic_enum::enum_name(m_menuClick));
