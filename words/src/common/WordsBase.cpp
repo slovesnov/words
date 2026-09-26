@@ -1168,7 +1168,7 @@ l210:
   // pr(timeElapse(begin))
 }
 
-void WordsBase::findLetterGroupSplit(int nthread) {
+void WordsBase::findLetterGroupSplit(int nthread) {//todo
   std::string s, s1, t, lng;
   size_t i, j;
   auto charset = getOrderedString(m_entryValue);
@@ -1487,12 +1487,10 @@ void WordsBase::findWordsSplit(int nthread) {
   auto [it, end] = iterators(getDictionaryIndex(), nthread);
   m_thread_result[nthread].clear();
   for (; it != end; it++) {
-    // Dictionary const &r = getDictionary();
-    // for (auto it = r.begin(); it != r.end(); it++) {
-    if (int(it->size()) != m_comboValue[COMBOBOX_HELPER0]) {
+    auto const &e = *it;
+    if (int(e.size()) != m_comboValue[COMBOBOX_HELPER0]) {
       continue;
     }
-    auto const &e = *it;
     t = "";
     words = 0;
 
@@ -1502,7 +1500,7 @@ void WordsBase::findWordsSplit(int nthread) {
       if (std::ranges::binary_search(getDictionary(), s1) &&
           std::ranges::binary_search(getDictionary(), s2)) {
         t += std::format("{}{{{} {}}}", words ? " " : "", s1, s2);
-        words++;
+        words += 2;
       }
     }
 
@@ -1516,7 +1514,7 @@ void WordsBase::findWordsSplit(int nthread) {
             std::ranges::binary_search(getDictionary(), s2) &&
             std::ranges::binary_search(getDictionary(), s3)) {
           t += std::format("{}{{{} {} {}}}", words ? " " : "", s1, s2, s3);
-          words++;
+          words += 3;
         }
       }
     }

@@ -77,7 +77,7 @@ anticodonpall
 program words
 version
 author Alexey Slovesnov
-copyright (C/C++/gtk) 2000 - doomsday
+copyleft (C/C++/gtk) 2000 - doomsday
 homepage
 online version
 email

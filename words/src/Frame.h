@@ -73,10 +73,19 @@ private:
   GtkWidget *createTextCombo(ENUM_COMBOBOX e, ENUM_STRING from, ENUM_STRING to,
                              int active);
 
-  void addComboLineToHelper(ENUM_STRING id, int from, int to, int active,
-                            ENUM_STRING eid, bool any = false);
-  void addComboLineToHelper(std::string s, int from, int to, int active,
-                            ENUM_STRING eid, bool any = false);
+  template <typename T>
+  void addComboLineToHelper(T &&id, int from, int to, int active,
+                            ENUM_STRING eid, bool any = false) {
+    std::string s_id;
+    if constexpr (std::is_same_v<std::decay_t<T>, std::string>) {
+      s_id = std::forward<T>(id);
+    } else {
+      s_id = string(std::forward<T>(id));
+    }
+    std::string s_eid = eid == STRING_SIZE ? "" : string(eid);
+    addComboLineToHelper(from, to, active, s_id, this->string(TO), s_eid, any);
+  }
+
   void addComboLineToHelper(int from, int to, int active, std::string s1,
                             std::string s2, std::string s3, bool any = false);
   void addComboToHelper(ENUM_STRING from, ENUM_STRING to, int active,
@@ -172,9 +181,9 @@ public:
   GtkWidget *createEntry(ENUM_ENTRY e);
   void updateCharactersLabel();
   ENUM_COMBOBOX getLastCombobox();
-  bool selectFont(const std::string&s, ENUM_FONT e);
-  std::string getCssFromPango(ENUM_FONT e) ;
-  void updateFont(ENUM_FONT e) ;
+  bool selectFont(const std::string &s, ENUM_FONT e);
+  std::string getCssFromPango(ENUM_FONT e);
+  void updateFont(ENUM_FONT e);
   void resetSettings(bool update);
   void switchDictionary();
 };

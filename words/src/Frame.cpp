@@ -449,8 +449,8 @@ void Frame::updateDictionary() {
 }
 
 void Frame::aboutDialog() {
-  int i;
-  size_t j;
+  size_t i;
+  int h;
   std::string s, s1;
   GtkWidget *box, *hbox, *dialog, *label, *img = gtk_image_new();
   char *markup;
@@ -460,7 +460,6 @@ void Frame::aboutDialog() {
   gtk_window_set_title(GTK_WINDOW(dialog), getMenuLabel(MENU_ABOUT).c_str());
   hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
   gtk_container_add(GTK_CONTAINER(hbox), img);
-
   box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
 
   ENUM_STRING sid[] = {PROGRAM,
@@ -471,55 +470,44 @@ void Frame::aboutDialog() {
                        SOURCE_CODE,
                        STRING_SIZE /*build info*/,
                        EXECUTABLE_FILE_SIZE};
-  ENUM_STRING id;
-  for (i = 0; i < SIZEI(sid); i++) {
-    id = sid[i];
-    if (id == PROGRAM) {
-      s = getProgramVersionString();
-    } else if (id == STRING_SIZE) {
-      s = getBuildVersionString(false);
-    } else {
-      s = string(id);
-
-      if (id == AUTHOR) {
-        s += " " + string(EMAIL_STRING) + " " + MAIL;
-      } else if (id == HOMEPAGE_STRING || id == HOMEPAGE_ONLINE_STRING) {
-        s += " " + (id == HOMEPAGE_STRING ? HOMEPAGE : HOMEPAGE_ONLINE);
-      } else if (id == COPYRIGHT) {
-        j = s.find('(');
-        if (j != std::string::npos) {
-          s = s.substr(0, j + 1) + "\u00A9" + s.substr(j + 2);
-        }
-      } else if (id == EXECUTABLE_FILE_SIZE) {
-        s += " " + toString(getApplicationFileSize(), ',');
-      }
-    }
-
+  for (auto id : sid) {
     if (auto key_opt = MAP_URL.get(id)) {
-      s1 = *key_opt + (m_languageIndex && id != SOURCE_CODE
-                           ? ',' + getShortLanguageString(m_languageIndex)
-                           : "");
+      s = *key_opt + (m_languageIndex && id != SOURCE_CODE
+                          ? ',' + getShortLanguageString(m_languageIndex)
+                          : "");
       label = gtk_label_new(NULL);
       markup =
           g_markup_printf_escaped("%s <a href=\"%s\">\%s</a>",
-                                  string(id).c_str(), s1.c_str(), s1.c_str());
+                                  string(id).c_str(), s.c_str(), s.c_str());
       gtk_label_set_markup(GTK_LABEL(label), markup);
       g_free(markup);
       g_signal_connect(label, "activate-link", G_CALLBACK(label_clicked),
                        gpointer(NULL));
     } else {
+      if (id == PROGRAM) {
+        s = getProgramVersionString();
 #ifndef NDEBUG
-      // output that NDEBUG is not defined
-      if (i == 0) {
+        // output that NDEBUG is not defined
         s += " DEBUG VERSION";
-      }
 #endif
+      } else if (id == STRING_SIZE) {
+        s = getBuildVersionString(false);
+      } else {
+        s = string(id);
+        if (id == AUTHOR) {
+          s += " " + string(EMAIL_STRING) + " " + MAIL;
+        } else if (id == COPYRIGHT) {
+          i = s.find('(');
+          if (i != std::string::npos) {
+            s = s.substr(0, i + 1) + "\u00A9" + s.substr(i + 2);
+          }
+        } else if (id == EXECUTABLE_FILE_SIZE) {
+          s += " " + toString(getApplicationFileSize(), ',');
+        }
+      }
       label = createLabel(s);
     }
-
     gtk_widget_set_halign(label, GTK_ALIGN_START);
-    addClass(label, "aboutlabel");
-
     add(box, label); // stretch vertically
   }
 
@@ -534,9 +522,9 @@ void Frame::aboutDialog() {
   gtk_widget_show_all(dialog);
 
   // get height after show_all
-  gtk_widget_get_preferred_height(box, nullptr, &i);
-  pi = gdk_pixbuf_new_from_file_at_size(getImagePath("word256.png").c_str(), i,
-                                        i, 0);
+  gtk_widget_get_preferred_height(box, nullptr, &h);
+  pi = gdk_pixbuf_new_from_file_at_size(getImagePath("word256.png").c_str(), h,
+                                        h, 0);
   gtk_image_set_from_pixbuf(GTK_IMAGE(img), pi);
   g_object_unref(pi);
 
@@ -646,7 +634,7 @@ void Frame::setHelperPanel() {
     break;
 
   case MENU_WORDS_SPLIT:
-    m_charactersLabel = createLabel(""); // TODO
+    m_charactersLabel = createLabel("");
     w = createBox(GTK_ORIENTATION_HORIZONTAL, COMBOLINE_MARGIN,
                   string(LENGTH, OF_WORD), true,
                   createTextCombo(COMBOBOX_HELPER0, 6, 20, 7 - 6), true,
@@ -754,17 +742,6 @@ GtkWidget *Frame::createTextCombo(ENUM_COMBOBOX e, ENUM_STRING from,
   return createTextCombo(e, v, active);
 }
 
-void Frame::addComboLineToHelper(ENUM_STRING id, int from, int to, int active,
-                                 ENUM_STRING eid, bool any) {
-  addComboLineToHelper(string(id), from, to, active, eid, any);
-}
-
-void Frame::addComboLineToHelper(std::string s, int from, int to, int active,
-                                 ENUM_STRING eid, bool any) {
-  addComboLineToHelper(from, to, active, s, string(TO),
-                       eid == STRING_SIZE ? "" : string(eid), any);
-}
-
 void Frame::addComboLineToHelper(int from, int to, int active, std::string s1,
                                  std::string s2, std::string s3, bool any) {
   int i, j;
@@ -788,7 +765,6 @@ void Frame::addComboLineToHelper(int from, int to, int active, std::string s1,
     add(w, createTextCombo(HELPER_COMBOBOX[i], from, to, active));
   }
   if (!s3.empty()) {
-    // todo
     m_charactersLabel = createLabel(s3);
     add(w, m_charactersLabel);
   }
@@ -1063,7 +1039,6 @@ void Frame::debounceTimeout(ENUM_ENTRY e) {
   // store current entry, because after thread loose focus and cursor position
   m_currentEntry = e;
   m_currentEntryPos = gtk_editable_get_position(GTK_EDITABLE(m_entry[e]));
-  prs(m_currentEntryPos);
 
   switch (e) {
   case ENTRY_TEMPLATE:
@@ -1375,7 +1350,7 @@ GtkWidget *Frame::createEntry(ENUM_ENTRY e) {
 }
 
 void Frame::updateCharactersLabel() {
-  bool b;
+  pri bool b;
   const int n = m_comboValue[getLastCombobox()];
   const int mod100 = n % 100;
   const int mod10 = n % 10;

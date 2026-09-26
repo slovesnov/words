@@ -27,3 +27,9 @@ http://www.iconarchive.com/show/must-have-icons-by-visualpharm/Stop-icon.html
 
 [source]
 https://icons8.ru/icon/19294/%D0%B8%D1%81%D1%85%D0%BE%D0%B4%D0%BD%D1%8B%D0%B9-%D0%BA%D0%BE%D0%B4
+
+[font]
+https://icons8.ru/icons/set/font--blue
+
+[reset]
+https://icons8.ru/icons/set/reset--blue

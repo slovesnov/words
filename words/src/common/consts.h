@@ -68,14 +68,17 @@ const ENUM_MENU MENU_WAITING[] = {MENU_DICTIONARY_STATISTICS,
 
     //cann't remove template types
 const LookupTable<ENUM_STRING, std::string> MAP_URL = {
-    {HOMEPAGE_STRING, URL},
-    {HOMEPAGE_ONLINE_STRING, HOMEPAGE},
+    {HOMEPAGE_STRING, HOMEPAGE},
+    {HOMEPAGE_ONLINE_STRING, HOMEPAGE_ONLINE},
     {SOURCE_CODE, SOURCE_URL}};
 
     const LookupTable<ENUM_MENU, std::string> MENU_TO_ICON_FILE={
     {MENU_EDIT_SELECT_ALL_AND_COPY_TO_CLIPBOARD, "select_all_copy.png"},
     {MENU_EDIT_SELECT_ALL, "select_all.png"},
     {MENU_EDIT_COPY_TO_CLIPBOARD, "copy.png"},
+    {MENU_FONT_FOR_THE_OUTPUT_WINDOW, "font.png"},
+    {MENU_FONT_FOR_THE_CONTROLS, "font.png"},
+    {MENU_RESET_SETTINGS, "reset.png"},
     {MENU_LOAD_ENGLISH_DICTIONARY, "en.gif"},
     {MENU_ENGLISH_LANGUAGE, "en.gif"},
     {MENU_LOAD_RUSSIAN_DICTIONARY, "ru.gif"},
