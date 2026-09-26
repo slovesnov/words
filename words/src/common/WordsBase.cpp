@@ -1480,15 +1480,15 @@ void WordsBase::checkDictionary(int nthread) {
   }
 }
 
-void WordsBase::findWordsSplit(int nthread) { // TODO
-  //   auto [it, end] = iterators(getDictionaryIndex(), nthread);
-  // for (; it != end; it++) {
-
+void WordsBase::findWordsSplit(int nthread) {
   std::string t;
   int words;
   std::size_t i, j;
-  Dictionary const &r = getDictionary();
-  for (auto it = r.begin(); it != r.end(); it++) {
+  auto [it, end] = iterators(getDictionaryIndex(), nthread);
+  m_thread_result[nthread].clear();
+  for (; it != end; it++) {
+    // Dictionary const &r = getDictionary();
+    // for (auto it = r.begin(); it != r.end(); it++) {
     if (int(it->size()) != m_comboValue[COMBOBOX_HELPER0]) {
       continue;
     }
@@ -1521,9 +1521,8 @@ void WordsBase::findWordsSplit(int nthread) { // TODO
       }
     }
     if (words) {
-      m_result.push_back(SearchResult(t, e.length(), words));
-      // m_thread_result[nthread].push_back(
-      //     SearchResult(t, e.length(), 1));
+      // m_result.push_back(SearchResult(t, e.length(), words));
+      m_thread_result[nthread].push_back(SearchResult(t, e.length(), words));
     }
     RETURN_ON_USER_BREAK
   }
@@ -2014,8 +2013,7 @@ void WordsBase::run(ENUM_JOB_TYPE e) {
     }
 
     std::vector<std::jthread> workers;
-    int threads = oneOf(m_menuClick, MENU_CHAIN, MENU_LETTER_GROUP_SPLIT,
-                        MENU_WORDS_SPLIT)
+    int threads = oneOf(m_menuClick, MENU_CHAIN, MENU_LETTER_GROUP_SPLIT)
                       ? 1
                       : g_get_num_processors();
     prsync(threads, magic_enum::enum_name(m_menuClick));
