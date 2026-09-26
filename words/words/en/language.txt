@@ -32,6 +32,7 @@ Options{
 select all and copy to clipboard
 select all
 copy to clipboard
+save text to file
 SEPARATOR
 select the font for the output window
 select the font for the controls
@@ -173,3 +174,7 @@ thread
 Note: Line numbers are valid for the first thread only.
 Search for words that can be broken down into other words found in the dictionary. For example, the word <i>gadgets</i> can be broken down into three words: <i>gad,</i> <i>get,</i> and <i>ts</i>. We are looking for breakdowns into two or three words. 
 source code
+text files
+all files
+save
+cancel

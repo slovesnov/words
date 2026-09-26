@@ -163,6 +163,8 @@ public:
   void setLabel(GtkWidget *w, ENUM_STRING e);
   void setLabel(GtkWidget *w, const std::string &s);
 
+  std::string getTextViewString(ENUM_TEXTVIEW e,bool locale) const;
+  
   virtual std::string getEntryString(ENUM_ENTRY e) const override;
   virtual std::string getTextViewString() const override;
   virtual bool getCheck() const override;
@@ -186,4 +188,5 @@ public:
   void updateFont(ENUM_FONT e);
   void resetSettings(bool update);
   void switchDictionary();
+  void saveText();
 };

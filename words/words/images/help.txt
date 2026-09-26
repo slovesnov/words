@@ -33,3 +33,6 @@ https://icons8.ru/icons/set/font--blue
 
 [reset]
 https://icons8.ru/icons/set/reset--blue
+
+[save]
+https://icons8.ru/icons/set/save--blue

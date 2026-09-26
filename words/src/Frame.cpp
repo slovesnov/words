@@ -357,7 +357,7 @@ void Frame::clickMenu(ENUM_MENU menu) {
   case MENU_EDIT_SELECT_ALL:
   case MENU_EDIT_COPY_TO_CLIPBOARD:
     if (menu != MENU_EDIT_COPY_TO_CLIPBOARD) {
-      gtk_widget_grab_focus(m_text[TEXTVIEW_MAIN]);
+      //? tido gtk_widget_grab_focus(m_text[TEXTVIEW_MAIN]);
       buf = tvBuffer();
       gtk_text_buffer_get_start_iter(buf, &start);
       gtk_text_buffer_get_end_iter(buf, &end);
@@ -369,12 +369,16 @@ void Frame::clickMenu(ENUM_MENU menu) {
       buf = tvBuffer();
       if (gtk_text_buffer_get_selection_bounds(buf, &start, &end)) {
         text = gtk_text_buffer_get_text(buf, &start, &end,
-                                        TRUE); // utf8
+                                        FALSE); // utf8
         gtk_clipboard_set_text(clipboard, text, -1);
         gtk_clipboard_store(clipboard); // available for other applications
         g_free(text);
       }
     }
+    break;
+
+  case MENU_SAVE_TEXT:
+    saveText();
     break;
 
   case MENU_FONT_FOR_THE_OUTPUT_WINDOW:
@@ -1084,14 +1088,19 @@ std::string Frame::getEntryString(ENUM_ENTRY e) const {
   return s;
 }
 
-std::string Frame::getTextViewString() const {
-  GtkTextBuffer *buffer = tvBuffer(TEXTVIEW_HELPER);
+std::string Frame::getTextViewString(ENUM_TEXTVIEW e, bool locale) const {
+  GtkTextBuffer *buffer = tvBuffer(e);
   GtkTextIter start, end;
+  std::string s;
   gtk_text_buffer_get_bounds(buffer, &start, &end);
   gchar *raw_text = gtk_text_buffer_get_text(buffer, &start, &end, FALSE);
-  auto s = utf8ToLocale(raw_text);
+  s = locale ? utf8ToLocale(raw_text) : raw_text;
   g_free(raw_text);
   return s;
+}
+
+std::string Frame::getTextViewString() const {
+  return getTextViewString(TEXTVIEW_HELPER, true);
 }
 
 bool Frame::getCheck() const {
@@ -1462,4 +1471,42 @@ void Frame::resetSettings(bool update) {
 void Frame::switchDictionary() {
   m_dictionaryIndex = !m_dictionaryIndex;
   updateDictionary();
+}
+
+void Frame::saveText() {
+  GtkWidget *dialog;
+  GtkFileChooser *chooser;
+  gint res;
+  std::string s, s1;
+  dialog = gtk_file_chooser_dialog_new(
+      string(MENU_SAVE_TEXT).c_str(), GTK_WINDOW(m_widget),
+      GTK_FILE_CHOOSER_ACTION_SAVE, string(CANCEL).c_str(), GTK_RESPONSE_CANCEL,
+      string(SAVE).c_str(), GTK_RESPONSE_ACCEPT, NULL);
+
+  chooser = GTK_FILE_CHOOSER(dialog);
+  gtk_file_chooser_set_do_overwrite_confirmation(chooser, TRUE);
+  gtk_file_chooser_set_current_name(chooser, "untitled.txt");
+  // gtk_file_chooser_set_current_folder(chooser, "/home/user/Documents");
+
+  for (auto a : {TEXT_FILES, ALL_FILES}) {
+    GtkFileFilter *filter = gtk_file_filter_new();
+    s1 = std::format("*.{}", a == TEXT_FILES ? "txt" : "*");
+    s = std::format("{} ({})", string(a), s1);
+    gtk_file_filter_set_name(filter, s.c_str());
+    gtk_file_filter_add_pattern(filter, s1.c_str());
+    gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog), filter);
+  }
+  res = gtk_dialog_run(GTK_DIALOG(dialog));
+
+  if (res == GTK_RESPONSE_ACCEPT) {
+    char *filename;
+    filename = gtk_file_chooser_get_filename(chooser);
+
+    pr(filename);
+    filePutContent(filename, getTextViewString(TEXTVIEW_MAIN, false));
+
+    g_free(filename);
+  }
+
+  gtk_widget_destroy(dialog);
 }

@@ -76,6 +76,7 @@ const LookupTable<ENUM_STRING, std::string> MAP_URL = {
     {MENU_EDIT_SELECT_ALL_AND_COPY_TO_CLIPBOARD, "select_all_copy.png"},
     {MENU_EDIT_SELECT_ALL, "select_all.png"},
     {MENU_EDIT_COPY_TO_CLIPBOARD, "copy.png"},
+    {MENU_SAVE_TEXT, "save.png"},
     {MENU_FONT_FOR_THE_OUTPUT_WINDOW, "font.png"},
     {MENU_FONT_FOR_THE_CONTROLS, "font.png"},
     {MENU_RESET_SETTINGS, "reset.png"},
