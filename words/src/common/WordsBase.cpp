@@ -1487,7 +1487,6 @@ void WordsBase::findWordsSplit(int nthread) { // TODO
   std::string t;
   int words;
   std::size_t i, j;
-  //auto t2=utf8ToLocale("гаджеты");
   Dictionary const &r = getDictionary();
   for (auto it = r.begin(); it != r.end(); it++) {
     if (int(it->size()) != m_comboValue[COMBOBOX_HELPER0]) {
@@ -1498,8 +1497,8 @@ void WordsBase::findWordsSplit(int nthread) { // TODO
     words = 0;
 
     for (i = 1; i < e.size(); i++) {
-         std::string_view s1(e.data(), i);
-            std::string_view s2(e.data() + i,  e.size() - i);
+      std::string_view s1(e.data(), i);
+      std::string_view s2(e.data() + i, e.size() - i);
       if (std::ranges::binary_search(getDictionary(), s1) &&
           std::ranges::binary_search(getDictionary(), s2)) {
         t += std::format("{}{{{} {}}}", words ? " " : "", s1, s2);
@@ -1509,14 +1508,14 @@ void WordsBase::findWordsSplit(int nthread) { // TODO
 
     for (i = 1; i < e.size() - 1; i++) {
       for (j = i + 1; j < e.size(); j++) {
-         std::string_view s1(e.data(), i);
-            std::string_view s2(e.data() + i, j - i);
-            std::string_view s3(e.data() + j, e.size() - j);
+        std::string_view s1(e.data(), i);
+        std::string_view s2(e.data() + i, j - i);
+        std::string_view s3(e.data() + j, e.size() - j);
 
         if (std::ranges::binary_search(getDictionary(), s1) &&
             std::ranges::binary_search(getDictionary(), s2) &&
             std::ranges::binary_search(getDictionary(), s3)) {
-          t += std::format("{}{{{} {} {}}}[{} {}]", words ? " " : "", s1, s2, s3,i,j);
+          t += std::format("{}{{{} {} {}}}", words ? " " : "", s1, s2, s3);
           words++;
         }
       }
