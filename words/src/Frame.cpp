@@ -1563,5 +1563,9 @@ void Frame::stopThreadAndNewRoutine(ENUM_JOB_TYPE e, bool restart) {
         gdk_threads_add_idle(end_job, NULL);
       });
     }
+    else{
+      //TODO
+      //m_state
+    }
   });
 }
