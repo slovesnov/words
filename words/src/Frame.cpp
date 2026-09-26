@@ -1359,7 +1359,7 @@ GtkWidget *Frame::createEntry(ENUM_ENTRY e) {
 }
 
 void Frame::updateCharactersLabel() {
-  pri bool b;
+  bool b;
   const int n = m_comboValue[getLastCombobox()];
   const int mod100 = n % 100;
   const int mod10 = n % 10;
@@ -1499,12 +1499,8 @@ void Frame::saveText() {
   res = gtk_dialog_run(GTK_DIALOG(dialog));
 
   if (res == GTK_RESPONSE_ACCEPT) {
-    char *filename;
-    filename = gtk_file_chooser_get_filename(chooser);
-
-    pr(filename);
+    char *filename = gtk_file_chooser_get_filename(chooser);
     filePutContent(filename, getTextViewString(TEXTVIEW_MAIN, false));
-
     g_free(filename);
   }
 

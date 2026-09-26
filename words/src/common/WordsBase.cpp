@@ -10,6 +10,7 @@
 #include "magic_enum.hpp" //TODO
 #include <cassert>
 #include <ranges>
+#include <execution>
 
 std::mutex cout_mutex;
 
@@ -1382,9 +1383,9 @@ void WordsBase::wordFrequencyPostProseeding() {
       v[1].push_back({m[i], i + 1});
     }
   }
-  std::sort(v[0].begin(), v[0].end(),
+  std::sort(std::execution::par,v[0].begin(), v[0].end(),
             [](auto &a, auto &b) { return a.first > b.first; });
-  std::sort(v[1].begin(), v[1].end(),
+  std::sort(std::execution::par,v[1].begin(), v[1].end(),
             [](auto &a, auto &b) { return a.second < b.second; });
 
   size_t w = toString(v[0][0].first, ',').size(); // max len
@@ -1576,7 +1577,6 @@ void WordsBase::twoCharactersDistributionPostProseeding() {
       }
     }
   }
-
   std::sort(v.begin(), v.end(), sortStringInt);
   p = v.begin();
   i = format("%.2f", (p->second * 100.) / total).length();
@@ -1675,7 +1675,6 @@ void WordsBase::dictionaryStatisticsPostProseeding() {
     }
 
     SearchResult::out += "\n\n" + caption[j] + additionalCaption[1];
-
     std::sort(ve, ve + a, sortIntDouble);
 
     s = "";
@@ -1721,7 +1720,8 @@ void WordsBase::sortFilterResults(ENUM_JOB_TYPE e) {
   SearchResult::out = "";
   auto begin = clock();
   if (e != JOB_TYPE_FILTER) {
-    std::sort(m_result.begin(), m_result.end(),
+    //mtsort
+    std::sort(std::execution::par,m_result.begin(), m_result.end(),
               SORT_FUNCTION[m_comboValue[COMBOBOX_SORT] * 2 +
                             m_comboValue[COMBOBOX_SORT_ORDER]]);
   }
