@@ -76,22 +76,6 @@ public:
 };
 using ThreadResultVector = std::vector<ThreadResult>;
 
-#ifndef USE_STANDARD_REGEX
-template <typename T, auto FreeFunc>
-struct GtkResourceDeleter {
-    void operator()(T* resource) const {
-        if (resource) {
-            FreeFunc(resource);
-        }
-    }
-};
-
-template <typename T, auto FreeFunc>
-using UniqueGtkResource = std::unique_ptr<T, GtkResourceDeleter<T, FreeFunc>>;
-using SafeGRegex         = UniqueGtkResource<GRegex, g_regex_unref>;
-using SafePangoFontDesc = UniqueGtkResource<PangoFontDescription, pango_font_description_free>;
-#endif
-
 struct StartStopButtonState {
   bool imageStart, enable;
 };

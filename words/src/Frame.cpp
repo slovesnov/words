@@ -349,7 +349,7 @@ void Frame::clickMenu(ENUM_MENU menu) {
   ENUM_FONT e;
   char *text;
 
-  stopThread();
+  //TODO stopThread();
 
   switch (menu) {
 
@@ -420,7 +420,8 @@ void Frame::clickMenu(ENUM_MENU menu) {
     }
     if (m_menuClick != MENU_SEARCH) {
       setHelperPanel();
-      routine();
+      stopThreadAndNewRoutine();
+      // routine();//TODO
     }
   }
 }
@@ -428,7 +429,8 @@ void Frame::clickMenu(ENUM_MENU menu) {
 void Frame::destroy() {
   writeConfig(CONFIG_TAGS, WORDS_VERSION, m_languageIndex, m_dictionaryIndex,
               m_separatorPosition, m_font[0].get(), m_font[1].get());
-  stopThread();
+              stopThreadAndNewRoutine( JOB_TYPE_FULL,false);
+  //stopThread();TODO
   gtk_main_quit();
 }
 
@@ -555,7 +557,8 @@ void Frame::routine(ENUM_JOB_TYPE e) {
   updateStatus(); // before thread
 
   if (b) {
-    startThread(e);
+     run(e);
+    //startThread(e);
   }
 }
 
@@ -796,7 +799,6 @@ void Frame::comboChanged(ENUM_COMBOBOX e) {
                                                  : JOB_TYPE_SORT_AND_FILTER);
     return;
   }
-  pr(m_comboValue[e]);
   if (getLastCombobox() == e) {
     updateCharactersLabel();
   }
@@ -813,6 +815,7 @@ void Frame::comboChanged(ENUM_COMBOBOX e) {
   }
   // for COMBOBOX_HELPER0-2
   // TODO routine();
+  stopThreadAndNewRoutine();
 }
 
 void Frame::createImageCombo(ENUM_COMBOBOX e) {
@@ -840,12 +843,21 @@ void Frame::clickButton(GtkWidget *button) {
     auto b = getStartStopState();
     if (b.imageStart) {
       prsync("start");
-      routine();
+      stopThreadAndNewRoutine();
     } else {
-      m_thread.request_stop();
       m_state = STATE_STOPPING;
       updateStatus();
+      stopThreadAndNewRoutine(JOB_TYPE_FULL, false);
     }
+    /*todo
+        if (b.imageStart) {
+          prsync("start");
+          routine();
+        } else {
+          m_thread.request_stop();
+          m_state = STATE_STOPPING;
+          updateStatus();
+        }*/
   } else {
     if (m_tags < 2) {
       return;
@@ -896,17 +908,10 @@ void Frame::endJob() {
   }
 }
 
-void Frame::stopThreadAndNewRoutine(ENUM_JOB_TYPE e) {
-  if (e != JOB_TYPE_FULL && m_result.empty()) { // only sort
-    return;
-  }
-  stopThread();
-  routine(e);
-}
-
 /**
  * if thread runs stop it
  */
+ /*
 void Frame::stopThread() {
   m_thread.request_stop();
   if (m_thread.joinable()) {
@@ -927,7 +932,7 @@ void Frame::startThread(ENUM_JOB_TYPE e) {
     pr("error start thread joinable")
   }
 }
-
+*/
 gint Frame::getComboIndex(ENUM_COMBOBOX e) const {
   assert(e != COMBOBOX_SIZE);
   assert(GTK_IS_COMBO_BOX(m_combo[e]));
@@ -1505,4 +1510,58 @@ void Frame::saveText() {
   }
 
   gtk_widget_destroy(dialog);
+}
+
+/*
+  if (e != JOB_TYPE_FULL && m_result.empty()) { // only sort
+    return;
+  }
+  stopThread();
+  routine(e);*/
+void Frame::stopThreadAndNewRoutine(ENUM_JOB_TYPE e, bool restart) {
+  prsync("start");
+  if (e != JOB_TYPE_FULL && m_result.empty()) { // only sort
+    return;
+  }
+  prsync("b4 joinable");
+  // Если менеджер уже занят предыдущей операцией, отсоединяем его
+  if (m_managerThread.joinable()) {
+  prsync("joinable");
+    m_managerThread.detach();
+  }
+  prsync("after1");
+
+  // Запускаем фоновый менеджер. UI-поток пролетает эту строчку мгновенно!
+  // Захватываем переменную 'restart' по значению [=] или [this, restart]
+  m_managerThread = std::jthread([this, restart, e]() {
+    // 1. Извлекаем старый поток из переменной класса (Handover)
+  prsync("lambda1");
+    if (m_thread.joinable()) {
+  prsync("lambda2");
+      std::jthread old_thread = std::move(m_thread);
+
+      // 2. Сигнализируем о принудительной остановке
+      old_thread.request_stop();
+
+      // 3. Ждем полной физической остановки старого потока в фоне.
+      // UI-поток в это время полностью свободен и не зависает.
+      old_thread.join();
+    }
+  prsync("lambda3");
+
+    // --- В этой точке старый поток ГАРАНТИРОВАННО завершен ---
+
+    // 4. Проверяем опцию: нужен ли перезапуск?
+    if (restart) {
+  prsync("restart1");
+      // Запускаем новый поток (он сам всё очистит при старте)
+      m_thread = std::jthread([this, e](std::stop_token token) {
+  prsync("restart2");
+      m_token = token;
+        routine(e);
+        m_state = m_token.stop_requested() ? STATE_USER_BREAK : STATE_OK;
+        gdk_threads_add_idle(end_job, NULL);
+      });
+    }
+  });
 }

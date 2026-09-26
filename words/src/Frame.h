@@ -36,7 +36,7 @@ class Frame : WordsBase {
   MenuMap m_menuMap;
   std::vector<GtkAccelGroup *> m_accelGroup;
   bool m_lockSignals;
-  std::jthread m_thread;
+  std::jthread m_thread,m_managerThread;
   CheckNewVersion m_newVersion;
   guint m_debounceTimerId = 0;
   ENUM_ENTRY m_currentEntry = ENTRY_SIZE;
@@ -144,9 +144,9 @@ public:
   void setMenuLabel(ENUM_MENU e, std::string const &text);
   std::string getMenuLabel(ENUM_MENU e);
 
-  void stopThreadAndNewRoutine(ENUM_JOB_TYPE e = JOB_TYPE_FULL);
-  void stopThread();
-  void startThread(ENUM_JOB_TYPE e);
+  //TODO
+  // void stopThread();
+  // void startThread(ENUM_JOB_TYPE e);
 
   void updateTextView(ENUM_TEXTVIEW e, std::string const &s);
 
@@ -189,4 +189,6 @@ public:
   void resetSettings(bool update);
   void switchDictionary();
   void saveText();
+
+  void stopThreadAndNewRoutine(ENUM_JOB_TYPE e = JOB_TYPE_FULL,bool restart=true);
 };
