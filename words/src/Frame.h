@@ -144,10 +144,6 @@ public:
   void setMenuLabel(ENUM_MENU e, std::string const &text);
   std::string getMenuLabel(ENUM_MENU e);
 
-  //TODO
-  // void stopThread();
-  // void startThread(ENUM_JOB_TYPE e);
-
   void updateTextView(ENUM_TEXTVIEW e, std::string const &s);
 
   void entryFocusChanged(bool in);
@@ -173,7 +169,7 @@ public:
 
   GtkTextBuffer *tvBuffer(ENUM_TEXTVIEW e = TEXTVIEW_MAIN) const;
   std::string getProgramVersionString() const;
-  void updateStatus();
+  void updateStatus(ENUM_STATE state);
   void setSensitiveOrderFilter(bool b);
   void setPlaceholder(ENUM_ENTRY e, ENUM_STRING s);
   void updateButton(ENUM_BUTTON e);
@@ -190,5 +186,6 @@ public:
   void switchDictionary();
   void saveText();
 
+  void stopThread();
   void stopThreadAndNewRoutine(ENUM_JOB_TYPE e = JOB_TYPE_FULL,bool restart=true);
 };

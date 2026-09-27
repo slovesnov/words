@@ -313,8 +313,7 @@ Frame::Frame() : WordsBase() {
 ////notebook resolution 1366x768 40pixels low pane+title
 #endif
 
-  m_state = STATE_BEGIN;
-  updateStatus();
+  updateStatus(STATE_BEGIN);
   gtk_widget_show_all(m_widget);
   gtk_window_set_focus(GTK_WINDOW(m_widget),
                        NULL); // no focus
@@ -348,8 +347,6 @@ void Frame::clickMenu(ENUM_MENU menu) {
   GtkClipboard *clipboard;
   ENUM_FONT e;
   char *text;
-
-  //TODO stopThread();
 
   switch (menu) {
 
@@ -421,7 +418,6 @@ void Frame::clickMenu(ENUM_MENU menu) {
     if (m_menuClick != MENU_SEARCH) {
       setHelperPanel();
       stopThreadAndNewRoutine();
-      // routine();//TODO
     }
   }
 }
@@ -429,8 +425,7 @@ void Frame::clickMenu(ENUM_MENU menu) {
 void Frame::destroy() {
   writeConfig(CONFIG_TAGS, WORDS_VERSION, m_languageIndex, m_dictionaryIndex,
               m_separatorPosition, m_font[0].get(), m_font[1].get());
-              stopThreadAndNewRoutine( JOB_TYPE_FULL,false);
-  //stopThread();TODO
+  stopThread();
   gtk_main_quit();
 }
 
@@ -536,30 +531,6 @@ void Frame::aboutDialog() {
 
   gtk_dialog_run(GTK_DIALOG(dialog));
   gtk_widget_destroy(dialog);
-}
-
-void Frame::routine(ENUM_JOB_TYPE e) {
-  bool b = prepare();
-  m_state = b ? STATE_PROCEEDING : STATE_ERROR;
-  if (e == JOB_TYPE_FULL) {
-    SearchResult::out = "";
-    m_result.clear();
-  }
-  clearTagMarks();
-  m_begin = clock();
-  m_addstatus = "";
-  m_filteredWordsCount = 0; // need to set always because in case of error
-                            // need m_filteredWordsCount = 0
-  setLabel(m_searchTagLabel, "");
-  if (!b) {
-    m_end = clock();
-  }
-  updateStatus(); // before thread
-
-  if (b) {
-     run(e);
-    //startThread(e);
-  }
 }
 
 void Frame::setHelperPanel() {
@@ -803,7 +774,6 @@ void Frame::comboChanged(ENUM_COMBOBOX e) {
     updateCharactersLabel();
   }
 
-  // TODO stopThread();
   if ((e == COMBOBOX_HELPER0 || e == COMBOBOX_HELPER1) &&
       oneOf(m_menuClick, MENU_ADJUST_COMBO)) {
     if (getComboIndex(COMBOBOX_HELPER0) > getComboIndex(COMBOBOX_HELPER1)) {
@@ -813,8 +783,6 @@ void Frame::comboChanged(ENUM_COMBOBOX e) {
       unlockSignals();
     }
   }
-  // for COMBOBOX_HELPER0-2
-  // TODO routine();
   stopThreadAndNewRoutine();
 }
 
@@ -842,22 +810,10 @@ void Frame::clickButton(GtkWidget *button) {
   } else if (n == BUTTON_STARTSTOP) {
     auto b = getStartStopState();
     if (b.imageStart) {
-      prsync("start");
       stopThreadAndNewRoutine();
     } else {
-      m_state = STATE_STOPPING;
-      updateStatus();
-      stopThreadAndNewRoutine(JOB_TYPE_FULL, false);
+      stopThread();
     }
-    /*todo
-        if (b.imageStart) {
-          prsync("start");
-          routine();
-        } else {
-          m_thread.request_stop();
-          m_state = STATE_STOPPING;
-          updateStatus();
-        }*/
   } else {
     if (m_tags < 2) {
       return;
@@ -896,7 +852,7 @@ void Frame::endJob() {
   // make unjoinable
   if (m_thread.joinable())
     m_thread.join();
-  updateStatus();
+  updateStatus(m_token.stop_requested() ? STATE_USER_BREAK : STATE_OK);
   // update tags if user searched something
   updateTags(0);
   if (m_currentEntry !=
@@ -908,31 +864,6 @@ void Frame::endJob() {
   }
 }
 
-/**
- * if thread runs stop it
- */
- /*
-void Frame::stopThread() {
-  m_thread.request_stop();
-  if (m_thread.joinable()) {
-    m_thread.join();
-  }
-}
-
-void Frame::startThread(ENUM_JOB_TYPE e) {
-  if (!m_thread.joinable()) {
-    // GCC bug #100612 so use lambda if call class member
-    m_thread = std::jthread([this, e](std::stop_token token) {
-      m_token = token;
-      run(e);
-      m_state = m_token.stop_requested() ? STATE_USER_BREAK : STATE_OK;
-      gdk_threads_add_idle(end_job, NULL);
-    });
-  } else {
-    pr("error start thread joinable")
-  }
-}
-*/
 gint Frame::getComboIndex(ENUM_COMBOBOX e) const {
   assert(e != COMBOBOX_SIZE);
   assert(GTK_IS_COMBO_BOX(m_combo[e]));
@@ -1243,10 +1174,11 @@ std::string Frame::getProgramVersionString() const {
   return string(PROGRAM, VERSION) + " " + WORDS_VERSION;
 }
 
-void Frame::updateStatus() {
-  // pr(magic_enum::enum_name(m_state));
+void Frame::updateStatus(ENUM_STATE state) {
+  // pr(magic_enum::enum_name(state));
+  m_state = state;
   bool b = true;
-  switch (m_state) {
+  switch (state) {
   case STATE_BEGIN:
     m_out = "";
     break;
@@ -1279,16 +1211,16 @@ void Frame::updateStatus() {
     break;
   }
 
-  std::string s = m_state == STATE_OK ? getStatusString() : m_out;
+  std::string s = state == STATE_OK ? getStatusString() : m_out;
   setLabel(m_statusMessage, s);
 
-  if (b && m_state != STATE_BEGIN) {
+  if (b && state != STATE_BEGIN) {
     m_out = capitalizeFirstUtf8(m_out) +
             (oneOf(m_state, STATE_PROCEEDING, STATE_STOPPING) ? "…" : ".");
   }
   updateTextView(TEXTVIEW_MAIN, b ? m_out : SearchResult::out);
 
-  b = m_state == STATE_OK && !m_result.empty();
+  b = state == STATE_OK && !m_result.empty();
   setSensitiveOrderFilter(b);
   updateButton(BUTTON_STARTSTOP);
 }
@@ -1512,60 +1444,64 @@ void Frame::saveText() {
   gtk_widget_destroy(dialog);
 }
 
-/*
-  if (e != JOB_TYPE_FULL && m_result.empty()) { // only sort
-    return;
+void Frame::stopThread() {
+  // 1st parameter is ignored
+  stopThreadAndNewRoutine(JOB_TYPE_FULL, false);
+}
+
+void Frame::routine(ENUM_JOB_TYPE e) {
+  bool b = prepare();
+  auto state = b ? STATE_PROCEEDING : STATE_ERROR;
+  if (e == JOB_TYPE_FULL) {
+    SearchResult::out = "";
+    m_result.clear();
   }
-  stopThread();
-  routine(e);*/
+  clearTagMarks();
+  m_begin = clock();
+  m_addstatus = "";
+  m_filteredWordsCount = 0; // need to set always because in case of error
+                            // need m_filteredWordsCount = 0
+  setLabel(m_searchTagLabel, "");
+  if (!b) {
+    m_end = clock();
+  }
+  updateStatus(state);
+
+  if (b) {
+    run(e);
+    // startThread(e);
+  }
+}
+
 void Frame::stopThreadAndNewRoutine(ENUM_JOB_TYPE e, bool restart) {
-  prsync("start");
   if (e != JOB_TYPE_FULL && m_result.empty()) { // only sort
     return;
   }
-  prsync("b4 joinable");
-  // Если менеджер уже занят предыдущей операцией, отсоединяем его
+  prsync("stop");
   if (m_managerThread.joinable()) {
-  prsync("joinable");
+    updateStatus(STATE_STOPPING);
     m_managerThread.detach();
   }
-  prsync("after1");
 
-  // Запускаем фоновый менеджер. UI-поток пролетает эту строчку мгновенно!
-  // Захватываем переменную 'restart' по значению [=] или [this, restart]
   m_managerThread = std::jthread([this, restart, e]() {
     // 1. Извлекаем старый поток из переменной класса (Handover)
-  prsync("lambda1");
     if (m_thread.joinable()) {
-  prsync("lambda2");
       std::jthread old_thread = std::move(m_thread);
-
-      // 2. Сигнализируем о принудительной остановке
       old_thread.request_stop();
-
-      // 3. Ждем полной физической остановки старого потока в фоне.
-      // UI-поток в это время полностью свободен и не зависает.
       old_thread.join();
     }
-  prsync("lambda3");
-
-    // --- В этой точке старый поток ГАРАНТИРОВАННО завершен ---
+    prsync("stopped");
 
     // 4. Проверяем опцию: нужен ли перезапуск?
     if (restart) {
-  prsync("restart1");
+      prsync("restart1");
       // Запускаем новый поток (он сам всё очистит при старте)
       m_thread = std::jthread([this, e](std::stop_token token) {
-  prsync("restart2");
-      m_token = token;
+        prsync("restart2");
+        m_token = token;
         routine(e);
-        m_state = m_token.stop_requested() ? STATE_USER_BREAK : STATE_OK;
-        gdk_threads_add_idle(end_job, NULL);
       });
     }
-    else{
-      //TODO
-      //m_state
-    }
+    gdk_threads_add_idle(end_job, NULL);
   });
 }
