@@ -87,13 +87,12 @@ protected:
   std::string getTimeString();
 
   int getMaximumWordLength() {
-    return m_longestWordLength[getDictionaryIndex()];
+    return m_longestWordLength[m_dictionaryIndex];
   }
 
   bool prepare();
   static std::string getShortLanguageString(int i);
   void setDictionaryIndex(int i);
-  int getDictionaryIndex() const;
 
   static std::string path(int i, std::string s);
   static VString readFile(int i, std::string s);
@@ -175,7 +174,7 @@ public:
   static bool differenceOnlyOneChar(std::string const &a, std::string const &b);
 
   Dictionary const &getDictionary() const {
-    return m_dictionary[getDictionaryIndex()];
+    return m_dictionary[m_dictionaryIndex];
   }
 
   std::string intToStringLocaled(int v);

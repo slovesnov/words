@@ -33,26 +33,20 @@ const std::string CONFIG_TAGS[] = {"version",   "language", "dictionary",
                                    "separator", "fontout",  "fontcontrols"};
 extern std::string LNG[LANGUAGES];
 
-/* too many items in combobox, so set maximum bound.
+/*
   constants calculated in functions
   showLongestAnagram();
   showLongestPangram();
   showLongestSimpleWordSequence();
   showLongestDoubleWordSequence();
   onchange dictionay size need to recount
-  also on loading need to set dictionary size for vector, if use vector
  */
-const int MAX_ANAGRAM_LENGTH = 31;              //{22 31}
-const int MAX_PANGRAM_LENGTH = 21;              //{16 21}
-const int MAX_SIMPLE_WORD_SEQUENCE_LENGTH = 30; //{25 30}
-const int MAX_DOUBLE_WORD_SEQUENCE_LENGTH = 14; //{7 14}
+const int MAX_ANAGRAM_LENGTH[] = {22, 31};
+const int MAX_PANGRAM_LENGTH[] = {16, 21};
+const int MAX_SIMPLE_WORD_SEQUENCE_LENGTH[] = {25, 30};
+const int MAX_DOUBLE_WORD_SEQUENCE_LENGTH[] = {7, 14};
 
 Frame *frame;
-
-gboolean end_job(gpointer) {
-  frame->endJob();
-  return G_SOURCE_REMOVE;
-}
 
 void menu_activate(GtkWidget *widget, ENUM_MENU menu) {
   frame->clickMenu(menu);
@@ -91,9 +85,7 @@ gboolean label_clicked(GtkWidget *label, const gchar *uri, gpointer) {
   return TRUE;
 }
 
-void check_changed(GtkWidget *check, gpointer) {
-  frame->stopThreadAndNewRoutine();
-}
+void check_changed(GtkWidget *check, gpointer) { frame->job(); }
 
 void radio_changed(GtkWidget *radio, gpointer) { frame->radioChanged(radio); }
 
@@ -342,7 +334,7 @@ Frame::Frame() : WordsBase() {
 
 void Frame::clickMenu(ENUM_MENU menu) {
   int i;
-  GtkTextBuffer *buf;
+  GtkTextBuffer *buffer;
   GtkTextIter start, end;
   GtkClipboard *clipboard;
   ENUM_FONT e;
@@ -353,19 +345,17 @@ void Frame::clickMenu(ENUM_MENU menu) {
   case MENU_EDIT_SELECT_ALL_AND_COPY_TO_CLIPBOARD:
   case MENU_EDIT_SELECT_ALL:
   case MENU_EDIT_COPY_TO_CLIPBOARD:
+    buffer = tvBuffer();
     if (menu != MENU_EDIT_COPY_TO_CLIPBOARD) {
-      //? tido gtk_widget_grab_focus(m_text[TEXTVIEW_MAIN]);
-      buf = tvBuffer();
-      gtk_text_buffer_get_start_iter(buf, &start);
-      gtk_text_buffer_get_end_iter(buf, &end);
-      gtk_text_buffer_select_range(buf, &start, &end);
+      gtk_text_buffer_get_start_iter(buffer, &start);
+      gtk_text_buffer_get_end_iter(buffer, &end);
+      gtk_text_buffer_select_range(buffer, &start, &end);
     }
 
     if (menu != MENU_EDIT_SELECT_ALL) {
       clipboard = gtk_clipboard_get(GDK_SELECTION_CLIPBOARD);
-      buf = tvBuffer();
-      if (gtk_text_buffer_get_selection_bounds(buf, &start, &end)) {
-        text = gtk_text_buffer_get_text(buf, &start, &end,
+      if (gtk_text_buffer_get_selection_bounds(buffer, &start, &end)) {
+        text = gtk_text_buffer_get_text(buffer, &start, &end,
                                         FALSE); // utf8
         gtk_clipboard_set_text(clipboard, text, -1);
         gtk_clipboard_store(clipboard); // available for other applications
@@ -417,7 +407,7 @@ void Frame::clickMenu(ENUM_MENU menu) {
     }
     if (m_menuClick != MENU_SEARCH) {
       setHelperPanel();
-      stopThreadAndNewRoutine();
+      job();
     }
   }
 }
@@ -425,12 +415,12 @@ void Frame::clickMenu(ENUM_MENU menu) {
 void Frame::destroy() {
   writeConfig(CONFIG_TAGS, WORDS_VERSION, m_languageIndex, m_dictionaryIndex,
               m_separatorPosition, m_font[0].get(), m_font[1].get());
-  stopThread();
+  job(JOB_TYPE_STOP);
   gtk_main_quit();
 }
 
 void Frame::updateDictionary() {
-  int i = getDictionaryIndex(), j = -1;
+  int i = m_dictionaryIndex, j = -1;
   for (auto a : {MENU_LOAD_ENGLISH_DICTIONARY, MENU_LOAD_RUSSIAN_DICTIONARY}) {
     j++;
     gtk_widget_set_sensitive(m_menuMap[a], j != i);
@@ -442,10 +432,10 @@ void Frame::updateDictionary() {
    * function updateDictionary() can be called several times before any search
    * option so use m_menuClick as last search option m_menuClick==MENU_SIZE
    * means no last search m_menuClick changes only for search operations see
-   * clickMenu() function also stopThreadAndNewRoutine() does entry highlight
+   * clickMenu() function also job() does entry highlight
    */
   if (m_menuClick != MENU_SEARCH) {
-    stopThreadAndNewRoutine();
+    job();
   }
 }
 
@@ -564,14 +554,15 @@ void Frame::setHelperPanel() {
 
   switch (m_menuClick) {
   case MENU_ANAGRAM:
-    addComboLineToHelper(string(LENGTH, OF_WORD), 2, MAX_ANAGRAM_LENGTH, 6,
-                         CHARACTERS);
+    addComboLineToHelper(string(LENGTH, OF_WORD), 2,
+                         MAX_ANAGRAM_LENGTH[m_dictionaryIndex], 6, CHARACTERS);
     break;
 
   case MENU_PANGRAM:
     w = createBox(GTK_ORIENTATION_HORIZONTAL, COMBOLINE_MARGIN,
                   string(MINIMUM, DIFFERENT_CHARACTERS), true,
-                  createTextCombo(COMBOBOX_HELPER0, 10, MAX_PANGRAM_LENGTH, 5),
+                  createTextCombo(COMBOBOX_HELPER0, 10,
+                                  MAX_PANGRAM_LENGTH[m_dictionaryIndex], 5),
                   true);
     gtk_container_add(GTK_CONTAINER(m_helperUp), w);
     break;
@@ -622,12 +613,14 @@ void Frame::setHelperPanel() {
 
   case MENU_SIMPLE_WORD_SEQUENCE:
     addComboLineToHelper(string(LENGTH, OF_SEQUENCE), 8,
-                         MAX_SIMPLE_WORD_SEQUENCE_LENGTH, 0, CHARACTERS);
+                         MAX_SIMPLE_WORD_SEQUENCE_LENGTH[m_dictionaryIndex], 0,
+                         CHARACTERS);
     break;
 
   case MENU_DOUBLE_WORD_SEQUENCE:
     addComboLineToHelper(string(LENGTH, OF_SEQUENCE), 2,
-                         MAX_DOUBLE_WORD_SEQUENCE_LENGTH, 2, CHARACTERS);
+                         MAX_DOUBLE_WORD_SEQUENCE_LENGTH[m_dictionaryIndex], 2,
+                         CHARACTERS);
     break;
 
   case MENU_CONSONANT_VOWEL_SEQUENCE:
@@ -766,8 +759,7 @@ void Frame::comboChanged(ENUM_COMBOBOX e) {
   }
 
   if (oneOf(e, COMBOBOX_SORT, COMBOBOX_SORT_ORDER, COMBOBOX_FILTER)) {
-    stopThreadAndNewRoutine(e == COMBOBOX_FILTER ? JOB_TYPE_FILTER
-                                                 : JOB_TYPE_SORT_AND_FILTER);
+    job(e == COMBOBOX_FILTER ? JOB_TYPE_FILTER : JOB_TYPE_SORT_AND_FILTER);
     return;
   }
   if (getLastCombobox() == e) {
@@ -783,7 +775,7 @@ void Frame::comboChanged(ENUM_COMBOBOX e) {
       unlockSignals();
     }
   }
-  stopThreadAndNewRoutine();
+  job();
 }
 
 void Frame::createImageCombo(ENUM_COMBOBOX e) {
@@ -809,11 +801,7 @@ void Frame::clickButton(GtkWidget *button) {
     switchDictionary();
   } else if (n == BUTTON_STARTSTOP) {
     auto b = getStartStopState();
-    if (b.imageStart) {
-      stopThreadAndNewRoutine();
-    } else {
-      stopThread();
-    }
+    job(b.imageStart ? JOB_TYPE_FULL : JOB_TYPE_STOP);
   } else {
     if (m_tags < 2) {
       return;
@@ -958,12 +946,13 @@ void Frame::radioChanged(GtkWidget *w) {
     GSList *group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(w));
     m_radioValue = g_slist_length(group) - 1 -
                    g_slist_index(group, w); // Note group inverted order
-    stopThreadAndNewRoutine();
+    job();
   }
 }
 
 void Frame::updateTextView(ENUM_TEXTVIEW e, std::string const &s) {
   gtk_text_buffer_set_text(tvBuffer(e), s.c_str(), -1);
+  // todo
 }
 
 void Frame::setDebounceTimer(ENUM_ENTRY e) {
@@ -982,7 +971,7 @@ void Frame::debounceTimeout(ENUM_ENTRY e) {
 
   switch (e) {
   case ENTRY_TEMPLATE:
-    stopThreadAndNewRoutine();
+    job();
     break;
 
   case ENTRY_SEARCH:
@@ -991,7 +980,7 @@ void Frame::debounceTimeout(ENUM_ENTRY e) {
 
   case ENTRY_FILTER:
     if (m_regex[ENTRY_FILTER]) {
-      stopThreadAndNewRoutine(JOB_TYPE_FILTER);
+      job(JOB_TYPE_FILTER);
     }
     break;
 
@@ -1225,6 +1214,10 @@ void Frame::updateStatus(ENUM_STATE state) {
   updateButton(BUTTON_STARTSTOP);
 }
 
+ENUM_COMBOBOX m_combo[]
+ENUM_ENTRY m_entry[]
+ENUM_BUTTON m_button[]
+
 void Frame::setSensitiveOrderFilter(bool b) {
   for (auto &e : {COMBOBOX_SORT, COMBOBOX_SORT_ORDER, COMBOBOX_FILTER}) {
     gtk_widget_set_sensitive(m_combo[e], b);
@@ -1262,18 +1255,17 @@ GtkWidget *Frame::createTextView(ENUM_TEXTVIEW e) {
   gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(w), GTK_POLICY_AUTOMATIC,
                                  GTK_POLICY_AUTOMATIC);
 
+  GtkTextBuffer *buffer = tvBuffer(e);
   if (e == TEXTVIEW_MAIN) {
     gtk_text_view_set_editable(GTK_TEXT_VIEW(t), FALSE);
     gtk_text_view_set_cursor_visible(GTK_TEXT_VIEW(t), FALSE);
-    gtk_text_buffer_create_tag(tvBuffer(), markTag, "background", "lightblue",
+    gtk_text_buffer_create_tag(buffer, markTag, "background", "lightblue",
                                NULL);
-    gtk_text_buffer_create_tag(tvBuffer(), activeTag, "background", "Khaki",
-                               NULL);
+    gtk_text_buffer_create_tag(buffer, activeTag, "background", "Khaki", NULL);
     gtk_text_view_set_left_margin(GTK_TEXT_VIEW(t), TEXT_VIEW_MARGIN);
     gtk_text_view_set_right_margin(GTK_TEXT_VIEW(t), TEXT_VIEW_MARGIN);
   } else {
-    g_signal_connect(tvBuffer(e), "changed", G_CALLBACK(text_view_changed),
-                     NULL);
+    g_signal_connect(buffer, "changed", G_CALLBACK(text_view_changed), NULL);
   }
   return w;
 }
@@ -1444,11 +1436,6 @@ void Frame::saveText() {
   gtk_widget_destroy(dialog);
 }
 
-void Frame::stopThread() {
-  // 1st parameter is ignored
-  stopThreadAndNewRoutine(JOB_TYPE_FULL, false);
-}
-
 void Frame::routine(ENUM_JOB_TYPE e) {
   bool b = prepare();
   auto state = b ? STATE_PROCEEDING : STATE_ERROR;
@@ -1473,8 +1460,17 @@ void Frame::routine(ENUM_JOB_TYPE e) {
   }
 }
 
-void Frame::stopThreadAndNewRoutine(ENUM_JOB_TYPE e, bool restart) {
-  if (e != JOB_TYPE_FULL && m_result.empty()) { // only sort
+/*
+JOB_TYPE_FULL - stop calculations if needed, start new calculations
+JOB_TYPE_SORT_AND_FILTER - stop calculations if needed, then sort and filter
+results JOB_TYPE_FILTER - stop calculations if needed, then filter results
+JOB_TYPE_STOP - stop calculations if needed
+*/
+void Frame::job(ENUM_JOB_TYPE e) {
+  // блокировать второе нажатие
+
+  if (oneOf(e, JOB_TYPE_SORT_AND_FILTER, JOB_TYPE_FILTER) &&
+      m_result.empty()) { // only sort
     return;
   }
   prsync("stop");
@@ -1482,8 +1478,11 @@ void Frame::stopThreadAndNewRoutine(ENUM_JOB_TYPE e, bool restart) {
     updateStatus(STATE_STOPPING);
     m_managerThread.detach();
   }
+  if (m_thread.joinable()) {
+    m_thread.join();
+  }
 
-  m_managerThread = std::jthread([this, restart, e]() {
+  m_managerThread = std::jthread([this, e]() {
     // 1. Извлекаем старый поток из переменной класса (Handover)
     if (m_thread.joinable()) {
       std::jthread old_thread = std::move(m_thread);
@@ -1493,7 +1492,7 @@ void Frame::stopThreadAndNewRoutine(ENUM_JOB_TYPE e, bool restart) {
     prsync("stopped");
 
     // 4. Проверяем опцию: нужен ли перезапуск?
-    if (restart) {
+    if (e != JOB_TYPE_STOP) {
       prsync("restart1");
       // Запускаем новый поток (он сам всё очистит при старте)
       m_thread = std::jthread([this, e](std::stop_token token) {
@@ -1502,6 +1501,11 @@ void Frame::stopThreadAndNewRoutine(ENUM_JOB_TYPE e, bool restart) {
         routine(e);
       });
     }
-    gdk_threads_add_idle(end_job, NULL);
+    gdk_threads_add_idle(
+        [](gpointer data) -> gboolean {
+          frame->endJob();
+          return G_SOURCE_REMOVE;
+        },
+        NULL);
   });
 }

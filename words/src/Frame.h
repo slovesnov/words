@@ -128,7 +128,6 @@ public:
 
   void destroy();
   void endJob();
-  void routine(ENUM_JOB_TYPE e = JOB_TYPE_FULL);
   bool isSignalsLocked() { return m_lockSignals; }
   void lockSignals() { m_lockSignals = true; }
   void unlockSignals() { m_lockSignals = false; }
@@ -186,6 +185,6 @@ public:
   void switchDictionary();
   void saveText();
 
-  void stopThread();
-  void stopThreadAndNewRoutine(ENUM_JOB_TYPE e = JOB_TYPE_FULL,bool restart=true);
+  void routine(ENUM_JOB_TYPE e);
+  void job(ENUM_JOB_TYPE e = JOB_TYPE_FULL);
 };
