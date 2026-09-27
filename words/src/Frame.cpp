@@ -420,11 +420,9 @@ void Frame::destroy() {
 }
 
 void Frame::updateDictionary() {
-  int i = m_dictionaryIndex, j = -1;
-  for (auto a : {MENU_LOAD_ENGLISH_DICTIONARY, MENU_LOAD_RUSSIAN_DICTIONARY}) {
-    j++;
-    gtk_widget_set_sensitive(m_menuMap[a], j != i);
-  }
+  updateSensitivity([this](int i) { return m_dictionaryIndex != i; },
+                    MENU_LOAD_ENGLISH_DICTIONARY, MENU_LOAD_RUSSIAN_DICTIONARY);
+
   updateButton(BUTTON_DICTIONARY);
 
   /* additions 4.3
@@ -662,11 +660,8 @@ void Frame::loadAndUpdateCurrentLanguage() {
     setMenuLabel(ENUM_MENU(i), a);
   }
 
-  i = -1;
-  for (auto &a : {MENU_ENGLISH_LANGUAGE, MENU_RUSSIAN_LANGUAGE}) {
-    i++;
-    gtk_widget_set_sensitive(m_menuMap[a], m_languageIndex != i);
-  }
+  updateSensitivity([this](int i) { return m_languageIndex != i; },
+                    MENU_ENGLISH_LANGUAGE, MENU_RUSSIAN_LANGUAGE);
 
   setPlaceholder(ENTRY_SEARCH, SEARCH);
   setLabel(m_currentDictionary, DICTIONARY);
@@ -952,7 +947,9 @@ void Frame::radioChanged(GtkWidget *w) {
 
 void Frame::updateTextView(ENUM_TEXTVIEW e, std::string const &s) {
   gtk_text_buffer_set_text(tvBuffer(e), s.c_str(), -1);
-  // todo
+  if (e == TEXTVIEW_MAIN) {
+    updateSensitivity(m_state == STATE_OK, !s.empty(), MENU_SAVE_TEXT);
+  }
 }
 
 void Frame::setDebounceTimer(ENUM_ENTRY e) {
@@ -1210,19 +1207,9 @@ void Frame::updateStatus(ENUM_STATE state) {
   updateTextView(TEXTVIEW_MAIN, b ? m_out : SearchResult::out);
 
   b = state == STATE_OK && !m_result.empty();
-  setSensitiveOrderFilter(b);
+  updateSensitivity(b, COMBOBOX_SORT, COMBOBOX_SORT_ORDER, COMBOBOX_FILTER,
+                    ENTRY_FILTER);
   updateButton(BUTTON_STARTSTOP);
-}
-
-ENUM_COMBOBOX m_combo[]
-ENUM_ENTRY m_entry[]
-ENUM_BUTTON m_button[]
-
-void Frame::setSensitiveOrderFilter(bool b) {
-  for (auto &e : {COMBOBOX_SORT, COMBOBOX_SORT_ORDER, COMBOBOX_FILTER}) {
-    gtk_widget_set_sensitive(m_combo[e], b);
-  }
-  gtk_widget_set_sensitive(m_entry[ENTRY_FILTER], b);
 }
 
 void Frame::setPlaceholder(ENUM_ENTRY e, ENUM_STRING s) {
@@ -1233,7 +1220,7 @@ void Frame::updateButton(ENUM_BUTTON e) {
   std::string s;
   if (e == BUTTON_STARTSTOP) {
     auto b = getStartStopState();
-    gtk_widget_set_sensitive(m_button[e], b.enable);
+    updateSensitivity(b.enable, e);
     s = b.imageStart ? "play.png" : "stop.png";
 
   } else if (e == BUTTON_DICTIONARY) {

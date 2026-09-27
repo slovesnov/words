@@ -36,7 +36,7 @@ class Frame : WordsBase {
   MenuMap m_menuMap;
   std::vector<GtkAccelGroup *> m_accelGroup;
   bool m_lockSignals;
-  std::jthread m_thread,m_managerThread;
+  std::jthread m_thread, m_managerThread;
   CheckNewVersion m_newVersion;
   guint m_debounceTimerId = 0;
   ENUM_ENTRY m_currentEntry = ENTRY_SIZE;
@@ -158,8 +158,8 @@ public:
   void setLabel(GtkWidget *w, ENUM_STRING e);
   void setLabel(GtkWidget *w, const std::string &s);
 
-  std::string getTextViewString(ENUM_TEXTVIEW e,bool locale) const;
-  
+  std::string getTextViewString(ENUM_TEXTVIEW e, bool locale) const;
+
   virtual std::string getEntryString(ENUM_ENTRY e) const override;
   virtual std::string getTextViewString() const override;
   virtual bool getCheck() const override;
@@ -169,7 +169,6 @@ public:
   GtkTextBuffer *tvBuffer(ENUM_TEXTVIEW e = TEXTVIEW_MAIN) const;
   std::string getProgramVersionString() const;
   void updateStatus(ENUM_STATE state);
-  void setSensitiveOrderFilter(bool b);
   void setPlaceholder(ENUM_ENTRY e, ENUM_STRING s);
   void updateButton(ENUM_BUTTON e);
 
@@ -187,4 +186,38 @@ public:
 
   void routine(ENUM_JOB_TYPE e);
   void job(ENUM_JOB_TYPE e = JOB_TYPE_FULL);
+
+  template <typename PredicateOrBool, typename... Args>
+  void updateSensitivity(PredicateOrBool &&target, Args... args) {
+    int index = 0;
+
+    auto should_enable = [&target](int j) -> bool {
+      if constexpr (std::is_same_v<std::decay_t<PredicateOrBool>, bool>) {
+        return target;
+      } else {
+        return target(j);
+      }
+    };
+
+    (
+        [this, &index, &should_enable](auto id) {
+          using T = decltype(id);
+          GtkWidget *widget = nullptr;
+
+          if constexpr (std::is_same_v<T, ENUM_MENU>)
+            widget = m_menuMap[id];
+          else if constexpr (std::is_same_v<T, ENUM_COMBOBOX>)
+            widget = m_combo[id];
+          else if constexpr (std::is_same_v<T, ENUM_ENTRY>)
+            widget = m_entry[id];
+          else if constexpr (std::is_same_v<T, ENUM_BUTTON>)
+            widget = m_button[id];
+
+          if (widget) {
+            gtk_widget_set_sensitive(widget, should_enable(index));
+          }
+          index++;
+        }(args),
+        ...);
+  }
 };
