@@ -31,7 +31,6 @@ const int DEFAULT_SEPARATOR_POSITION = 1340;
 const int TEXT_VIEW_MARGIN = 5;
 const std::string CONFIG_TAGS[] = {"version",   "language", "dictionary",
                                    "separator", "fontout",  "fontcontrols"};
-extern std::string LNG[LANGUAGES];
 
 Frame *frame;
 
@@ -625,16 +624,15 @@ void Frame::updateDictionary() {
 
   updateButton(BUTTON_DICTIONARY);
 
-  pr("===================",magic_enum::enum_name(m_menuClick));
   if (auto it = FROM_TO_COMBO.get(m_menuClick)) { // todo
-    pr(m_languageIndex,it->max[m_dictionaryIndex]);
-    //make it->active, to use same index need check whether number of items became less
+    // make it->active, to use same index need check whether number of items
+    // became less
     for (auto a : {COMBOBOX_HELPER0, COMBOBOX_HELPER1}) {
-      refillCombo(a, it->min, it->max[m_dictionaryIndex],
-                  it->active);
+      auto w = m_combo[a]; // for pangrams only 1 combobox
+      if (w && GTK_IS_COMBO_BOX_TEXT(w))
+        refillCombo(a, it->min, it->max[m_dictionaryIndex], it->active);
     }
   }
-  pr("===================");
 
   /* additions 4.3
    * need to make new search for every option
@@ -647,7 +645,6 @@ void Frame::updateDictionary() {
     job();
   }
 }
-
 
 void Frame::updateLanguage() {
   std::string s;
@@ -668,6 +665,7 @@ void Frame::updateLanguage() {
   for (auto a : {COMBOBOX_SORT, COMBOBOX_FILTER}) {
     bool b = a == COMBOBOX_SORT;
     auto from = b ? SORT_BY_ALPHABET : FOUND;
+    auto to = b ? SORT_BY_DIFFERENT_NUMBER_OF_CHARACTERS : NOT_FOUND;
     i = getComboIndex(a);
     if (i == -1) { // was empty combo
       if (a == COMBOBOX_SORT) {
@@ -678,9 +676,8 @@ void Frame::updateLanguage() {
         i = 0;
       }
     }
-    refillCombo(a, from, ENUM_STRING(from + (b ? NUMBER_OF_SORTS : 2)), i);
+    refillCombo(a, from, to, i);
   }
-
 }
 
 void Frame::refillCombo(ENUM_COMBOBOX e, const VString &v, int active) {
@@ -1448,7 +1445,7 @@ void Frame::job(ENUM_JOB_TYPE e) {
       m_result.empty()) { // only sort
     return;
   }
-  //prsync("stop");
+  // prsync("stop");
   if (m_managerThread.joinable()) {
     updateStatus(STATE_STOPPING);
     m_managerThread.detach();
@@ -1464,14 +1461,14 @@ void Frame::job(ENUM_JOB_TYPE e) {
       old_thread.request_stop();
       old_thread.join();
     }
-    //prsync("stopped");
+    // prsync("stopped");
 
     // 4. Проверяем опцию: нужен ли перезапуск?
     if (e != JOB_TYPE_STOP) {
-      //prsync("restart1");
-      // Запускаем новый поток (он сам всё очистит при старте)
+      // prsync("restart1");
+      //  Запускаем новый поток (он сам всё очистит при старте)
       m_thread = std::jthread([this, e](std::stop_token token) {
-        //prsync("restart2");
+        // prsync("restart2");
         m_token = token;
         routine(e);
       });

@@ -148,8 +148,6 @@ using BOOL_SEARCH_RESULT_SEARCH_RESULT_FUNCTION =
     bool (*)(const SearchResult &, const SearchResult &);
 
 extern BOOL_SEARCH_RESULT_SEARCH_RESULT_FUNCTION SORT_FUNCTION[];
-extern const int NUMBER_OF_SORTS;
-
 
 bool sortIntDouble(const IntDouble &r1, const IntDouble &r2);
 bool sortStringInt(const StringInt &r1, const StringInt &r2);

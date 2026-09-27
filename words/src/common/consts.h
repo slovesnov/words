@@ -20,6 +20,7 @@ const char DOWNLOAD_URL[] =
 const char OPEN_BRACKET = '(';
 const std::string OPEN_S = std::string(" ") + OPEN_BRACKET;
 const int KEYBOARD_ROWS = 3;
+const int NUMBER_OF_SORTS=SORT_BY_DIFFERENT_NUMBER_OF_CHARACTERS-SORT_BY_ALPHABET+1;
 #ifdef NOGTK
 // should match with ENUM_POST
 const std::string POST_NAME[] = {

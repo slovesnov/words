@@ -153,4 +153,4 @@ M(percent[VOWELS_CONSONANTS_CONSONANTS], consonant)
 BOOL_SEARCH_RESULT_SEARCH_RESULT_FUNCTION SORT_FUNCTION[] = {M(alphabet) M(
     length) M(words) M(vowel) M(consonant) M(differentCharacters)};
 #undef M
-const int NUMBER_OF_SORTS = SIZEI(SORT_FUNCTION) / 2;
+static_assert(NUMBER_OF_SORTS == std::size(SORT_FUNCTION) / 2);
