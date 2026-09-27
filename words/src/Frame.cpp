@@ -668,16 +668,16 @@ void Frame::loadAndUpdateCurrentLanguage() {
   setPlaceholder(ENTRY_FILTER, RESULTS_FILTER);
   refillCombo(COMBOBOX_SORT, SORT_BY_ALPHABET, NUMBER_OF_SORTS);
   refillCombo(COMBOBOX_FILTER, FOUND, 2);
+
+  //todo
+  refillCombo(COMBOBOX_HELPER0,)
 }
 
 GtkWidget *Frame::createTextCombo(ENUM_COMBOBOX e, VString v, int active) {
-  assert(e != COMBOBOX_SIZE);
-
   GtkWidget *w = m_combo[e] = gtk_combo_box_text_new();
   for (auto &a : v) {
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(w), a.c_str());
   }
-
   setComboIndex(e, active);
   g_signal_connect(w, "changed", G_CALLBACK(combo_changed), gpointer(e));
   return w;
@@ -727,7 +727,7 @@ void Frame::addComboLineToHelper(int from, int to, int active, std::string s1,
         g_signal_connect(r, "toggled", G_CALLBACK(radio_changed), NULL);
       }
     }
-    add(w, createTextCombo(HELPER_COMBOBOX[i], from, to, active));
+    add(w, createTextCombo(ENUM_COMBOBOX(COMBOBOX_HELPER0+i), from, to, active));
   }
   if (!s3.empty()) {
     m_charactersLabel = createLabel(s3);
@@ -915,6 +915,19 @@ void Frame::refillCombo(ENUM_COMBOBOX e, ENUM_STRING first, int length) {
   gtk_combo_box_text_remove_all(c);
   for (i = 0; i < length; i++) {
     gtk_combo_box_text_append_text(c, string(first + i).c_str());
+  }
+  setComboIndex(e, j);
+  unlockSignals();
+}
+
+void Frame::refillCombo(ENUM_COMBOBOX e, int from, int to) {
+  pr;
+  int i, j = getComboIndex(e);
+  lockSignals();
+  auto c = GTK_COMBO_BOX_TEXT(m_combo[e]);
+  gtk_combo_box_text_remove_all(c);
+  for (i = from; i <= to; i++) {
+    gtk_combo_box_text_append_text(c, std::to_string(i).c_str());
   }
   setComboIndex(e, j);
   unlockSignals();
@@ -1451,7 +1464,7 @@ void Frame::routine(ENUM_JOB_TYPE e) {
 }
 
 /*
-JOB_TYPE_FULL - stop calculations if needed, start new calculations
+JOB_TYPE_FULL - stop calculations if needed, then start new calculations
 JOB_TYPE_SORT_AND_FILTER - stop calculations if needed, then sort and filter
 results JOB_TYPE_FILTER - stop calculations if needed, then filter results
 JOB_TYPE_STOP - stop calculations if needed
