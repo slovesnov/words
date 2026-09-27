@@ -8,6 +8,7 @@
 #pragma once
 
 #include "aslov.h"
+#include "consts_base.h"
 #include "enums.h"
 #include <optional>
 #include <set>
@@ -85,8 +86,8 @@ private:
   std::unordered_map<KeyT, ValueT> m;
 
 public:
-  LookupTable(std::initializer_list<std::pair<const KeyT, ValueT>> init_list)
-      : m(init_list) {}
+LookupTable(std::initializer_list<std::pair<KeyT, ValueT>> init_list)
+      : m(init_list.begin(), init_list.end()) {} 
 
   bool has(const KeyT &key) const { return m.find(key) != m.end(); }
 
@@ -122,6 +123,33 @@ public:
     return std::nullopt;
   }
 };
+
+// max depends on language
+struct ComboData {
+  int min;
+  std::array<int, LANGUAGES> max;
+  int active;
+};
+
+class SearchResult {
+public:
+  std::string s;
+  int length;
+  int words;
+  double percent[VOWELS_CONSONANTS_SIZE]; // percent of vowels,consonants
+  int differentCharacters;
+
+  static std::string out;
+  SearchResult(std::string _s, int _length, int _words);
+};
+
+using SearchResultVector = std::vector<SearchResult>;
+using BOOL_SEARCH_RESULT_SEARCH_RESULT_FUNCTION =
+    bool (*)(const SearchResult &, const SearchResult &);
+
+extern BOOL_SEARCH_RESULT_SEARCH_RESULT_FUNCTION SORT_FUNCTION[];
+extern const int NUMBER_OF_SORTS;
+
 
 bool sortIntDouble(const IntDouble &r1, const IntDouble &r2);
 bool sortStringInt(const StringInt &r1, const StringInt &r2);

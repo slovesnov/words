@@ -9,7 +9,6 @@
 
 #include "HelperStructs.h"
 #include "Modification.h"
-#include "SearchResult.h"
 #include "aslov.h"
 #include "consts.h"
 #include <algorithm>
@@ -31,8 +30,6 @@ extern std::mutex cout_mutex;
   }
 
 const char SEPARATOR[] = "SEPARATOR";
-constexpr std::string LANGUAGE[] = {"english", "russian"};
-constexpr int LANGUAGES = SIZEI(LANGUAGE);
 const std::string invalidDifference = "$";
 
 class WordsBase;

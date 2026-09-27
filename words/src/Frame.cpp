@@ -31,18 +31,6 @@ const int DEFAULT_SEPARATOR_POSITION = 1340;
 const int TEXT_VIEW_MARGIN = 5;
 const std::string CONFIG_TAGS[] = {"version",   "language", "dictionary",
                                    "separator", "fontout",  "fontcontrols"};
-/*
-  constants calculated in functions
-  showLongestAnagram();
-  showLongestPangram();
-  showLongestSimpleWordSequence();
-  showLongestDoubleWordSequence();
-  onchange dictionay size need to recount
- */
-const int MAX_ANAGRAM_LENGTH[] = {22, 31};
-const int MAX_PANGRAM_LENGTH[] = {16, 21};
-const int MAX_SIMPLE_WORD_SEQUENCE_LENGTH[] = {25, 30};
-const int MAX_DOUBLE_WORD_SEQUENCE_LENGTH[] = {7, 14};
 extern std::string LNG[LANGUAGES];
 
 Frame *frame;
@@ -551,16 +539,13 @@ void Frame::setHelperPanel() {
 
   switch (m_menuClick) {
   case MENU_ANAGRAM:
-    addComboLineToHelper(string(LENGTH, OF_WORD), 2,
-                         MAX_ANAGRAM_LENGTH[m_dictionaryIndex], 6, CHARACTERS);
+    addComboLineToHelper(string(LENGTH, OF_WORD));
     break;
 
   case MENU_PANGRAM:
     w = createBox(GTK_ORIENTATION_HORIZONTAL, COMBOLINE_MARGIN,
                   string(MINIMUM, DIFFERENT_CHARACTERS), true,
-                  createTextCombo(COMBOBOX_HELPER0, 10,
-                                  MAX_PANGRAM_LENGTH[m_dictionaryIndex], 5),
-                  true);
+                  createTextCombo(COMBOBOX_HELPER0), true);
     gtk_container_add(GTK_CONTAINER(m_helperUp), w);
     break;
 
@@ -609,15 +594,11 @@ void Frame::setHelperPanel() {
     break;
 
   case MENU_SIMPLE_WORD_SEQUENCE:
-    addComboLineToHelper(string(LENGTH, OF_SEQUENCE), 8,
-                         MAX_SIMPLE_WORD_SEQUENCE_LENGTH[m_dictionaryIndex], 0,
-                         CHARACTERS);
+    addComboLineToHelper(string(LENGTH, OF_SEQUENCE));
     break;
 
   case MENU_DOUBLE_WORD_SEQUENCE:
-    addComboLineToHelper(string(LENGTH, OF_SEQUENCE), 2,
-                         MAX_DOUBLE_WORD_SEQUENCE_LENGTH[m_dictionaryIndex], 2,
-                         CHARACTERS);
+    addComboLineToHelper(string(LENGTH, OF_SEQUENCE));
     break;
 
   case MENU_CONSONANT_VOWEL_SEQUENCE:
@@ -669,42 +650,81 @@ void Frame::loadAndUpdateCurrentLanguage() {
   refillCombo(COMBOBOX_SORT, SORT_BY_ALPHABET, NUMBER_OF_SORTS);
   refillCombo(COMBOBOX_FILTER, FOUND, 2);
 
-  //todo
-  refillCombo(COMBOBOX_HELPER0,)
+  if (auto it = FROM_TO_COMBO.get(m_menuClick)) {
+  }
+  // todo
+  // refillCombo(COMBOBOX_HELPER0, )
+}
+
+void Frame::refillCombo(ENUM_COMBOBOX e, ENUM_STRING first, int length) {
+  int i, j = getComboIndex(e);
+  if (j == -1) { // was empty combo
+    if (e == COMBOBOX_SORT) {
+      // sort by length descendant
+      j = 1;
+    } else {
+      // regex filter "match" option - default filter
+      j = 0;
+    }
+  }
+  lockSignals();
+  auto c = GTK_COMBO_BOX_TEXT(m_combo[e]);
+  gtk_combo_box_text_remove_all(c);
+  for (i = 0; i < length; i++) {
+    gtk_combo_box_text_append_text(c, string(first + i).c_str());
+  }
+  setComboIndex(e, j);
+  unlockSignals();
+}
+
+void Frame::refillCombo(ENUM_COMBOBOX e, int from, int to, int active) {
+  int i;
+  lockSignals();
+  auto c = GTK_COMBO_BOX_TEXT(m_combo[e]);
+  gtk_combo_box_text_remove_all(c);
+  for (i = from; i <= to; i++) {
+    gtk_combo_box_text_append_text(c, std::to_string(i).c_str());
+  }
+  setComboIndex(e, active);
+  unlockSignals();
+}
+
+void Frame::refillCombo(ENUM_COMBOBOX e, VString &v, int active) {
+  lockSignals();
+  auto c = GTK_COMBO_BOX_TEXT(m_combo[e]);
+  gtk_combo_box_text_remove_all(c);
+  for (auto &a : v) {
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(c), a.c_str());
+  }
+  setComboIndex(e, active);
+  unlockSignals();
+}
+
+VString Frame::fromTo(int from, int to) {
+  VString v;
+  for (auto i = from; i <= to; i++) {
+    v.push_back(std::to_string(i));
+  }
+  return v;
+}
+
+VString Frame::fromTo(ENUM_STRING from, ENUM_STRING to) {
+  VString v;
+  for (auto i = int(from); i <= int(to); i++) {
+    v.push_back(string(ENUM_STRING(i)));
+  }
+  return v;
 }
 
 GtkWidget *Frame::createTextCombo(ENUM_COMBOBOX e, VString v, int active) {
   GtkWidget *w = m_combo[e] = gtk_combo_box_text_new();
-  for (auto &a : v) {
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(w), a.c_str());
-  }
-  setComboIndex(e, active);
+  refillCombo(e, v, active);
   g_signal_connect(w, "changed", G_CALLBACK(combo_changed), gpointer(e));
   return w;
 }
 
 GtkWidget *Frame::createTextCombo(ENUM_COMBOBOX e) {
   return createTextCombo(e, {}, -1);
-}
-
-GtkWidget *Frame::createTextCombo(ENUM_COMBOBOX e, int from, int to,
-                                  int active) {
-  VString v;
-  int i;
-  for (i = from; i <= to; i++) {
-    v.push_back(std::to_string(i));
-  }
-  return createTextCombo(e, v, active);
-}
-
-GtkWidget *Frame::createTextCombo(ENUM_COMBOBOX e, ENUM_STRING from,
-                                  ENUM_STRING to, int active) {
-  VString v;
-  int i;
-  for (i = from; i <= to; i++) {
-    v.push_back(string(i));
-  }
-  return createTextCombo(e, v, active);
 }
 
 void Frame::addComboLineToHelper(int from, int to, int active, std::string s1,
@@ -727,7 +747,8 @@ void Frame::addComboLineToHelper(int from, int to, int active, std::string s1,
         g_signal_connect(r, "toggled", G_CALLBACK(radio_changed), NULL);
       }
     }
-    add(w, createTextCombo(ENUM_COMBOBOX(COMBOBOX_HELPER0+i), from, to, active));
+    add(w,
+        createTextCombo(ENUM_COMBOBOX(COMBOBOX_HELPER0 + i), from, to, active));
   }
   if (!s3.empty()) {
     m_charactersLabel = createLabel(s3);
@@ -741,6 +762,13 @@ void Frame::addComboToHelper(ENUM_STRING from, ENUM_STRING to, int active,
                              ENUM_COMBOBOX comboboxId /*=COMBOBOX_HELPER0*/) {
   gtk_container_add(GTK_CONTAINER(m_helperUp),
                     createTextCombo(comboboxId, from, to, active));
+}
+
+void Frame::addComboLineToHelper(std::string s) {
+  if (auto it = FROM_TO_COMBO.get(m_menuClick)) {
+    addComboLineToHelper(s, it->min, it->max[m_dictionaryIndex], it->active,
+                         CHARACTERS);
+  }
 }
 
 void Frame::comboChanged(ENUM_COMBOBOX e) {
@@ -897,40 +925,6 @@ void Frame::addAccelerators() {
   for (auto &a : m_accelGroup) {
     gtk_window_add_accel_group(GTK_WINDOW(m_widget), a);
   }
-}
-
-void Frame::refillCombo(ENUM_COMBOBOX e, ENUM_STRING first, int length) {
-  int i, j = getComboIndex(e);
-  if (j == -1) { // was empty combo
-    if (e == COMBOBOX_SORT) {
-      // sort by length descendant
-      j = 1;
-    } else {
-      // regex filter "match" option - default filter
-      j = 0;
-    }
-  }
-  lockSignals();
-  auto c = GTK_COMBO_BOX_TEXT(m_combo[e]);
-  gtk_combo_box_text_remove_all(c);
-  for (i = 0; i < length; i++) {
-    gtk_combo_box_text_append_text(c, string(first + i).c_str());
-  }
-  setComboIndex(e, j);
-  unlockSignals();
-}
-
-void Frame::refillCombo(ENUM_COMBOBOX e, int from, int to) {
-  pr;
-  int i, j = getComboIndex(e);
-  lockSignals();
-  auto c = GTK_COMBO_BOX_TEXT(m_combo[e]);
-  gtk_combo_box_text_remove_all(c);
-  for (i = from; i <= to; i++) {
-    gtk_combo_box_text_append_text(c, std::to_string(i).c_str());
-  }
-  setComboIndex(e, j);
-  unlockSignals();
 }
 
 void Frame::newVersionMessage() {

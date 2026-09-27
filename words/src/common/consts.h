@@ -6,6 +6,8 @@
  */
 
 #pragma once
+#include "consts_base.h"
+#include "enums.h"
 
 const std::string WORDS_VERSION = "5.0.0";
 const char MAIL[] = "slovesnov@yandex.ru";
@@ -18,7 +20,6 @@ const char DOWNLOAD_URL[] =
 const char OPEN_BRACKET = '(';
 const std::string OPEN_S = std::string(" ") + OPEN_BRACKET;
 const int KEYBOARD_ROWS = 3;
-
 #ifdef NOGTK
 // should match with ENUM_POST
 const std::string POST_NAME[] = {
@@ -63,14 +64,13 @@ const ENUM_MENU MENU_WAITING[] = {MENU_DICTIONARY_STATISTICS,
                                   MENU_TWO_CHARACTERS_DISTRIBUTION_START,
                                   MENU_TWO_CHARACTERS_DISTRIBUTION_END};
 
-
-    //cann't remove template types
+// cann't remove template types
 const LookupTable<ENUM_STRING, std::string> MAP_URL = {
     {HOMEPAGE_STRING, HOMEPAGE},
     {HOMEPAGE_ONLINE_STRING, HOMEPAGE_ONLINE},
     {SOURCE_CODE, SOURCE_URL}};
 
-    const LookupTable<ENUM_MENU, std::string> MENU_TO_ICON_FILE={
+const LookupTable<ENUM_MENU, std::string> MENU_TO_ICON_FILE = {
     {MENU_EDIT_SELECT_ALL_AND_COPY_TO_CLIPBOARD, "select_all_copy.png"},
     {MENU_EDIT_SELECT_ALL, "select_all.png"},
     {MENU_EDIT_COPY_TO_CLIPBOARD, "copy.png"},
@@ -84,7 +84,7 @@ const LookupTable<ENUM_STRING, std::string> MAP_URL = {
     {MENU_RUSSIAN_LANGUAGE, "ru.gif"},
     {MENU_ABOUT, "word16.png"},
     {MENU_HOMEPAGE, "web.png"},
-    {MENU_SOURCE_CODE,"source.png"}};
+    {MENU_SOURCE_CODE, "source.png"}};
 
 const LookupTable<ENUM_MENU, ENUM_STRING> MENU_TO_HELP_STRING = {
     {MENU_ANAGRAM, ANAGRAM_HELP},
@@ -112,13 +112,12 @@ const LookupTable<ENUM_MENU, ENUM_STRING> MENU_TO_HELP_STRING = {
     {MENU_TWO_CHARACTERS_DISTRIBUTION_START, TWO_CHARACTERS_DISTRIBUTION_HELP},
     {MENU_TWO_CHARACTERS_DISTRIBUTION_END, TWO_CHARACTERS_DISTRIBUTION_HELP}};
 
-
 const LookupTable<ENUM_MENU, int> MENU_TO_ACCEL_KEY = {
     {MENU_EDIT_SELECT_ALL_AND_COPY_TO_CLIPBOARD, GDK_KEY_B},
     {MENU_EDIT_SELECT_ALL, GDK_KEY_A},
     {MENU_EDIT_COPY_TO_CLIPBOARD, GDK_KEY_C}};
 
-    const LookupTable<ENUM_MENU, ENUM_STRING> MENU_TO_SETTINGS = {
+const LookupTable<ENUM_MENU, ENUM_STRING> MENU_TO_SETTINGS = {
     {MENU_TEMPLATE, SETTINGS_TEMPLATE},
     {MENU_CROSSWORD, SETTINGS_CROSSWORD},
     {MENU_REGULAR_EXPRESSIONS, SETTINGS_REGULAR_EXPRESSIONS},
@@ -127,5 +126,22 @@ const LookupTable<ENUM_MENU, int> MENU_TO_ACCEL_KEY = {
     {MENU_CHARACTER_SEQUENCE, SETTINGS_CHARACTER_SEQUENCE},
     {MENU_LETTER_GROUP_SPLIT, SETTINGS_LETTER_GROUP_SPLIT}};
 
+/*
+  constants calculated in functions
+  showLongestAnagram();
+  showLongestPangram();
+  showLongestSimpleWordSequence();
+  showLongestDoubleWordSequence();
+  onchange dictionay size need to recount
+ */
+const std::array<int,LANGUAGES> MAX_ANAGRAM_LENGTH = {22, 31};
+const std::array<int,LANGUAGES> MAX_PANGRAM_LENGTH = {16, 21};
+const std::array<int,LANGUAGES> MAX_SIMPLE_WORD_SEQUENCE_LENGTH = {25, 30};
+const std::array<int,LANGUAGES> MAX_DOUBLE_WORD_SEQUENCE_LENGTH = {7, 14};
 
+const LookupTable<ENUM_MENU, ComboData> FROM_TO_COMBO = {
+    {MENU_ANAGRAM, ComboData(2, MAX_ANAGRAM_LENGTH, 6)},
+    {MENU_PANGRAM, ComboData(10, MAX_PANGRAM_LENGTH, 5)},
+    {MENU_SIMPLE_WORD_SEQUENCE, ComboData(8, MAX_SIMPLE_WORD_SEQUENCE_LENGTH, 0)},
+    {MENU_DOUBLE_WORD_SEQUENCE, ComboData(2, MAX_DOUBLE_WORD_SEQUENCE_LENGTH, 2)}};
 #endif /*#ifndef NOGTK*/

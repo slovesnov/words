@@ -58,20 +58,26 @@ private:
   std::vector<TagRange> m_found_tags;
   void clearTagMarks();
 
-  gint getComboIndex(ENUM_COMBOBOX e) const;
-  void setComboIndex(ENUM_COMBOBOX e, gint v);
-
-  void updateComboValue(ENUM_COMBOBOX e);
-
   void aboutDialog();
   void setHelperPanel();
 
+  gint getComboIndex(ENUM_COMBOBOX e) const;
+  void setComboIndex(ENUM_COMBOBOX e, gint v);
+  void updateComboValue(ENUM_COMBOBOX e);
   void createImageCombo(ENUM_COMBOBOX e);
+  void refillCombo(ENUM_COMBOBOX e, VString& v, int active);
+  void refillCombo(ENUM_COMBOBOX e, ENUM_STRING first, int length);//todo
+  void refillCombo(ENUM_COMBOBOX e, int from, int to, int active);
+  VString fromTo(int from, int to);
+  VString fromTo(ENUM_STRING from, ENUM_STRING to);
   GtkWidget *createTextCombo(ENUM_COMBOBOX e, VString v, int active);
   GtkWidget *createTextCombo(ENUM_COMBOBOX e); // empty
-  GtkWidget *createTextCombo(ENUM_COMBOBOX e, int from, int to, int active);
-  GtkWidget *createTextCombo(ENUM_COMBOBOX e, ENUM_STRING from, ENUM_STRING to,
-                             int active);
+
+  template <typename T>
+  GtkWidget *createTextCombo(ENUM_COMBOBOX e, T from, T to,
+                                  int active) {
+  return createTextCombo(e, fromTo(from, to), active);
+}
 
   template <typename T>
   void addComboLineToHelper(T &&id, int from, int to, int active,
@@ -90,6 +96,8 @@ private:
                             std::string s2, std::string s3, bool any = false);
   void addComboToHelper(ENUM_STRING from, ENUM_STRING to, int active,
                         ENUM_COMBOBOX comboboxId = COMBOBOX_HELPER0);
+
+  void addComboLineToHelper(std::string s);
 
   void updateTags(int n);
 
@@ -149,7 +157,6 @@ public:
   void removeAccelerators();
   void addAccelerators();
 
-  void refillCombo(ENUM_COMBOBOX e, ENUM_STRING first, int length);
   void newVersionMessage();
 
   void setDebounceTimer(ENUM_ENTRY e);
