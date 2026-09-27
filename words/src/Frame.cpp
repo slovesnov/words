@@ -31,8 +31,6 @@ const int DEFAULT_SEPARATOR_POSITION = 1340;
 const int TEXT_VIEW_MARGIN = 5;
 const std::string CONFIG_TAGS[] = {"version",   "language", "dictionary",
                                    "separator", "fontout",  "fontcontrols"};
-extern std::string LNG[LANGUAGES];
-
 /*
   constants calculated in functions
   showLongestAnagram();
@@ -45,6 +43,7 @@ const int MAX_ANAGRAM_LENGTH[] = {22, 31};
 const int MAX_PANGRAM_LENGTH[] = {16, 21};
 const int MAX_SIMPLE_WORD_SEQUENCE_LENGTH[] = {25, 30};
 const int MAX_DOUBLE_WORD_SEQUENCE_LENGTH[] = {7, 14};
+extern std::string LNG[LANGUAGES];
 
 Frame *frame;
 
@@ -1264,12 +1263,16 @@ GtkWidget *Frame::createEntry(ENUM_ENTRY e) {
         GTK_ENTRY(w),
         stringUsingDictionary(*MENU_TO_SETTINGS.get(m_menuClick)).c_str());
   }
-  GCallback f[] = {G_CALLBACK(entry_insert), G_CALLBACK(entry_delete),
-                   G_CALLBACK(entry_focus_in), G_CALLBACK(entry_focus_out)};
-  int i = 0;
-  for (auto a :
-       {"insert-text", "delete-text", "focus-in-event", "focus-out-event"}) {
-    g_signal_connect_after(G_OBJECT(m_entry[e]), a, f[i++], GINT_TO_POINTER(e));
+
+  const std::pair<const char *, GCallback> p[] = {
+      {"insert-text", G_CALLBACK(entry_insert)},
+      {"delete-text", G_CALLBACK(entry_delete)},
+      {"focus-in-event", G_CALLBACK(entry_focus_in)},
+      {"focus-out-event", G_CALLBACK(entry_focus_out)}};
+
+  for (auto a : p) {
+    g_signal_connect_after(G_OBJECT(m_entry[e]), a.first, a.second,
+                           GINT_TO_POINTER(e));
   }
   return w;
 }
