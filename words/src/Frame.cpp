@@ -268,6 +268,8 @@ Frame::Frame() : WordsBase() {
   }
 
   updateLanguage();
+  setComboIndex(COMBOBOX_SORT, 1);
+  setComboIndex(COMBOBOX_FILTER, 0);
   // update menu enables/disables, after language[] is filled
   updateDictionary();
 
@@ -662,25 +664,14 @@ void Frame::updateLanguage() {
   gtk_window_set_title(GTK_WINDOW(m_widget), string(PROGRAM).c_str());
   setPlaceholder(ENTRY_FILTER, RESULTS_FILTER);
 
-  for (auto a : {COMBOBOX_SORT, COMBOBOX_FILTER}) {
-    bool b = a == COMBOBOX_SORT;
-    auto from = b ? SORT_BY_ALPHABET : FOUND;
-    auto to = b ? SORT_BY_DIFFERENT_NUMBER_OF_CHARACTERS : NOT_FOUND;
-    i = getComboIndex(a);
-    if (i == -1) { // was empty combo
-      if (a == COMBOBOX_SORT) {
-        // sort by length descendant
-        i = 1;
-      } else {
-        // regex filter "match" option - default filter
-        i = 0;
-      }
-    }
-    refillCombo(a, from, to, i);
-  }
+  refillCombo(COMBOBOX_SORT, SORT_BY_ALPHABET,
+              SORT_BY_DIFFERENT_NUMBER_OF_CHARACTERS);
+  refillCombo(COMBOBOX_FILTER, FOUND, NOT_FOUND);
 }
 
 void Frame::refillCombo(ENUM_COMBOBOX e, const VString &v, int active) {
+  if (active == -1)
+    active = getComboIndex(e);
   lockSignals();
   auto c = GTK_COMBO_BOX_TEXT(m_combo[e]);
   gtk_combo_box_text_remove_all(c);

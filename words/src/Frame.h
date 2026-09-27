@@ -67,7 +67,7 @@ private:
   void createImageCombo(ENUM_COMBOBOX e);
   void refillCombo(ENUM_COMBOBOX e,const VString &v, int active);
   template <typename T>
-  void refillCombo(ENUM_COMBOBOX e, T from, T to, int active) {
+  void refillCombo(ENUM_COMBOBOX e, T from, T to, int active=-1) {
     refillCombo(e,fromTo(from,to),active);
   }
   template <typename T> VString fromTo(T from, T to) {
