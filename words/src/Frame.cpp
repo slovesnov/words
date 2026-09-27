@@ -268,7 +268,7 @@ Frame::Frame() : WordsBase() {
     i++;
   }
 
-  loadAndUpdateCurrentLanguage();
+  updateLanguage();
   // update menu enables/disables, after language[] is filled
   updateDictionary();
 
@@ -390,7 +390,7 @@ void Frame::clickMenu(ENUM_MENU menu) {
       m_menuClick = menu;
     } else {
       m_languageIndex = i;
-      loadAndUpdateCurrentLanguage();
+      updateLanguage();
     }
     if (m_menuClick != MENU_SEARCH) {
       setHelperPanel();
@@ -404,24 +404,6 @@ void Frame::destroy() {
               m_separatorPosition, m_font[0].get(), m_font[1].get());
   job(JOB_TYPE_STOP);
   gtk_main_quit();
-}
-
-void Frame::updateDictionary() {
-  updateSensitivity([this](int i) { return m_dictionaryIndex != i; },
-                    MENU_LOAD_ENGLISH_DICTIONARY, MENU_LOAD_RUSSIAN_DICTIONARY);
-
-  updateButton(BUTTON_DICTIONARY);
-
-  /* additions 4.3
-   * need to make new search for every option
-   * function updateDictionary() can be called several times before any search
-   * option so use m_menuClick as last search option m_menuClick==MENU_SIZE
-   * means no last search m_menuClick changes only for search operations see
-   * clickMenu() function also job() does entry highlight
-   */
-  if (m_menuClick != MENU_SEARCH) {
-    job();
-  }
 }
 
 void Frame::aboutDialog() {
@@ -517,6 +499,8 @@ void Frame::setHelperPanel() {
   clearContainer(m_helperUp);
   m_charactersLabel = nullptr;
 
+  auto it = FROM_TO_COMBO.get(m_menuClick);
+
   // set label
   if (auto it = MENU_TO_HELP_STRING.get(m_menuClick)) {
     w = gtk_label_new("");
@@ -543,9 +527,12 @@ void Frame::setHelperPanel() {
     break;
 
   case MENU_PANGRAM:
+    assert(it.has_value());
     w = createBox(GTK_ORIENTATION_HORIZONTAL, COMBOLINE_MARGIN,
                   string(MINIMUM, DIFFERENT_CHARACTERS), true,
-                  createTextCombo(COMBOBOX_HELPER0), true);
+                  createTextCombo(COMBOBOX_HELPER0, it->min,
+                                  it->max[m_languageIndex], it->active),
+                  true);
     gtk_container_add(GTK_CONTAINER(m_helperUp), w);
     break;
 
@@ -632,7 +619,37 @@ void Frame::setHelperPanel() {
   gtk_widget_show_all(m_helperUp);
 }
 
-void Frame::loadAndUpdateCurrentLanguage() {
+void Frame::updateDictionary() {
+  updateSensitivity([this](int i) { return m_dictionaryIndex != i; },
+                    MENU_LOAD_ENGLISH_DICTIONARY, MENU_LOAD_RUSSIAN_DICTIONARY);
+
+  updateButton(BUTTON_DICTIONARY);
+
+  pr("===================",magic_enum::enum_name(m_menuClick));
+  if (auto it = FROM_TO_COMBO.get(m_menuClick)) { // todo
+    pr(m_languageIndex,it->max[m_dictionaryIndex]);
+    //make it->active, to use same index need check whether number of items became less
+    for (auto a : {COMBOBOX_HELPER0, COMBOBOX_HELPER1}) {
+      refillCombo(a, it->min, it->max[m_dictionaryIndex],
+                  it->active);
+    }
+  }
+  pr("===================");
+
+  /* additions 4.3
+   * need to make new search for every option
+   * function updateDictionary() can be called several times before any search
+   * option so use m_menuClick as last search option m_menuClick==MENU_SIZE
+   * means no last search m_menuClick changes only for search operations see
+   * clickMenu() function also job() does entry highlight
+   */
+  if (m_menuClick != MENU_SEARCH) {
+    job();
+  }
+}
+
+
+void Frame::updateLanguage() {
   std::string s;
   int i = -1;
   for (auto &a : m_menuAll[m_languageIndex]) {
@@ -647,73 +664,34 @@ void Frame::loadAndUpdateCurrentLanguage() {
   setLabel(m_currentDictionary, DICTIONARY);
   gtk_window_set_title(GTK_WINDOW(m_widget), string(PROGRAM).c_str());
   setPlaceholder(ENTRY_FILTER, RESULTS_FILTER);
-  refillCombo(COMBOBOX_SORT, SORT_BY_ALPHABET, NUMBER_OF_SORTS);
-  refillCombo(COMBOBOX_FILTER, FOUND, 2);
 
-  if (auto it = FROM_TO_COMBO.get(m_menuClick)) {
-  }
-  // todo
-  // refillCombo(COMBOBOX_HELPER0, )
-}
-
-void Frame::refillCombo(ENUM_COMBOBOX e, ENUM_STRING first, int length) {
-  int i, j = getComboIndex(e);
-  if (j == -1) { // was empty combo
-    if (e == COMBOBOX_SORT) {
-      // sort by length descendant
-      j = 1;
-    } else {
-      // regex filter "match" option - default filter
-      j = 0;
+  for (auto a : {COMBOBOX_SORT, COMBOBOX_FILTER}) {
+    bool b = a == COMBOBOX_SORT;
+    auto from = b ? SORT_BY_ALPHABET : FOUND;
+    i = getComboIndex(a);
+    if (i == -1) { // was empty combo
+      if (a == COMBOBOX_SORT) {
+        // sort by length descendant
+        i = 1;
+      } else {
+        // regex filter "match" option - default filter
+        i = 0;
+      }
     }
+    refillCombo(a, from, ENUM_STRING(from + (b ? NUMBER_OF_SORTS : 2)), i);
   }
-  lockSignals();
-  auto c = GTK_COMBO_BOX_TEXT(m_combo[e]);
-  gtk_combo_box_text_remove_all(c);
-  for (i = 0; i < length; i++) {
-    gtk_combo_box_text_append_text(c, string(first + i).c_str());
-  }
-  setComboIndex(e, j);
-  unlockSignals();
+
 }
 
-void Frame::refillCombo(ENUM_COMBOBOX e, int from, int to, int active) {
-  int i;
-  lockSignals();
-  auto c = GTK_COMBO_BOX_TEXT(m_combo[e]);
-  gtk_combo_box_text_remove_all(c);
-  for (i = from; i <= to; i++) {
-    gtk_combo_box_text_append_text(c, std::to_string(i).c_str());
-  }
-  setComboIndex(e, active);
-  unlockSignals();
-}
-
-void Frame::refillCombo(ENUM_COMBOBOX e, VString &v, int active) {
+void Frame::refillCombo(ENUM_COMBOBOX e, const VString &v, int active) {
   lockSignals();
   auto c = GTK_COMBO_BOX_TEXT(m_combo[e]);
   gtk_combo_box_text_remove_all(c);
   for (auto &a : v) {
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(c), a.c_str());
+    gtk_combo_box_text_append_text(c, a.c_str());
   }
   setComboIndex(e, active);
   unlockSignals();
-}
-
-VString Frame::fromTo(int from, int to) {
-  VString v;
-  for (auto i = from; i <= to; i++) {
-    v.push_back(std::to_string(i));
-  }
-  return v;
-}
-
-VString Frame::fromTo(ENUM_STRING from, ENUM_STRING to) {
-  VString v;
-  for (auto i = int(from); i <= int(to); i++) {
-    v.push_back(string(ENUM_STRING(i)));
-  }
-  return v;
 }
 
 GtkWidget *Frame::createTextCombo(ENUM_COMBOBOX e, VString v, int active) {
@@ -1389,7 +1367,7 @@ void Frame::resetSettings(bool update) {
   if (oldDictoinary != m_dictionaryIndex)
     updateDictionary();
   if (oldLanguage != m_languageIndex)
-    loadAndUpdateCurrentLanguage();
+    updateLanguage();
 
   gtk_paned_set_position(GTK_PANED(m_panedWidget), m_separatorPosition);
 }
@@ -1470,7 +1448,7 @@ void Frame::job(ENUM_JOB_TYPE e) {
       m_result.empty()) { // only sort
     return;
   }
-  prsync("stop");
+  //prsync("stop");
   if (m_managerThread.joinable()) {
     updateStatus(STATE_STOPPING);
     m_managerThread.detach();
@@ -1486,14 +1464,14 @@ void Frame::job(ENUM_JOB_TYPE e) {
       old_thread.request_stop();
       old_thread.join();
     }
-    prsync("stopped");
+    //prsync("stopped");
 
     // 4. Проверяем опцию: нужен ли перезапуск?
     if (e != JOB_TYPE_STOP) {
-      prsync("restart1");
+      //prsync("restart1");
       // Запускаем новый поток (он сам всё очистит при старте)
       m_thread = std::jthread([this, e](std::stop_token token) {
-        prsync("restart2");
+        //prsync("restart2");
         m_token = token;
         routine(e);
       });

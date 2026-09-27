@@ -65,19 +65,30 @@ private:
   void setComboIndex(ENUM_COMBOBOX e, gint v);
   void updateComboValue(ENUM_COMBOBOX e);
   void createImageCombo(ENUM_COMBOBOX e);
-  void refillCombo(ENUM_COMBOBOX e, VString& v, int active);
-  void refillCombo(ENUM_COMBOBOX e, ENUM_STRING first, int length);//todo
-  void refillCombo(ENUM_COMBOBOX e, int from, int to, int active);
-  VString fromTo(int from, int to);
-  VString fromTo(ENUM_STRING from, ENUM_STRING to);
+  void refillCombo(ENUM_COMBOBOX e,const VString &v, int active);
+  template <typename T>
+  void refillCombo(ENUM_COMBOBOX e, T from, T to, int active) {
+    refillCombo(e,fromTo(from,to),active);
+  }
+  template <typename T> VString fromTo(T from, T to) {
+    VString v;
+    std::string s;
+    for (int i = int(from); i <= int(to); i++) {
+      if constexpr (std::is_integral_v<T>) {
+        s = std::to_string(i);
+      } else if constexpr (std::is_enum_v<T>) {
+        s = string(i);
+      }
+      v.push_back(s);
+    }
+    return v;
+  }
   GtkWidget *createTextCombo(ENUM_COMBOBOX e, VString v, int active);
   GtkWidget *createTextCombo(ENUM_COMBOBOX e); // empty
-
   template <typename T>
-  GtkWidget *createTextCombo(ENUM_COMBOBOX e, T from, T to,
-                                  int active) {
-  return createTextCombo(e, fromTo(from, to), active);
-}
+  GtkWidget *createTextCombo(ENUM_COMBOBOX e, T from, T to, int active) {
+    return createTextCombo(e, fromTo(from, to), active);
+  }
 
   template <typename T>
   void addComboLineToHelper(T &&id, int from, int to, int active,
@@ -143,7 +154,7 @@ public:
   void clickMenu(ENUM_MENU menu);
 
   void updateDictionary();
-  void loadAndUpdateCurrentLanguage();
+  void updateLanguage();
   void comboChanged(ENUM_COMBOBOX e);
   void radioChanged(GtkWidget *w);
   void clickButton(GtkWidget *button);
