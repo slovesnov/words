@@ -46,6 +46,8 @@ public:
   gulong m_positionSignalId = 0;
   int m_separatorPosition;
   GtkWidget *m_panedWidget = nullptr;
+  bool m_maximized;
+  int m_x, m_y, m_width, m_height;
 
 private:
   ENUM_STATE m_state;
@@ -65,10 +67,10 @@ private:
   void setComboIndex(ENUM_COMBOBOX e, gint v);
   void updateComboValue(ENUM_COMBOBOX e);
   void createImageCombo(ENUM_COMBOBOX e);
-  void refillCombo(ENUM_COMBOBOX e,const VString &v, int active);
+  void refillCombo(ENUM_COMBOBOX e, const VString &v, int active);
   template <typename T>
-  void refillCombo(ENUM_COMBOBOX e, T from, T to, int active=-1) {
-    refillCombo(e,fromTo(from,to),active);
+  void refillCombo(ENUM_COMBOBOX e, T from, T to, int active = -1) {
+    refillCombo(e, fromTo(from, to), active);
   }
   template <typename T> VString fromTo(T from, T to) {
     VString v;
@@ -83,7 +85,7 @@ private:
     }
     return v;
   }
-  GtkWidget *createTextCombo(ENUM_COMBOBOX e, VString v={}, int active=-1);
+  GtkWidget *createTextCombo(ENUM_COMBOBOX e, VString v = {}, int active = -1);
   template <typename T>
   GtkWidget *createTextCombo(ENUM_COMBOBOX e, T from, T to, int active) {
     return createTextCombo(e, fromTo(from, to), active);
@@ -237,4 +239,6 @@ public:
         }(args),
         ...);
   }
+
+  void windowDeleteEvent();
 };

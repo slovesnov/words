@@ -1725,14 +1725,14 @@ void WordsBase::sortFilterResults(ENUM_JOB_TYPE e) {
     return;
   }
   SearchResult::out = "";
-  auto begin = clock();
+  //auto begin = clock();
   if (e != JOB_TYPE_FILTER) {
     // mtsort
     std::sort(std::execution::par, m_result.begin(), m_result.end(),
               SORT_FUNCTION[m_comboValue[COMBOBOX_SORT] * 2 +
                             m_comboValue[COMBOBOX_SORT_ORDER]]);
   }
-  auto te = timeElapse(begin);
+  //auto te = timeElapse(begin);
   for (auto const &e : m_result) {
     s = fastLocaleToUtf8(e.s);
 #ifndef NOGTK
@@ -1764,7 +1764,7 @@ void WordsBase::sortFilterResults(ENUM_JOB_TYPE e) {
     SearchResult::out += ")";
     RETURN_ON_USER_BREAK
   }
-  prsync("sort", te, timeElapse(begin))
+  //prsync("sort", te, timeElapse(begin));//todo
 }
 
 void WordsBase::loadLanguages() {
@@ -1971,7 +1971,7 @@ PairDCIDCI WordsBase::iterators(ENUM_DICTIONARY e, int nthread) {
 }
 
 void WordsBase::run_thread(int nthread) {
-  auto begin = clock();
+  //auto begin = clock();
   m_thread_result[nthread].clear();
 
   if (auto it = menu2VoidInt.get(m_menuClick)) {
@@ -2007,7 +2007,7 @@ void WordsBase::run_thread(int nthread) {
     }
   }
 
-  prsync(nthread, timeElapse(begin));
+  //prsync(nthread, timeElapse(begin));//todo
 }
 
 void WordsBase::run(ENUM_JOB_TYPE e) {

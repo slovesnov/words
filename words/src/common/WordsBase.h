@@ -29,6 +29,12 @@ extern std::mutex cout_mutex;
     prs(__VA_ARGS__);                                                          \
   }
 
+#define prsynci                                                                \
+  {                                                                            \
+    std::lock_guard<std::mutex> lock(cout_mutex);                              \
+    pri_short;                                                                 \
+  }
+
 const char SEPARATOR[] = "SEPARATOR";
 const std::string invalidDifference = "$";
 
@@ -83,9 +89,7 @@ protected:
   std::string getStatusString();
   std::string getTimeString();
 
-  int getMaximumWordLength() {
-    return m_longestWordLength[m_dictionaryIndex];
-  }
+  int getMaximumWordLength() { return m_longestWordLength[m_dictionaryIndex]; }
 
   bool prepare();
   static std::string getShortLanguageString(int i);
@@ -198,7 +202,7 @@ public:
   bool isAlphabetChar(char c) const;
   const std::string &string(ENUM_STRING e) const;
   const std::string &string(ENUM_MENU e) const;
-  const std::string string(ENUM_STRING e,ENUM_STRING e1) const;
+  const std::string string(ENUM_STRING e, ENUM_STRING e1) const;
   const std::string &string(int i) const;
   const std::string &stringUsingDictionary(ENUM_STRING e) const;
   const std::string &settings(ENUM_SETTINGS e, int i = 0) const;

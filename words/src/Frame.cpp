@@ -30,7 +30,9 @@ const int MIN_RIGHT_PANEL_WIDTH = 420;
 const int DEFAULT_SEPARATOR_POSITION = 1340;
 const int TEXT_VIEW_MARGIN = 5;
 const std::string CONFIG_TAGS[] = {"version",   "language", "dictionary",
-                                   "separator", "fontout",  "fontcontrols"};
+                                   "separator", "fontout",  "fontcontrols",
+                                   "maximized", "x",        "y",
+                                   "width",     "height"};
 
 Frame *frame;
 
@@ -82,8 +84,34 @@ void text_view_changed(GtkTextBuffer *buffer, gpointer) {
 
 void destroy_window(GtkWidget *object, gpointer) { frame->destroy(); }
 
-gboolean on_debounce_timeout(gpointer user_data) {
-  frame->debounceTimeout(ENUM_ENTRY(GPOINTER_TO_INT(user_data)));
+gboolean on_window_state_event(GtkWidget *widget, GdkEventWindowState *event,
+                               gpointer user_data) {
+  if (event->changed_mask & GDK_WINDOW_STATE_MAXIMIZED) {
+    frame->m_maximized =
+        (event->new_window_state & GDK_WINDOW_STATE_MAXIMIZED) != 0;
+  }
+  return FALSE;
+}
+
+gboolean on_window_delete_event(GtkWidget *widget, GdkEvent *event,
+                                gpointer user_data) {
+  frame->windowDeleteEvent();
+  return FALSE;
+}
+
+gboolean on_debounce_timeout(gpointer data) {
+  frame->debounceTimeout(ENUM_ENTRY(GPOINTER_TO_INT(data)));
+  return G_SOURCE_REMOVE;
+}
+
+gboolean update_status(gpointer data) {
+  prsync("3");
+  frame->updateStatus(ENUM_STATE(GPOINTER_TO_INT(data)));
+  return G_SOURCE_REMOVE;
+}
+
+gboolean end_job(gpointer data) {
+  frame->endJob();
   return G_SOURCE_REMOVE;
 }
 
@@ -109,13 +137,15 @@ Frame::Frame() : WordsBase() {
 
   resetSettings(false);
   if (readConfig(CONFIG_TAGS, s, m_languageIndex, m_dictionaryIndex,
-                 m_separatorPosition, p[0], p[1])) {
+                 m_separatorPosition, p[0], p[1], m_maximized, m_x, m_y,
+                 m_width, m_height)) {
     i = -1;
     for (auto &a : p) {
       i++;
       if (a)
         m_font[i].reset(a);
     }
+  } else {
   }
   // update font later
 
@@ -284,14 +314,18 @@ Frame::Frame() : WordsBase() {
 
   g_signal_connect(m_combo[COMBOBOX_SORT_ORDER], "changed",
                    G_CALLBACK(combo_changed), gpointer(COMBOBOX_SORT_ORDER));
+  g_signal_connect(m_widget, "window-state-event",
+                   G_CALLBACK(on_window_state_event), NULL);
+  g_signal_connect(m_widget, "delete-event", G_CALLBACK(on_window_delete_event),
+                   NULL);
   g_signal_connect(m_widget, "destroy", G_CALLBACK(destroy_window), NULL);
 
-#if WINDOW_SIZE_TYPE == 0
-  gtk_window_maximize(GTK_WINDOW(m_widget));
-//	const int height = 680;
-//	gtk_widget_set_size_request(m_widget, 16 * height / 10, height);
-////notebook resolution 1366x768 40pixels low pane+title
-#endif
+  if (m_maximized) {
+    gtk_window_maximize(GTK_WINDOW(m_widget));
+  } else {
+    gtk_window_set_default_size(GTK_WINDOW(m_widget), m_width, m_height);
+    gtk_window_move(GTK_WINDOW(m_widget), m_x, m_y);
+  }
 
   updateStatus(STATE_BEGIN);
   gtk_widget_show_all(m_widget);
@@ -401,9 +435,16 @@ void Frame::clickMenu(ENUM_MENU menu) {
 }
 
 void Frame::destroy() {
+  pr(m_maximized, m_x, m_y, m_width, m_height);
+
   writeConfig(CONFIG_TAGS, WORDS_VERSION, m_languageIndex, m_dictionaryIndex,
-              m_separatorPosition, m_font[0].get(), m_font[1].get());
-  job(JOB_TYPE_STOP);
+              m_separatorPosition, m_font[0].get(), m_font[1].get(),
+              m_maximized, m_x, m_y, m_width, m_height);
+  pri;
+
+  const std::string s[] = {"false", "true"};
+  pr(indexOf("false", s), indexOf("false", s), indexOf("fald", s))
+      job(JOB_TYPE_STOP);
   gtk_main_quit();
 }
 
@@ -825,7 +866,8 @@ std::string Frame::getMenuLabel(ENUM_MENU e) {
 }
 
 void Frame::endJob() {
-  // make unjoinable
+  // prsync("endJob");
+  //  make unjoinable
   if (m_thread.joinable())
     m_thread.join();
   updateStatus(m_token.stop_requested() ? STATE_USER_BREAK : STATE_OK);
@@ -1133,7 +1175,7 @@ std::string Frame::getProgramVersionString() const {
 }
 
 void Frame::updateStatus(ENUM_STATE state) {
-  // pr(magic_enum::enum_name(state));
+  prsync(magic_enum::enum_name(state));
   m_state = state;
   bool b = true;
   switch (state) {
@@ -1341,6 +1383,8 @@ void Frame::resetSettings(bool update) {
   int oldDictoinary = m_dictionaryIndex;
   m_languageIndex = m_dictionaryIndex = getSystemLanguage() == "ru";
   m_separatorPosition = DEFAULT_SEPARATOR_POSITION;
+  m_maximized = true;
+  m_x = m_y = m_width = m_height = 0;
   int i = 0;
   for (auto a : {"Monospace 14px", "Tahoma 14px"}) {
     m_font[i++].reset(pango_font_description_from_string(a));
@@ -1431,25 +1475,52 @@ JOB_TYPE_STOP - stop calculations if needed
 */
 void Frame::job(ENUM_JOB_TYPE e) {
   // блокировать второе нажатие
-
   if (oneOf(e, JOB_TYPE_SORT_AND_FILTER, JOB_TYPE_FILTER) &&
       m_result.empty()) { // only sort
     return;
   }
-  // prsync("stop");
+
+  // bool b = prepare();
+  // auto state = b ? STATE_PROCEEDING : STATE_ERROR;
+  if (e == JOB_TYPE_FULL) {
+    SearchResult::out = "";
+    m_result.clear();
+  }
+  clearTagMarks();
+  m_begin = clock();
+  m_addstatus = "";
+  m_filteredWordsCount = 0; // need to set always because in case of error
+                            // need m_filteredWordsCount = 0
+  setLabel(m_searchTagLabel, "");
+  if (!prepare()) {
+    m_end = clock();
+    updateStatus(STATE_ERROR);
+    //?    g_idle_add(end_job, NULL);
+
+    return;
+  }
+
   if (m_managerThread.joinable()) {
-    updateStatus(STATE_STOPPING);
     m_managerThread.detach();
   }
-  if (m_thread.joinable()) {
-    m_thread.join();
-  }
+  // if (m_thread.joinable()) {
+  //   updateStatus(STATE_STOPPING);
+  //   m_thread.join();
+  // }
 
   m_managerThread = std::jthread([this, e]() {
     // 1. Извлекаем старый поток из переменной класса (Handover)
     if (m_thread.joinable()) {
+      prsync("send stopping");
+      g_idle_add(update_status, GINT_TO_POINTER(STATE_STOPPING));
+      m_thread.join();
+    }
+
+    if (m_thread.joinable()) {
       std::jthread old_thread = std::move(m_thread);
       old_thread.request_stop();
+      prsync("send stopping");
+      g_idle_add(update_status, GINT_TO_POINTER(STATE_STOPPING));
       old_thread.join();
     }
     // prsync("stopped");
@@ -1459,16 +1530,21 @@ void Frame::job(ENUM_JOB_TYPE e) {
       // prsync("restart1");
       //  Запускаем новый поток (он сам всё очистит при старте)
       m_thread = std::jthread([this, e](std::stop_token token) {
-        // prsync("restart2");
         m_token = token;
-        routine(e);
+        prsync("run send proceeding");
+        g_idle_add(update_status, GINT_TO_POINTER(STATE_PROCEEDING));
+        g_usleep(6'000'000); // micro
+        run(e);
+        prsync("run end");
+        g_idle_add(end_job, NULL);
       });
     }
-    gdk_threads_add_idle(
-        [](gpointer data) -> gboolean {
-          frame->endJob();
-          return G_SOURCE_REMOVE;
-        },
-        NULL);
+    g_idle_add(end_job, NULL);
   });
+}
+
+void Frame::windowDeleteEvent() {
+  gtk_window_get_position(GTK_WINDOW(m_widget), &m_x, &m_y);
+  gtk_window_get_size(GTK_WINDOW(m_widget), &m_width, &m_height);
+  prsync(m_x, m_y, m_width, m_height);
 }
