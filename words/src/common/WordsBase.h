@@ -78,6 +78,7 @@ protected:
   std::vector<VMapStringTwoStringVectors> m_ma;
   VString m_chdv;
   std::vector<int> m_chd;
+  std::vector<AnagramMap> m_anagrams; 
 
   std::stop_token m_token;
 
@@ -122,10 +123,8 @@ public:
   bool checkPalindrome(const std::string &s);
   bool checkCrossword(const std::string &s);
 
-  //TODO
   bool checkRegularExpression(const std::string &s, pcre2_code *re,
                                    pcre2_match_data *match_data);
-  bool checkRegularExpression(const std::string &s){return true;}//stub
   bool checkCharacterSequence(const std::string &s);
   bool checkConsonantVowelSequence(const std::string &s);
   bool checkDensity(const std::string &s);
@@ -153,6 +152,7 @@ public:
   void checkKeyboardWordComplexPreProseeding();
   void checkDictionaryPreProseeding();
 
+  void anagramsPostProseeding();
   void dictionaryStatisticsPostProseeding();
   void wordFrequencyPostProseeding();
   void twoCharactersDistributionPostProseeding();

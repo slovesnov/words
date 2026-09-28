@@ -62,6 +62,7 @@ const LookupTable<ENUM_MENU, void (WordsBase::*)()> menuPreProseeding = {
     {MENU_CHECK_DICTIONARY, &WordsBase::checkDictionaryPreProseeding}};
 
 const LookupTable<ENUM_MENU, void (WordsBase::*)()> menuPostProseeding = {
+    {MENU_ANAGRAM, &WordsBase::anagramsPostProseeding},
     {MENU_WORD_FREQUENCY, &WordsBase::wordFrequencyPostProseeding},
     {MENU_DICTIONARY_STATISTICS,
      &WordsBase::dictionaryStatisticsPostProseeding},
@@ -77,7 +78,7 @@ const LookupTable<ENUM_MENU, void (WordsBase::*)()> menuPostProseeding = {
      &WordsBase::twoCharactersDistributionPostProseeding},
     {MENU_CHECK_DICTIONARY, &WordsBase::checkDictionaryPostProseeding}};
 
-//regular expression special proceeding
+// regular expression special proceeding
 const LookupTable<ENUM_MENU, bool (WordsBase::*)(const std::string &)>
     menu2BoolString = {
         {MENU_PANGRAM, &WordsBase::checkPangram},
@@ -144,6 +145,7 @@ WordsBase::WordsBase() {
   m_ma.resize(threads);
   m_chdv.resize(threads);
   m_thread_result.resize(threads);
+  m_anagrams.resize(threads);
 
   loadLanguages();
 
@@ -388,66 +390,6 @@ bool WordsBase::checkRegularExpression(const std::string &s, pcre2_code *re,
   return i >= m_comboValue[COMBOBOX_HELPER0] && i <= max;
 #endif
 }
-/*bool WordsBase::checkRegularExpression(const std::string &s,
-                                       const SafeGRegex &r) {
-#ifdef USE_STANDARD_REGEX
-  // todo always m_regex
-  std::ptrdiff_t const matches(std::distance(
-      std::sregex_iterator(s.begin(), s.end(), m_regex[ENTRY_TEMPLATE]),
-      std::sregex_iterator()));
-  return matches >= m_comboValue[COMBOBOX_HELPER0] &&
-         matches <= m_comboValue[COMBOBOX_HELPER1];
-#else
-  // Fast path (single match check)
-  if (!m_radioValue) {
-    return g_regex_match(r.get(), s.c_str(), GRegexMatchFlags(0), NULL);
-  }
-
-  // Optimized path to count matches without repeating GMatchInfo allocation
-  int i = 0;
-  int start_pos = 0;
-  const int max = m_comboValue[COMBOBOX_HELPER1];
-  const int string_len = s.length();
-
-  GMatchInfo *matchInfo = nullptr;
-
-  // Find the first match
-  if (g_regex_match_full(r.get(), s.c_str(), string_len, start_pos,
-                         GRegexMatchFlags(0), &matchInfo, nullptr)) {
-
-    while (g_match_info_matches(matchInfo) && i <= max) {
-      i++;
-
-      // Get the coordinates of the current match
-      int start_match, end_match;
-      g_match_info_fetch_pos(matchInfo, 0, &start_match, &end_match);
-
-      // Advance the start position for the next search iteration
-      start_pos = end_match;
-
-      // If the match was zero-length (e.g., ".*" pattern), advance by 1
-      // character to prevent an infinite loop
-      if (start_match == end_match) {
-        start_pos++;
-      }
-
-      if (start_pos > string_len) {
-        break;
-      }
-
-      // Reuse matchInfo without reallocating internal heap memory
-      g_match_info_next(matchInfo, nullptr);
-    }
-  }
-
-  if (matchInfo) {
-    g_match_info_free(matchInfo);
-  }
-
-  return i >= m_comboValue[COMBOBOX_HELPER0] && i <= max;
-#endif
-}
-*/
 
 void WordsBase::checkKeyboardWordSimplePreProseeding() {
   int i, k;
@@ -783,48 +725,60 @@ void WordsBase::showLongestDoubleWordSequence() {
 }
 
 void WordsBase::findAnagram(int nthread) {
-  int i;
-  std::string s;
-  // can use string or string_view
-  using V = std::vector<std::string_view>;
-  using MapStringV = std::map<std::string, V>;
-  MapStringV map;
-  MapStringV::iterator cit;
   const int min = m_comboValue[COMBOBOX_HELPER0];
   const int max = m_comboValue[COMBOBOX_HELPER1];
-
-  // at first make several sets by length is slower
-
-  for (i = min; i <= max; i++) {
-    //   auto [it, end] = iterators(m_dictionaryIndex, nthread);
-    auto r = getDictionary();
-    auto it = r.begin(), end = r.end();
-    for (; it != end; it++) {
-      auto const &e = *it;
-      if (int(e.length()) != i) {
-        continue;
-      }
-      s = e;
-      std::sort(s.begin(), s.end());
-      cit = map.find(s);
-      if (cit == map.end()) {
-        map[s] = {e};
-      } else {
-        cit->second.push_back(e);
-      }
+  auto [it, end] = iterators(m_dictionaryIndex, nthread);
+  auto &local_map = m_anagrams[nthread]; // Ссылка на карту текущего потока
+  local_map.clear();
+  for (; it != end; it++) {
+    if (int(it->length()) < min || int(it->length()) > max) {
+      continue;
     }
-    for (auto &[_, v] : map) {
-      if (v.size() < 2) {
-        continue;
-      }
-      s = joinV(v);
-      // m_thread_result[nthread].push_back(
-      //     SearchResult(s, v.begin()->length(), v.size()));
-      m_result.push_back(SearchResult(s, v.begin()->length(), v.size()));
-    }
-    map.clear();
+    std::string signature = *it;
+    std::sort(signature.begin(), signature.end()); // Сортировка байт Win-1251
+    // if (oneOf(*it,"ableness","blaeness","sensable")){
+    //   pr(*it,signature,nthread);
+    // }
+    local_map[signature].push_back(*it);
     RETURN_ON_USER_BREAK
   }
+}
+
+void WordsBase::anagramsPostProseeding() { // todo
+  AnagramMap final_anagrams;
+  prsynci;
+  auto begin = clock();
+
+  // 1. Сливаем карты из всех потоков в одну общую
+  for (auto &local_map : m_anagrams) {
+    for (auto &[signature, words] : local_map) {
+      auto &final_words = final_anagrams[signature];
+      if (signature == "abeelnss") {
+        std::string s = joinV(words);
+        pr(words.size(), s);
+      }
+      // Эффективно перемещаем (move) строки, избегая копирования памяти
+      final_words.insert(final_words.end(),
+                         std::make_move_iterator(words.begin()),
+                         std::make_move_iterator(words.end()));
+    }
+    local_map.clear(); // Освобождаем память потока сразу
+  }
+
+  // 2. Формируем единый список результатов для вывода в UI
+  for (auto &[signature, words] : final_anagrams) {
+    // Нас интересуют только классы эквивалентности, где больше 1 слова
+    if (words.size() > 1) {
+      std::string s = joinV(words);
+      m_result.push_back(
+          SearchResult(s, words.begin()->length(), words.size()));
+
+      // Добавляем сформированную группу анаграмм в ваш итоговый m_result
+      // (Передаем длину и флаг 1 в соответствии с конструктором SearchResult)
+      // m_result.push_back(SearchResult(group_line, group_line.length(), 1));
+    }
+  }
+  prsync(timeElapse(begin), m_result.size());
 }
 
 void WordsBase::findSimpleWordSequence(int nthread) {
@@ -2042,7 +1996,6 @@ void WordsBase::run_thread(int nthread) {
     auto n = isEnglish ? DICTIONARY_EN : DICTIONARY_RU_UTF8;
     auto [it2, end] = iterators(n, nthread);
     for (; it2 != end; it2++) {
-      // Вызываем обновленную функцию
       if (checkRegularExpression(*it2, r.get(), m.get())) {
         auto d = std::distance(m_dictionary[n].cbegin(), it2);
         auto &e = m_dictionary[m_dictionaryIndex][d];
@@ -2073,10 +2026,9 @@ void WordsBase::run(ENUM_JOB_TYPE e) {
     }
 
     std::vector<std::jthread> workers;
-    int threads =
-        oneOf(m_menuClick, MENU_ANAGRAM, MENU_CHAIN, MENU_LETTER_GROUP_SPLIT)
-            ? 1
-            : g_get_num_processors();
+    int threads = oneOf(m_menuClick, MENU_CHAIN, MENU_LETTER_GROUP_SPLIT)
+                      ? 1
+                      : g_get_num_processors();
     prsync(threads, magic_enum::enum_name(m_menuClick));
     for (int i = 0; i < threads; ++i) {
       workers.emplace_back(run_thread, this, i);
@@ -2089,10 +2041,7 @@ void WordsBase::run(ENUM_JOB_TYPE e) {
 
     if (auto it = menuPostProseeding.get(m_menuClick)) {
       (this->*(*it))();
-    }
-
-    if (threads > 1 && !oneOf(m_menuClick, MENU_SIMPLE_WORD_SEQUENCE,
-                              MENU_DOUBLE_WORD_SEQUENCE)) {
+    } else if (threads > 1) {
       m_result = m_thread_result | std::views::join |
                  std::ranges::to<SearchResultVector>();
     }
@@ -2130,14 +2079,11 @@ bool WordsBase::testFilterRegex(const std::string &s) {
   }
 
   int rc = pcre2_match(
-      m_regex[ENTRY_FILTER].get(),
-      (PCRE2_SPTR)s.c_str(),
-      s.length(),
-      0, // start_pos
-      0, // флаги
+      m_regex[ENTRY_FILTER].get(), (PCRE2_SPTR)s.c_str(), s.length(),
+      0,                           // start_pos
+      0,                           // флаги
       m_match[ENTRY_FILTER].get(), // передаем потокобезопасный буфер
-      NULL
-  );
+      NULL);
 
   return rc >= 0;
 }
@@ -2350,10 +2296,11 @@ bool WordsBase::getCheck() const { return false; }
 
 bool WordsBase::createRegex(ENUM_ENTRY e) {
   assert(int(e) < std::size(m_regex));
-  return createRegex(e, m_regex[e],m_match[e]);
+  return createRegex(e, m_regex[e], m_match[e]);
 }
 
-bool WordsBase::createRegex(ENUM_ENTRY e, UniquePcre2Code &r, UniquePcre2MatchData &m) {
+bool WordsBase::createRegex(ENUM_ENTRY e, UniquePcre2Code &r,
+                            UniquePcre2MatchData &m) {
   int errorcode;
   PCRE2_SIZE erroroffset;
 
@@ -2369,8 +2316,8 @@ bool WordsBase::createRegex(ENUM_ENTRY e, UniquePcre2Code &r, UniquePcre2MatchDa
     m.reset(pcre2_match_data_create_from_pattern(r.get(), NULL));
   }
 
-  return r !=
-         nullptr; // Для проверки на nullptr unique_ptr можно не вызывать .get()
+  return r != nullptr; // Для проверки на nullptr unique_ptr можно не вызывать
+                       // .get()
 }
 
 const std::string &WordsBase::alphabet() const {

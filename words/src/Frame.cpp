@@ -627,18 +627,26 @@ void Frame::setHelperPanel() {
 }
 
 void Frame::updateDictionary() {
+  pri
   updateSensitivity([this](int i) { return m_dictionaryIndex != i; },
                     MENU_LOAD_ENGLISH_DICTIONARY, MENU_LOAD_RUSSIAN_DICTIONARY);
+  pri
 
   updateButton(BUTTON_DICTIONARY);
+  pri
 
   if (auto it = FROM_TO_COMBO.get(m_menuClick)) { // todo
     // make it->active, to use same index need check whether number of items
     // became less
     for (auto a : {COMBOBOX_HELPER0, COMBOBOX_HELPER1}) {
-      auto w = m_combo[a]; // for pangrams only 1 combobox
-      if (w && GTK_IS_COMBO_BOX_TEXT(w))
+   pri
+     auto w = m_combo[a]; // for pangrams only 1 combobox
+      if (w && GTK_IS_COMBO_BOX_TEXT(w)){
+   pri
         refillCombo(a, it->min, it->max[m_dictionaryIndex] /*, it->active*/);
+   pri
+
+      }
     }
   }
 
@@ -649,6 +657,7 @@ void Frame::updateDictionary() {
    * means no last search m_menuClick changes only for search operations see
    * clickMenu() function also job() does entry highlight
    */
+   pr(m_menuClick != MENU_SEARCH)
   if (m_menuClick != MENU_SEARCH) {
     job();
   }

@@ -53,7 +53,7 @@ using MapStringIntI = MapStringInt::iterator;
 using MapStringTwoStringVectors = std::map<std::string, TwoStringVectors>;
 using VMapStringTwoStringVectors = std::vector<MapStringTwoStringVectors>;
 using MenuMap = std::map<ENUM_MENU, GtkWidget *>;
-
+using AnagramMap = std::unordered_map<std::string, VString>;
 
 // Sets
 using StringSet = std::set<std::string>;
