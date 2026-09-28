@@ -7,13 +7,10 @@
 
 #include "WordsBase.h"
 #include "consts.h"
-#include "magic_enum.hpp" //TODO
+#include "magic_enum.hpp"
 #include <cassert>
 #include <execution>
 #include <ranges>
-
-
-std::mutex cout_mutex;
 
 #ifdef NOGTK
 #define RETURN_ON_USER_BREAK

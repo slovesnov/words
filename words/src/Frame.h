@@ -203,7 +203,6 @@ public:
   void switchDictionary();
   void saveText();
 
-  void routine(ENUM_JOB_TYPE e);
   void job(ENUM_JOB_TYPE e = JOB_TYPE_FULL);
 
   template <typename PredicateOrBool, typename... Args>

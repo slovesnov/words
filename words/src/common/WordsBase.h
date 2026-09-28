@@ -21,20 +21,6 @@
 #include <regex>
 #endif
 
-#include <mutex> //TODO
-extern std::mutex cout_mutex;
-#define prsync(...)                                                            \
-  {                                                                            \
-    std::lock_guard<std::mutex> lock(cout_mutex);                              \
-    prs(__VA_ARGS__);                                                          \
-  }
-
-#define prsynci                                                                \
-  {                                                                            \
-    std::lock_guard<std::mutex> lock(cout_mutex);                              \
-    pri_short;                                                                 \
-  }
-
 const char SEPARATOR[] = "SEPARATOR";
 const std::string invalidDifference = "$";
 

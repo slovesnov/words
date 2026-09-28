@@ -5,19 +5,10 @@
  *      Author: alexey slovesnov
  */
 
-/*
- * WINDOW_SIZE_TYPE=0 default
- * WINDOW_SIZE_TYPE=1 for youtube helper clip writing
- * WINDOW_SIZE_TYPE=2 for site screenshots
- */
 #define WINDOW_SIZE_TYPE 0
 
 #include "Frame.h"
 #include "CheckNewVersion.h"
-#if WINDOW_SIZE_TYPE == 2
-#include <windows.h>
-#endif
-
 #include "magic_enum.hpp"
 #include <format>
 
@@ -42,6 +33,7 @@ void menu_activate(GtkWidget *widget, ENUM_MENU menu) {
 
 void combo_changed(GtkComboBox *comboBox, ENUM_COMBOBOX e) {
   if (!frame->isSignalsLocked()) {
+    pri;
     frame->comboChanged(e);
   }
 }
@@ -105,7 +97,7 @@ gboolean on_debounce_timeout(gpointer data) {
 }
 
 gboolean update_status(gpointer data) {
-  prsync("3");
+  prsync("update_status");
   frame->updateStatus(ENUM_STATE(GPOINTER_TO_INT(data)));
   return G_SOURCE_REMOVE;
 }
@@ -133,7 +125,7 @@ Frame::Frame() : WordsBase() {
   m_menuClick = MENU_SEARCH;
   // set dot as decimal separator, standard locale
   // setlocale(LC_NUMERIC, "C"); // needs double to string when output time
-  m_lockSignals = false;
+  lockSignals(); // lock, unlock after create
 
   resetSettings(false);
   if (readConfig(CONFIG_TAGS, s, m_languageIndex, m_dictionaryIndex,
@@ -222,7 +214,8 @@ Frame::Frame() : WordsBase() {
   m_positionSignalId = g_signal_connect(
       w1, "notify::position",
       G_CALLBACK(+[](GObject *object, GParamSpec *pspec, gpointer data) {
-        frame->m_separatorPosition = gtk_paned_get_position(GTK_PANED(object));
+        pr("separator") frame->m_separatorPosition =
+            gtk_paned_get_position(GTK_PANED(object));
       }),
       NULL);
 
@@ -311,7 +304,6 @@ Frame::Frame() : WordsBase() {
   for (auto &a : m_button) {
     g_signal_connect(a, "clicked", G_CALLBACK(button_clicked), NULL);
   }
-
   g_signal_connect(m_combo[COMBOBOX_SORT_ORDER], "changed",
                    G_CALLBACK(combo_changed), gpointer(COMBOBOX_SORT_ORDER));
   g_signal_connect(m_widget, "window-state-event",
@@ -331,27 +323,7 @@ Frame::Frame() : WordsBase() {
   gtk_widget_show_all(m_widget);
   gtk_window_set_focus(GTK_WINDOW(m_widget),
                        NULL); // no focus
-
-#if WINDOW_SIZE_TYPE == 1 || WINDOW_SIZE_TYPE == 2
-                              //  after gtk_widget_show_all
-#if WINDOW_SIZE_TYPE == 1
-  const int height = 720; // notebook resolution 1366x768 40pixels low pane,
-                          // height - full height of window with title
-  const int width = 16 * height / 9; // full hd - 1280x720
-#else
-                              //  for screenshots on site
-  const int width = 780;
-  const int height = 10 * width / 16;
-#endif
-
-  RECT rect;
-  HWND h = GetActiveWindow();
-  assert(h != 0 && "GetActiveWindow()!=NULL");
-  rect.left = rect.top = rect.right = rect.bottom = 0;
-  AdjustWindowRect(&rect, GetWindowLong(h, GWL_STYLE), FALSE);
-  gtk_widget_set_size_request(m_widget, width - (rect.right - rect.left),
-                              height - (rect.bottom - rect.top));
-#endif
+  unlockSignals();
 }
 
 void Frame::clickMenu(ENUM_MENU menu) {
@@ -435,16 +407,10 @@ void Frame::clickMenu(ENUM_MENU menu) {
 }
 
 void Frame::destroy() {
-  pr(m_maximized, m_x, m_y, m_width, m_height);
-
   writeConfig(CONFIG_TAGS, WORDS_VERSION, m_languageIndex, m_dictionaryIndex,
               m_separatorPosition, m_font[0].get(), m_font[1].get(),
               m_maximized, m_x, m_y, m_width, m_height);
-  pri;
-
-  const std::string s[] = {"false", "true"};
-  pr(indexOf("false", s), indexOf("false", s), indexOf("fald", s))
-      job(JOB_TYPE_STOP);
+  job(JOB_TYPE_STOP);
   gtk_main_quit();
 }
 
@@ -717,14 +683,17 @@ void Frame::refillCombo(ENUM_COMBOBOX e, const VString &v, int active) {
   if (active >= int(v.size())) {
     active = v.size() - 1;
   }
-  lockSignals();
+  bool b = isSignalsLocked();
+  if (!b)
+    lockSignals();
   auto c = GTK_COMBO_BOX_TEXT(m_combo[e]);
   gtk_combo_box_text_remove_all(c);
   for (auto &a : v) {
     gtk_combo_box_text_append_text(c, a.c_str());
   }
   setComboIndex(e, active);
-  unlockSignals();
+  if (!b)
+    unlockSignals();
 }
 
 GtkWidget *Frame::createTextCombo(ENUM_COMBOBOX e, VString v, int active) {
@@ -788,7 +757,8 @@ void Frame::comboChanged(ENUM_COMBOBOX e) {
   }
 
   if (oneOf(e, COMBOBOX_SORT, COMBOBOX_SORT_ORDER, COMBOBOX_FILTER)) {
-    job(e == COMBOBOX_FILTER ? JOB_TYPE_FILTER : JOB_TYPE_SORT_AND_FILTER);
+    pr(magic_enum::enum_name(e))
+        job(e == COMBOBOX_FILTER ? JOB_TYPE_FILTER : JOB_TYPE_SORT_AND_FILTER);
     return;
   }
   if (getLastCombobox() == e) {
@@ -1175,7 +1145,7 @@ std::string Frame::getProgramVersionString() const {
 }
 
 void Frame::updateStatus(ENUM_STATE state) {
-  prsync(magic_enum::enum_name(state));
+  // prsync(magic_enum::enum_name(state));
   m_state = state;
   bool b = true;
   switch (state) {
@@ -1443,30 +1413,6 @@ void Frame::saveText() {
   gtk_widget_destroy(dialog);
 }
 
-void Frame::routine(ENUM_JOB_TYPE e) {
-  bool b = prepare();
-  auto state = b ? STATE_PROCEEDING : STATE_ERROR;
-  if (e == JOB_TYPE_FULL) {
-    SearchResult::out = "";
-    m_result.clear();
-  }
-  clearTagMarks();
-  m_begin = clock();
-  m_addstatus = "";
-  m_filteredWordsCount = 0; // need to set always because in case of error
-                            // need m_filteredWordsCount = 0
-  setLabel(m_searchTagLabel, "");
-  if (!b) {
-    m_end = clock();
-  }
-  updateStatus(state);
-
-  if (b) {
-    run(e);
-    // startThread(e);
-  }
-}
-
 /*
 JOB_TYPE_FULL - stop calculations if needed, then start new calculations
 JOB_TYPE_SORT_AND_FILTER - stop calculations if needed, then sort and filter
@@ -1474,14 +1420,13 @@ results JOB_TYPE_FILTER - stop calculations if needed, then filter results
 JOB_TYPE_STOP - stop calculations if needed
 */
 void Frame::job(ENUM_JOB_TYPE e) {
+  prsync(magic_enum::enum_name(e), "################");
   // блокировать второе нажатие
-  if (oneOf(e, JOB_TYPE_SORT_AND_FILTER, JOB_TYPE_FILTER) &&
-      m_result.empty()) { // only sort
+  if (oneOf(e, JOB_TYPE_SORT_AND_FILTER, JOB_TYPE_FILTER) && m_result.empty()) {
+    prsynci;
     return;
   }
 
-  // bool b = prepare();
-  // auto state = b ? STATE_PROCEEDING : STATE_ERROR;
   if (e == JOB_TYPE_FULL) {
     SearchResult::out = "";
     m_result.clear();
@@ -1489,62 +1434,75 @@ void Frame::job(ENUM_JOB_TYPE e) {
   clearTagMarks();
   m_begin = clock();
   m_addstatus = "";
-  m_filteredWordsCount = 0; // need to set always because in case of error
-                            // need m_filteredWordsCount = 0
+  m_filteredWordsCount = 0;
   setLabel(m_searchTagLabel, "");
+
   if (!prepare()) {
+    prsynci;
     m_end = clock();
     updateStatus(STATE_ERROR);
-    //?    g_idle_add(end_job, NULL);
-
     return;
   }
+  prsynci;
+  // --- РЕШЕНИЕ ПРОБЛЕМЫ ПОТОКОВ ---
 
-  if (m_managerThread.joinable()) {
-    m_managerThread.detach();
-  }
-  // if (m_thread.joinable()) {
-  //   updateStatus(STATE_STOPPING);
-  //   m_thread.join();
-  // }
+  // 1. Сигнализируем СТАРЫМ потокам, что им пора завершаться (без ожидания
+  // .join!) Благодаря std::jthread, уничтожение старого объекта
+  // автоматически вызовет request_stop() и detach() если мы правильно
+  // переприсвоим поток.
+  m_managerThread = std::jthread([this, e](std::stop_token manager_token) {
+    // Переводим интерфейс в состояние остановки старой задачи
+    prsync("send stopping");
+    g_idle_add(update_status, GINT_TO_POINTER(STATE_STOPPING));
 
-  m_managerThread = std::jthread([this, e]() {
-    // 1. Извлекаем старый поток из переменной класса (Handover)
+    // Безопасно завершаем предыдущий рабочий поток, если он активен
     if (m_thread.joinable()) {
-      prsync("send stopping");
-      g_idle_add(update_status, GINT_TO_POINTER(STATE_STOPPING));
-      m_thread.join();
+      m_thread.request_stop(); // Просим остановиться
+      m_thread.join();         // Ждем остановки в фоне (не блокируя UI!)
     }
+    prsynci;
 
-    if (m_thread.joinable()) {
-      std::jthread old_thread = std::move(m_thread);
-      old_thread.request_stop();
-      prsync("send stopping");
-      g_idle_add(update_status, GINT_TO_POINTER(STATE_STOPPING));
-      old_thread.join();
+    // Проверяем, не нажал ли пользователь "СТОП" вообще
+    if (manager_token.stop_requested() || e == JOB_TYPE_STOP) {
+      prsynci;
+      g_idle_add(end_job, NULL);
+      return;
     }
-    // prsync("stopped");
+    prsynci;
 
-    // 4. Проверяем опцию: нужен ли перезапуск?
-    if (e != JOB_TYPE_STOP) {
-      // prsync("restart1");
-      //  Запускаем новый поток (он сам всё очистит при старте)
-      m_thread = std::jthread([this, e](std::stop_token token) {
-        m_token = token;
-        prsync("run send proceeding");
-        g_idle_add(update_status, GINT_TO_POINTER(STATE_PROCEEDING));
-        g_usleep(6'000'000); // micro
-        run(e);
-        prsync("run end");
-        g_idle_add(end_job, NULL);
-      });
-    }
-    g_idle_add(end_job, NULL);
+    // Запускаем новый рабочий поток
+    m_thread = std::jthread([this, e](std::stop_token token) {
+      m_token = token; // сохраняем токен, если он нужен внутри run(e)
+
+      prsync("run send proceeding");
+      // Ставим статус PROCEEDING в очередь UI
+      g_idle_add(update_status, GINT_TO_POINTER(STATE_PROCEEDING));
+
+      // Имитация долгого старта (если она действительно нужна)
+      // ВАЖНО: проверяем токен каждую секунду, чтобы поток можно
+      // было прервать во время сна for (int i = 0; i < 60; ++i) {
+      //     if (token.stop_requested()) return;
+      //     g_usleep(100000); // 100мс * 60 = 6 секунд
+      // }
+
+      if (token.stop_requested())
+        return;
+
+      // Запуск основной работы
+      run(e);
+
+      prsync("run end");
+      // Вызываем завершение работы ТОЛЬКО когда run(e) реально
+      // закончился!
+      g_idle_add(end_job, NULL);
+    });
+
+    // Обратите внимание: g_idle_add(end_job, NULL) ОТСЮДА УДАЛЕН!
+    // Менеджер больше не шлет сигнал завершения раньше времени.
   });
 }
 
 void Frame::windowDeleteEvent() {
   gtk_window_get_position(GTK_WINDOW(m_widget), &m_x, &m_y);
   gtk_window_get_size(GTK_WINDOW(m_widget), &m_width, &m_height);
-  prsync(m_x, m_y, m_width, m_height);
 }
