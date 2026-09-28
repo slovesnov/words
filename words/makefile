@@ -25,7 +25,7 @@ SRCS     := src/main.cpp $(wildcard src/*/*.cpp) $(ASLOV)/aslov.cpp
 
 ifeq ($(CONFIG), release)
     CXXFLAGS += $(shell pkg-config --cflags gtk+-3.0)
-    LIBS     := $(shell pkg-config --libs gtk+-3.0) -lcurl
+    LIBS     := $(shell pkg-config --libs gtk+-3.0) -lcurl -lpcre2-8
     SRCS     += $(ASLOV)/CheckNewVersion.cpp src/Frame.cpp
     EXTRA_OBJS := $(TARGET)/icon/app.o
 else ifeq ($(CONFIG), console)

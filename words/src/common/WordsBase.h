@@ -16,6 +16,8 @@
 #include <cstring>
 #include <ctime>
 #include <thread>
+#define PCRE2_CODE_UNIT_WIDTH 8
+#include <pcre2.h>
 
 #ifdef USE_STANDARD_REGEX
 #include <regex>
@@ -112,10 +114,11 @@ public:
   bool checkTemplate(const std::string &s);
   bool checkPalindrome(const std::string &s);
   bool checkCrossword(const std::string &s);
-  bool checkRegularExpression(const std::string &s, const SafeGRegex &r);
-  bool checkRegularExpression(const std::string &s) {
-    return checkRegularExpression(s, m_regex[0]);
-  }
+
+  //TODO
+  bool checkRegularExpression(const std::string &s, pcre2_code *re,
+                                   pcre2_match_data *match_data);
+  bool checkRegularExpression(const std::string &s){return true;}//stub
   bool checkCharacterSequence(const std::string &s);
   bool checkConsonantVowelSequence(const std::string &s);
   bool checkDensity(const std::string &s);

@@ -11,7 +11,10 @@
 #include <cassert>
 #include <execution>
 #include <ranges>
-#include <unistd.h> //sleep todo
+#define PCRE2_CODE_UNIT_WIDTH 8
+#define PCRE2_STATIC
+#include <pcre2.h>
+
 #ifdef NOGTK
 #define RETURN_ON_USER_BREAK
 #else
@@ -335,7 +338,60 @@ bool WordsBase::checkPalindrome(const std::string &s) {
   return true;
 }
 
-bool WordsBase::checkRegularExpression(const std::string &s,
+bool WordsBase::checkRegularExpression(const std::string &s, pcre2_code *re,
+                                       pcre2_match_data *match_data) {
+#ifdef USE_STANDARD_REGEX
+  // todo always m_regex
+  std::ptrdiff_t const matches(std::distance(
+      std::sregex_iterator(s.begin(), s.end(), m_regex[ENTRY_TEMPLATE]),
+      std::sregex_iterator()));
+  return matches >= m_comboValue[COMBOBOX_HELPER0] &&
+         matches <= m_comboValue[COMBOBOX_HELPER1];
+#else
+  // Fast path (single match check)
+  if (!m_radioValue) {
+    int rc = pcre2_match(re, (PCRE2_SPTR)s.c_str(), s.length(),
+                         0, // стартовая позиция
+                         0, // флаги
+                         match_data, NULL);
+    return rc >= 0; // rc >= 0 означает, что совпадение найдено
+  }
+
+  // Optimized path to count matches
+  int i = 0;
+  size_t start_pos = 0;
+  const int max = m_comboValue[COMBOBOX_HELPER1];
+  const size_t string_len = s.length();
+
+  while (start_pos <= string_len && i <= max) {
+    int rc = pcre2_match(re, (PCRE2_SPTR)s.c_str(), string_len, start_pos, 0,
+                         match_data, NULL);
+
+    if (rc < 0) {
+      break; // Больше совпадений нет (или ошибка)
+    }
+
+    i++;
+
+    // Получаем указатель на таблицу векторов совпадений (аналог
+    // g_match_info_fetch_pos)
+    PCRE2_SIZE *ovector = pcre2_get_ovector_pointer(match_data);
+    size_t start_match = ovector[0];
+    size_t end_match = ovector[1];
+
+    // Смещаем позицию для следующего поиска
+    start_pos = end_match;
+
+    // Защита от бесконечного цикла на пустых регулярках (например, ".*")
+    if (start_match == end_match) {
+      start_pos++;
+    }
+  }
+
+  return i >= m_comboValue[COMBOBOX_HELPER0] && i <= max;
+#endif
+}
+/*bool WordsBase::checkRegularExpression(const std::string &s,
                                        const SafeGRegex &r) {
 #ifdef USE_STANDARD_REGEX
   // todo always m_regex
@@ -394,6 +450,7 @@ bool WordsBase::checkRegularExpression(const std::string &s,
   return i >= m_comboValue[COMBOBOX_HELPER0] && i <= max;
 #endif
 }
+*/
 
 void WordsBase::checkKeyboardWordSimplePreProseeding() {
   int i, k;
@@ -1721,14 +1778,14 @@ void WordsBase::sortFilterResults(ENUM_JOB_TYPE e) {
     return;
   }
   SearchResult::out = "";
-  auto begin = clock();
+  //auto begin = clock();
   if (e != JOB_TYPE_FILTER) {
     // mtsort
     std::sort(std::execution::par, m_result.begin(), m_result.end(),
               SORT_FUNCTION[m_comboValue[COMBOBOX_SORT] * 2 +
                             m_comboValue[COMBOBOX_SORT_ORDER]]);
   }
-  auto te = timeElapse(begin);
+  //auto te = timeElapse(begin);
   for (auto const &e : m_result) {
     s = fastLocaleToUtf8(e.s);
 #ifndef NOGTK
@@ -1760,7 +1817,7 @@ void WordsBase::sortFilterResults(ENUM_JOB_TYPE e) {
     SearchResult::out += ")";
     RETURN_ON_USER_BREAK
   }
-  prsync("sort", te, timeElapse(begin)); // todo
+  //prsync("sort", te, timeElapse(begin)); // todo
 }
 
 void WordsBase::loadLanguages() {
@@ -1967,7 +2024,7 @@ PairDCIDCI WordsBase::iterators(ENUM_DICTIONARY e, int nthread) {
 }
 
 void WordsBase::run_thread(int nthread) {
-  auto begin = clock();
+  //auto begin = clock();
   m_thread_result[nthread].clear();
 
   if (auto it = menu2VoidInt.get(m_menuClick)) {
@@ -1976,24 +2033,52 @@ void WordsBase::run_thread(int nthread) {
 
   if (auto it = menu2BoolString.get(m_menuClick)) {
     if (m_menuClick == MENU_REGULAR_EXPRESSIONS) {
-      SafeGRegex r; // have to create separate regex, for every thread otherwise
-      // very slow
-      createRegex(ENTRY_TEMPLATE, r);
+      std::string pattern = getEntryString(ENTRY_TEMPLATE);
+
+      int errorcode;
+      PCRE2_SIZE erroroffset;
+
+      // Компилируем регулярку (один раз на поток).
+      // Флаг PCRE2_CASELESS — если нужен регистронезависимый поиск (аналог i в
+      // regex)
+
+      pcre2_code* re = pcre2_compile(
+    (PCRE2_SPTR)pattern.c_str(),
+    PCRE2_ZERO_TERMINATED,
+    PCRE2_UTF, 
+    &errorcode,
+    &erroroffset,
+    NULL
+);
+
+      if (!re) {
+        // Ошибка компиляции регулярного выражения
+        return;
+      }
+if (re) {
+    // Включаем JIT-компиляцию для максимальной скорости!
+    pcre2_jit_compile(re, PCRE2_JIT_COMPLETE);
+}
+      // Создаем блок данных для совпадений (один раз на поток)
+      pcre2_match_data *match_data =
+          pcre2_match_data_create_from_pattern(re, NULL);
+
       bool isEnglish = m_dictionaryIndex == DICTIONARY_EN;
       auto n = isEnglish ? DICTIONARY_EN : DICTIONARY_RU_UTF8;
       auto [it2, end] = iterators(n, nthread);
-      int counter = 0;
       for (; it2 != end; it2++) {
-        if (checkRegularExpression(*it2, r)) {
+        // Вызываем обновленную функцию
+        if (checkRegularExpression(*it2, re, match_data)) {
           auto d = std::distance(m_dictionary[n].cbegin(), it2);
           auto &e = m_dictionary[m_dictionaryIndex][d];
           m_thread_result[nthread].push_back(SearchResult(e, e.length(), 1));
         }
-        if (++counter % 2000 == 0) {
-          std::this_thread::yield();
-        }
         RETURN_ON_USER_BREAK
       }
+
+      // Обязательно освобождаем память в конце работы потока
+      pcre2_match_data_free(match_data);
+      pcre2_code_free(re);
     } else {
       auto [it2, end] = iterators(m_dictionaryIndex, nthread);
       for (; it2 != end; it2++) {
@@ -2006,7 +2091,7 @@ void WordsBase::run_thread(int nthread) {
     }
   }
 
-  prsync(nthread, timeElapse(begin)); // todo
+  //prsync(nthread, timeElapse(begin)); // todo
 }
 
 void WordsBase::run(ENUM_JOB_TYPE e) {
@@ -2052,6 +2137,7 @@ void WordsBase::run(ENUM_JOB_TYPE e) {
     userbreak = m_token.stop_requested();
   }
   m_end = clock();
+  prsync("run finished");
   // m_result.clear();??
 }
 

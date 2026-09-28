@@ -97,8 +97,6 @@ gboolean on_debounce_timeout(gpointer data) {
 }
 
 gboolean update_status(gpointer data) {
-  prsync("update_status",
-         magic_enum::enum_name(ENUM_STATE(GPOINTER_TO_INT(data))));
   frame->updateStatus(ENUM_STATE(GPOINTER_TO_INT(data)));
   return G_SOURCE_REMOVE;
 }
@@ -1421,11 +1419,11 @@ results JOB_TYPE_FILTER - stop calculations if needed, then filter results
 JOB_TYPE_STOP - stop calculations if needed
 */
 void Frame::job(ENUM_JOB_TYPE e) {
+  const auto priority=G_PRIORITY_HIGH;
   prsync(magic_enum::enum_name(m_menuClick), magic_enum::enum_name(e),
          "################");
   // блокировать второе нажатие
   if (oneOf(e, JOB_TYPE_SORT_AND_FILTER, JOB_TYPE_FILTER) && m_result.empty()) {
-    prsynci;
     return;
   }
 
@@ -1440,7 +1438,6 @@ void Frame::job(ENUM_JOB_TYPE e) {
   setLabel(m_searchTagLabel, "");
 
   if (!prepare()) {
-    prsynci;
     m_end = clock();
     updateStatus(STATE_ERROR);
     return;
@@ -1457,7 +1454,8 @@ void Frame::job(ENUM_JOB_TYPE e) {
 
   m_managerThread = std::jthread([this, e](std::stop_token manager_token) {
     prsync("send stopping");
-    g_idle_add(update_status, GINT_TO_POINTER(STATE_STOPPING));
+      g_idle_add_full(priority, update_status,
+                      GINT_TO_POINTER(STATE_STOPPING), NULL);
 
     // Безопасно завершаем предыдущий рабочий поток
     if (m_thread.joinable()) {
@@ -1468,24 +1466,22 @@ void Frame::job(ENUM_JOB_TYPE e) {
     // Обязательно проверяем токен менеджера ПОСЛЕ того, как дождались старый
     // m_thread
     if (manager_token.stop_requested()) {
-      prsynci;
       return; // Если прилетел новый job, просто выходим. Новый менеджер сделает
               // остальное.
     }
 
     if (e == JOB_TYPE_STOP) {
-      prsynci;
-      g_idle_add(end_job, NULL);
+      g_idle_add_full(priority, end_job,
+                      NULL, NULL);
       return;
     }
-    prsynci;
 
     // Запускаем новый рабочий поток
     m_thread = std::jthread([this, e](std::stop_token token) {
       m_token = token;
 
-      prsync("run send proceeding");
-      g_idle_add(update_status, GINT_TO_POINTER(STATE_PROCEEDING));
+      g_idle_add_full(priority, update_status,
+                      GINT_TO_POINTER(STATE_PROCEEDING), NULL);
 
       if (token.stop_requested())
         return;
@@ -1498,7 +1494,8 @@ void Frame::job(ENUM_JOB_TYPE e) {
         return;
 
       prsync("run end");
-      g_idle_add(end_job, NULL);
+      g_idle_add_full(priority, end_job,
+                      NULL, NULL);
     });
   });
 }
