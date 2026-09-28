@@ -632,7 +632,7 @@ void Frame::updateDictionary() {
     for (auto a : {COMBOBOX_HELPER0, COMBOBOX_HELPER1}) {
       auto w = m_combo[a]; // for pangrams only 1 combobox
       if (w && GTK_IS_COMBO_BOX_TEXT(w))
-        refillCombo(a, it->min, it->max[m_dictionaryIndex], it->active);
+        refillCombo(a, it->min, it->max[m_dictionaryIndex] /*, it->active*/);
     }
   }
 
@@ -670,8 +670,12 @@ void Frame::updateLanguage() {
 }
 
 void Frame::refillCombo(ENUM_COMBOBOX e, const VString &v, int active) {
-  if (active == -1)
+  if (active == -1) {
     active = getComboIndex(e);
+  }
+  if (active >= int(v.size())) {
+    active = v.size() - 1;
+  }
   lockSignals();
   auto c = GTK_COMBO_BOX_TEXT(m_combo[e]);
   gtk_combo_box_text_remove_all(c);
@@ -687,10 +691,6 @@ GtkWidget *Frame::createTextCombo(ENUM_COMBOBOX e, VString v, int active) {
   refillCombo(e, v, active);
   g_signal_connect(w, "changed", G_CALLBACK(combo_changed), gpointer(e));
   return w;
-}
-
-GtkWidget *Frame::createTextCombo(ENUM_COMBOBOX e) {
-  return createTextCombo(e, {}, -1);
 }
 
 void Frame::addComboLineToHelper(int from, int to, int active, std::string s1,

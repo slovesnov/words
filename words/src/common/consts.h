@@ -133,7 +133,23 @@ const LookupTable<ENUM_MENU, ENUM_STRING> MENU_TO_SETTINGS = {
   showLongestPangram();
   showLongestSimpleWordSequence();
   showLongestDoubleWordSequence();
-  onchange dictionay size need to recount
+  onchange dictionary size need to recount
+
+length22 cholecystoduodenostomy duodenocholecystostomy
+length31 i?iecaianoaaiii-oa??eoi?eaeuiue oa??eoi?eaeuii-i?iecaianoaaiiue
+const std::array<int,LANGUAGES> MAX_ANAGRAM_LENGTH={22,31}
+pangram diff chars16 blepharoconjunctivitis
+pangram diff chars21 ?oiuiey-o?aioey-ainiey-aa?oaaiaeia-oi?aaoey-iaeaaiiey
+const std::array<int,LANGUAGES> MAX_PANGRAM_LENGTH={16,21}
+antidisestablishmentarian - antidisestablishmentarian antidisestablishmentarianism 25
+ieeioeiaieaaaaieiaeioeeaioeaai - ieeioeiaieaaaaieiaeioeeaioeaai ieeioeiaieaaaaieiaeioeeaioeaaie 30
+const std::array<int,LANGUAGES> MAX_SIMPLE_WORD_SEQUENCE_LENGTH={25,30}
+benzene benzeneazobenzene - benzene benzeneazobenzene 7
+aiai?iiao?iane aiai?iiao?iane-iineaa-aiai?iiao?iane - aiai?iiao?iane aiai?iiao?iane-iineaa-aiai?iiao
+?iane 14
+const std::array<int,LANGUAGES> MAX_DOUBLE_WORD_SEQUENCE_LENGTH={7,14}
+
+производственно-территориальный
  */
 const std::array<int,LANGUAGES> MAX_ANAGRAM_LENGTH = {22, 31};
 const std::array<int,LANGUAGES> MAX_PANGRAM_LENGTH = {16, 21};

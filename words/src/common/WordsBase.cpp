@@ -9,8 +9,9 @@
 #include "consts.h"
 #include "magic_enum.hpp" //TODO
 #include <cassert>
-#include <ranges>
 #include <execution>
+#include <ranges>
+
 
 std::mutex cout_mutex;
 
@@ -149,6 +150,11 @@ WordsBase::WordsBase() {
 
   loadLanguages();
 
+  // showLongestAnagram();
+  // showLongestPangram();
+  // showLongestSimpleWordSequence();
+  // showLongestDoubleWordSequence();
+
   // test();
 #ifdef NOGTK
   // cgi();TODO uncomment on real cgi query
@@ -158,10 +164,6 @@ WordsBase::WordsBase() {
   // count longest constants needs when dictionary changed
   // checkLFAllFiles();
   // system("chcp 1251>nul");
-  // showLongestAnagram();
-  // showLongestPangram();
-  // showLongestSimpleWordSequence();
-  // showLongestDoubleWordSequence();
 #endif
 }
 
@@ -503,7 +505,6 @@ int WordsBase::differentChars(std::string_view s) {
   return c;
 }
 
-#ifdef NOGTK
 std::string readBinaryFileToString(const std::string &filename) {
   std::ifstream file(filename, std::ios::binary | std::ios::ate);
   std::string s;
@@ -543,8 +544,9 @@ void outMax(std::string f, std::array<int, 2> r) {
       s += '_';
     s += std::toupper(c);
   }
-  std::cout << std::format("const int MAX{}_LENGTH={};//{{{}}}\n", s,
-                           std::max(r[0], r[1]), join(r));
+  std::cout << std::format(
+      "const std::array<int,LANGUAGES> MAX{}_LENGTH={{{},{}}}\n", s, r[0],
+      r[1]);
 }
 
 // like simpleDoubleWordSequencePostProseeding()
@@ -571,7 +573,7 @@ bool outMap(const MapStringTwoStringVectors &map, size_t len) {
 void WordsBase::showLongestAnagram() {
   int i, n;
   std::array<int, 2> r;
-  std::string s;
+  std::string s, s1;
   MapStringStringVector map;
   MapStringStringVectorI cit;
   VVString vvs;
@@ -604,8 +606,9 @@ void WordsBase::showLongestAnagram() {
           }
           s = joinV(v);
           r[n] = i;
-          std::cout << std::format("length{} {}\n", i, s);
-          // pr1("MAX_ANAGRAM_LENGTH={}; {}", i, s);
+          s1 = std::format("length{} {}\n", i, s);
+          std::cout << s1;
+          printlo(s1);
           goto l425;
         }
       }
@@ -635,6 +638,7 @@ void WordsBase::showLongestPangram() {
       }
     }
     std::cout << s;
+    printlo(s);
   }
   outMax(__func__, r);
 }
@@ -726,7 +730,6 @@ void WordsBase::showLongestDoubleWordSequence() {
   }
   outMax(__func__, r);
 }
-#endif
 
 void WordsBase::findAnagram(int nthread) {
   int i;
@@ -741,8 +744,10 @@ void WordsBase::findAnagram(int nthread) {
 
   // at first make several sets by length is slower
 
-  for (i = min; i <= max; i++) {
-    auto [it, end] = iterators(m_dictionaryIndex, nthread);
+   for (i = min; i <= max; i++) {
+  //   auto [it, end] = iterators(m_dictionaryIndex, nthread);
+  auto r=getDictionary();
+  auto it=r.begin(),end=r.end();
     for (; it != end; it++) {
       auto const &e = *it;
       if (int(e.length()) != i) {
@@ -762,7 +767,9 @@ void WordsBase::findAnagram(int nthread) {
         continue;
       }
       s = joinV(v);
-      m_thread_result[nthread].push_back(
+      // m_thread_result[nthread].push_back(
+      //     SearchResult(s, v.begin()->length(), v.size()));
+          m_result.push_back(
           SearchResult(s, v.begin()->length(), v.size()));
     }
     map.clear();
@@ -1169,7 +1176,7 @@ l210:
   // pr(timeElapse(begin))
 }
 
-void WordsBase::findLetterGroupSplit(int nthread) {//todo
+void WordsBase::findLetterGroupSplit(int nthread) { // todo
   std::string s, s1, t, lng;
   size_t i, j;
   auto charset = getOrderedString(m_entryValue);
@@ -1383,9 +1390,9 @@ void WordsBase::wordFrequencyPostProseeding() {
       v[1].push_back({m[i], i + 1});
     }
   }
-  std::sort(std::execution::par,v[0].begin(), v[0].end(),
+  std::sort(std::execution::par, v[0].begin(), v[0].end(),
             [](auto &a, auto &b) { return a.first > b.first; });
-  std::sort(std::execution::par,v[1].begin(), v[1].end(),
+  std::sort(std::execution::par, v[1].begin(), v[1].end(),
             [](auto &a, auto &b) { return a.second < b.second; });
 
   size_t w = toString(v[0][0].first, ',').size(); // max len
@@ -1720,8 +1727,8 @@ void WordsBase::sortFilterResults(ENUM_JOB_TYPE e) {
   SearchResult::out = "";
   auto begin = clock();
   if (e != JOB_TYPE_FILTER) {
-    //mtsort
-    std::sort(std::execution::par,m_result.begin(), m_result.end(),
+    // mtsort
+    std::sort(std::execution::par, m_result.begin(), m_result.end(),
               SORT_FUNCTION[m_comboValue[COMBOBOX_SORT] * 2 +
                             m_comboValue[COMBOBOX_SORT_ORDER]]);
   }
@@ -2011,7 +2018,7 @@ void WordsBase::run(ENUM_JOB_TYPE e) {
     }
 
     std::vector<std::jthread> workers;
-    int threads = oneOf(m_menuClick, MENU_CHAIN, MENU_LETTER_GROUP_SPLIT)
+    int threads = oneOf(m_menuClick,MENU_ANAGRAM, MENU_CHAIN, MENU_LETTER_GROUP_SPLIT)
                       ? 1
                       : g_get_num_processors();
     prsync(threads, magic_enum::enum_name(m_menuClick));

@@ -104,13 +104,11 @@ protected:
 
   // todo
   void test();
-#ifdef NOGTK
   void checkLFAllFiles();
   void showLongestAnagram();            // for MAX_ANAGRAM_LENGTH
   void showLongestPangram();            // for MAX_PANGRAM_LENGTH
   void showLongestSimpleWordSequence(); // for MAX_WORD_SEQUENCE_LENGTH
   void showLongestDoubleWordSequence(); // for MAX_DOUBLE_WORD_SEQUENCE_LENGTH
-#endif
 
 public:
   WordsBase();

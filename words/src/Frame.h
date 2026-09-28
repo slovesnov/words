@@ -83,8 +83,7 @@ private:
     }
     return v;
   }
-  GtkWidget *createTextCombo(ENUM_COMBOBOX e, VString v, int active);
-  GtkWidget *createTextCombo(ENUM_COMBOBOX e); // empty
+  GtkWidget *createTextCombo(ENUM_COMBOBOX e, VString v={}, int active=-1);
   template <typename T>
   GtkWidget *createTextCombo(ENUM_COMBOBOX e, T from, T to, int active) {
     return createTextCombo(e, fromTo(from, to), active);
