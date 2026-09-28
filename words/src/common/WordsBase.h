@@ -16,11 +16,17 @@
 #include <cstring>
 #include <ctime>
 #include <thread>
-#define PCRE2_CODE_UNIT_WIDTH 8
-#include <pcre2.h>
 
 #ifdef USE_STANDARD_REGEX
 #include <regex>
+#else
+#define PCRE2_CODE_UNIT_WIDTH 8
+#define PCRE2_STATIC
+#include <pcre2.h>
+// define where #include <pcre2.h>
+using UniquePcre2Code = UniqueGtkResource<pcre2_code, pcre2_code_free>;
+using UniquePcre2MatchData =
+    UniqueGtkResource<pcre2_match_data, pcre2_match_data_free>;
 #endif
 
 const char SEPARATOR[] = "SEPARATOR";
@@ -50,7 +56,8 @@ protected:
 #ifdef USE_STANDARD_REGEX
   std::regex m_regex;
 #else
-  SafeGRegex m_regex[2];
+  UniquePcre2Code m_regex[2];
+  UniquePcre2MatchData m_match[2];
 #endif
   int m_languageIndex;
   int m_dictionaryIndex;
@@ -182,7 +189,7 @@ public:
   virtual bool getCheck() const;
 
   bool createRegex(ENUM_ENTRY e);
-  bool createRegex(ENUM_ENTRY e, SafeGRegex &r);
+  bool createRegex(ENUM_ENTRY e, UniquePcre2Code &r,  UniquePcre2MatchData &m);
 
   const std::string &alphabet() const;
   int alphabetSize() const;

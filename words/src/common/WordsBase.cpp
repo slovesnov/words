@@ -11,9 +11,6 @@
 #include <cassert>
 #include <execution>
 #include <ranges>
-#define PCRE2_CODE_UNIT_WIDTH 8
-#define PCRE2_STATIC
-#include <pcre2.h>
 
 #ifdef NOGTK
 #define RETURN_ON_USER_BREAK
@@ -86,7 +83,6 @@ const LookupTable<ENUM_MENU, bool (WordsBase::*)(const std::string &)>
         {MENU_TEMPLATE, &WordsBase::checkTemplate},
         {MENU_PALINDROME, &WordsBase::checkPalindrome},
         {MENU_CROSSWORD, &WordsBase::checkCrossword},
-        {MENU_REGULAR_EXPRESSIONS, &WordsBase::checkRegularExpression},
         {MENU_CHARACTER_SEQUENCE, &WordsBase::checkCharacterSequence},
         {MENU_KEYBOARD_WORD_SIMPLE, &WordsBase::checkKeyboardWordSimple},
         {MENU_KEYBOARD_WORD_COMPLEX, &WordsBase::checkKeyboardWordComplex},
@@ -1778,14 +1774,14 @@ void WordsBase::sortFilterResults(ENUM_JOB_TYPE e) {
     return;
   }
   SearchResult::out = "";
-  //auto begin = clock();
+  // auto begin = clock();
   if (e != JOB_TYPE_FILTER) {
     // mtsort
     std::sort(std::execution::par, m_result.begin(), m_result.end(),
               SORT_FUNCTION[m_comboValue[COMBOBOX_SORT] * 2 +
                             m_comboValue[COMBOBOX_SORT_ORDER]]);
   }
-  //auto te = timeElapse(begin);
+  // auto te = timeElapse(begin);
   for (auto const &e : m_result) {
     s = fastLocaleToUtf8(e.s);
 #ifndef NOGTK
@@ -1817,7 +1813,7 @@ void WordsBase::sortFilterResults(ENUM_JOB_TYPE e) {
     SearchResult::out += ")";
     RETURN_ON_USER_BREAK
   }
-  //prsync("sort", te, timeElapse(begin)); // todo
+  // prsync("sort", te, timeElapse(begin)); // todo
 }
 
 void WordsBase::loadLanguages() {
@@ -2024,74 +2020,48 @@ PairDCIDCI WordsBase::iterators(ENUM_DICTIONARY e, int nthread) {
 }
 
 void WordsBase::run_thread(int nthread) {
-  //auto begin = clock();
+  // auto begin = clock();
   m_thread_result[nthread].clear();
 
   if (auto it = menu2VoidInt.get(m_menuClick)) {
     (this->*(*it))(nthread);
   }
 
-  if (auto it = menu2BoolString.get(m_menuClick)) {
-    if (m_menuClick == MENU_REGULAR_EXPRESSIONS) {
-      std::string pattern = getEntryString(ENTRY_TEMPLATE);
+  if (m_menuClick == MENU_REGULAR_EXPRESSIONS) {
+    UniquePcre2Code r;
+    UniquePcre2MatchData m;
+    // 2. Инициализируем его через вызов createRegex
+    if (!createRegex(ENTRY_TEMPLATE, r, m)) {
+      // Если регулярное выражение некорректно, выходим
+      assert(0);
+      return;
+    }
 
-      int errorcode;
-      PCRE2_SIZE erroroffset;
-
-      // Компилируем регулярку (один раз на поток).
-      // Флаг PCRE2_CASELESS — если нужен регистронезависимый поиск (аналог i в
-      // regex)
-
-      pcre2_code* re = pcre2_compile(
-    (PCRE2_SPTR)pattern.c_str(),
-    PCRE2_ZERO_TERMINATED,
-    PCRE2_UTF, 
-    &errorcode,
-    &erroroffset,
-    NULL
-);
-
-      if (!re) {
-        // Ошибка компиляции регулярного выражения
-        return;
+    bool isEnglish = m_dictionaryIndex == DICTIONARY_EN;
+    auto n = isEnglish ? DICTIONARY_EN : DICTIONARY_RU_UTF8;
+    auto [it2, end] = iterators(n, nthread);
+    for (; it2 != end; it2++) {
+      // Вызываем обновленную функцию
+      if (checkRegularExpression(*it2, r.get(), m.get())) {
+        auto d = std::distance(m_dictionary[n].cbegin(), it2);
+        auto &e = m_dictionary[m_dictionaryIndex][d];
+        m_thread_result[nthread].push_back(SearchResult(e, e.length(), 1));
       }
-if (re) {
-    // Включаем JIT-компиляцию для максимальной скорости!
-    pcre2_jit_compile(re, PCRE2_JIT_COMPLETE);
-}
-      // Создаем блок данных для совпадений (один раз на поток)
-      pcre2_match_data *match_data =
-          pcre2_match_data_create_from_pattern(re, NULL);
+      RETURN_ON_USER_BREAK
+    }
 
-      bool isEnglish = m_dictionaryIndex == DICTIONARY_EN;
-      auto n = isEnglish ? DICTIONARY_EN : DICTIONARY_RU_UTF8;
-      auto [it2, end] = iterators(n, nthread);
-      for (; it2 != end; it2++) {
-        // Вызываем обновленную функцию
-        if (checkRegularExpression(*it2, re, match_data)) {
-          auto d = std::distance(m_dictionary[n].cbegin(), it2);
-          auto &e = m_dictionary[m_dictionaryIndex][d];
-          m_thread_result[nthread].push_back(SearchResult(e, e.length(), 1));
-        }
-        RETURN_ON_USER_BREAK
+  } else if (auto it = menu2BoolString.get(m_menuClick)) {
+    auto [it2, end] = iterators(m_dictionaryIndex, nthread);
+    for (; it2 != end; it2++) {
+      auto &e = *it2;
+      if ((this->*(*it))(e)) {
+        m_thread_result[nthread].push_back(SearchResult(e, e.length(), 1));
       }
-
-      // Обязательно освобождаем память в конце работы потока
-      pcre2_match_data_free(match_data);
-      pcre2_code_free(re);
-    } else {
-      auto [it2, end] = iterators(m_dictionaryIndex, nthread);
-      for (; it2 != end; it2++) {
-        auto &e = *it2;
-        if ((this->*(*it))(e)) {
-          m_thread_result[nthread].push_back(SearchResult(e, e.length(), 1));
-        }
-        RETURN_ON_USER_BREAK
-      }
+      RETURN_ON_USER_BREAK
     }
   }
 
-  //prsync(nthread, timeElapse(begin)); // todo
+  // prsync(nthread, timeElapse(begin)); // todo
 }
 
 void WordsBase::run(ENUM_JOB_TYPE e) {
@@ -2116,8 +2086,6 @@ void WordsBase::run(ENUM_JOB_TYPE e) {
       }
     }
 
-    // sleep(4);
-
     if (auto it = menuPostProseeding.get(m_menuClick)) {
       (this->*(*it))();
     }
@@ -2137,8 +2105,6 @@ void WordsBase::run(ENUM_JOB_TYPE e) {
     userbreak = m_token.stop_requested();
   }
   m_end = clock();
-  prsync("run finished");
-  // m_result.clear();??
 }
 
 bool WordsBase::differenceOnlyOneChar(const std::string &a,
@@ -2158,10 +2124,23 @@ bool WordsBase::differenceOnlyOneChar(const std::string &a,
 
 #ifndef NOGTK
 bool WordsBase::testFilterRegex(const std::string &s) {
-  return !m_regex[ENTRY_FILTER] ||
-         g_regex_match(m_regex[ENTRY_FILTER].get(), s.c_str(),
-                       GRegexMatchFlags(0), NULL);
+  if (!m_regex[ENTRY_FILTER] || !m_match[ENTRY_FILTER]) {
+    return true;
+  }
+
+  int rc = pcre2_match(
+      m_regex[ENTRY_FILTER].get(),
+      (PCRE2_SPTR)s.c_str(),
+      s.length(),
+      0, // start_pos
+      0, // флаги
+      m_match[ENTRY_FILTER].get(), // передаем потокобезопасный буфер
+      NULL
+  );
+
+  return rc >= 0;
 }
+
 #endif
 
 std::string WordsBase::intToStringLocaled(int v) {
@@ -2369,17 +2348,28 @@ std::string WordsBase::getTextViewString() const { return ""; }
 bool WordsBase::getCheck() const { return false; }
 
 bool WordsBase::createRegex(ENUM_ENTRY e) {
-  assert(int(e) < SIZEI(m_regex));
-  return createRegex(e, m_regex[e]);
+  assert(int(e) < std::size(m_regex));
+  return createRegex(e, m_regex[e],m_match[e]);
 }
 
-// utf8
-bool WordsBase::createRegex(ENUM_ENTRY e, SafeGRegex &r) {
-  GRegexCompileFlags f =
-      (GRegexCompileFlags)(G_REGEX_OPTIMIZE | G_REGEX_NO_AUTO_CAPTURE);
-  auto s = getEntryString(e);
-  r.reset(g_regex_new(s.c_str(), f, GRegexMatchFlags(0), NULL));
-  return r.get() != nullptr;
+bool WordsBase::createRegex(ENUM_ENTRY e, UniquePcre2Code &r, UniquePcre2MatchData &m) {
+  int errorcode;
+  PCRE2_SIZE erroroffset;
+
+  // 1. Получаем строку паттерна в зависимости от переданного ENUM_ENTRY e
+  // (Замените getPatternString(e) на ваш реальный метод получения строки)
+  std::string pattern_str = getEntryString(e);
+
+  // 2. Используем .reset() вместо .set()
+  r.reset(pcre2_compile((PCRE2_SPTR)pattern_str.c_str(), PCRE2_ZERO_TERMINATED,
+                        PCRE2_UTF, &errorcode, &erroroffset, NULL));
+  if (r) {
+    pcre2_jit_compile(r.get(), PCRE2_JIT_COMPLETE);
+    m.reset(pcre2_match_data_create_from_pattern(r.get(), NULL));
+  }
+
+  return r !=
+         nullptr; // Для проверки на nullptr unique_ptr можно не вызывать .get()
 }
 
 const std::string &WordsBase::alphabet() const {

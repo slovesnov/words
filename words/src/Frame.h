@@ -11,8 +11,6 @@
 #include "common/WordsBase.h"
 #include "common/consts.h"
 
-using MenuMap = std::map<ENUM_MENU, GtkWidget *>;
-
 class Frame : WordsBase {
   static const int COMBOLINE_MARGIN = 3;
 

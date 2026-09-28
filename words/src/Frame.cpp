@@ -1420,8 +1420,7 @@ JOB_TYPE_STOP - stop calculations if needed
 */
 void Frame::job(ENUM_JOB_TYPE e) {
   const auto priority=G_PRIORITY_HIGH;
-  prsync(magic_enum::enum_name(m_menuClick), magic_enum::enum_name(e),
-         "################");
+  //prsync(magic_enum::enum_name(m_menuClick), magic_enum::enum_name(e),"################");
   // блокировать второе нажатие
   if (oneOf(e, JOB_TYPE_SORT_AND_FILTER, JOB_TYPE_FILTER) && m_result.empty()) {
     return;
@@ -1453,9 +1452,8 @@ void Frame::job(ENUM_JOB_TYPE e) {
   }
 
   m_managerThread = std::jthread([this, e](std::stop_token manager_token) {
-    prsync("send stopping");
-      g_idle_add_full(priority, update_status,
-                      GINT_TO_POINTER(STATE_STOPPING), NULL);
+      // g_idle_add_full(priority, update_status,
+      //                 GINT_TO_POINTER(STATE_STOPPING), NULL);
 
     // Безопасно завершаем предыдущий рабочий поток
     if (m_thread.joinable()) {
@@ -1493,7 +1491,6 @@ void Frame::job(ENUM_JOB_TYPE e) {
       if (token.stop_requested())
         return;
 
-      prsync("run end");
       g_idle_add_full(priority, end_job,
                       NULL, NULL);
     });
