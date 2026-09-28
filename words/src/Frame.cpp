@@ -526,8 +526,8 @@ void Frame::setHelperPanel() {
   }
 
   if (auto it = FROM_TO_COMBO.get(m_menuClick)) {
-    addComboLineToHelper(string(it->s1,it->s2), it->min, it->max[m_dictionaryIndex], it->active,
-                         it->send);
+    addComboLineToHelper(string(it->s1, it->s2), it->min,
+                         it->max[m_dictionaryIndex], it->active, it->send);
   }
 
   switch (m_menuClick) {
@@ -595,7 +595,7 @@ void Frame::setHelperPanel() {
                   true, CHARACTERS, true);
     gtk_container_add(GTK_CONTAINER(m_helperUp), w);
     break;
-default:;
+  default:;
   }
 
   if (m_charactersLabel) {
@@ -724,9 +724,9 @@ void Frame::comboChanged(ENUM_COMBOBOX e) {
     updateCharactersLabel();
   }
 
-  if ((e == COMBOBOX_HELPER0 || e == COMBOBOX_HELPER1) && 
-  (oneOf(m_menuClick,MENU_REGULAR_EXPRESSIONS,   MENU_CHARACTER_SEQUENCE) || FROM_TO_COMBO.has(m_menuClick))
-    ) {
+  if ((e == COMBOBOX_HELPER0 || e == COMBOBOX_HELPER1) &&
+      (oneOf(m_menuClick, MENU_REGULAR_EXPRESSIONS, MENU_CHARACTER_SEQUENCE) ||
+       FROM_TO_COMBO.has(m_menuClick))) {
     if (getComboIndex(COMBOBOX_HELPER0) > getComboIndex(COMBOBOX_HELPER1)) {
       lockSignals();
       setComboIndex(e == COMBOBOX_HELPER0 ? COMBOBOX_HELPER1 : COMBOBOX_HELPER0,
@@ -1135,10 +1135,6 @@ void Frame::updateStatus(ENUM_STATE state) {
   case STATE_USER_BREAK:
     m_out = string(OPERATION_CANCELED_BY_USER);
     break;
-
-  case STATE_STOPPING:
-    m_out = string(STOPPING_PROCESS);
-    break;
   }
 
   std::string s = state == STATE_OK ? getStatusString() : m_out;
@@ -1146,7 +1142,7 @@ void Frame::updateStatus(ENUM_STATE state) {
 
   if (b && state != STATE_BEGIN) {
     m_out = capitalizeFirstUtf8(m_out) +
-            (oneOf(m_state, STATE_PROCEEDING, STATE_STOPPING) ? "…" : ".");
+            (m_state== STATE_PROCEEDING ? "…" : ".");
   }
   updateTextView(TEXTVIEW_MAIN, b ? m_out : SearchResult::out);
 
@@ -1414,9 +1410,10 @@ void Frame::job(ENUM_JOB_TYPE e) {
   }
 
   m_managerThread = std::jthread([this, e](std::stop_token manager_token) {
-    // g_idle_add_full(priority, update_status,
-    //                 GINT_TO_POINTER(STATE_STOPPING), NULL);
-
+    if (e != JOB_TYPE_STOP) {
+      g_idle_add_full(priority, update_status,
+                      GINT_TO_POINTER(STATE_PROCEEDING), NULL);
+    }
     // Безопасно завершаем предыдущий рабочий поток
     if (m_thread.joinable()) {
       m_thread.request_stop();
@@ -1439,8 +1436,8 @@ void Frame::job(ENUM_JOB_TYPE e) {
     m_thread = std::jthread([this, e](std::stop_token token) {
       m_token = token;
 
-      g_idle_add_full(priority, update_status,
-                      GINT_TO_POINTER(STATE_PROCEEDING), NULL);
+      // g_idle_add_full(priority, update_status,
+      //                 GINT_TO_POINTER(STATE_PROCEEDING), NULL);
 
       if (token.stop_requested())
         return;

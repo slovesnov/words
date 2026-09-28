@@ -150,7 +150,7 @@ Search modifications of words. There are three types of modifications: replaces,
 every modification changes word
 New version is found on the internet. Download it now?
 Search chains of words such as only one character changes for every step. Consider two words <i>woman</i> and <i>chick</i>. There is a chain <i>woman</i> <i>women</i> <i>woven</i> <i>coven</i> <i>coves</i> <i>cores</i> <i>corns</i> <i>coins</i> <i>chins</i> <i>chink</i> <i>chick</i>. Program searches all chains with shortest length. You can specify a list of excluded words that should not appear in the chain.
-no chains found
+No chains found.
 results filter (regular expression)
 found
 not found
@@ -169,7 +169,6 @@ Exception words.
 invalid modification string
 operation canceled by user
 no results found
-stopping process
 thread
 Note: Line numbers are valid for the first thread only.
 Search for words that can be broken down into other words found in the dictionary. For example, the word <i>lateens</i> can be broken down into two words: <i>la</i> and <i>teens</i>. We are looking for breakdowns into two or three words. 

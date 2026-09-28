@@ -745,9 +745,8 @@ void WordsBase::findAnagram(int nthread) {
   }
 }
 
-void WordsBase::anagramsPostProseeding() { // todo
+void WordsBase::anagramsPostProseeding() { 
   AnagramMap final_anagrams;
-  auto begin = clock();
 
   // 1. Сливаем карты из всех потоков в одну общую
   for (auto &local_map : m_anagrams) {
@@ -1179,7 +1178,7 @@ l210:
   // pr(timeElapse(begin))
 }
 
-void WordsBase::findLetterGroupSplit(int nthread) { // todo
+void WordsBase::findLetterGroupSplit(int nthread) { 
   std::string s, s1, t, lng;
   size_t i, j;
   auto charset = getOrderedString(m_entryValue);
@@ -1812,7 +1811,6 @@ void WordsBase::loadLanguages() {
     }
     assert(i == MENU_SIZE);
     assert(j - SETTINGS_SIZE == STRING_SIZE);
-
     ml[MODIFICATION_HELP] = format(ml[MODIFICATION_HELP].c_str(),
                                    ml[EVERY_MODIFICATION_CHANGES_WORD].c_str());
     /* use only first symbol. In Russian language separator is space, so
