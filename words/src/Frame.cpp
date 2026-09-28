@@ -1378,7 +1378,7 @@ JOB_TYPE_STOP - stop calculations if needed
 void Frame::job(ENUM_JOB_TYPE e) {
   const auto priority = G_PRIORITY_HIGH;
   // prsync(magic_enum::enum_name(m_menuClick),
-  // magic_enum::enum_name(e),"################");
+  // magic_enum::enum_name(e));
   //  блокировать второе нажатие
   if (oneOf(e, JOB_TYPE_SORT_AND_FILTER, JOB_TYPE_FILTER) && m_result.empty()) {
     return;

@@ -102,8 +102,7 @@ protected:
   bool testFilterRegex(const std::string &s);
 #endif
 
-  // todo
-  void test();
+  // void test();
   void checkLFAllFiles();
   void showLongestAnagram();            // for MAX_ANAGRAM_LENGTH
   void showLongestPangram();            // for MAX_PANGRAM_LENGTH

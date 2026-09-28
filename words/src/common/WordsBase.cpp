@@ -165,7 +165,7 @@ WordsBase::WordsBase() {
 #endif
 }
 
-void WordsBase::test() {}
+// void WordsBase::test() {}
 
 bool WordsBase::checkKeyboardWordSimple(const std::string &s) {
   std::string *ps = m_keyboardOneRow[uchar(s[0])];
@@ -348,16 +348,14 @@ bool WordsBase::checkRegularExpression(const std::string &s, pcre2_code *re,
   return matches >= m_comboValue[COMBOBOX_HELPER0] &&
          matches <= m_comboValue[COMBOBOX_HELPER1];
 #else
-  // Fast path (single match check)
   if (!m_radioValue) {
     int rc = pcre2_match(re, (PCRE2_SPTR)s.c_str(), s.length(),
-                         0, // стартовая позиция
-                         0, // флаги
+                         0, 
+                         0, 
                          match_data, NULL);
-    return rc >= 0; // rc >= 0 означает, что совпадение найдено
+    return rc >= 0; 
   }
 
-  // Optimized path to count matches
   int i = 0;
   size_t start_pos = 0;
   const int max = m_comboValue[COMBOBOX_HELPER1];
@@ -368,21 +366,17 @@ bool WordsBase::checkRegularExpression(const std::string &s, pcre2_code *re,
                          match_data, NULL);
 
     if (rc < 0) {
-      break; // Больше совпадений нет (или ошибка)
+      break; 
     }
 
     i++;
 
-    // Получаем указатель на таблицу векторов совпадений (аналог
-    // g_match_info_fetch_pos)
     PCRE2_SIZE *ovector = pcre2_get_ovector_pointer(match_data);
     size_t start_match = ovector[0];
     size_t end_match = ovector[1];
 
-    // Смещаем позицию для следующего поиска
     start_pos = end_match;
 
-    // Защита от бесконечного цикла на пустых регулярках (например, ".*")
     if (start_match == end_match) {
       start_pos++;
     }
@@ -729,17 +723,14 @@ void WordsBase::findAnagram(int nthread) {
   const int min = m_comboValue[COMBOBOX_HELPER0];
   const int max = m_comboValue[COMBOBOX_HELPER1];
   auto [it, end] = iterators(m_dictionaryIndex, nthread);
-  auto &local_map = m_anagrams[nthread]; // Ссылка на карту текущего потока
+  auto &local_map = m_anagrams[nthread];
   local_map.clear();
   for (; it != end; it++) {
     if (int(it->length()) < min || int(it->length()) > max) {
       continue;
     }
     std::string signature = *it;
-    std::sort(signature.begin(), signature.end()); // Сортировка байт Win-1251
-    // if (oneOf(*it,"ableness","blaeness","sensable")){
-    //   pr(*it,signature,nthread);
-    // }
+    std::sort(signature.begin(), signature.end());
     local_map[signature].push_back(*it);
     RETURN_ON_USER_BREAK
   }
@@ -747,34 +738,21 @@ void WordsBase::findAnagram(int nthread) {
 
 void WordsBase::anagramsPostProseeding() { 
   AnagramMap final_anagrams;
-
-  // 1. Сливаем карты из всех потоков в одну общую
   for (auto &local_map : m_anagrams) {
     for (auto &[signature, words] : local_map) {
       auto &final_words = final_anagrams[signature];
-      if (signature == "abeelnss") {
-        std::string s = joinV(words);
-        pr(words.size(), s);
-      }
-      // Эффективно перемещаем (move) строки, избегая копирования памяти
       final_words.insert(final_words.end(),
                          std::make_move_iterator(words.begin()),
                          std::make_move_iterator(words.end()));
     }
-    local_map.clear(); // Освобождаем память потока сразу
+    local_map.clear(); 
   }
 
-  // 2. Формируем единый список результатов для вывода в UI
   for (auto &[signature, words] : final_anagrams) {
-    // Нас интересуют только классы эквивалентности, где больше 1 слова
     if (words.size() > 1) {
       std::string s = joinV(words);
       m_result.push_back(
           SearchResult(s, words.begin()->length(), words.size()));
-
-      // Добавляем сформированную группу анаграмм в ваш итоговый m_result
-      // (Передаем длину и флаг 1 в соответствии с конструктором SearchResult)
-      // m_result.push_back(SearchResult(group_line, group_line.length(), 1));
     }
   }
 }
@@ -1982,9 +1960,7 @@ void WordsBase::run_thread(int nthread) {
   if (m_menuClick == MENU_REGULAR_EXPRESSIONS) {
     UniquePcre2Code r;
     UniquePcre2MatchData m;
-    // 2. Инициализируем его через вызов createRegex
     if (!createRegex(ENTRY_TEMPLATE, r, m)) {
-      // Если регулярное выражение некорректно, выходим
       assert(0);
       return;
     }
@@ -2077,9 +2053,9 @@ bool WordsBase::testFilterRegex(const std::string &s) {
 
   int rc = pcre2_match(
       m_regex[ENTRY_FILTER].get(), (PCRE2_SPTR)s.c_str(), s.length(),
-      0,                           // start_pos
-      0,                           // флаги
-      m_match[ENTRY_FILTER].get(), // передаем потокобезопасный буфер
+      0,                           
+      0,                           
+      m_match[ENTRY_FILTER].get(), 
       NULL);
 
   return rc >= 0;
@@ -2300,12 +2276,7 @@ bool WordsBase::createRegex(ENUM_ENTRY e, UniquePcre2Code &r,
                             UniquePcre2MatchData &m) {
   int errorcode;
   PCRE2_SIZE erroroffset;
-
-  // 1. Получаем строку паттерна в зависимости от переданного ENUM_ENTRY e
-  // (Замените getPatternString(e) на ваш реальный метод получения строки)
   std::string pattern_str = getEntryString(e);
-
-  // 2. Используем .reset() вместо .set()
   r.reset(pcre2_compile((PCRE2_SPTR)pattern_str.c_str(), PCRE2_ZERO_TERMINATED,
                         PCRE2_UTF, &errorcode, &erroroffset, NULL));
   if (r) {
@@ -2313,8 +2284,7 @@ bool WordsBase::createRegex(ENUM_ENTRY e, UniquePcre2Code &r,
     m.reset(pcre2_match_data_create_from_pattern(r.get(), NULL));
   }
 
-  return r != nullptr; // Для проверки на nullptr unique_ptr можно не вызывать
-                       // .get()
+  return r != nullptr; 
 }
 
 const std::string &WordsBase::alphabet() const {
