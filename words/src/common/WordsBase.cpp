@@ -77,6 +77,7 @@ const LookupTable<ENUM_MENU, void (WordsBase::*)()> menuPostProseeding = {
      &WordsBase::twoCharactersDistributionPostProseeding},
     {MENU_CHECK_DICTIONARY, &WordsBase::checkDictionaryPostProseeding}};
 
+//regular expression special proceeding
 const LookupTable<ENUM_MENU, bool (WordsBase::*)(const std::string &)>
     menu2BoolString = {
         {MENU_PANGRAM, &WordsBase::checkPangram},
