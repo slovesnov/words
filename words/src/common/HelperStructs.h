@@ -131,6 +131,7 @@ struct ComboData {
   int min;
   std::array<int, LANGUAGES> max;
   int active;
+  ENUM_STRING s1,s2,send;
 };
 
 class SearchResult {

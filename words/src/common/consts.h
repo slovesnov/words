@@ -20,7 +20,8 @@ const char DOWNLOAD_URL[] =
 const char OPEN_BRACKET = '(';
 const std::string OPEN_S = std::string(" ") + OPEN_BRACKET;
 const int KEYBOARD_ROWS = 3;
-const int NUMBER_OF_SORTS=SORT_BY_DIFFERENT_NUMBER_OF_CHARACTERS-SORT_BY_ALPHABET+1;
+const int NUMBER_OF_SORTS =
+    SORT_BY_DIFFERENT_NUMBER_OF_CHARACTERS - SORT_BY_ALPHABET + 1;
 #ifdef NOGTK
 // should match with ENUM_POST
 const std::string POST_NAME[] = {
@@ -53,10 +54,6 @@ const ENUM_MENU COMBO_MENU[] = {MENU_ANAGRAM,
                                 MENU_CHECK_DICTIONARY,
                                 MENU_TWO_CHARACTERS_DISTRIBUTION};
 #else
-
-const ENUM_MENU MENU_ADJUST_COMBO[] = {
-    MENU_ANAGRAM, MENU_REGULAR_EXPRESSIONS, MENU_CHARACTER_SEQUENCE,
-    MENU_SIMPLE_WORD_SEQUENCE, MENU_DOUBLE_WORD_SEQUENCE};
 
 const ENUM_MENU MENU_WAITING[] = {MENU_DICTIONARY_STATISTICS,
                                   MENU_WORD_FREQUENCY,
@@ -135,14 +132,18 @@ const LookupTable<ENUM_MENU, ENUM_STRING> MENU_TO_SETTINGS = {
   showLongestDoubleWordSequence();
   onchange dictionary size need to recount
 */
-const std::array<int,LANGUAGES> MAX_ANAGRAM_LENGTH = {22, 31};
-const std::array<int,LANGUAGES> MAX_PANGRAM_LENGTH = {16, 21};
-const std::array<int,LANGUAGES> MAX_SIMPLE_WORD_SEQUENCE_LENGTH = {25, 30};
-const std::array<int,LANGUAGES> MAX_DOUBLE_WORD_SEQUENCE_LENGTH = {7, 14};
+const std::array<int, LANGUAGES> MAX_ANAGRAM_LENGTH = {22, 31};
+const std::array<int, LANGUAGES> MAX_PANGRAM_LENGTH = {16, 21};
+const std::array<int, LANGUAGES> MAX_SIMPLE_WORD_SEQUENCE_LENGTH = {25, 30};
+const std::array<int, LANGUAGES> MAX_DOUBLE_WORD_SEQUENCE_LENGTH = {7, 14};
 
 const LookupTable<ENUM_MENU, ComboData> FROM_TO_COMBO = {
-    {MENU_ANAGRAM, ComboData(2, MAX_ANAGRAM_LENGTH, 6)},
-    {MENU_PANGRAM, ComboData(10, MAX_PANGRAM_LENGTH, 5)},
-    {MENU_SIMPLE_WORD_SEQUENCE, ComboData(8, MAX_SIMPLE_WORD_SEQUENCE_LENGTH, 0)},
-    {MENU_DOUBLE_WORD_SEQUENCE, ComboData(2, MAX_DOUBLE_WORD_SEQUENCE_LENGTH, 2)}};
+    {MENU_ANAGRAM,
+     ComboData(2, MAX_ANAGRAM_LENGTH, 6, LENGTH, OF_WORD, CHARACTERS)},
+    {MENU_PANGRAM, ComboData(10, MAX_PANGRAM_LENGTH, 5, MINIMUM,
+                             DIFFERENT_CHARACTERS, STRING_SIZE)},
+    {MENU_SIMPLE_WORD_SEQUENCE, ComboData(8, MAX_SIMPLE_WORD_SEQUENCE_LENGTH, 0,
+                                          LENGTH, OF_SEQUENCE, CHARACTERS)},
+    {MENU_DOUBLE_WORD_SEQUENCE, ComboData(2, MAX_DOUBLE_WORD_SEQUENCE_LENGTH, 2,
+                                          LENGTH, OF_SEQUENCE, CHARACTERS)}};
 #endif /*#ifndef NOGTK*/

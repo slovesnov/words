@@ -95,7 +95,6 @@ const LookupTable<ENUM_MENU, bool (WordsBase::*)(const std::string &)>
 #ifdef NOGTK
 // use cgi project
 #include "cgi.h"
-
 #endif
 
 WordsBase *wordsBase;
@@ -184,7 +183,9 @@ bool WordsBase::checkKeyboardWordComplex(const std::string &s) {
 }
 
 bool WordsBase::checkPangram(const std::string &s) {
-  return differentChars(s) >= m_comboValue[COMBOBOX_HELPER0];
+  int i = differentChars(s);
+  return i >= m_comboValue[COMBOBOX_HELPER0] &&
+         i <= m_comboValue[COMBOBOX_HELPER1];
 }
 
 bool WordsBase::checkTemplate(const std::string &s) {
@@ -746,7 +747,6 @@ void WordsBase::findAnagram(int nthread) {
 
 void WordsBase::anagramsPostProseeding() { // todo
   AnagramMap final_anagrams;
-  prsynci;
   auto begin = clock();
 
   // 1. Сливаем карты из всех потоков в одну общую
@@ -778,7 +778,6 @@ void WordsBase::anagramsPostProseeding() { // todo
       // m_result.push_back(SearchResult(group_line, group_line.length(), 1));
     }
   }
-  prsync(timeElapse(begin), m_result.size());
 }
 
 void WordsBase::findSimpleWordSequence(int nthread) {

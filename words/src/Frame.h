@@ -107,8 +107,6 @@ private:
   void addComboToHelper(ENUM_STRING from, ENUM_STRING to, int active,
                         ENUM_COMBOBOX comboboxId = COMBOBOX_HELPER0);
 
-  void addComboLineToHelper(std::string s);
-
   void updateTags(int n);
 
   GtkWidget *createLabel(std::string s) { return gtk_label_new(s.c_str()); }

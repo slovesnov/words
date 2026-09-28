@@ -33,7 +33,6 @@ void menu_activate(GtkWidget *widget, ENUM_MENU menu) {
 
 void combo_changed(GtkComboBox *comboBox, ENUM_COMBOBOX e) {
   if (!frame->isSignalsLocked()) {
-    pri;
     frame->comboChanged(e);
   }
 }
@@ -506,8 +505,6 @@ void Frame::setHelperPanel() {
   clearContainer(m_helperUp);
   m_charactersLabel = nullptr;
 
-  auto it = FROM_TO_COMBO.get(m_menuClick);
-
   // set label
   if (auto it = MENU_TO_HELP_STRING.get(m_menuClick)) {
     w = gtk_label_new("");
@@ -528,20 +525,12 @@ void Frame::setHelperPanel() {
     gtk_container_add(GTK_CONTAINER(m_helperUp), w);
   }
 
-  switch (m_menuClick) {
-  case MENU_ANAGRAM:
-    addComboLineToHelper(string(LENGTH, OF_WORD));
-    break;
+  if (auto it = FROM_TO_COMBO.get(m_menuClick)) {
+    addComboLineToHelper(string(it->s1,it->s2), it->min, it->max[m_dictionaryIndex], it->active,
+                         it->send);
+  }
 
-  case MENU_PANGRAM:
-    assert(it.has_value());
-    w = createBox(GTK_ORIENTATION_HORIZONTAL, COMBOLINE_MARGIN,
-                  string(MINIMUM, DIFFERENT_CHARACTERS), true,
-                  createTextCombo(COMBOBOX_HELPER0, it->min,
-                                  it->max[m_languageIndex], it->active),
-                  true);
-    gtk_container_add(GTK_CONTAINER(m_helperUp), w);
-    break;
+  switch (m_menuClick) {
 
   case MENU_TEMPLATE:
     addComboToHelper(TEMPLATE1, TEMPLATE3, 0);
@@ -587,14 +576,6 @@ void Frame::setHelperPanel() {
     gtk_container_add(GTK_CONTAINER(m_helperUp), w);
     break;
 
-  case MENU_SIMPLE_WORD_SEQUENCE:
-    addComboLineToHelper(string(LENGTH, OF_SEQUENCE));
-    break;
-
-  case MENU_DOUBLE_WORD_SEQUENCE:
-    addComboLineToHelper(string(LENGTH, OF_SEQUENCE));
-    break;
-
   case MENU_CONSONANT_VOWEL_SEQUENCE:
     w = createBox(GTK_ORIENTATION_HORIZONTAL, COMBOLINE_MARGIN,
                   createTextCombo(COMBOBOX_HELPER0, SEARCH_IN_ANY_PLACE_OF_WORD,
@@ -614,9 +595,7 @@ void Frame::setHelperPanel() {
                   true, CHARACTERS, true);
     gtk_container_add(GTK_CONTAINER(m_helperUp), w);
     break;
-
-    // otherwise nothing to do
-  default:;
+default:;
   }
 
   if (m_charactersLabel) {
@@ -627,37 +606,16 @@ void Frame::setHelperPanel() {
 }
 
 void Frame::updateDictionary() {
-  pri
   updateSensitivity([this](int i) { return m_dictionaryIndex != i; },
                     MENU_LOAD_ENGLISH_DICTIONARY, MENU_LOAD_RUSSIAN_DICTIONARY);
-  pri
-
   updateButton(BUTTON_DICTIONARY);
-  pri
 
-  if (auto it = FROM_TO_COMBO.get(m_menuClick)) { // todo
-    // make it->active, to use same index need check whether number of items
-    // became less
+  if (auto it = FROM_TO_COMBO.get(m_menuClick)) {
     for (auto a : {COMBOBOX_HELPER0, COMBOBOX_HELPER1}) {
-   pri
-     auto w = m_combo[a]; // for pangrams only 1 combobox
-      if (w && GTK_IS_COMBO_BOX_TEXT(w)){
-   pri
-        refillCombo(a, it->min, it->max[m_dictionaryIndex] /*, it->active*/);
-   pri
-
-      }
+      refillCombo(a, it->min, it->max[m_dictionaryIndex] /*, it->active*/);
     }
   }
 
-  /* additions 4.3
-   * need to make new search for every option
-   * function updateDictionary() can be called several times before any search
-   * option so use m_menuClick as last search option m_menuClick==MENU_SIZE
-   * means no last search m_menuClick changes only for search operations see
-   * clickMenu() function also job() does entry highlight
-   */
-   pr(m_menuClick != MENU_SEARCH)
   if (m_menuClick != MENU_SEARCH) {
     job();
   }
@@ -748,13 +706,6 @@ void Frame::addComboToHelper(ENUM_STRING from, ENUM_STRING to, int active,
                     createTextCombo(comboboxId, from, to, active));
 }
 
-void Frame::addComboLineToHelper(std::string s) {
-  if (auto it = FROM_TO_COMBO.get(m_menuClick)) {
-    addComboLineToHelper(s, it->min, it->max[m_dictionaryIndex], it->active,
-                         CHARACTERS);
-  }
-}
-
 void Frame::comboChanged(ENUM_COMBOBOX e) {
   assert(e != COMBOBOX_SIZE);
   updateComboValue(e);
@@ -773,8 +724,9 @@ void Frame::comboChanged(ENUM_COMBOBOX e) {
     updateCharactersLabel();
   }
 
-  if ((e == COMBOBOX_HELPER0 || e == COMBOBOX_HELPER1) &&
-      oneOf(m_menuClick, MENU_ADJUST_COMBO)) {
+  if ((e == COMBOBOX_HELPER0 || e == COMBOBOX_HELPER1) && 
+  (oneOf(m_menuClick,MENU_REGULAR_EXPRESSIONS,   MENU_CHARACTER_SEQUENCE) || FROM_TO_COMBO.has(m_menuClick))
+    ) {
     if (getComboIndex(COMBOBOX_HELPER0) > getComboIndex(COMBOBOX_HELPER1)) {
       lockSignals();
       setComboIndex(e == COMBOBOX_HELPER0 ? COMBOBOX_HELPER1 : COMBOBOX_HELPER0,
@@ -1428,9 +1380,10 @@ results JOB_TYPE_FILTER - stop calculations if needed, then filter results
 JOB_TYPE_STOP - stop calculations if needed
 */
 void Frame::job(ENUM_JOB_TYPE e) {
-  const auto priority=G_PRIORITY_HIGH;
-  //prsync(magic_enum::enum_name(m_menuClick), magic_enum::enum_name(e),"################");
-  // блокировать второе нажатие
+  const auto priority = G_PRIORITY_HIGH;
+  // prsync(magic_enum::enum_name(m_menuClick),
+  // magic_enum::enum_name(e),"################");
+  //  блокировать второе нажатие
   if (oneOf(e, JOB_TYPE_SORT_AND_FILTER, JOB_TYPE_FILTER) && m_result.empty()) {
     return;
   }
@@ -1461,8 +1414,8 @@ void Frame::job(ENUM_JOB_TYPE e) {
   }
 
   m_managerThread = std::jthread([this, e](std::stop_token manager_token) {
-      // g_idle_add_full(priority, update_status,
-      //                 GINT_TO_POINTER(STATE_STOPPING), NULL);
+    // g_idle_add_full(priority, update_status,
+    //                 GINT_TO_POINTER(STATE_STOPPING), NULL);
 
     // Безопасно завершаем предыдущий рабочий поток
     if (m_thread.joinable()) {
@@ -1478,8 +1431,7 @@ void Frame::job(ENUM_JOB_TYPE e) {
     }
 
     if (e == JOB_TYPE_STOP) {
-      g_idle_add_full(priority, end_job,
-                      NULL, NULL);
+      g_idle_add_full(priority, end_job, NULL, NULL);
       return;
     }
 
@@ -1500,8 +1452,7 @@ void Frame::job(ENUM_JOB_TYPE e) {
       if (token.stop_requested())
         return;
 
-      g_idle_add_full(priority, end_job,
-                      NULL, NULL);
+      g_idle_add_full(priority, end_job, NULL, NULL);
     });
   });
 }
