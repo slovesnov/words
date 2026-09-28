@@ -11,7 +11,7 @@
 #include <cassert>
 #include <execution>
 #include <ranges>
-
+#include <unistd.h> //sleep todo
 #ifdef NOGTK
 #define RETURN_ON_USER_BREAK
 #else
@@ -741,10 +741,10 @@ void WordsBase::findAnagram(int nthread) {
 
   // at first make several sets by length is slower
 
-   for (i = min; i <= max; i++) {
-  //   auto [it, end] = iterators(m_dictionaryIndex, nthread);
-  auto r=getDictionary();
-  auto it=r.begin(),end=r.end();
+  for (i = min; i <= max; i++) {
+    //   auto [it, end] = iterators(m_dictionaryIndex, nthread);
+    auto r = getDictionary();
+    auto it = r.begin(), end = r.end();
     for (; it != end; it++) {
       auto const &e = *it;
       if (int(e.length()) != i) {
@@ -766,8 +766,7 @@ void WordsBase::findAnagram(int nthread) {
       s = joinV(v);
       // m_thread_result[nthread].push_back(
       //     SearchResult(s, v.begin()->length(), v.size()));
-          m_result.push_back(
-          SearchResult(s, v.begin()->length(), v.size()));
+      m_result.push_back(SearchResult(s, v.begin()->length(), v.size()));
     }
     map.clear();
     RETURN_ON_USER_BREAK
@@ -1722,14 +1721,14 @@ void WordsBase::sortFilterResults(ENUM_JOB_TYPE e) {
     return;
   }
   SearchResult::out = "";
-  //auto begin = clock();
+  auto begin = clock();
   if (e != JOB_TYPE_FILTER) {
     // mtsort
     std::sort(std::execution::par, m_result.begin(), m_result.end(),
               SORT_FUNCTION[m_comboValue[COMBOBOX_SORT] * 2 +
                             m_comboValue[COMBOBOX_SORT_ORDER]]);
   }
-  //auto te = timeElapse(begin);
+  auto te = timeElapse(begin);
   for (auto const &e : m_result) {
     s = fastLocaleToUtf8(e.s);
 #ifndef NOGTK
@@ -1761,7 +1760,7 @@ void WordsBase::sortFilterResults(ENUM_JOB_TYPE e) {
     SearchResult::out += ")";
     RETURN_ON_USER_BREAK
   }
-  //prsync("sort", te, timeElapse(begin));//todo
+  prsync("sort", te, timeElapse(begin)); // todo
 }
 
 void WordsBase::loadLanguages() {
@@ -1968,7 +1967,7 @@ PairDCIDCI WordsBase::iterators(ENUM_DICTIONARY e, int nthread) {
 }
 
 void WordsBase::run_thread(int nthread) {
-  //auto begin = clock();
+  auto begin = clock();
   m_thread_result[nthread].clear();
 
   if (auto it = menu2VoidInt.get(m_menuClick)) {
@@ -1983,15 +1982,18 @@ void WordsBase::run_thread(int nthread) {
       bool isEnglish = m_dictionaryIndex == DICTIONARY_EN;
       auto n = isEnglish ? DICTIONARY_EN : DICTIONARY_RU_UTF8;
       auto [it2, end] = iterators(n, nthread);
+      int counter = 0;
       for (; it2 != end; it2++) {
         if (checkRegularExpression(*it2, r)) {
           auto d = std::distance(m_dictionary[n].cbegin(), it2);
           auto &e = m_dictionary[m_dictionaryIndex][d];
           m_thread_result[nthread].push_back(SearchResult(e, e.length(), 1));
         }
+        if (++counter % 2000 == 0) {
+          std::this_thread::yield();
+        }
         RETURN_ON_USER_BREAK
       }
-
     } else {
       auto [it2, end] = iterators(m_dictionaryIndex, nthread);
       for (; it2 != end; it2++) {
@@ -2004,7 +2006,7 @@ void WordsBase::run_thread(int nthread) {
     }
   }
 
-  //prsync(nthread, timeElapse(begin));//todo
+  prsync(nthread, timeElapse(begin)); // todo
 }
 
 void WordsBase::run(ENUM_JOB_TYPE e) {
@@ -2015,9 +2017,10 @@ void WordsBase::run(ENUM_JOB_TYPE e) {
     }
 
     std::vector<std::jthread> workers;
-    int threads = oneOf(m_menuClick,MENU_ANAGRAM, MENU_CHAIN, MENU_LETTER_GROUP_SPLIT)
-                      ? 1
-                      : g_get_num_processors();
+    int threads =
+        oneOf(m_menuClick, MENU_ANAGRAM, MENU_CHAIN, MENU_LETTER_GROUP_SPLIT)
+            ? 1
+            : g_get_num_processors();
     prsync(threads, magic_enum::enum_name(m_menuClick));
     for (int i = 0; i < threads; ++i) {
       workers.emplace_back(run_thread, this, i);
@@ -2027,6 +2030,8 @@ void WordsBase::run(ENUM_JOB_TYPE e) {
         t.join();
       }
     }
+
+    // sleep(4);
 
     if (auto it = menuPostProseeding.get(m_menuClick)) {
       (this->*(*it))();

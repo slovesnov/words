@@ -15,8 +15,8 @@
 const char markTag[] = "mark";
 const char activeTag[] = "active";
 const char CERROR[] = "cerror";
-const int TIMER = 400; // milliseconds
-const int MIN_LEFT_PANEL_WIDTH = 800;
+const int TIMER = 400;                // milliseconds
+const int MIN_LEFT_PANEL_WIDTH = 700; // 800
 const int MIN_RIGHT_PANEL_WIDTH = 420;
 const int DEFAULT_SEPARATOR_POSITION = 1340;
 const int TEXT_VIEW_MARGIN = 5;
@@ -97,7 +97,8 @@ gboolean on_debounce_timeout(gpointer data) {
 }
 
 gboolean update_status(gpointer data) {
-  prsync("update_status");
+  prsync("update_status",
+         magic_enum::enum_name(ENUM_STATE(GPOINTER_TO_INT(data))));
   frame->updateStatus(ENUM_STATE(GPOINTER_TO_INT(data)));
   return G_SOURCE_REMOVE;
 }
@@ -214,8 +215,8 @@ Frame::Frame() : WordsBase() {
   m_positionSignalId = g_signal_connect(
       w1, "notify::position",
       G_CALLBACK(+[](GObject *object, GParamSpec *pspec, gpointer data) {
-        pr("separator") frame->m_separatorPosition =
-            gtk_paned_get_position(GTK_PANED(object));
+        // pr("separator");
+        frame->m_separatorPosition = gtk_paned_get_position(GTK_PANED(object));
       }),
       NULL);
 
@@ -1420,7 +1421,8 @@ results JOB_TYPE_FILTER - stop calculations if needed, then filter results
 JOB_TYPE_STOP - stop calculations if needed
 */
 void Frame::job(ENUM_JOB_TYPE e) {
-  prsync(magic_enum::enum_name(e), "################");
+  prsync(magic_enum::enum_name(m_menuClick), magic_enum::enum_name(e),
+         "################");
   // блокировать второе нажатие
   if (oneOf(e, JOB_TYPE_SORT_AND_FILTER, JOB_TYPE_FILTER) && m_result.empty()) {
     prsynci;
@@ -1443,27 +1445,35 @@ void Frame::job(ENUM_JOB_TYPE e) {
     updateStatus(STATE_ERROR);
     return;
   }
-  prsynci;
-  // --- РЕШЕНИЕ ПРОБЛЕМЫ ПОТОКОВ ---
 
-  // 1. Сигнализируем СТАРЫМ потокам, что им пора завершаться (без ожидания
-  // .join!) Благодаря std::jthread, уничтожение старого объекта
-  // автоматически вызовет request_stop() и detach() если мы правильно
-  // переприсвоим поток.
+  // --- ИСПРАВЛЕНИЕ ДЕДЛОКА ---
+  // Если старый менеджер еще активен, мы сигнализируем ему остановиться
+  // и ОТСОЕДИНЯЕМ (detach), чтобы деструктор jthread НЕ блокировал UI-поток!
+  if (m_managerThread.joinable()) {
+    m_managerThread.request_stop();
+    m_managerThread
+        .detach(); // Теперь присваивание ниже НЕ вызовет .join() в UI
+  }
+
   m_managerThread = std::jthread([this, e](std::stop_token manager_token) {
-    // Переводим интерфейс в состояние остановки старой задачи
     prsync("send stopping");
     g_idle_add(update_status, GINT_TO_POINTER(STATE_STOPPING));
 
-    // Безопасно завершаем предыдущий рабочий поток, если он активен
+    // Безопасно завершаем предыдущий рабочий поток
     if (m_thread.joinable()) {
-      m_thread.request_stop(); // Просим остановиться
-      m_thread.join();         // Ждем остановки в фоне (не блокируя UI!)
+      m_thread.request_stop();
+      m_thread.join(); // Этот join происходит в фоне, UI не виснет!
     }
-    prsynci;
 
-    // Проверяем, не нажал ли пользователь "СТОП" вообще
-    if (manager_token.stop_requested() || e == JOB_TYPE_STOP) {
+    // Обязательно проверяем токен менеджера ПОСЛЕ того, как дождались старый
+    // m_thread
+    if (manager_token.stop_requested()) {
+      prsynci;
+      return; // Если прилетел новый job, просто выходим. Новый менеджер сделает
+              // остальное.
+    }
+
+    if (e == JOB_TYPE_STOP) {
       prsynci;
       g_idle_add(end_job, NULL);
       return;
@@ -1472,18 +1482,10 @@ void Frame::job(ENUM_JOB_TYPE e) {
 
     // Запускаем новый рабочий поток
     m_thread = std::jthread([this, e](std::stop_token token) {
-      m_token = token; // сохраняем токен, если он нужен внутри run(e)
+      m_token = token;
 
       prsync("run send proceeding");
-      // Ставим статус PROCEEDING в очередь UI
       g_idle_add(update_status, GINT_TO_POINTER(STATE_PROCEEDING));
-
-      // Имитация долгого старта (если она действительно нужна)
-      // ВАЖНО: проверяем токен каждую секунду, чтобы поток можно
-      // было прервать во время сна for (int i = 0; i < 60; ++i) {
-      //     if (token.stop_requested()) return;
-      //     g_usleep(100000); // 100мс * 60 = 6 секунд
-      // }
 
       if (token.stop_requested())
         return;
@@ -1491,14 +1493,13 @@ void Frame::job(ENUM_JOB_TYPE e) {
       // Запуск основной работы
       run(e);
 
+      // Проверяем, не отменили ли нас пока работал run(e)
+      if (token.stop_requested())
+        return;
+
       prsync("run end");
-      // Вызываем завершение работы ТОЛЬКО когда run(e) реально
-      // закончился!
       g_idle_add(end_job, NULL);
     });
-
-    // Обратите внимание: g_idle_add(end_job, NULL) ОТСЮДА УДАЛЕН!
-    // Менеджер больше не шлет сигнал завершения раньше времени.
   });
 }
 
