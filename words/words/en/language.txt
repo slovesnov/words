@@ -177,3 +177,4 @@ text files
 all files
 save
 cancel
+You can make this panel narrower or wider if you wish; you can also select the font for the output area and controls in the <i>Options</i> menu.

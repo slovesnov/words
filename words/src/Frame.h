@@ -59,7 +59,7 @@ private:
   void clearTagMarks();
 
   void aboutDialog();
-  void setHelperPanel();
+  void setHelperPanel(bool ignoreStateBegin);
 
   gint getComboIndex(ENUM_COMBOBOX e) const;
   void setComboIndex(ENUM_COMBOBOX e, gint v);
@@ -239,4 +239,5 @@ public:
 
   void windowDeleteEvent();
   void textviewChanged(ENUM_TEXTVIEW e);
+  void addHelp(ENUM_STRING e);
 };

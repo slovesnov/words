@@ -142,6 +142,7 @@ Frame::Frame() : WordsBase() {
   m_menu = gtk_menu_bar_new();
 
   m_helperUp = gtk_box_new(GTK_ORIENTATION_VERTICAL, 3);
+
   m_status = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 2);
   m_statusMessage = gtk_label_new("");
 
@@ -317,6 +318,7 @@ Frame::Frame() : WordsBase() {
   }
 
   updateStatus(STATE_BEGIN);
+  setHelperPanel(false); // after set m_state in updateStatus
   gtk_widget_show_all(m_widget);
   gtk_window_set_focus(GTK_WINDOW(m_widget),
                        NULL); // no focus
@@ -329,6 +331,7 @@ void Frame::clickMenu(ENUM_MENU menu) {
   GtkClipboard *clipboard;
   ENUM_FONT e;
   char *text;
+  bool b;
 
   switch (menu) {
 
@@ -394,8 +397,10 @@ void Frame::clickMenu(ENUM_MENU menu) {
       m_menuClick = menu;
       // pr(magic_enum::enum_name(menu));
     }
-    if (m_menuClick != MENU_SEARCH) {
-      setHelperPanel();
+    // pr(magic_enum::enum_name(m_state));
+    b=m_menuClick != MENU_SEARCH;
+    setHelperPanel(b);
+    if (b) {
       job();
     }
   }
@@ -493,27 +498,23 @@ void Frame::aboutDialog() {
   gtk_widget_destroy(dialog);
 }
 
-void Frame::setHelperPanel() {
+void Frame::setHelperPanel(bool ignoreStateBegin) {
   int i;
   GtkWidget *w;
-  gchar *p;
   std::string s;
 
   clearContainer(m_helperUp);
   m_charactersLabel = nullptr;
 
+  if (!ignoreStateBegin && m_state == STATE_BEGIN) { // also worked when language is changed
+    addHelp(STARTMESSAGE);
+    gtk_widget_show_all(m_helperUp);
+    return;
+  }
+
   // set label
   if (auto it = MENU_TO_HELP_STRING.get(m_menuClick)) {
-    w = gtk_label_new("");
-    gtk_container_add(GTK_CONTAINER(m_helperUp), w);
-    gtk_label_set_justify(GTK_LABEL(w), GTK_JUSTIFY_FILL);
-    gtk_label_set_line_wrap(GTK_LABEL(w), TRUE);
-    gtk_label_set_max_width_chars(GTK_LABEL(w), 40);
-
-    s = replaceAll(string(*it), "<br>", "\n");
-    p = g_markup_printf_escaped(s.c_str());
-    gtk_label_set_markup(GTK_LABEL(w), p);
-    g_free(p);
+    addHelp(*it);
   }
 
   if (MENU_TO_SETTINGS.has(m_menuClick)) {
@@ -717,8 +718,8 @@ void Frame::comboChanged(ENUM_COMBOBOX e) {
   }
 
   if (oneOf(e, COMBOBOX_SORT, COMBOBOX_SORT_ORDER, COMBOBOX_FILTER)) {
-    pr(magic_enum::enum_name(e))
-        job(e == COMBOBOX_FILTER ? JOB_TYPE_FILTER : JOB_TYPE_SORT_AND_FILTER);
+    // pr(magic_enum::enum_name(e));
+    job(e == COMBOBOX_FILTER ? JOB_TYPE_FILTER : JOB_TYPE_SORT_AND_FILTER);
     return;
   }
   if (getLastCombobox() == e) {
@@ -761,6 +762,7 @@ void Frame::clickButton(GtkWidget *button) {
     updateDictionary(true);
   } else if (n == BUTTON_STARTSTOP) {
     auto b = getStartStopState();
+    // pr(b.imageStart,b.enable,"#########",magic_enum::enum_name(m_state));TODO
     job(b.imageStart ? JOB_TYPE_FULL : JOB_TYPE_STOP);
   } else {
     if (m_tags < 2) {
@@ -1173,6 +1175,7 @@ StartStopButtonState Frame::getStartStopState() const {
 }
 
 GtkWidget *Frame::createTextView(ENUM_TEXTVIEW e) {
+  std::string s;
   auto t = m_text[e] = gtk_text_view_new();
   auto w = gtk_scrolled_window_new(NULL, NULL);
   gtk_container_add(GTK_CONTAINER(w), t);
@@ -1189,8 +1192,9 @@ GtkWidget *Frame::createTextView(ENUM_TEXTVIEW e) {
     gtk_text_buffer_create_tag(buffer, activeTag, "background", "Khaki", NULL);
     gtk_text_view_set_left_margin(GTK_TEXT_VIEW(t), TEXT_VIEW_MARGIN);
     gtk_text_view_set_right_margin(GTK_TEXT_VIEW(t), TEXT_VIEW_MARGIN);
-  } else if (e == TEXTVIEW_HELPER) { // todo
-    auto s = stringUsingDictionary(SETTINGS_CHAIN_EXCEPTIONS);
+    gtk_text_buffer_set_text(buffer, s.c_str(), -1);
+  } else if (e == TEXTVIEW_HELPER) {
+    s = stringUsingDictionary(SETTINGS_CHAIN_EXCEPTIONS);
     gtk_text_buffer_set_text(buffer, s.c_str(), -1);
     g_signal_connect(buffer, "changed", G_CALLBACK(textview_changed),
                      GINT_TO_POINTER(TEXTVIEW_HELPER));
@@ -1377,8 +1381,8 @@ void Frame::job(ENUM_JOB_TYPE e) {
 #ifdef USE_STACK_TRACE
   print_short_stack_trace();
 #endif
-  prsync(magic_enum::enum_name(m_menuClick), magic_enum::enum_name(e));
-  //  блокировать второе нажатие
+  // prsync(magic_enum::enum_name(m_menuClick), magic_enum::enum_name(e));
+  //   блокировать второе нажатие
   if (oneOf(e, JOB_TYPE_SORT_AND_FILTER, JOB_TYPE_FILTER) && m_result.empty()) {
     return;
   }
@@ -1467,4 +1471,17 @@ void Frame::textviewChanged(ENUM_TEXTVIEW e) {
       setDebounceTimer(ENTRY_TEMPLATE);
     }
   }
+}
+
+void Frame::addHelp(ENUM_STRING e) {
+  auto w = gtk_label_new("");
+  gtk_container_add(GTK_CONTAINER(m_helperUp), w);
+  gtk_label_set_justify(GTK_LABEL(w), GTK_JUSTIFY_FILL);
+  gtk_label_set_line_wrap(GTK_LABEL(w), TRUE);
+  gtk_label_set_max_width_chars(GTK_LABEL(w), 40);
+
+  auto s = replaceAll(string(e), "<br>", "\n");
+  gchar *p = g_markup_printf_escaped(s.c_str());
+  gtk_label_set_markup(GTK_LABEL(w), p);
+  g_free(p);
 }
