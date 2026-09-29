@@ -1,3 +1,4 @@
+SHELL := /bin/bash
 # mingw32-make -j $(nproc)
 # mingw32-make -j $(nproc) RUN=1
 # mingw32-make -j$(nproc) CONFIG=console RUN=1
@@ -20,7 +21,8 @@ TARGET   := words
 ASLOV    := ../../aslov/aslov/src/aslov
 CXX      := g++
 #-DNDEBUG
-CXXFLAGS := -O3 -Wall -std=c++23 -Isrc/common -I$(ASLOV)
+#stacktrace -g -O0
+CXXFLAGS := -g -O0 -Wall -std=c++23 -Isrc/common -I$(ASLOV)
 SRCS     := src/main.cpp $(wildcard src/*/*.cpp) $(ASLOV)/aslov.cpp
 
 ifeq ($(CONFIG), release)
@@ -28,6 +30,8 @@ ifeq ($(CONFIG), release)
     LIBS     := $(shell pkg-config --libs gtk+-3.0) -lcurl -lpcre2-8
     SRCS     += $(ASLOV)/CheckNewVersion.cpp src/Frame.cpp
     EXTRA_OBJS := $(TARGET)/icon/app.o
+#stacktrace  -Wl,--export-all-symbols
+   LDFLAGS  += -lstdc++exp
 else ifeq ($(CONFIG), console)
     CGI      := ../../cgi/cgi/src/cgi
     CXXFLAGS += -DNOGTK=0 -I$(CGI)

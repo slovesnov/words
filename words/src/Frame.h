@@ -150,8 +150,8 @@ public:
 
   void clickMenu(ENUM_MENU menu);
 
-  void updateDictionary();
-  void updateLanguage();
+  void updateDictionary(bool change = false);
+  void updateLanguage(bool change = false);
   void comboChanged(ENUM_COMBOBOX e);
   void radioChanged(GtkWidget *w);
   void clickButton(GtkWidget *button);
@@ -176,7 +176,6 @@ public:
   std::string getTextViewString(ENUM_TEXTVIEW e, bool locale) const;
 
   virtual std::string getEntryString(ENUM_ENTRY e) const override;
-  virtual std::string getTextViewString() const override;
   virtual bool getCheck() const override;
 
   void entryChanged(ENUM_ENTRY e);
@@ -196,7 +195,6 @@ public:
   std::string getCssFromPango(ENUM_FONT e);
   void updateFont(ENUM_FONT e);
   void resetSettings(bool update);
-  void switchDictionary();
   void saveText();
 
   void job(ENUM_JOB_TYPE e = JOB_TYPE_FULL);
@@ -226,7 +224,11 @@ public:
             widget = m_entry[id];
           else if constexpr (std::is_same_v<T, ENUM_BUTTON>)
             widget = m_button[id];
-
+          else {
+            // need c++23
+            static_assert(false,
+                          "Unsupported widget type passed to the lambda!");
+          }
           if (widget) {
             gtk_widget_set_sensitive(widget, should_enable(index));
           }
@@ -236,4 +238,5 @@ public:
   }
 
   void windowDeleteEvent();
+  void textviewChanged(ENUM_TEXTVIEW e);
 };

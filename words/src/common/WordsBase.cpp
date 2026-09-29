@@ -7,7 +7,7 @@
 
 #include "WordsBase.h"
 #include "consts.h"
-#include "magic_enum.hpp"
+#include "../lib/magic_enum.hpp"
 #include <cassert>
 #include <execution>
 #include <ranges>
@@ -105,6 +105,7 @@ WordsBase::WordsBase() {
   // clock_t begin = clock();
 
   int k;
+  //todo on distionayr change need to set another values
   const int DICTIONARY_SIZE[] = {393'167, 2'415'401};
   for (i = 0; i < LANGUAGES; i++) {
     k = 0;
@@ -152,6 +153,8 @@ WordsBase::WordsBase() {
   // showLongestPangram();
   // showLongestSimpleWordSequence();
   // showLongestDoubleWordSequence();
+
+  // clearlog();
 
   // test();
 #ifdef NOGTK
@@ -594,9 +597,9 @@ void WordsBase::showLongestAnagram() {
           }
           s = joinV(v);
           r[n] = i;
-          s1 = std::format("length{} {}\n", i, s);
-          std::cout << s1;
-          printlo(s1);
+          // s1 = std::format("length{} {}\n", i, s);
+          // std::cout << s1;
+          // printlog(s1);
           goto l425;
         }
       }
@@ -626,7 +629,7 @@ void WordsBase::showLongestPangram() {
       }
     }
     std::cout << s;
-    printlo(s);
+    printlog(s);
   }
   outMax(__func__, r);
 }
@@ -944,6 +947,7 @@ void WordsBase::findChain(int nthread) {
     return;
   }
 
+  //pr(m_textViewValue);
   std::stringstream ss(m_textViewValue);
   while (ss >> s) {
     if (s.size() == m_chainHelper[0].length())
@@ -2262,8 +2266,6 @@ void WordsBase::setDictionaryIndex(int i) {
 }
 
 std::string WordsBase::getEntryString(ENUM_ENTRY e) const { return ""; }
-
-std::string WordsBase::getTextViewString() const { return ""; }
 
 bool WordsBase::getCheck() const { return false; }
 

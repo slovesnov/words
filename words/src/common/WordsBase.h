@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "HelperStructs.h"
+#include "Helper.h"
 #include "Modification.h"
 #include "aslov.h"
 #include "consts.h"
@@ -37,12 +37,12 @@ extern WordsBase *wordsBase;
 
 class WordsBase {
   std::string m_entryValue;    // locale
-  std::string m_textViewValue; // locale
   bool m_checkValue;
 
 protected:
   int m_comboValue[COMBOBOX_SIZE]; // set in frame.cpp
   int m_radioValue;                // set in frame.cpp
+  std::string m_textViewValue; // locale, set in frame.cpp
 
   Dictionary m_dictionary[DICTIONARY_SIZE];
   std::string m_keyboardOneRow[256][2];
@@ -184,7 +184,6 @@ public:
   getAllPairs(std::string const &s, std::string const &low = invalidDifference);
   static std::string pairsToString(StringStringVector const &v, bool p = 0);
   virtual std::string getEntryString(ENUM_ENTRY e) const;
-  virtual std::string getTextViewString() const;
   virtual bool getCheck() const;
 
   bool createRegex(ENUM_ENTRY e);
