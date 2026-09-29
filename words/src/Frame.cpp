@@ -392,7 +392,7 @@ void Frame::clickMenu(ENUM_MENU menu) {
       updateLanguage(true);
     } else {
       m_menuClick = menu;
-      pr(magic_enum::enum_name(menu));
+      // pr(magic_enum::enum_name(menu));
     }
     if (m_menuClick != MENU_SEARCH) {
       setHelperPanel();
@@ -554,8 +554,6 @@ void Frame::setHelperPanel() {
         gtk_widget_set_halign(a, GTK_ALIGN_START);
       gtk_container_add(GTK_CONTAINER(m_helperUp), a);
     }
-    updateTextView(TEXTVIEW_HELPER,
-                   stringUsingDictionary(SETTINGS_CHAIN_EXCEPTIONS));
     break;
 
   case MENU_CHARACTER_SEQUENCE:
@@ -956,7 +954,7 @@ std::string Frame::getEntryString(ENUM_ENTRY e) const {
 }
 
 std::string Frame::getTextViewString(ENUM_TEXTVIEW e, bool locale) const {
-  pri;
+  // pri;
   GtkTextBuffer *buffer = tvBuffer(e);
   GtkTextIter start, end;
   std::string s;
@@ -984,7 +982,9 @@ void Frame::entryChanged(ENUM_ENTRY e) {
     clearTagMarks();
   }
 
-  setDebounceTimer(e);
+  if (!isSignalsLocked()) {
+    setDebounceTimer(e);
+  }
 }
 
 void Frame::clearTagMarks() {
@@ -1189,9 +1189,13 @@ GtkWidget *Frame::createTextView(ENUM_TEXTVIEW e) {
     gtk_text_buffer_create_tag(buffer, activeTag, "background", "Khaki", NULL);
     gtk_text_view_set_left_margin(GTK_TEXT_VIEW(t), TEXT_VIEW_MARGIN);
     gtk_text_view_set_right_margin(GTK_TEXT_VIEW(t), TEXT_VIEW_MARGIN);
-  } else {
+  } else if (e == TEXTVIEW_HELPER) { // todo
+    auto s = stringUsingDictionary(SETTINGS_CHAIN_EXCEPTIONS);
+    gtk_text_buffer_set_text(buffer, s.c_str(), -1);
     g_signal_connect(buffer, "changed", G_CALLBACK(textview_changed),
                      GINT_TO_POINTER(TEXTVIEW_HELPER));
+  } else {
+    assert(0);
   }
   return w;
 }
@@ -1370,8 +1374,10 @@ results JOB_TYPE_FILTER - stop calculations if needed, then filter results
 JOB_TYPE_STOP - stop calculations if needed
 */
 void Frame::job(ENUM_JOB_TYPE e) {
+#ifdef USE_STACK_TRACE
   print_short_stack_trace();
-  //prsync(magic_enum::enum_name(m_menuClick), magic_enum::enum_name(e));
+#endif
+  prsync(magic_enum::enum_name(m_menuClick), magic_enum::enum_name(e));
   //  блокировать второе нажатие
   if (oneOf(e, JOB_TYPE_SORT_AND_FILTER, JOB_TYPE_FILTER) && m_result.empty()) {
     return;
@@ -1456,7 +1462,9 @@ void Frame::textviewChanged(ENUM_TEXTVIEW e) {
   // pr(magic_enum::enum_name(e),"###############");
   if (e == TEXTVIEW_HELPER) {
     m_textViewValue = getTextViewString(e, true);
-    // proceed same as template entry changed
-    frame->setDebounceTimer(ENTRY_TEMPLATE);
+    if (!isSignalsLocked()) {
+      // proceed same as template entry changed
+      setDebounceTimer(ENTRY_TEMPLATE);
+    }
   }
 }

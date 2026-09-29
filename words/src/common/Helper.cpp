@@ -7,7 +7,9 @@
 
 #include "Helper.h"
 #include "WordsBase.h"
+#ifdef USE_STACK_TRACE
 #include <stacktrace>
+#endif
 
 void ThreadResult::clear(int n, int n1) {
   s = "";
@@ -207,6 +209,7 @@ std::string lowercase_utf8_regex(const std::string &pattern) {
   return result;
 }
 
+#ifdef USE_STACK_TRACE
 void print_short_stack_trace(size_t max_lines) {
   auto trace = std::stacktrace::current(1, max_lines);
   std::string s;
@@ -220,3 +223,4 @@ void print_short_stack_trace(size_t max_lines) {
   }
   pr(s);
 }
+#endif

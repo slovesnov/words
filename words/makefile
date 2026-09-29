@@ -1,9 +1,9 @@
 SHELL := /bin/bash
-# mingw32-make -j $(nproc)
-# mingw32-make -j $(nproc) RUN=1
-# mingw32-make -j$(nproc) CONFIG=console RUN=1
-# mingw32-make clean
-# options CONFIG=release|console RUN=1 CLEAR=1
+# make -j $(nproc)
+# make -j $(nproc) RUN=1
+# make -j$(nproc) CONFIG=console RUN=1
+# make clean
+# options CONFIG=release|stacktrace|console RUN=1 CLEAR=1
 
 CONFIG ?= release
 
@@ -20,28 +20,28 @@ endif
 TARGET   := words
 ASLOV    := ../../aslov/aslov/src/aslov
 CXX      := g++
-#-DNDEBUG
-#stacktrace -g -O0
-CXXFLAGS := -g -O0 -Wall -std=c++23 -Isrc/common -I$(ASLOV)
+CXXFLAGS := -Wall -std=c++23 -Isrc/common -I$(ASLOV)
 SRCS     := src/main.cpp $(wildcard src/*/*.cpp) $(ASLOV)/aslov.cpp
 
-ifeq ($(CONFIG), release)
-    CXXFLAGS += $(shell pkg-config --cflags gtk+-3.0)
-    LIBS     := $(shell pkg-config --libs gtk+-3.0) -lcurl -lpcre2-8
-    SRCS     += $(ASLOV)/CheckNewVersion.cpp src/Frame.cpp
+ifneq ($(filter release stacktrace,$(CONFIG)),)
+    CXXFLAGS   += $(shell pkg-config --cflags gtk+-3.0)
+    LIBS       := $(shell pkg-config --libs gtk+-3.0) -lcurl -lpcre2-8
+    SRCS       += $(ASLOV)/CheckNewVersion.cpp src/Frame.cpp
     EXTRA_OBJS := $(TARGET)/icon/app.o
-#stacktrace  -Wl,--export-all-symbols
-   LDFLAGS  += -lstdc++exp
+endif
+
+ifeq ($(CONFIG), release)
+    CXXFLAGS   += -O3 -DNDEBUG
+else ifeq ($(CONFIG), stacktrace)
+    CXXFLAGS   += -g -O0 -DUSE_STACK_TRACE
+    LDFLAGS    +=  -lstdc++exp
 else ifeq ($(CONFIG), console)
-    CGI      := ../../cgi/cgi/src/cgi
-    CXXFLAGS += -DNOGTK=0 -I$(CGI)
-    SRCS     += $(CGI)/cgi.cpp
-    LDFLAGS  := -liconv
-    #for gtk regex
-    #CXXFLAGS += $(shell pkg-config --cflags gtk+-3.0)
-    #LIBS     := $(shell pkg-config --libs gtk+-3.0)
+    CGI        := ../../cgi/cgi/src/cgi
+    CXXFLAGS   += -DNOGTK=0 -I$(CGI)
+    SRCS       += $(CGI)/cgi.cpp
+    LDFLAGS    := -liconv
 else
-    $(error Invalid CONFIG="$(CONFIG)". Valid options are 'release' or 'console')
+    $(error Invalid CONFIG="$(CONFIG)". Valid options are 'release', 'stacktrace' or 'console')
 endif
 
 OBJS     := $(SRCS:.cpp=.o)
