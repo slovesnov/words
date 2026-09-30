@@ -17,9 +17,6 @@
 #include <ctime>
 #include <thread>
 
-#ifdef USE_STANDARD_REGEX
-#include <regex>
-#else
 #define PCRE2_CODE_UNIT_WIDTH 8
 #define PCRE2_STATIC
 #include <pcre2.h>
@@ -27,7 +24,6 @@
 using UniquePcre2Code = UniqueGtkResource<pcre2_code, pcre2_code_free>;
 using UniquePcre2MatchData =
     UniqueGtkResource<pcre2_match_data, pcre2_match_data_free>;
-#endif
 
 const char SEPARATOR[] = "SEPARATOR";
 const std::string invalidDifference = "$";
@@ -36,13 +32,14 @@ class WordsBase;
 extern WordsBase *wordsBase;
 
 class WordsBase {
-  std::string m_entryValue;    // locale
-  bool m_checkValue;
+  std::string m_ev; // locale m_ev=utf8ToLocale(m_entryValue[ENTRY_TEMPLATE])
 
 protected:
-  int m_comboValue[COMBOBOX_SIZE]; // set in frame.cpp
-  int m_radioValue;                // set in frame.cpp
-  std::string m_textViewValue; // locale, set in frame.cpp
+  std::string m_entryValue[ENTRY_SIZE]; // utf8
+  bool m_checkValue;
+  int m_comboValue[COMBOBOX_SIZE];
+  int m_radioValue;
+  std::string m_textViewValue; // locale
 
   Dictionary m_dictionary[DICTIONARY_SIZE];
   std::string m_keyboardOneRow[256][2];
@@ -53,12 +50,8 @@ protected:
   std::vector<SearchResultVector> m_thread_result;
   int m_longestWordLength[LANGUAGES];
   clock_t m_begin, m_end;
-#ifdef USE_STANDARD_REGEX
-  std::regex m_regex;
-#else
   UniquePcre2Code m_regex[2];
   UniquePcre2MatchData m_match[2];
-#endif
   int m_languageIndex;
   int m_dictionaryIndex;
   char m_templateHelper[256];
@@ -78,7 +71,7 @@ protected:
   std::vector<VMapStringTwoStringVectors> m_ma;
   VString m_chdv;
   std::vector<int> m_chd;
-  std::vector<AnagramMap> m_anagrams; 
+  std::vector<AnagramMap> m_anagrams;
 
   std::stop_token m_token;
 
@@ -88,7 +81,6 @@ protected:
   int getMaximumWordLength() { return m_longestWordLength[m_dictionaryIndex]; }
 
   bool prepare();
-  static std::string getShortLanguageString(int i);
   void setDictionaryIndex(int i);
 
   static std::string path(int i, std::string s);
@@ -123,7 +115,7 @@ public:
   bool checkCrossword(const std::string &s);
 
   bool checkRegularExpression(const std::string &s, pcre2_code *re,
-                                   pcre2_match_data *match_data);
+                              pcre2_match_data *match_data);
   bool checkCharacterSequence(const std::string &s);
   bool checkConsonantVowelSequence(const std::string &s);
   bool checkDensity(const std::string &s);
@@ -159,7 +151,6 @@ public:
   void simpleDoubleWordSequencePostProseeding();
   void checkDictionaryPostProseeding();
 
-  static std::string getTwoDictionariesPath(int n);
   void twoDictionaries(int nthread, int n);
 
   static int differentChars(std::string_view s);
@@ -184,11 +175,9 @@ public:
   static StringStringVector
   getAllPairs(std::string const &s, std::string const &low = invalidDifference);
   static std::string pairsToString(StringStringVector const &v, bool p = 0);
-  virtual std::string getEntryString(ENUM_ENTRY e) const;
-  virtual bool getCheck() const;
 
   bool createRegex(ENUM_ENTRY e);
-  bool createRegex(ENUM_ENTRY e, UniquePcre2Code &r,  UniquePcre2MatchData &m);
+  bool createRegex(ENUM_ENTRY e, UniquePcre2Code &r, UniquePcre2MatchData &m);
 
   const std::string &alphabet() const;
   int alphabetSize() const;

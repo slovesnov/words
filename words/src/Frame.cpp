@@ -63,7 +63,7 @@ gboolean label_clicked(GtkWidget *label, const gchar *uri, gpointer) {
   return TRUE;
 }
 
-void check_changed(GtkWidget *check, gpointer) { frame->job(); }
+void check_changed(GtkWidget *check, gpointer) { frame->checkChanged(); }
 
 void radio_changed(GtkWidget *radio, gpointer) { frame->radioChanged(radio); }
 
@@ -335,6 +335,7 @@ Frame::Frame() : WordsBase() {
   gtk_window_set_focus(GTK_WINDOW(m_widget),
                        NULL); // no focus
   unlockSignals();
+  pr("###################");
 }
 
 void Frame::clickMenu(ENUM_MENU menu) {
@@ -451,7 +452,7 @@ void Frame::aboutDialog() {
   for (auto id : sid) {
     if (auto key_opt = MAP_URL.get(id)) {
       s = *key_opt + (m_languageIndex && id != SOURCE_CODE
-                          ? ',' + getShortLanguageString(m_languageIndex)
+                          ? ',' + LNG[m_languageIndex]
                           : "");
       label = gtk_label_new(NULL);
       markup =
@@ -552,11 +553,8 @@ void Frame::setHelperPanel(bool ignoreStateBegin) {
     break;
 
   case MENU_MODIFICATION:
-    m_check = gtk_check_button_new_with_label(
-        string(EVERY_MODIFICATION_CHANGES_WORD).c_str());
-    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(m_check), TRUE);
+    createCheck(EVERY_MODIFICATION_CHANGES_WORD, TRUE);
     gtk_container_add(GTK_CONTAINER(m_helperUp), m_check);
-    g_signal_connect(m_check, "toggled", G_CALLBACK(check_changed), NULL);
     break;
 
   case MENU_CHAIN:
@@ -876,6 +874,9 @@ void Frame::updateComboValue(ENUM_COMBOBOX e) {
     v = getComboIndex(e);
     // v can be =-1 when combobox just created
   }
+
+  //print_short_stack_trace( 6);
+
   m_comboValue[e] = v;
 }
 
@@ -948,6 +949,18 @@ void Frame::debounceTimeout(ENUM_ENTRY e) {
   m_currentEntry = e;
   m_currentEntryPos = gtk_editable_get_position(GTK_EDITABLE(m_entry[e]));
 
+  pr("set",magic_enum::enum_name(e));
+// lowercased utf8, changed 'ё' -> 'е'
+  std::string s = gtk_entry_get_text(GTK_ENTRY(m_entry[e]));
+  bool regex = e == ENTRY_FILTER ||
+               (e == ENTRY_TEMPLATE && m_menuClick == MENU_REGULAR_EXPRESSIONS);
+  if (regex) {
+    s = lowercase_utf8_regex(s);
+  } else {
+    s = utf8ToLowerCase(s);
+  }
+  m_entryValue[e] = replaceAll(s, "ё", "е");
+
   switch (e) {
   case ENTRY_TEMPLATE:
     job();
@@ -968,22 +981,6 @@ void Frame::debounceTimeout(ENUM_ENTRY e) {
   }
 }
 
-// lowercased utf8, changed 'ё' -> 'е'
-std::string Frame::getEntryString(ENUM_ENTRY e) const {
-  std::string s = gtk_entry_get_text(GTK_ENTRY(m_entry[e]));
-  bool regex = e == ENTRY_FILTER ||
-               (e == ENTRY_TEMPLATE && m_menuClick == MENU_REGULAR_EXPRESSIONS);
-  // pr(regex,s,s.size());
-  // printlog(s,s.size());
-  if (regex) {
-    s = lowercase_utf8_regex(s);
-  } else {
-    s = utf8ToLowerCase(s);
-  }
-  s = replaceAll(s, "ё", "е");
-  return s;
-}
-
 std::string Frame::getTextViewString(ENUM_TEXTVIEW e, bool locale) const {
   // pri;
   GtkTextBuffer *buffer = tvBuffer(e);
@@ -996,12 +993,9 @@ std::string Frame::getTextViewString(ENUM_TEXTVIEW e, bool locale) const {
   return s;
 }
 
-bool Frame::getCheck() const {
-  return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(m_check)) == TRUE;
-}
-
 void Frame::entryChanged(ENUM_ENTRY e) {
   bool b;
+  pr(magic_enum::enum_name(e));
   if (e == ENTRY_TEMPLATE) {
     b = prepare();
     addRemoveClass(m_entry[e], CERROR, !b);
@@ -1030,7 +1024,7 @@ void Frame::clearTagMarks() {
 // n - number of active tag
 void Frame::updateTags(int n) {
   GtkTextBuffer *buffer = tvBuffer();
-  std::string s = getEntryString(ENTRY_SEARCH);
+  std::string s = m_entryValue[ENTRY_SEARCH];
 
   int old_tag_index = m_tagIndex;
   m_tagIndex = n;
@@ -1410,11 +1404,10 @@ results JOB_TYPE_FILTER - stop calculations if needed, then filter results
 JOB_TYPE_STOP - stop calculations if needed
 */
 void Frame::job(ENUM_JOB_TYPE e) {
-#ifdef USE_STACK_TRACE
-  print_short_stack_trace();
-#endif
+// #ifndef NDEBUG
+//   print_short_stack_trace();
+// #endif
   // prsync(magic_enum::enum_name(m_menuClick), magic_enum::enum_name(e));
-  //   блокировать второе нажатие
   if (oneOf(e, JOB_TYPE_SORT_AND_FILTER, JOB_TYPE_FILTER) && m_result.empty()) {
     return;
   }
@@ -1495,7 +1488,6 @@ void Frame::windowDeleteEvent() {
 }
 
 void Frame::textviewChanged(ENUM_TEXTVIEW e) {
-  // pr(magic_enum::enum_name(e),"###############");
   if (e == TEXTVIEW_HELPER) {
     m_textViewValue = getTextViewString(e, true);
     if (!isSignalsLocked()) {
@@ -1516,4 +1508,20 @@ void Frame::addHelp(ENUM_STRING e) {
   gchar *p = g_markup_printf_escaped(s.c_str());
   gtk_label_set_markup(GTK_LABEL(w), p);
   g_free(p);
+}
+
+void Frame::createCheck(ENUM_STRING e, bool set) {
+  m_check = gtk_check_button_new_with_label(string(e).c_str());
+  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(m_check), set);
+  updateCheckValue();
+  g_signal_connect(m_check, "toggled", G_CALLBACK(check_changed), NULL);
+}
+
+void Frame::checkChanged() {
+  updateCheckValue();
+  job();
+}
+
+void Frame::updateCheckValue() {
+  m_checkValue = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(m_check));
 }

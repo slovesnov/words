@@ -21,7 +21,6 @@
   }
 #endif
 
-std::string LNG[LANGUAGES];
 std::vector<MapStringStringVector> eqmap;
 const LookupTable<ENUM_MENU, void (WordsBase::*)(int)> menu2VoidInt = {
     {MENU_ANAGRAM, &WordsBase::findAnagram}, // break implemented
@@ -107,13 +106,11 @@ WordsBase::WordsBase() {
   // clock_t begin = clock();
 
   int k;
-  // todo on distionayr change need to set another values
+  // todo on distionary change need to set another values
   const int DICTIONARY_SIZE[] = {393'167, 2'415'401};
   for (i = 0; i < LANGUAGES; i++) {
     k = 0;
     // clock_t begin = clock();
-
-    LNG[i] = LANGUAGE[i].substr(0, 2);
 
     // load dictionaries
     m_longestWordLength[i] = 0;
@@ -197,7 +194,7 @@ bool WordsBase::checkTemplate(const std::string &s) {
   const char *p = s.c_str();
   int param = m_comboValue[COMBOBOX_HELPER0];
   if (param == 0) {
-    if (s.length() < m_entryValue.length()) {
+    if (s.length() < m_ev.length()) {
       return false;
     }
 
@@ -213,7 +210,7 @@ bool WordsBase::checkTemplate(const std::string &s) {
     }
     return true;
   } else if (param == 1) {
-    if (s.length() > m_entryValue.length()) {
+    if (s.length() > m_ev.length()) {
       return false;
     }
     char a[256] = {0};
@@ -229,13 +226,13 @@ bool WordsBase::checkTemplate(const std::string &s) {
     size_t i, j, k;
     for (i = j = 0; i < s.length(); i++) {
       k = m_template_a[j][uchar(s[i])];
-      if (!k || ((j += k) >= m_entryValue.length() && i + 1 < s.length())) {
+      if (!k || ((j += k) >= m_ev.length() && i + 1 < s.length())) {
         return false;
       }
     }
     return true;
   } else {
-    return spanIncluding(s, m_entryValue);
+    return spanIncluding(s, m_ev);
   }
 }
 
@@ -246,7 +243,7 @@ bool WordsBase::checkCharacterSequence(const std::string &s) {
     auto max = m_comboValue[COMBOBOX_HELPER1];
     j = 0;
     std::string::size_type pos = 0;
-    while ((pos = s.find(m_entryValue, pos)) != std::string::npos) {
+    while ((pos = s.find(m_ev, pos)) != std::string::npos) {
       if (!m_radioValue) {
         return true;
       }
@@ -254,28 +251,27 @@ bool WordsBase::checkCharacterSequence(const std::string &s) {
       if (j > max) {
         return false;
       }
-      pos += m_entryValue.length();
+      pos += m_ev.length();
     }
     return j >= min;
   } else if (j == 1) {
-    return s.compare(0, m_entryValue.length(), m_entryValue) == 0;
+    return s.compare(0, m_ev.length(), m_ev) == 0;
   } else {
     unsigned i = s.length();
-    if (i < m_entryValue.length()) {
+    if (i < m_ev.length()) {
       return false;
     }
-    return s.compare(i - m_entryValue.length(), m_entryValue.length(),
-                     m_entryValue) == 0;
+    return s.compare(i - m_ev.length(), m_ev.length(), m_ev) == 0;
   }
 }
 
 bool WordsBase::checkCrossword(const std::string &s) {
   unsigned i;
-  if (s.length() != m_entryValue.length()) {
+  if (s.length() != m_ev.length()) {
     return false;
   }
-  for (i = 0; i < m_entryValue.length(); ++i) {
-    if (m_entryValue[i] != '*' && m_entryValue[i] != s[i]) {
+  for (i = 0; i < m_ev.length(); ++i) {
+    if (m_ev[i] != '*' && m_ev[i] != s[i]) {
       return false;
     }
   }
@@ -345,14 +341,6 @@ bool WordsBase::checkPalindrome(const std::string &s) {
 
 bool WordsBase::checkRegularExpression(const std::string &s, pcre2_code *re,
                                        pcre2_match_data *match_data) {
-#ifdef USE_STANDARD_REGEX
-  // todo always m_regex
-  std::ptrdiff_t const matches(std::distance(
-      std::sregex_iterator(s.begin(), s.end(), m_regex[ENTRY_TEMPLATE]),
-      std::sregex_iterator()));
-  return matches >= m_comboValue[COMBOBOX_HELPER0] &&
-         matches <= m_comboValue[COMBOBOX_HELPER1];
-#else
   if (!m_radioValue) {
     int rc = pcre2_match(re, (PCRE2_SPTR)s.c_str(), s.length(), 0, 0,
                          match_data, NULL);
@@ -386,7 +374,6 @@ bool WordsBase::checkRegularExpression(const std::string &s, pcre2_code *re,
   }
 
   return i >= m_comboValue[COMBOBOX_HELPER0] && i <= max;
-#endif
 }
 
 void WordsBase::checkKeyboardWordSimplePreProseeding() {
@@ -523,9 +510,7 @@ void WordsBase::checkLFAllFiles() {
     checkFile(path(n, name));
   }
 
-  for (int n = 0; n < 3; n++) {
-    checkFile(getTwoDictionariesPath(n));
-  }
+  checkFile(getResourcePath(LNG2TXT));
 }
 
 void outMax(std::string f, std::array<int, 2> r) {
@@ -947,7 +932,6 @@ void WordsBase::findChain(int nthread) {
     return;
   }
 
-  // pr(m_textViewValue);
   std::stringstream ss(m_textViewValue);
   while (ss >> s) {
     if (s.size() == m_chainHelper[0].length())
@@ -1163,10 +1147,10 @@ l210:
 void WordsBase::findLetterGroupSplit(int nthread) {
   std::string s, s1, t, lng;
   size_t i, j;
-  auto charset = getOrderedString(m_entryValue);
+  auto charset = getOrderedString(m_ev);
 
   auto begin = clock();
-  const size_t size = m_entryValue.length();
+  const size_t size = m_ev.length();
   eqmap.clear();
   eqmap.resize(size);
 
@@ -1221,24 +1205,25 @@ void WordsBase::findLetterGroupSplit(int nthread) {
   pr(timeElapse(begin));
 }
 
-std::string WordsBase::getTwoDictionariesPath(int n) {
-  return getResourcePath(std::format("{}{}{}.txt", LNG[0], LNG[1], n));
-}
-
 void WordsBase::twoDictionaries(int nthread, int nn) {
   VVString to;
   int i, j, m, l, len, n, fromIndex = -1;
   std::string s, alphabetFrom;
-  VString v;
+  VString v, d;
   const int di = m_dictionaryIndex;
-  s = getTwoDictionariesPath(nn);
-  for (auto &s : readFile(s)) {
-    if (to.empty()) {
-      fromIndex = indexOf(s, LNG);
-      assert(fromIndex != -1);
-      alphabetFrom = m_settingsAll[fromIndex][SETTINGS_ALPHABET];
-      to.resize(alphabetFrom.length());
-    } else {
+  d = readFile(getResourcePath(LNG2TXT));
+  for (auto &s : d) {
+    if (s.size() == 2) {
+      if (nn == 0) {
+        fromIndex = indexOf(s, LNG);
+        assert(fromIndex != -1);
+        alphabetFrom = m_settingsAll[fromIndex][SETTINGS_ALPHABET];
+        to.resize(alphabetFrom.length());
+      } else if (nn < 0) {
+        break;
+      }
+      nn--;
+    } else if (nn == -1) {
       v = split(s, ' ');
       assert(v.size() > 1);
       i = 0;
@@ -1762,9 +1747,9 @@ void WordsBase::loadLanguages() {
     for (auto const &e : v) {
       if (b) {
         if (j < SETTINGS_SIZE) {
-          m_settingsAll[n][j++] = e;
+          m_settingsAll[n][j++] = utf8ToLocale(e);
         } else {
-          ml[(j++) - SETTINGS_SIZE] = localeToUtf8(e);
+          ml[(j++) - SETTINGS_SIZE] = e;
         }
         continue;
       }
@@ -1775,7 +1760,7 @@ void WordsBase::loadLanguages() {
       if (e == SEPARATOR || e[0] == '}') {
         continue;
       }
-      s = localeToUtf8(e);
+      s = e;
       if (s.back() == '{') {
         s.pop_back();
       }
@@ -1785,8 +1770,6 @@ void WordsBase::loadLanguages() {
     }
     assert(i == MENU_SIZE);
     assert(j - SETTINGS_SIZE == STRING_SIZE);
-    ml[MODIFICATION_HELP] = format(ml[MODIFICATION_HELP].c_str(),
-                                   ml[EVERY_MODIFICATION_CHANGES_WORD].c_str());
     /* use only first symbol. In Russian language separator is space, so
      * ignore comment in language.txt file. Comment in ru/language.txt is
      * important because otherwise it'll we empty string and looks like a bug
@@ -1804,29 +1787,18 @@ bool WordsBase::prepare() {
     return true;
   }
   // should encode to locale string at first to get valid length
-  m_entryValue = utf8ToLocale(getEntryString(ENTRY_TEMPLATE));
+  m_ev = utf8ToLocale(m_entryValue[ENTRY_TEMPLATE]);
 
-  if (m_entryValue.empty()) {
+  if (m_ev.empty()) {
     return false;
   }
 
   if (m_menuClick == MENU_REGULAR_EXPRESSIONS) {
-#ifdef USE_STANDARD_REGEX
-    try {
-      m_regex =
-          std::regex(m_entryValue.c_str(), std::regex_constants::icase |
-                                               std::regex_constants::extended);
-      return true;
-    } catch (std::regex_error &) {
-      return false;
-    }
-#else
     return createRegex(ENTRY_TEMPLATE);
-#endif
   }
 
   if (m_menuClick == MENU_MODIFICATION) { // finish with MENU_MODIFICATION
-    if (!m_modifications.parse(m_entryValue)) {
+    if (!m_modifications.parse(m_ev)) {
 #ifdef NOGTK
       printf(string(CGI_STRING_ERROR_INVALID_MODIFICATION_STRING).c_str());
 #endif
@@ -1842,22 +1814,22 @@ bool WordsBase::prepare() {
   } else if (m_menuClick == MENU_CHAIN) {
     s += ' ';
   }
-  if (!spanIncluding(m_entryValue, s)) {
+  if (!spanIncluding(m_ev, s)) {
     return false;
   }
 
   if (m_menuClick == MENU_TEMPLATE) {
     memset(m_templateHelper, 0, 256);
     const char *p;
-    for (p = m_entryValue.c_str(); *p != 0; p++) {
+    for (p = m_ev.c_str(); *p != 0; p++) {
       m_templateHelper[uchar(*p)]++;
     }
 
     size_t i, j;
-    m_template_a = create2dArray<char>(m_entryValue.length(), 256, 0);
+    m_template_a = create2dArray<char>(m_ev.length(), 256, 0);
     j = 0;
     for (auto &a : m_template_a) {
-      s = m_entryValue.substr(j);
+      s = m_ev.substr(j);
       for (i = 0; i < s.length(); i++) {
         uchar u = s[i];
         if (!a[u]) {
@@ -1868,7 +1840,7 @@ bool WordsBase::prepare() {
     }
   } else if (m_menuClick == MENU_CHAIN) { // all symbols from alphabet or spaces
     // m_chainHelper is only from alphabet checked
-    s = m_entryValue;
+    s = m_ev;
     pe = -1;
     for (i = 0; i < 2; i++) {
       pb = s.find_first_not_of(' ', pe + 1);
@@ -2060,7 +2032,7 @@ std::string WordsBase::intToStringLocaled(int v) {
 }
 
 std::string WordsBase::path(int i, std::string s) {
-  return getResourcePath(getShortLanguageString(i) + "/" + s + ".txt");
+  return getResourcePath(LNG[i] + "/" + s + ".txt");
 }
 
 VString WordsBase::readFile(int i, std::string s) {
@@ -2107,7 +2079,7 @@ void WordsBase::cgi() {
       break;
 
     case POST_ENTRY:
-      m_entryValue = utf8ToLocale(s);
+      m_ev = utf8ToLocale(s);
       break;
 
     case POST_DICTIONARY:
@@ -2243,19 +2215,10 @@ std::string WordsBase::pairsToString(StringStringVector const &v, bool p) {
   return sout;
 }
 
-std::string WordsBase::getShortLanguageString(int i) {
-  assert(i >= 0 && i < LANGUAGES);
-  return LNG[i];
-}
-
 void WordsBase::setDictionaryIndex(int i) {
   assert(i >= 0 && i < LANGUAGES);
   m_dictionaryIndex = i;
 }
-
-std::string WordsBase::getEntryString(ENUM_ENTRY e) const { return ""; }
-
-bool WordsBase::getCheck() const { return false; }
 
 bool WordsBase::createRegex(ENUM_ENTRY e) {
   assert(int(e) < std::size(m_regex));
@@ -2266,9 +2229,9 @@ bool WordsBase::createRegex(ENUM_ENTRY e, UniquePcre2Code &r,
                             UniquePcre2MatchData &m) {
   int errorcode;
   PCRE2_SIZE erroroffset;
-  std::string pattern_str = getEntryString(e);
-  r.reset(pcre2_compile((PCRE2_SPTR)pattern_str.c_str(), PCRE2_ZERO_TERMINATED,
-                        PCRE2_UTF, &errorcode, &erroroffset, NULL));
+  r.reset(pcre2_compile((PCRE2_SPTR)m_entryValue[e].c_str(),
+                        PCRE2_ZERO_TERMINATED, PCRE2_UTF, &errorcode,
+                        &erroroffset, NULL));
   if (r) {
     pcre2_jit_compile(r.get(), PCRE2_JIT_COMPLETE);
     m.reset(pcre2_match_data_create_from_pattern(r.get(), NULL));

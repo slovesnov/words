@@ -194,9 +194,6 @@ public:
 
   std::string getTextViewString(ENUM_TEXTVIEW e, bool locale) const;
 
-  virtual std::string getEntryString(ENUM_ENTRY e) const override;
-  virtual bool getCheck() const override;
-
   void entryChanged(ENUM_ENTRY e);
 
   GtkTextBuffer *tvBuffer(ENUM_TEXTVIEW e = TEXTVIEW_MAIN) const;
@@ -262,4 +259,7 @@ public:
   void windowDeleteEvent();
   void textviewChanged(ENUM_TEXTVIEW e);
   void addHelp(ENUM_STRING e);
+  void createCheck(ENUM_STRING e,bool set);
+  void checkChanged();
+  void updateCheckValue();
 };
