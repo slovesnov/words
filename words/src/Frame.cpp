@@ -946,19 +946,6 @@ void Frame::debounceTimeout(ENUM_ENTRY e) {
   m_currentEntry = e;
   m_currentEntryPos = gtk_editable_get_position(GTK_EDITABLE(m_entry[e]));
 
-  //todo
-  pr("set", magic_enum::enum_name(e));
-  // lowercased utf8, changed 'ё' -> 'е'
-  std::string s = gtk_entry_get_text(GTK_ENTRY(m_entry[e]));
-  bool regex = e == ENTRY_FILTER ||
-               (e == ENTRY_TEMPLATE && m_menuClick == MENU_REGULAR_EXPRESSIONS);
-  if (regex) {
-    s = lowercase_utf8_regex(s);
-  } else {
-    s = utf8ToLowerCase(s);
-  }
-  m_entryValue[e] = replaceAll(s, "ё", "е");
-
   switch (e) {
   case ENTRY_TEMPLATE:
     job();
@@ -1276,8 +1263,17 @@ GtkWidget *Frame::createEntry(ENUM_ENTRY e, ENUM_STRING n) {
   return m_entry[e];
 }
 
-void Frame::updateEntryValue(ENUM_ENTRY e) {//todo
-  m_entryValue[e] = gtk_entry_get_text(GTK_ENTRY(m_entry[e]));
+void Frame::updateEntryValue(ENUM_ENTRY e) {
+    // lowercased utf8, changed 'ё' -> 'е'
+  std::string s = gtk_entry_get_text(GTK_ENTRY(m_entry[e]));
+  bool regex = e == ENTRY_FILTER ||
+               (e == ENTRY_TEMPLATE && m_menuClick == MENU_REGULAR_EXPRESSIONS);
+  if (regex) {
+    s = lowercase_utf8_regex(s);
+  } else {
+    s = utf8ToLowerCase(s);
+  }
+  m_entryValue[e] = replaceAll(s, "ё", "е");
 }
 
 void Frame::updateCharactersLabel() {
