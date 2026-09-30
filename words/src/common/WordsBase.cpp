@@ -7,9 +7,9 @@
 
 #include "WordsBase.h"
 #include "consts.h"
-#include "../lib/magic_enum.hpp"
-#include <cassert>
 #include <execution>
+#include <format>
+#include <magic_enum.hpp>
 #include <ranges>
 
 #ifdef NOGTK
@@ -36,6 +36,8 @@ const LookupTable<ENUM_MENU, void (WordsBase::*)(int)> menu2VoidInt = {
     {MENU_WORDS_SPLIT, &WordsBase::findWordsSplit},    // break implemented
     {MENU_LETTER_GROUP_SPLIT,
      &WordsBase::findLetterGroupSplit}, // not implemented
+    {MENU_TWO_DICTIONARIES_STRICT,
+     &WordsBase::twoDictionariesStrict}, // break implemented
     {MENU_TWO_DICTIONARIES_SIMPLE,
      &WordsBase::twoDictionariesSimple}, // break implemented
     {MENU_TWO_DICTIONARIES_TRANSLIT,
@@ -105,7 +107,7 @@ WordsBase::WordsBase() {
   // clock_t begin = clock();
 
   int k;
-  //todo on distionayr change need to set another values
+  // todo on distionayr change need to set another values
   const int DICTIONARY_SIZE[] = {393'167, 2'415'401};
   for (i = 0; i < LANGUAGES; i++) {
     k = 0;
@@ -352,11 +354,9 @@ bool WordsBase::checkRegularExpression(const std::string &s, pcre2_code *re,
          matches <= m_comboValue[COMBOBOX_HELPER1];
 #else
   if (!m_radioValue) {
-    int rc = pcre2_match(re, (PCRE2_SPTR)s.c_str(), s.length(),
-                         0, 
-                         0, 
+    int rc = pcre2_match(re, (PCRE2_SPTR)s.c_str(), s.length(), 0, 0,
                          match_data, NULL);
-    return rc >= 0; 
+    return rc >= 0;
   }
 
   int i = 0;
@@ -369,7 +369,7 @@ bool WordsBase::checkRegularExpression(const std::string &s, pcre2_code *re,
                          match_data, NULL);
 
     if (rc < 0) {
-      break; 
+      break;
     }
 
     i++;
@@ -523,7 +523,7 @@ void WordsBase::checkLFAllFiles() {
     checkFile(path(n, name));
   }
 
-  for (int n = 0; n < 2; n++) {
+  for (int n = 0; n < 3; n++) {
     checkFile(getTwoDictionariesPath(n));
   }
 }
@@ -739,7 +739,7 @@ void WordsBase::findAnagram(int nthread) {
   }
 }
 
-void WordsBase::anagramsPostProseeding() { 
+void WordsBase::anagramsPostProseeding() {
   AnagramMap final_anagrams;
   for (auto &local_map : m_anagrams) {
     for (auto &[signature, words] : local_map) {
@@ -748,7 +748,7 @@ void WordsBase::anagramsPostProseeding() {
                          std::make_move_iterator(words.begin()),
                          std::make_move_iterator(words.end()));
     }
-    local_map.clear(); 
+    local_map.clear();
   }
 
   for (auto &[signature, words] : final_anagrams) {
@@ -947,7 +947,7 @@ void WordsBase::findChain(int nthread) {
     return;
   }
 
-  //pr(m_textViewValue);
+  // pr(m_textViewValue);
   std::stringstream ss(m_textViewValue);
   while (ss >> s) {
     if (s.size() == m_chainHelper[0].length())
@@ -1160,7 +1160,7 @@ l210:
   // pr(timeElapse(begin))
 }
 
-void WordsBase::findLetterGroupSplit(int nthread) { 
+void WordsBase::findLetterGroupSplit(int nthread) {
   std::string s, s1, t, lng;
   size_t i, j;
   auto charset = getOrderedString(m_entryValue);
@@ -1221,18 +1221,17 @@ void WordsBase::findLetterGroupSplit(int nthread) {
   pr(timeElapse(begin));
 }
 
-std::string WordsBase::getTwoDictionariesPath(bool translit) {
-  return getResourcePath(LNG[0] + LNG[1] + "_" +
-                         (translit ? "translit" : "simple") + ".txt");
+std::string WordsBase::getTwoDictionariesPath(int n) {
+  return getResourcePath(std::format("{}{}{}.txt", LNG[0], LNG[1], n));
 }
 
-void WordsBase::twoDictionaries(int nthread, bool translit) {
+void WordsBase::twoDictionaries(int nthread, int nn) {
   VVString to;
   int i, j, m, l, len, n, fromIndex = -1;
   std::string s, alphabetFrom;
   VString v;
   const int di = m_dictionaryIndex;
-  s = getTwoDictionariesPath(translit);
+  s = getTwoDictionariesPath(nn);
   for (auto &s : readFile(s)) {
     if (to.empty()) {
       fromIndex = indexOf(s, LNG);
@@ -2055,12 +2054,8 @@ bool WordsBase::testFilterRegex(const std::string &s) {
     return true;
   }
 
-  int rc = pcre2_match(
-      m_regex[ENTRY_FILTER].get(), (PCRE2_SPTR)s.c_str(), s.length(),
-      0,                           
-      0,                           
-      m_match[ENTRY_FILTER].get(), 
-      NULL);
+  int rc = pcre2_match(m_regex[ENTRY_FILTER].get(), (PCRE2_SPTR)s.c_str(),
+                       s.length(), 0, 0, m_match[ENTRY_FILTER].get(), NULL);
 
   return rc >= 0;
 }
@@ -2286,7 +2281,7 @@ bool WordsBase::createRegex(ENUM_ENTRY e, UniquePcre2Code &r,
     m.reset(pcre2_match_data_create_from_pattern(r.get(), NULL));
   }
 
-  return r != nullptr; 
+  return r != nullptr;
 }
 
 const std::string &WordsBase::alphabet() const {

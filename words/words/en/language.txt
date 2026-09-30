@@ -23,8 +23,9 @@ consonants or vowels sequences
 words with low density of consonants or vowels
 SEPARATOR
 words from two dictionaries{
-matched words (simple)
-matched words (transliteration)
+strict matches
+normal matches
+translit matches
 keyboard words
 }
 }
@@ -177,4 +178,4 @@ text files
 all files
 save
 cancel
-You can make this panel narrower or wider if you wish; you can also select the font for the output area and controls in the <i>Options</i> menu.
+You can make this panel narrower or wider if you wish; you can also select the font for the output area and controls in the <i>options</i> menu.

@@ -24,12 +24,17 @@ class Frame : WordsBase {
   GtkWidget *m_statusMessage;
   GtkWidget *m_searchTagLabel;
   GtkWidget *m_button[BUTTON_SIZE];
+#ifdef LANGUAGE_BUTTON
   GtkWidget *m_currentDictionary;
+#endif
+  GtkWidget *m_currentLanguage;
   GtkWidget *m_check;
   GtkWidget *m_comboline;
   GtkWidget *m_radio;
   GtkWidget *m_charactersLabel;
   SafePangoFontDesc m_font[FONT_SIZE];
+
+  std::chrono::steady_clock::time_point last_click_time[BUTTON_SIZE]{};
 
   MenuMap m_menuMap;
   std::vector<GtkAccelGroup *> m_accelGroup;

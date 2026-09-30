@@ -50,7 +50,6 @@ OBJS     := $(SRCS:.cpp=.o)
 
 # Главная цель теперь зависит от 'wipe', затем выводит текст сборки, затем собирает проект и запускает
 all: wipe
-	@echo "Starting compilation in $${MSYSTEM:-$(OS)}..."
 	@$(MAKE) $(TARGET) --no-print-directory
 	@$(MAKE) run_app --no-print-directory
 
@@ -62,7 +61,6 @@ endif
 # Отдельная цель для запуска приложения, которая срабатывает только при RUN=1
 run_app:
 ifneq ($(RUN),)
-	@echo "--- Running application ---"
 	./$(TARGET).exe
 endif
 

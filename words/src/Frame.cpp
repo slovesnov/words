@@ -5,17 +5,16 @@
  *      Author: alexey slovesnov
  */
 
-#define WINDOW_SIZE_TYPE 0
-
 #include "Frame.h"
 #include "CheckNewVersion.h"
-#include "lib/magic_enum.hpp"
 #include <format>
+#include <magic_enum.hpp>
 
 const char markTag[] = "mark";
 const char activeTag[] = "active";
 const char CERROR[] = "cerror";
-const int TIMER = 400;                // milliseconds
+const int TIMER = 500; // milliseconds
+const int TIMER_BUTTON = 1000;
 const int MIN_LEFT_PANEL_WIDTH = 700; // 800
 const int MIN_RIGHT_PANEL_WIDTH = 420;
 const int DEFAULT_SEPARATOR_POSITION = 1340;
@@ -120,8 +119,6 @@ Frame::Frame() : WordsBase() {
   m_newVersion.start(WORDS_VERSION, new_version_message);
   frame = this;
   m_menuClick = MENU_SEARCH;
-  // set dot as decimal separator, standard locale
-  // setlocale(LC_NUMERIC, "C"); // needs double to string when output time
   lockSignals(); // lock, unlock after create
 
   resetSettings(false);
@@ -134,7 +131,6 @@ Frame::Frame() : WordsBase() {
       if (a)
         m_font[i].reset(a);
     }
-  } else {
   }
   // update font later
 
@@ -168,7 +164,17 @@ Frame::Frame() : WordsBase() {
   }
   updateButton(BUTTON_DICTIONARY);
 
-  m_currentDictionary = gtk_label_new("");
+  GtkWidget **widgets[] = {&m_currentDictionary
+#ifdef LANGUAGE_BUTTON
+                           ,
+                           &m_currentLanguage
+#endif
+  };
+
+  for (GtkWidget **a : widgets) {
+    *a = gtk_label_new("");
+    gtk_widget_set_margin_start(*a, 30);
+  }
 
   for (i = 0; i < int(MENU_TO_ACCEL_KEY.size()); i++) {
     m_accelGroup.push_back(gtk_accel_group_new());
@@ -179,7 +185,7 @@ Frame::Frame() : WordsBase() {
   const int margin = 4;
   add(m_status, m_statusMessage);
   gtk_widget_set_halign(m_statusMessage, GTK_ALIGN_START);
-  gtk_widget_set_margin_start(GTK_WIDGET(m_statusMessage), TEXT_VIEW_MARGIN);
+  gtk_widget_set_margin_start(m_statusMessage, TEXT_VIEW_MARGIN);
 
   w = gtk_box_new(GTK_ORIENTATION_VERTICAL, 3);
   auto createRow = [&](auto &&...args) {
@@ -188,7 +194,13 @@ Frame::Frame() : WordsBase() {
     gtk_container_add(GTK_CONTAINER(w), row);
   };
   createRow(m_button[BUTTON_STARTSTOP], false, m_currentDictionary, false,
-            m_button[BUTTON_DICTIONARY], false);
+            m_button[BUTTON_DICTIONARY], false
+#ifdef LANGUAGE_BUTTON
+            ,
+            m_currentLanguage, false, m_button[BUTTON_LANGUAGE], false
+#endif
+
+  );
   createRow(m_combo[COMBOBOX_SORT], true, m_combo[COMBOBOX_SORT_ORDER], false);
   createRow(m_entry[ENTRY_FILTER], true, m_combo[COMBOBOX_FILTER], false);
   createRow(m_entry[ENTRY_SEARCH], true, m_searchTagLabel, false,
@@ -206,8 +218,8 @@ Frame::Frame() : WordsBase() {
                  gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0), true, w, false);
   gtk_widget_set_size_request(w2, MIN_RIGHT_PANEL_WIDTH, -1);
   gtk_paned_pack2(GTK_PANED(w1), w2, TRUE, FALSE);
-  gtk_widget_set_margin_start(GTK_WIDGET(w2), 5);
-  gtk_widget_set_margin_end(GTK_WIDGET(w2), 5);
+  gtk_widget_set_margin_start(w2, 5);
+  gtk_widget_set_margin_end(w2, 5);
 
   m_positionSignalId = g_signal_connect(
       w1, "notify::position",
@@ -398,7 +410,7 @@ void Frame::clickMenu(ENUM_MENU menu) {
       // pr(magic_enum::enum_name(menu));
     }
     // pr(magic_enum::enum_name(m_state));
-    b=m_menuClick != MENU_SEARCH;
+    b = m_menuClick != MENU_SEARCH;
     setHelperPanel(b);
     if (b) {
       job();
@@ -506,7 +518,8 @@ void Frame::setHelperPanel(bool ignoreStateBegin) {
   clearContainer(m_helperUp);
   m_charactersLabel = nullptr;
 
-  if (!ignoreStateBegin && m_state == STATE_BEGIN) { // also worked when language is changed
+  if (!ignoreStateBegin &&
+      m_state == STATE_BEGIN) { // also worked when language is changed
     addHelp(STARTMESSAGE);
     gtk_widget_show_all(m_helperUp);
     return;
@@ -636,6 +649,11 @@ void Frame::updateLanguage(bool change) {
 
   setPlaceholder(ENTRY_SEARCH, SEARCH);
   setLabel(m_currentDictionary, DICTIONARY);
+#ifdef LANGUAGE_BUTTON
+  s = utf8ToLowerCase(string(MENU_LANGUAGE));
+  setLabel(m_currentLanguage, s);
+  updateButton(BUTTON_LANGUAGE);
+#endif
   gtk_window_set_title(GTK_WINDOW(m_widget), string(PROGRAM).c_str());
   setPlaceholder(ENTRY_FILTER, RESULTS_FILTER);
 
@@ -757,18 +775,36 @@ void Frame::createImageCombo(ENUM_COMBOBOX e) {
 }
 
 void Frame::clickButton(GtkWidget *button) {
-  int i, n = indexOf(button, m_button);
-  if (n == BUTTON_DICTIONARY) {
-    updateDictionary(true);
-  } else if (n == BUTTON_STARTSTOP) {
-    auto b = getStartStopState();
-    // pr(b.imageStart,b.enable,"#########",magic_enum::enum_name(m_state));TODO
-    job(b.imageStart ? JOB_TYPE_FULL : JOB_TYPE_STOP);
+  int i;
+  ENUM_BUTTON e = ENUM_BUTTON(indexOf(button, m_button));
+  if (oneOf(e, BUTTON_DICTIONARY, BUTTON_STARTSTOP
+#ifdef LANGUAGE_BUTTON
+            ,
+            BUTTON_LANGUAGE
+#endif
+            )) {
+    auto now = std::chrono::steady_clock::now();
+    if (now - last_click_time[e] < std::chrono::milliseconds(TIMER_BUTTON)) {
+      return;
+    }
+    last_click_time[e] = now;
+
+    if (e == BUTTON_DICTIONARY) {
+      updateDictionary(true);
+    } else if (e == BUTTON_STARTSTOP) {
+      auto b = getStartStopState();
+      job(b.imageStart ? JOB_TYPE_FULL : JOB_TYPE_STOP);
+    }
+#ifdef LANGUAGE_BUTTON
+    else if (e == BUTTON_LANGUAGE) {
+      updateLanguage(true);
+    }
+#endif
   } else {
     if (m_tags < 2) {
       return;
     }
-    i = m_tagIndex + (n == BUTTON_NEXT ? 1 : m_tags - 1);
+    i = m_tagIndex + (e == BUTTON_NEXT ? 1 : m_tags - 1);
     updateTags(i % m_tags);
   }
 }
@@ -1166,6 +1202,12 @@ void Frame::updateButton(ENUM_BUTTON e) {
   } else if (e == BUTTON_DICTIONARY) {
     s = m_dictionaryIndex ? "ru.gif" : "en.gif";
   }
+#ifdef LANGUAGE_BUTTON
+  else if (e == BUTTON_LANGUAGE) {
+    s = m_languageIndex ? "ru.gif" : "en.gif";
+  }
+#endif
+
   gtk_button_set_image(GTK_BUTTON(m_button[e]), image(s));
 }
 

@@ -138,8 +138,9 @@ public:
   void findModification(int nthread);
   void findChain(int nthread);
   void findLetterGroupSplit(int nthread);
-  void twoDictionariesSimple(int nthread) { twoDictionaries(nthread, false); }
-  void twoDictionariesTranslit(int nthread) { twoDictionaries(nthread, true); }
+  void twoDictionariesStrict(int nthread) { twoDictionaries(nthread, 0); }
+  void twoDictionariesSimple(int nthread) { twoDictionaries(nthread, 1); }
+  void twoDictionariesTranslit(int nthread) { twoDictionaries(nthread, 2); }
   void keyboardWords(int nthread);
   void dictionaryStatistics(int nthread);
   void wordFrequency(int nthread);
@@ -158,8 +159,8 @@ public:
   void simpleDoubleWordSequencePostProseeding();
   void checkDictionaryPostProseeding();
 
-  static std::string getTwoDictionariesPath(bool translit);
-  void twoDictionaries(int nthread, bool translit);
+  static std::string getTwoDictionariesPath(int n);
+  void twoDictionaries(int nthread, int n);
 
   static int differentChars(std::string_view s);
   static bool spanIncluding(std::string_view p, std::string_view pattern) {
