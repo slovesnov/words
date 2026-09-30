@@ -1,4 +1,4 @@
-Search{
+search{
 anagrams
 pangrams
 pattern
@@ -29,7 +29,7 @@ translit matches
 keyboard words
 }
 }
-Options{
+options{
 select all and copy to clipboard
 select all
 copy to clipboard
@@ -39,7 +39,7 @@ select the font for the output window
 select the font for the controls
 reset settings
 }
-Additions{
+additions{
 load dictionary{
 english
 russian
@@ -52,11 +52,11 @@ two nearby characters distribution
 two nearby characters distribution at the beginning of a word
 two nearby characters distribution at the end of a word
 }
-Language{
+language{
 english
 russian
 }
-Help{
+help{
 about
 homepage
 source code
