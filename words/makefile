@@ -24,8 +24,19 @@ ifdef config
 else
     USER_CONFIG := $(CONFIG)
 endif
+
+# Safe fallback definition check
 USER_CONFIG ?= release
+ifeq ($(strip $(USER_CONFIG)),)
+    USER_CONFIG := release
+endif
+
 CONFIG := $(call to_lower,$(USER_CONFIG))
+
+# Direct validation patch: force release if string evaluation ends up blank
+ifeq ($(CONFIG),)
+    CONFIG := release
+endif
 
 # 2. Normalize RUN / run
 ifdef run

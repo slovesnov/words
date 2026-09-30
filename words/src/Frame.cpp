@@ -65,7 +65,12 @@ gboolean label_clicked(GtkWidget *label, const gchar *uri, gpointer) {
 
 void check_changed(GtkWidget *check, gpointer) { frame->checkChanged(); }
 
-void radio_changed(GtkWidget *radio, gpointer) { frame->radioChanged(radio); }
+void radio_changed(GtkWidget *radio, gpointer) {
+  // on change radid, got 2 signals. One radio became active, another not active
+  if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio))) {
+    frame->radioChanged();
+  }
+}
 
 void textview_changed(GtkTextBuffer *buffer, ENUM_TEXTVIEW e) {
   frame->textviewChanged(e);
@@ -142,9 +147,8 @@ Frame::Frame() : WordsBase() {
   m_status = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 2);
   m_statusMessage = gtk_label_new("");
 
-  createImageCombo(COMBOBOX_SORT_ORDER);
+  createImageCombo(COMBOBOX_SORT_ORDER, 1);
   createTextCombo(COMBOBOX_SORT);
-  setComboIndex(COMBOBOX_SORT_ORDER, 1);
   createTextCombo(COMBOBOX_FILTER);
 
   for (auto a : {ENTRY_SEARCH, ENTRY_FILTER}) {
@@ -335,7 +339,7 @@ Frame::Frame() : WordsBase() {
   gtk_window_set_focus(GTK_WINDOW(m_widget),
                        NULL); // no focus
   unlockSignals();
-  pr("###################");
+  // pr("###################");
 }
 
 void Frame::clickMenu(ENUM_MENU menu) {
@@ -405,14 +409,14 @@ void Frame::clickMenu(ENUM_MENU menu) {
 
   default:
     if (oneOf(menu, MENU_ENGLISH_LANGUAGE, MENU_RUSSIAN_LANGUAGE)) {
-      updateLanguage(true);
+      b = m_menuClick != MENU_SEARCH;
+      updateLanguage(true); // helper panel update incilde
     } else {
       m_menuClick = menu;
-      // pr(magic_enum::enum_name(menu));
+      b = m_menuClick != MENU_SEARCH;
+      setHelperPanel(b);
     }
-    // pr(magic_enum::enum_name(m_state));
-    b = m_menuClick != MENU_SEARCH;
-    setHelperPanel(b);
+    // pr(magic_enum::enum_name(m_menuClick));
     if (b) {
       job();
     }
@@ -531,9 +535,9 @@ void Frame::setHelperPanel(bool ignoreStateBegin) {
     addHelp(*it);
   }
 
-  if (MENU_TO_SETTINGS.has(m_menuClick)) {
+  if (auto it = MENU_WITH_ENTRY.get(m_menuClick)) {
     w = createBox(GTK_ORIENTATION_HORIZONTAL, 3, MENU_SEARCH, false,
-                  createEntry(ENTRY_TEMPLATE), true);
+                  createEntry(ENTRY_TEMPLATE, *it), true);
     gtk_container_add(GTK_CONTAINER(m_helperUp), w);
   }
 
@@ -560,7 +564,8 @@ void Frame::setHelperPanel(bool ignoreStateBegin) {
   case MENU_CHAIN:
     i = -1;
     for (auto a :
-         {createLabel(EXCEPTION_WORDS), createTextView(TEXTVIEW_HELPER)}) {
+         {createLabel(EXCEPTION_WORDS),
+          createTextView(TEXTVIEW_HELPER, SETTINGS_CHAIN_EXCEPTIONS)}) {
       i++;
       if (!i)
         gtk_widget_set_halign(a, GTK_ALIGN_START);
@@ -657,6 +662,7 @@ void Frame::updateLanguage(bool change) {
   refillCombo(COMBOBOX_SORT, SORT_BY_ALPHABET,
               SORT_BY_DIFFERENT_NUMBER_OF_CHARACTERS);
   refillCombo(COMBOBOX_FILTER, FOUND, NOT_FOUND);
+  setHelperPanel(m_state != STATE_BEGIN);
 }
 
 void Frame::refillCombo(ENUM_COMBOBOX e, const VString &v, int active) {
@@ -693,7 +699,6 @@ void Frame::addComboLineToHelper(int from, int to, int active, std::string s1,
   for (i = 0; i < 2; i++) {
     add(w, i == 0 ? s1 + (any ? "" : " " + string(FROM)) : s2);
     if (!i && any) {
-      m_radioValue = 0;
       for (j = 0; j < 2; j++) {
         if (j == 0) {
           m_radio = r =
@@ -705,6 +710,7 @@ void Frame::addComboLineToHelper(int from, int to, int active, std::string s1,
         add(w, r);
         g_signal_connect(r, "toggled", G_CALLBACK(radio_changed), NULL);
       }
+      updateRadioValue();
     }
     add(w,
         createTextCombo(ENUM_COMBOBOX(COMBOBOX_HELPER0 + i), from, to, active));
@@ -726,6 +732,8 @@ void Frame::addComboToHelper(ENUM_STRING from, ENUM_STRING to, int active,
 void Frame::comboChanged(ENUM_COMBOBOX e) {
   assert(e != COMBOBOX_SIZE);
   updateComboValue(e);
+  bool regexOrCharSequence =
+      oneOf(m_menuClick, MENU_REGULAR_EXPRESSIONS, MENU_CHARACTER_SEQUENCE);
 
   if (m_menuClick == MENU_CHARACTER_SEQUENCE && e == COMBOBOX_HELPER2) {
     // visible is "any place of word"
@@ -742,8 +750,7 @@ void Frame::comboChanged(ENUM_COMBOBOX e) {
   }
 
   if ((e == COMBOBOX_HELPER0 || e == COMBOBOX_HELPER1) &&
-      (oneOf(m_menuClick, MENU_REGULAR_EXPRESSIONS, MENU_CHARACTER_SEQUENCE) ||
-       FROM_TO_COMBO.has(m_menuClick))) {
+      (regexOrCharSequence || FROM_TO_COMBO.has(m_menuClick))) {
     if (getComboIndex(COMBOBOX_HELPER0) > getComboIndex(COMBOBOX_HELPER1)) {
       lockSignals();
       setComboIndex(e == COMBOBOX_HELPER0 ? COMBOBOX_HELPER1 : COMBOBOX_HELPER0,
@@ -751,10 +758,15 @@ void Frame::comboChanged(ENUM_COMBOBOX e) {
       unlockSignals();
     }
   }
-  job();
+
+  if (regexOrCharSequence &&
+      getSelectedRadioIndex() == 0) { // any number of matches
+  } else {
+    job();
+  }
 }
 
-void Frame::createImageCombo(ENUM_COMBOBOX e) {
+void Frame::createImageCombo(ENUM_COMBOBOX e, int active) {
   int i;
   GtkTreeIter iter;
   GtkCellRenderer *renderer;
@@ -769,6 +781,7 @@ void Frame::createImageCombo(ENUM_COMBOBOX e) {
   gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(m_combo[e]), renderer, TRUE);
   gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(m_combo[e]), renderer,
                                  "pixbuf", 0, NULL);
+  setComboIndex(e, active);
 }
 
 void Frame::clickButton(GtkWidget *button) {
@@ -848,13 +861,13 @@ void Frame::endJob() {
   }
 }
 
-gint Frame::getComboIndex(ENUM_COMBOBOX e) const {
+int Frame::getComboIndex(ENUM_COMBOBOX e) const {
   assert(e != COMBOBOX_SIZE);
   assert(GTK_IS_COMBO_BOX(m_combo[e]));
   return gtk_combo_box_get_active(GTK_COMBO_BOX(m_combo[e]));
 }
 
-void Frame::setComboIndex(ENUM_COMBOBOX e, gint v) {
+void Frame::setComboIndex(ENUM_COMBOBOX e, int v) {
   assert(GTK_IS_COMBO_BOX(m_combo[e]));
   gtk_combo_box_set_active(GTK_COMBO_BOX(m_combo[e]), v);
   updateComboValue(e);
@@ -875,7 +888,7 @@ void Frame::updateComboValue(ENUM_COMBOBOX e) {
     // v can be =-1 when combobox just created
   }
 
-  //print_short_stack_trace( 6);
+  // print_short_stack_trace( 6);
 
   m_comboValue[e] = v;
 }
@@ -919,22 +932,6 @@ void Frame::newVersionMessage() {
   }
 }
 
-void Frame::radioChanged(GtkWidget *w) {
-  if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(w))) {
-    GSList *group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(w));
-    m_radioValue = g_slist_length(group) - 1 -
-                   g_slist_index(group, w); // Note group inverted order
-    job();
-  }
-}
-
-void Frame::updateTextView(ENUM_TEXTVIEW e, std::string const &s) {
-  gtk_text_buffer_set_text(tvBuffer(e), s.c_str(), -1);
-  if (e == TEXTVIEW_MAIN) {
-    updateSensitivity(m_state == STATE_OK && !s.empty(), MENU_SAVE_TEXT);
-  }
-}
-
 void Frame::setDebounceTimer(ENUM_ENTRY e) {
   if (m_debounceTimerId) {
     g_source_remove(m_debounceTimerId);
@@ -949,8 +946,9 @@ void Frame::debounceTimeout(ENUM_ENTRY e) {
   m_currentEntry = e;
   m_currentEntryPos = gtk_editable_get_position(GTK_EDITABLE(m_entry[e]));
 
-  pr("set",magic_enum::enum_name(e));
-// lowercased utf8, changed 'ё' -> 'е'
+  //todo
+  pr("set", magic_enum::enum_name(e));
+  // lowercased utf8, changed 'ё' -> 'е'
   std::string s = gtk_entry_get_text(GTK_ENTRY(m_entry[e]));
   bool regex = e == ENTRY_FILTER ||
                (e == ENTRY_TEMPLATE && m_menuClick == MENU_REGULAR_EXPRESSIONS);
@@ -981,21 +979,10 @@ void Frame::debounceTimeout(ENUM_ENTRY e) {
   }
 }
 
-std::string Frame::getTextViewString(ENUM_TEXTVIEW e, bool locale) const {
-  // pri;
-  GtkTextBuffer *buffer = tvBuffer(e);
-  GtkTextIter start, end;
-  std::string s;
-  gtk_text_buffer_get_bounds(buffer, &start, &end);
-  gchar *raw_text = gtk_text_buffer_get_text(buffer, &start, &end, FALSE);
-  s = locale ? utf8ToLocale(raw_text) : raw_text;
-  g_free(raw_text);
-  return s;
-}
-
 void Frame::entryChanged(ENUM_ENTRY e) {
   bool b;
-  pr(magic_enum::enum_name(e));
+  // pr(magic_enum::enum_name(e));
+  updateEntryValue(e);
   if (e == ENTRY_TEMPLATE) {
     b = prepare();
     addRemoveClass(m_entry[e], CERROR, !b);
@@ -1119,10 +1106,6 @@ void Frame::updateTags(int n) {
            std::format("{}/{}", m_tags == 0 ? 0 : m_tagIndex + 1, m_tags));
 }
 
-GtkTextBuffer *Frame::tvBuffer(ENUM_TEXTVIEW e) const {
-  return gtk_text_view_get_buffer(GTK_TEXT_VIEW(m_text[e]));
-}
-
 std::string Frame::getProgramVersionString() const {
   return string(PROGRAM, VERSION) + " " + WORDS_VERSION;
 }
@@ -1200,7 +1183,7 @@ StartStopButtonState Frame::getStartStopState() const {
           !oneOf(m_state, STATE_ERROR, STATE_BEGIN)};
 }
 
-GtkWidget *Frame::createTextView(ENUM_TEXTVIEW e) {
+GtkWidget *Frame::createTextView(ENUM_TEXTVIEW e, ENUM_STRING n) {
   std::string s;
   auto t = m_text[e] = gtk_text_view_new();
   auto w = gtk_scrolled_window_new(NULL, NULL);
@@ -1220,8 +1203,9 @@ GtkWidget *Frame::createTextView(ENUM_TEXTVIEW e) {
     gtk_text_view_set_right_margin(GTK_TEXT_VIEW(t), TEXT_VIEW_MARGIN);
     gtk_text_buffer_set_text(buffer, s.c_str(), -1);
   } else if (e == TEXTVIEW_HELPER) {
-    s = stringUsingDictionary(SETTINGS_CHAIN_EXCEPTIONS);
+    s = stringUsingDictionary(n);
     gtk_text_buffer_set_text(buffer, s.c_str(), -1);
+    updateTextviewValue(e);
     g_signal_connect(buffer, "changed", G_CALLBACK(textview_changed),
                      GINT_TO_POINTER(TEXTVIEW_HELPER));
   } else {
@@ -1230,13 +1214,54 @@ GtkWidget *Frame::createTextView(ENUM_TEXTVIEW e) {
   return w;
 }
 
-GtkWidget *Frame::createEntry(ENUM_ENTRY e) {
-  auto w = m_entry[e] = gtk_entry_new();
-  if (e == ENTRY_TEMPLATE) {
-    gtk_entry_set_text(
-        GTK_ENTRY(w),
-        stringUsingDictionary(*MENU_TO_SETTINGS.get(m_menuClick)).c_str());
+void Frame::textviewChanged(ENUM_TEXTVIEW e) {
+  if (e == TEXTVIEW_HELPER) {
+    updateTextviewValue(e);
+    if (!isSignalsLocked()) {
+      // proceed same as template entry changed
+      setDebounceTimer(ENTRY_TEMPLATE);
+    }
   }
+}
+
+void Frame::updateTextviewValue(ENUM_TEXTVIEW e) {
+  if (e == TEXTVIEW_HELPER) {
+    m_textViewValue = getTextViewString(e, true);
+  }
+}
+
+std::string Frame::getTextViewString(ENUM_TEXTVIEW e, bool locale) const {
+  // pri;
+  GtkTextBuffer *buffer = tvBuffer(e);
+  GtkTextIter start, end;
+  std::string s;
+  gtk_text_buffer_get_bounds(buffer, &start, &end);
+  gchar *raw_text = gtk_text_buffer_get_text(buffer, &start, &end, FALSE);
+  s = locale ? utf8ToLocale(raw_text) : raw_text;
+  g_free(raw_text);
+  return s;
+}
+
+GtkTextBuffer *Frame::tvBuffer(ENUM_TEXTVIEW e) const {
+  return gtk_text_view_get_buffer(GTK_TEXT_VIEW(m_text[e]));
+}
+
+void Frame::updateTextView(ENUM_TEXTVIEW e, std::string const &s) {
+  gtk_text_buffer_set_text(tvBuffer(e), s.c_str(), -1);
+  if (e == TEXTVIEW_MAIN) {
+    updateSensitivity(m_state == STATE_OK && !s.empty(), MENU_SAVE_TEXT);
+  } else {
+    updateTextviewValue(e);
+  }
+}
+
+GtkWidget *Frame::createEntry(ENUM_ENTRY e, ENUM_STRING n) {
+  m_entry[e] = gtk_entry_new();
+  std::string s = n == STRING_SIZE ? "" : stringUsingDictionary(n);
+  if (e == ENTRY_TEMPLATE) {
+    gtk_entry_set_text(GTK_ENTRY(m_entry[e]), s.c_str());
+  }
+  updateEntryValue(e);
 
   const std::pair<const char *, GCallback> p[] = {
       {"insert-text", G_CALLBACK(entry_insert)},
@@ -1248,7 +1273,11 @@ GtkWidget *Frame::createEntry(ENUM_ENTRY e) {
     g_signal_connect_after(G_OBJECT(m_entry[e]), a.first, a.second,
                            GINT_TO_POINTER(e));
   }
-  return w;
+  return m_entry[e];
+}
+
+void Frame::updateEntryValue(ENUM_ENTRY e) {//todo
+  m_entryValue[e] = gtk_entry_get_text(GTK_ENTRY(m_entry[e]));
 }
 
 void Frame::updateCharactersLabel() {
@@ -1404,9 +1433,9 @@ results JOB_TYPE_FILTER - stop calculations if needed, then filter results
 JOB_TYPE_STOP - stop calculations if needed
 */
 void Frame::job(ENUM_JOB_TYPE e) {
-// #ifndef NDEBUG
-//   print_short_stack_trace();
-// #endif
+  // #ifndef NDEBUG
+  //   print_short_stack_trace();
+  // #endif
   // prsync(magic_enum::enum_name(m_menuClick), magic_enum::enum_name(e));
   if (oneOf(e, JOB_TYPE_SORT_AND_FILTER, JOB_TYPE_FILTER) && m_result.empty()) {
     return;
@@ -1487,16 +1516,6 @@ void Frame::windowDeleteEvent() {
   gtk_window_get_size(GTK_WINDOW(m_widget), &m_width, &m_height);
 }
 
-void Frame::textviewChanged(ENUM_TEXTVIEW e) {
-  if (e == TEXTVIEW_HELPER) {
-    m_textViewValue = getTextViewString(e, true);
-    if (!isSignalsLocked()) {
-      // proceed same as template entry changed
-      setDebounceTimer(ENTRY_TEMPLATE);
-    }
-  }
-}
-
 void Frame::addHelp(ENUM_STRING e) {
   auto w = gtk_label_new("");
   gtk_container_add(GTK_CONTAINER(m_helperUp), w);
@@ -1524,4 +1543,25 @@ void Frame::checkChanged() {
 
 void Frame::updateCheckValue() {
   m_checkValue = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(m_check));
+}
+
+void Frame::radioChanged() {
+  updateRadioValue();
+  job();
+}
+
+void Frame::updateRadioValue() { m_radioValue = getSelectedRadioIndex(); }
+
+int Frame::getSelectedRadioIndex() {
+  GSList *group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(m_radio));
+  int total_buttons = g_slist_length(group);
+  int reverse_index = 0;
+
+  for (GSList *l = group; l != NULL; l = l->next) {
+    if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(l->data))) {
+      return (total_buttons - 1) - reverse_index;
+    }
+    reverse_index++;
+  }
+  return -1; // Fallback if none are selected
 }

@@ -1783,12 +1783,10 @@ bool WordsBase::prepare() {
   int i;
   std::string::size_type pb, pe;
 
-  if (!MENU_TO_SETTINGS.get(m_menuClick)) {
+  if (!MENU_WITH_ENTRY.get(m_menuClick)) {
     return true;
   }
-  // should encode to locale string at first to get valid length
   m_ev = utf8ToLocale(m_entryValue[ENTRY_TEMPLATE]);
-
   if (m_ev.empty()) {
     return false;
   }
@@ -1798,7 +1796,10 @@ bool WordsBase::prepare() {
   }
 
   if (m_menuClick == MENU_MODIFICATION) { // finish with MENU_MODIFICATION
+    pr(m_checkValue);
+    s=m_entryValue[ENTRY_TEMPLATE];
     if (!m_modifications.parse(m_ev)) {
+      pri;
 #ifdef NOGTK
       printf(string(CGI_STRING_ERROR_INVALID_MODIFICATION_STRING).c_str());
 #endif

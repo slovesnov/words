@@ -43,7 +43,7 @@ class Frame : WordsBase {
   CheckNewVersion m_newVersion;
   guint m_debounceTimerId = 0;
   ENUM_ENTRY m_currentEntry = ENTRY_SIZE;
-  gint m_currentEntryPos;
+  int m_currentEntryPos;
 
 public:
   gulong m_positionSignalId = 0;
@@ -65,34 +65,6 @@ private:
 
   void aboutDialog();
   void setHelperPanel(bool ignoreStateBegin);
-
-  gint getComboIndex(ENUM_COMBOBOX e) const;
-  void setComboIndex(ENUM_COMBOBOX e, gint v);
-  void updateComboValue(ENUM_COMBOBOX e);
-  void createImageCombo(ENUM_COMBOBOX e);
-  void refillCombo(ENUM_COMBOBOX e, const VString &v, int active);
-  template <typename T>
-  void refillCombo(ENUM_COMBOBOX e, T from, T to, int active = -1) {
-    refillCombo(e, fromTo(from, to), active);
-  }
-  template <typename T> VString fromTo(T from, T to) {
-    VString v;
-    std::string s;
-    for (int i = int(from); i <= int(to); i++) {
-      if constexpr (std::is_integral_v<T>) {
-        s = std::to_string(i);
-      } else if constexpr (std::is_enum_v<T>) {
-        s = string(i);
-      }
-      v.push_back(s);
-    }
-    return v;
-  }
-  GtkWidget *createTextCombo(ENUM_COMBOBOX e, VString v = {}, int active = -1);
-  template <typename T>
-  GtkWidget *createTextCombo(ENUM_COMBOBOX e, T from, T to, int active) {
-    return createTextCombo(e, fromTo(from, to), active);
-  }
 
   template <typename T>
   void addComboLineToHelper(T &&id, int from, int to, int active,
@@ -164,23 +136,15 @@ public:
 
   void updateDictionary(bool change = false);
   void updateLanguage(bool change = false);
-  void comboChanged(ENUM_COMBOBOX e);
-  void radioChanged(GtkWidget *w);
   void clickButton(GtkWidget *button);
 
   void setMenuLabel(ENUM_MENU e, std::string const &text);
   std::string getMenuLabel(ENUM_MENU e);
 
-  void updateTextView(ENUM_TEXTVIEW e, std::string const &s);
-
-  void entryFocusChanged(bool in);
   void removeAccelerators();
   void addAccelerators();
 
   void newVersionMessage();
-
-  void setDebounceTimer(ENUM_ENTRY e);
-  void debounceTimeout(ENUM_ENTRY e);
 
   template <typename T> void setLabel(GtkWidget *w, T &&e) {
     std::string s;
@@ -189,27 +153,57 @@ public:
     } else {
       s = string(std::forward<T>(e));
     }
-      gtk_label_set_text(GTK_LABEL(w), s.c_str());
+    gtk_label_set_text(GTK_LABEL(w), s.c_str());
   }
-
-  std::string getTextViewString(ENUM_TEXTVIEW e, bool locale) const;
-
-  void entryChanged(ENUM_ENTRY e);
-
-  GtkTextBuffer *tvBuffer(ENUM_TEXTVIEW e = TEXTVIEW_MAIN) const;
   std::string getProgramVersionString() const;
   void updateStatus(ENUM_STATE state);
+  void updateButton(ENUM_BUTTON e);
+  StartStopButtonState getStartStopState() const;
+
+  //begin combobox functions
+  int getComboIndex(ENUM_COMBOBOX e) const;
+  void setComboIndex(ENUM_COMBOBOX e, int v);
+  void updateComboValue(ENUM_COMBOBOX e);
+  void createImageCombo(ENUM_COMBOBOX e, int active);
+  void refillCombo(ENUM_COMBOBOX e, const VString &v, int active);
+  template <typename T>
+  void refillCombo(ENUM_COMBOBOX e, T from, T to, int active = -1) {
+    refillCombo(e, fromTo(from, to), active);
+  }
+  template <typename T> VString fromTo(T from, T to) {
+    VString v;
+    std::string s;
+    for (int i = int(from); i <= int(to); i++) {
+      if constexpr (std::is_integral_v<T>) {
+        s = std::to_string(i);
+      } else if constexpr (std::is_enum_v<T>) {
+        s = string(i);
+      }
+      v.push_back(s);
+    }
+    return v;
+  }
+  GtkWidget *createTextCombo(ENUM_COMBOBOX e, VString v = {}, int active = -1);
+  template <typename T>
+  GtkWidget *createTextCombo(ENUM_COMBOBOX e, T from, T to, int active) {
+    return createTextCombo(e, fromTo(from, to), active);
+  }
+  void comboChanged(ENUM_COMBOBOX e);
+  ENUM_COMBOBOX getLastCombobox();
+  //end combobox finctions
+
+  // entry functions
+  GtkWidget *createEntry(ENUM_ENTRY e, ENUM_STRING n = STRING_SIZE);
+  void entryChanged(ENUM_ENTRY e);
+  void updateEntryValue(ENUM_ENTRY e);
+  void entryFocusChanged(bool in);
+  void setDebounceTimer(ENUM_ENTRY e);
+  void debounceTimeout(ENUM_ENTRY e);
   template <typename T> void setPlaceholder(ENUM_ENTRY e, T t) {
     gtk_entry_set_placeholder_text(GTK_ENTRY(m_entry[e]), string(t).c_str());
   }
 
-  void updateButton(ENUM_BUTTON e);
-
-  StartStopButtonState getStartStopState() const;
-  GtkWidget *createTextView(ENUM_TEXTVIEW e);
-  GtkWidget *createEntry(ENUM_ENTRY e);
   void updateCharactersLabel();
-  ENUM_COMBOBOX getLastCombobox();
   bool selectFont(const std::string &s, ENUM_FONT e);
   std::string getCssFromPango(ENUM_FONT e);
   void updateFont(ENUM_FONT e);
@@ -255,11 +249,24 @@ public:
         }(args),
         ...);
   }
-
   void windowDeleteEvent();
-  void textviewChanged(ENUM_TEXTVIEW e);
   void addHelp(ENUM_STRING e);
-  void createCheck(ENUM_STRING e,bool set);
+
+  //textview functions
+  GtkWidget *createTextView(ENUM_TEXTVIEW e, ENUM_STRING n = STRING_SIZE);
+  void textviewChanged(ENUM_TEXTVIEW e);
+  void updateTextviewValue(ENUM_TEXTVIEW e);
+  std::string getTextViewString(ENUM_TEXTVIEW e, bool locale) const;
+  GtkTextBuffer *tvBuffer(ENUM_TEXTVIEW e = TEXTVIEW_MAIN) const;
+  void updateTextView(ENUM_TEXTVIEW e, std::string const &s);
+
+  //check functons
+  void createCheck(ENUM_STRING e, bool set);
   void checkChanged();
   void updateCheckValue();
+
+  //radio functions
+  void radioChanged();
+  void updateRadioValue();
+  int getSelectedRadioIndex();
 };
