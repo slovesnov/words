@@ -531,7 +531,7 @@ void Frame::setHelperPanel(bool ignoreStateBegin) {
   }
 
   if (MENU_TO_SETTINGS.has(m_menuClick)) {
-    w = createBox(GTK_ORIENTATION_HORIZONTAL, 3, SEARCH, false,
+    w = createBox(GTK_ORIENTATION_HORIZONTAL, 3, MENU_SEARCH, false,
                   createEntry(ENTRY_TEMPLATE), true);
     gtk_container_add(GTK_CONTAINER(m_helperUp), w);
   }
@@ -647,11 +647,10 @@ void Frame::updateLanguage(bool change) {
   updateSensitivity([this](int i) { return m_languageIndex != i; },
                     MENU_ENGLISH_LANGUAGE, MENU_RUSSIAN_LANGUAGE);
 
-  setPlaceholder(ENTRY_SEARCH, SEARCH);
+  setPlaceholder(ENTRY_SEARCH, MENU_SEARCH);
   setLabel(m_currentDictionary, DICTIONARY);
 #ifdef LANGUAGE_BUTTON
-  s = utf8ToLowerCase(string(MENU_LANGUAGE));
-  setLabel(m_currentLanguage, s);
+  setLabel(m_currentLanguage, MENU_LANGUAGE);
   updateButton(BUTTON_LANGUAGE);
 #endif
   gtk_window_set_title(GTK_WINDOW(m_widget), string(PROGRAM).c_str());
@@ -969,12 +968,6 @@ void Frame::debounceTimeout(ENUM_ENTRY e) {
   }
 }
 
-void Frame::setLabel(GtkWidget *w, ENUM_STRING e) { setLabel(w, string(e)); }
-
-void Frame::setLabel(GtkWidget *w, const std::string &s) {
-  gtk_label_set_text(GTK_LABEL(w), s.c_str());
-}
-
 // lowercased utf8, changed 'ё' -> 'е'
 std::string Frame::getEntryString(ENUM_ENTRY e) const {
   std::string s = gtk_entry_get_text(GTK_ENTRY(m_entry[e]));
@@ -1161,7 +1154,8 @@ void Frame::updateStatus(ENUM_STATE state) {
     break;
 
   case STATE_PROCEEDING:
-    m_out = string(oneOf(m_menuClick, MENU_WAITING) ? WAITING : SEARCH);
+    m_out = oneOf(m_menuClick, MENU_WAITING) ? string(WAITING)
+                                             : string(MENU_SEARCH);
     break;
 
   case STATE_ERROR:
@@ -1186,10 +1180,6 @@ void Frame::updateStatus(ENUM_STATE state) {
   updateSensitivity(b, COMBOBOX_SORT, COMBOBOX_SORT_ORDER, COMBOBOX_FILTER,
                     ENTRY_FILTER);
   updateButton(BUTTON_STARTSTOP);
-}
-
-void Frame::setPlaceholder(ENUM_ENTRY e, ENUM_STRING s) {
-  gtk_entry_set_placeholder_text(GTK_ENTRY(m_entry[e]), string(s).c_str());
 }
 
 void Frame::updateButton(ENUM_BUTTON e) {

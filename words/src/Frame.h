@@ -114,8 +114,15 @@ private:
 
   void updateTags(int n);
 
-  GtkWidget *createLabel(std::string s) { return gtk_label_new(s.c_str()); }
-  GtkWidget *createLabel(ENUM_STRING e) { return createLabel(string(e)); }
+  template <typename T> GtkWidget *createLabel(T &&e) {
+    std::string s;
+    if constexpr (std::is_convertible_v<T, std::string_view>) {
+      s = std::forward<T>(e);
+    } else {
+      s = string(std::forward<T>(e));
+    }
+    return gtk_label_new(s.c_str());
+  }
 
   inline GtkWidget *add(GtkWidget *box) { return box; }
 
@@ -175,8 +182,15 @@ public:
   void setDebounceTimer(ENUM_ENTRY e);
   void debounceTimeout(ENUM_ENTRY e);
 
-  void setLabel(GtkWidget *w, ENUM_STRING e);
-  void setLabel(GtkWidget *w, const std::string &s);
+  template <typename T> void setLabel(GtkWidget *w, T &&e) {
+    std::string s;
+    if constexpr (std::is_convertible_v<T, std::string_view>) {
+      s = std::forward<T>(e);
+    } else {
+      s = string(std::forward<T>(e));
+    }
+      gtk_label_set_text(GTK_LABEL(w), s.c_str());
+  }
 
   std::string getTextViewString(ENUM_TEXTVIEW e, bool locale) const;
 
@@ -188,7 +202,10 @@ public:
   GtkTextBuffer *tvBuffer(ENUM_TEXTVIEW e = TEXTVIEW_MAIN) const;
   std::string getProgramVersionString() const;
   void updateStatus(ENUM_STATE state);
-  void setPlaceholder(ENUM_ENTRY e, ENUM_STRING s);
+  template <typename T> void setPlaceholder(ENUM_ENTRY e, T t) {
+    gtk_entry_set_placeholder_text(GTK_ENTRY(m_entry[e]), string(t).c_str());
+  }
+
   void updateButton(ENUM_BUTTON e);
 
   StartStopButtonState getStartStopState() const;

@@ -1751,7 +1751,7 @@ void WordsBase::sortFilterResults(ENUM_JOB_TYPE e) {
 }
 
 void WordsBase::loadLanguages() {
-  std::string s, search;
+  std::string s;
   int i, j, n;
   bool b;
   for (n = 0; n < LANGUAGES; n++) {
@@ -1764,9 +1764,6 @@ void WordsBase::loadLanguages() {
         if (j < SETTINGS_SIZE) {
           m_settingsAll[n][j++] = e;
         } else {
-          if (j - SETTINGS_SIZE == SEARCH) {
-            ml[(j++) - SETTINGS_SIZE] = utf8ToLowerCase(search);
-          }
           ml[(j++) - SETTINGS_SIZE] = localeToUtf8(e);
         }
         continue;
@@ -1784,10 +1781,6 @@ void WordsBase::loadLanguages() {
       }
       assert(i < MENU_SIZE);
       m_menuAll[n][i] = s;
-      //  first item "search"
-      if (!i) {
-        search = s;
-      }
       i++;
     }
     assert(i == MENU_SIZE);
