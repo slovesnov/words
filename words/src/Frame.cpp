@@ -531,7 +531,7 @@ void Frame::setHelperPanel(bool ignoreStateBegin) {
   }
 
   // set label
-  if (auto it = MENU_TO_HELP_STRING.get(m_menuClick)) {
+  if (auto it = MENU_WITH_HELP_STRING.get(m_menuClick)) {
     addHelp(*it);
   }
 
@@ -624,6 +624,18 @@ void Frame::updateDictionary(bool change) {
   updateSensitivity([this](int i) { return m_dictionaryIndex != i; },
                     MENU_LOAD_ENGLISH_DICTIONARY, MENU_LOAD_RUSSIAN_DICTIONARY);
   updateButton(BUTTON_DICTIONARY);
+
+  if (auto it = MENU_WITH_ENTRY.get(m_menuClick)) {
+    auto e = ENTRY_TEMPLATE;
+    std::string s = stringUsingDictionary(*it, true);
+    s = normalizeString(e, s);
+    // if user didn't change value of enty we can set it by default
+    if (s == m_entryValue[e]) {
+      s = stringUsingDictionary(*it);
+      gtk_entry_set_text(GTK_ENTRY(m_entry[e]), s.c_str());
+      updateEntryValue(e);
+    }
+  }
 
   if (auto it = FROM_TO_COMBO.get(m_menuClick)) {
     for (auto a : {COMBOBOX_HELPER0, COMBOBOX_HELPER1}) {
@@ -760,7 +772,8 @@ void Frame::comboChanged(ENUM_COMBOBOX e) {
   }
 
   if (regexOrCharSequence &&
-      getSelectedRadioIndex() == 0) { // any number of matches
+      getSelectedRadioIndex() ==
+          0) { // any number of matches skip combo not used
   } else {
     job();
   }
@@ -1218,7 +1231,6 @@ void Frame::updateTextviewValue(ENUM_TEXTVIEW e) {
 }
 
 std::string Frame::getTextViewString(ENUM_TEXTVIEW e, bool locale) const {
-  // pri;
   GtkTextBuffer *buffer = tvBuffer(e);
   GtkTextIter start, end;
   std::string s;
@@ -1264,8 +1276,13 @@ GtkWidget *Frame::createEntry(ENUM_ENTRY e, ENUM_STRING n) {
 }
 
 void Frame::updateEntryValue(ENUM_ENTRY e) {
-    // lowercased utf8, changed 'ё' -> 'е'
   std::string s = gtk_entry_get_text(GTK_ENTRY(m_entry[e]));
+  m_entryValue[e] = normalizeString(e, s);
+}
+
+std::string Frame::normalizeString(ENUM_ENTRY e, std::string const & q) {
+  std::string s=q;
+  // lowercased utf8, changed 'ё' -> 'е'
   bool regex = e == ENTRY_FILTER ||
                (e == ENTRY_TEMPLATE && m_menuClick == MENU_REGULAR_EXPRESSIONS);
   if (regex) {
@@ -1273,7 +1290,7 @@ void Frame::updateEntryValue(ENUM_ENTRY e) {
   } else {
     s = utf8ToLowerCase(s);
   }
-  m_entryValue[e] = replaceAll(s, "ё", "е");
+  return replaceAll(s, "ё", "е");
 }
 
 void Frame::updateCharactersLabel() {

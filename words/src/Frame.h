@@ -127,23 +127,21 @@ public:
   Frame();
 
   void destroy();
+  void windowDeleteEvent();
   void endJob();
   bool isSignalsLocked() { return m_lockSignals; }
   void lockSignals() { m_lockSignals = true; }
   void unlockSignals() { m_lockSignals = false; }
 
   void clickMenu(ENUM_MENU menu);
+  void setMenuLabel(ENUM_MENU e, std::string const &text);
+  std::string getMenuLabel(ENUM_MENU e);
 
   void updateDictionary(bool change = false);
   void updateLanguage(bool change = false);
   void clickButton(GtkWidget *button);
-
-  void setMenuLabel(ENUM_MENU e, std::string const &text);
-  std::string getMenuLabel(ENUM_MENU e);
-
   void removeAccelerators();
   void addAccelerators();
-
   void newVersionMessage();
 
   template <typename T> void setLabel(GtkWidget *w, T &&e) {
@@ -160,7 +158,7 @@ public:
   void updateButton(ENUM_BUTTON e);
   StartStopButtonState getStartStopState() const;
 
-  //begin combobox functions
+  // begin combobox functions
   int getComboIndex(ENUM_COMBOBOX e) const;
   void setComboIndex(ENUM_COMBOBOX e, int v);
   void updateComboValue(ENUM_COMBOBOX e);
@@ -190,12 +188,13 @@ public:
   }
   void comboChanged(ENUM_COMBOBOX e);
   ENUM_COMBOBOX getLastCombobox();
-  //end combobox finctions
+  // end combobox finctions
 
   // entry functions
   GtkWidget *createEntry(ENUM_ENTRY e, ENUM_STRING n = STRING_SIZE);
   void entryChanged(ENUM_ENTRY e);
   void updateEntryValue(ENUM_ENTRY e);
+  std::string normalizeString(ENUM_ENTRY e, std::string const &q);
   void entryFocusChanged(bool in);
   void setDebounceTimer(ENUM_ENTRY e);
   void debounceTimeout(ENUM_ENTRY e);
@@ -249,10 +248,9 @@ public:
         }(args),
         ...);
   }
-  void windowDeleteEvent();
   void addHelp(ENUM_STRING e);
 
-  //textview functions
+  // textview functions
   GtkWidget *createTextView(ENUM_TEXTVIEW e, ENUM_STRING n = STRING_SIZE);
   void textviewChanged(ENUM_TEXTVIEW e);
   void updateTextviewValue(ENUM_TEXTVIEW e);
@@ -260,12 +258,12 @@ public:
   GtkTextBuffer *tvBuffer(ENUM_TEXTVIEW e = TEXTVIEW_MAIN) const;
   void updateTextView(ENUM_TEXTVIEW e, std::string const &s);
 
-  //check functons
+  // check functons
   void createCheck(ENUM_STRING e, bool set);
   void checkChanged();
   void updateCheckValue();
 
-  //radio functions
+  // radio functions
   void radioChanged();
   void updateRadioValue();
   int getSelectedRadioIndex();

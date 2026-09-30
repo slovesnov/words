@@ -1796,10 +1796,8 @@ bool WordsBase::prepare() {
   }
 
   if (m_menuClick == MENU_MODIFICATION) { // finish with MENU_MODIFICATION
-    pr(m_checkValue);
-    s=m_entryValue[ENTRY_TEMPLATE];
+    s = m_entryValue[ENTRY_TEMPLATE];
     if (!m_modifications.parse(m_ev)) {
-      pri;
 #ifdef NOGTK
       printf(string(CGI_STRING_ERROR_INVALID_MODIFICATION_STRING).c_str());
 #endif
@@ -2275,8 +2273,9 @@ const std::string &WordsBase::string(ENUM_MENU e) const {
   return m_menuAll[m_languageIndex][e];
 }
 
-const std::string &WordsBase::stringUsingDictionary(ENUM_STRING e) const {
-  return m_languageAll[m_dictionaryIndex][e];
+const std::string &WordsBase::stringUsingDictionary(ENUM_STRING e,
+                                                    bool opposite) const {
+  return m_languageAll[opposite ? !m_dictionaryIndex : m_dictionaryIndex][e];
 }
 
 const std::string &WordsBase::settings(ENUM_SETTINGS e, int i) const {

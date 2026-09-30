@@ -84,7 +84,7 @@ const LookupTable<ENUM_MENU, std::string> MENU_TO_ICON_FILE = {
     {MENU_HOMEPAGE, "web.png"},
     {MENU_SOURCE_CODE, "source.png"}};
 
-const LookupTable<ENUM_MENU, ENUM_STRING> MENU_TO_HELP_STRING = {
+const LookupTable<ENUM_MENU, ENUM_STRING> MENU_WITH_HELP_STRING = {
     {MENU_ANAGRAM, ANAGRAM_HELP},
     {MENU_PANGRAM, PANGRAM_HELP},
     {MENU_TEMPLATE, TEMPLATE_HELP},
