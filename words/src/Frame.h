@@ -30,6 +30,8 @@ class Frame : WordsBase {
   GtkWidget *m_comboline;
   GtkWidget *m_radio;
   GtkWidget *m_charactersLabel;
+  GtkWidget *m_sortbutton;
+  GtkWidget *m_sortlist;
   SafePangoFontDesc m_font[FONT_SIZE];
 
   std::chrono::steady_clock::time_point last_click_time[BUTTON_SIZE]{};
@@ -42,6 +44,7 @@ class Frame : WordsBase {
   guint m_debounceTimerId = 0;
   ENUM_ENTRY m_currentEntry = ENTRY_SIZE;
   int m_currentEntryPos;
+  int m_sortlistValue;
 
 public:
   gulong m_positionSignalId = 0;
@@ -268,5 +271,10 @@ public:
   void clickButton(GtkWidget *button);
   void updateButton(ENUM_BUTTON e, int i = UPDATEONLY_BUTTON);
 
+  //sort list functions
   void labelClicked(GtkWidget *box);
+  void refillSort();
+  void rowActivated(GtkListBoxRow *row);
+  void updateSortButton();
+  void setRowSensitive(bool sensitive);
 };

@@ -123,6 +123,13 @@ gboolean on_label_clicked(GtkWidget *widget, GdkEventButton *event,
   }
 }
 
+void on_row_activated(GtkListBox *list_box, GtkListBoxRow *row,
+                      gpointer user_data) {
+  if (!row)
+    return;
+  frame->rowActivated(row);
+}
+
 Frame::Frame() : WordsBase() {
   GtkWidget *w, *w1, *w2;
   GtkWidget *item;
@@ -156,6 +163,20 @@ Frame::Frame() : WordsBase() {
 
   m_status = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 2);
   m_statusMessage = gtk_label_new("");
+
+  // TODO
+  m_sortbutton = gtk_menu_button_new();
+  gtk_menu_button_set_direction(GTK_MENU_BUTTON(m_sortbutton), GTK_ARROW_UP);
+  GtkWidget *popover = gtk_popover_new(m_sortbutton);
+  gtk_menu_button_set_popover(GTK_MENU_BUTTON(m_sortbutton), popover);
+  m_sortlist = gtk_list_box_new();
+  gtk_container_add(GTK_CONTAINER(popover), m_sortlist);
+  g_signal_connect(G_OBJECT(m_sortlist), "row-activated",
+                   G_CALLBACK(on_row_activated), NULL);
+
+  m_sortlistValue = 1; // on update language
+  // auto v = fromTo(SORT_BY_ALPHABET, SORT_BY_DIFFERENT_NUMBER_OF_CHARACTERS);
+  // gtk_button_set_label(GTK_BUTTON(m_sortbutton), v[m_sortlistValue].c_str());
 
   createTextCombo(COMBOBOX_SORT);
 
@@ -205,7 +226,9 @@ Frame::Frame() : WordsBase() {
             m_button[BUTTON_DICTIONARY], false,
             m_labelButtonBox[LABELBUTTON_LANGUAGE], false,
             m_button[BUTTON_LANGUAGE], false);
-  createRow(m_combo[COMBOBOX_SORT], true, m_button[BUTTON_SORT_ORDER], false);
+  createRow(m_sortbutton, true, m_button[BUTTON_SORT_ORDER], false); // TODO
+  // createRow(m_combo[COMBOBOX_SORT], true, m_button[BUTTON_SORT_ORDER],
+  // false);
   createRow(m_entry[ENTRY_SEARCH], true, m_searchTagLabel, false,
             m_button[BUTTON_NEXT], false, m_button[BUTTON_PREVIOUS], false);
   createRow(m_entry[ENTRY_FILTER], true, m_button[BUTTON_FOUND], false);
@@ -670,6 +693,7 @@ void Frame::updateLanguage(bool change) {
   refillCombo(COMBOBOX_SORT, SORT_BY_ALPHABET,
               SORT_BY_DIFFERENT_NUMBER_OF_CHARACTERS);
   setHelperPanel(m_state != STATE_BEGIN);
+  refillSort();
 }
 
 void Frame::refillCombo(ENUM_COMBOBOX e, const VString &v, int active) {
@@ -770,7 +794,7 @@ void Frame::comboChanged(ENUM_COMBOBOX e) {
   } else if (m_menuClick == MENU_CHARACTER_SEQUENCE) {
     skip = e != COMBOBOX_HELPER2 && m_radioValue == 0;
   }
-  //pr("skip", skip);
+  // pr("skip", skip);
 
   if (!skip) {
     job();
@@ -1385,7 +1409,7 @@ results JOB_TYPE_FILTER - stop calculations if needed, then filter results
 JOB_TYPE_STOP - stop calculations if needed
 */
 void Frame::job(ENUM_JOB_TYPE e) {
-  prsync(magic_enum::enum_name(m_menuClick), magic_enum::enum_name(e));
+  // prsync(magic_enum::enum_name(m_menuClick), magic_enum::enum_name(e));
   if (oneOf(e, JOB_TYPE_SORT_AND_FILTER, JOB_TYPE_FILTER) && m_result.empty()) {
     return;
   }
@@ -1529,7 +1553,7 @@ void Frame::clickButton(GtkWidget *button) {
       updateDictionary(true);
     } else if (e == BUTTON_LANGUAGE) {
       updateLanguage(true);
-    } else if (oneOf(e, BUTTON_SORT_ORDER, BUTTON_FOUND)) { // TODO
+    } else if (oneOf(e, BUTTON_SORT_ORDER, BUTTON_FOUND)) {
       updateButton(e, INVERT_BUTTON);
       job(e == BUTTON_SORT_ORDER ? JOB_TYPE_SORT_AND_FILTER : JOB_TYPE_FILTER);
     }
@@ -1572,4 +1596,51 @@ void Frame::labelClicked(GtkWidget *box) {
   int i = indexOf(box, m_labelButtonBox);
   clickButton(m_button[i == LABELBUTTON_DICTIONRY ? BUTTON_DICTIONARY
                                                   : BUTTON_LANGUAGE]);
+}
+
+void Frame::refillSort() {
+  clearContainer(m_sortlist);
+  auto v = fromTo(SORT_BY_ALPHABET, SORT_BY_DIFFERENT_NUMBER_OF_CHARACTERS);
+  for (auto &s : v) {
+    GtkWidget *label = gtk_label_new(s.c_str());
+    gtk_label_set_xalign(GTK_LABEL(label), 0.0);
+    gtk_widget_set_margin_start(label, 10);
+    gtk_widget_set_margin_end(label, 10);
+    gtk_widget_set_margin_top(label, 5);
+    gtk_widget_set_margin_bottom(label, 5);
+
+    gtk_list_box_insert(GTK_LIST_BOX(m_sortlist), label, -1);
+  }
+  updateSortButton();
+  gtk_widget_show_all(GTK_WIDGET(m_sortlist));
+}
+
+void Frame::updateSortButton() {
+  GtkListBoxRow *row =
+      gtk_list_box_get_row_at_index(GTK_LIST_BOX(m_sortlist), m_sortlistValue);
+  gtk_widget_set_sensitive(GTK_WIDGET(row), false);
+  const std::string &s = string(SORT_BY_ALPHABET + m_sortlistValue);
+  gtk_button_set_label(GTK_BUTTON(m_sortbutton), s.c_str());
+}
+
+void Frame::rowActivated(GtkListBoxRow *r) {
+  // GtkWidget *label = gtk_bin_get_child(GTK_BIN(row));
+  // if (GTK_IS_LABEL(label)) {
+  //   const char *text = gtk_label_get_text(GTK_LABEL(label));
+  //   gtk_button_set_label(GTK_BUTTON(m_sortbutton), text);
+  // }
+  GtkListBoxRow *row =
+      gtk_list_box_get_row_at_index(GTK_LIST_BOX(m_sortlist), m_sortlistValue);
+  gtk_widget_set_sensitive(GTK_WIDGET(row), true);
+  m_sortlistValue = gtk_list_box_row_get_index(r);
+  pr("index", m_sortlistValue);
+  updateSortButton();
+  GtkPopover *popover =
+      gtk_menu_button_get_popover(GTK_MENU_BUTTON(m_sortbutton));
+  gtk_popover_popdown(popover);
+    gtk_list_box_unselect_all(GTK_LIST_BOX(m_sortlist));
+}
+
+void Frame::setRowSensitive(bool sensitive){
+  
 }
