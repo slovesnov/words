@@ -167,6 +167,7 @@ struct WordInfo {
 struct SolverContext {
   LetterMask target_mask;
   std::vector<WordInfo> dict;
+  std::unordered_map<std::string, std::vector<std::string>> string_index;
   std::set<std::vector<std::string>> unique_results;
   std::mutex result_mutex;
 };

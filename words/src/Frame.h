@@ -24,8 +24,10 @@ class Frame : WordsBase {
   GtkWidget *m_statusMessage;
   GtkWidget *m_searchTagLabel;
   GtkWidget *m_button[BUTTON_SIZE];
-  GtkWidget *m_currentDictionary;
-  GtkWidget *m_currentLanguage;
+public:
+  GtkWidget *m_labelButton[LABELBUTTON_SIZE];
+  GtkWidget *m_labelButtonBox[LABELBUTTON_SIZE];
+  private:
   GtkWidget *m_check;
   GtkWidget *m_comboline;
   GtkWidget *m_radio;
@@ -204,6 +206,7 @@ public:
   void resetSettings(bool update);
   void saveText();
 
+  void clear(ENUM_JOB_TYPE e);
   void job(ENUM_JOB_TYPE e = JOB_TYPE_FULL);
 
   template <typename PredicateOrBool, typename... Args>
@@ -266,4 +269,6 @@ public:
   // button functions
   void clickButton(GtkWidget *button);
   void updateButton(ENUM_BUTTON e, int i = UPDATEONLY_BUTTON);
+
+  void labelClicked(GtkWidget *box);
 };

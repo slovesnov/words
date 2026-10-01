@@ -2345,34 +2345,40 @@ inline bool are_masks_equal(const LetterMask &m1, const LetterMask &m2) {
 }
 
 #ifdef LGS_NEW
-void WordsBase::findLetterGroupSplit(int nthread) {
-      // size_t start_idx, size_t end_idx
-  size_t total_words = m_lgs.dict.size();
-      const int num_threads = g_get_num_processors();
-  size_t chunk_size = total_words / num_threads;
+std::string mask_to_sorted_string(const LetterMask& mask) {
+    std::string s;
+    for (size_t i = 0; i < 256; ++i) {
+        if (mask[i] > 0) {
+            s.append(mask[i], static_cast<char>(i));
+        }
+    }
+    return s;
+}
 
+void WordsBase::findLetterGroupSplit(int nthread) {
+    auto begin = clock();
+  size_t total_words = m_lgs.dict.size();
+  if (total_words == 0) return;
+
+  const int num_threads=g_get_num_processors();
+  size_t chunk_size = total_words / num_threads;
   size_t start = nthread * chunk_size;
   size_t end = (nthread == num_threads - 1) ? total_words : start + chunk_size;
-  prsync(nthread,start,end)
 
   std::set<std::vector<std::string>> local_results;
+  const auto &fd = m_lgs.dict;
 
   for (size_t i = start; i < end; ++i) {
-    const auto &w1 = m_lgs.dict[i];
-    if (!is_submask(w1.mask, m_lgs.target_mask))
-      continue;
-
+    const auto &w1 = fd[i];
     LetterMask rem1 = subtract_mask(m_lgs.target_mask, w1.mask);
 
-    for (size_t j = i; j < total_words;
-         ++j) { // Оптимизация: j = i избегает дубликатов перестановок
-      const auto &w2 = m_lgs.dict[j];
-      if (!is_submask(w2.mask, rem1))
-        continue;
+    for (size_t j = i; j < total_words; ++j) { 
+      const auto &w2 = fd[j];
+      if (!is_submask(w2.mask, rem1)) continue;
 
       LetterMask rem2 = subtract_mask(rem1, w2.mask);
 
-      // 1. Проверка на 2 слова
+      // 1. Проверка на 2 слова (остаток букв пустой)
       if (is_mask_empty(rem2)) {
         std::vector<std::string> combo = {w1.word, w2.word};
         std::sort(combo.begin(), combo.end());
@@ -2380,23 +2386,26 @@ void WordsBase::findLetterGroupSplit(int nthread) {
         continue;
       }
 
-      // 2. Проверка на 3 слова
-      for (size_t k = j; k < total_words; ++k) {
-        const auto &w3 = m_lgs.dict[k];
-        if (are_masks_equal(rem2, w3.mask)) {
-          std::vector<std::string> combo = {w1.word, w2.word, w3.word};
+      // 2. МГНОВЕННАЯ проверка на 3 слова через Хэш-таблицу O(1)
+      std::string rem2_str = mask_to_sorted_string(rem2);
+      
+      // Ищем в индексе готовую группу слов с точно таким же набором букв
+      auto it = m_lgs.string_index.find(rem2_str);
+      if (it != m_lgs.string_index.end()) {
+        // Если нашли, добавляем все возможные анаграммы этого слова
+        for (const std::string& w3_word : it->second) {
+          std::vector<std::string> combo = {w1.word, w2.word, w3_word};
           std::sort(combo.begin(), combo.end());
           local_results.insert(combo);
         }
       }
     }
   }
-  // prsync(nthread)
 
-  // Объединяем локальные результаты потока с глобальными под блокировкой
+  // Объединяем результаты в самом конце под мьютексом
   std::lock_guard<std::mutex> lock(m_lgs.result_mutex);
   m_lgs.unique_results.insert(local_results.begin(), local_results.end());
-  // prsync(nthread,"end");
+    prsync(nthread, timeElapse(begin));
 }
 
 void WordsBase::findLetterGroupSplitPostProseeding() {
@@ -2414,17 +2423,29 @@ void WordsBase::findLetterGroupSplitPostProseeding() {
 
 
 void WordsBase::findLetterGroupSplitPreProseeding() {
-  auto begin=clock();
-  m_lgs.target_mask = create_mask(m_ev);
-  Dictionary const &full_dictionary = m_dictionary[getDictionaryIndex()];
-  for (const auto &word : full_dictionary) {
-    LetterMask m = create_mask(word);
-    if (is_submask(m, m_lgs.target_mask)) {
-      m_lgs.dict.push_back({word, m});
-    }
-  }
+    auto begin = clock();
+    m_lgs.target_mask = create_mask(m_ev);
+    
+    m_lgs.dict.clear();
+    m_lgs.string_index.clear();
 
-  size_t total_words = m_lgs.dict.size();
-  prsync(total_words,timeElapse(begin));
+    Dictionary const &full_dictionary = m_dictionary[getDictionaryIndex()];
+    
+    for (const auto &word : full_dictionary) {
+        LetterMask m = create_mask(word);
+        if (is_submask(m, m_lgs.target_mask)) {
+            // 1. Сохраняем в обычный список для циклов i и j
+            m_lgs.dict.push_back({word, m});
+            
+            // 2. Индексируем для мгновенного поиска третьего слова (цикл k)
+            std::string sorted_word = word;
+            std::sort(sorted_word.begin(), sorted_word.end());
+            m_lgs.string_index[sorted_word].push_back(word);
+        }
+    }
+
+    size_t total_words = m_lgs.dict.size();
+    prsync(total_words, timeElapse(begin));
 }
+
 #endif

@@ -30,7 +30,7 @@ const std::string invalidDifference = "$";
 class WordsBase;
 extern WordsBase *wordsBase;
 
-#define LGS_NEW
+//#define LGS_NEW
 
 class WordsBase {
   std::string m_ev; // locale m_ev=utf8ToLocale(m_entryValue[ENTRY_TEMPLATE])

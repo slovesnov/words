@@ -112,6 +112,17 @@ gboolean new_version_message(gpointer) {
   return G_SOURCE_REMOVE;
 }
 
+gboolean on_label_clicked(GtkWidget *widget, GdkEventButton *event,
+                          gpointer user_data) {
+  if (oneOf(event->type, GDK_BUTTON_PRESS, GDK_2BUTTON_PRESS) &&
+      event->button == 1) {
+    frame->labelClicked(widget);
+    return TRUE;
+  } else {
+    return FALSE;
+  }
+}
+
 Frame::Frame() : WordsBase() {
   GtkWidget *w, *w1, *w2;
   GtkWidget *item;
@@ -155,7 +166,6 @@ Frame::Frame() : WordsBase() {
   m_searchTagLabel = gtk_label_new("");
   gtk_widget_set_size_request(m_searchTagLabel, 40, -1);
 
-  // TODO
   m_buttonValue = {0, 0, 0, getDictionaryIndex(), getLanguageIndex(), 1, 0};
   i = -1;
   for (auto &a : m_button) {
@@ -164,10 +174,14 @@ Frame::Frame() : WordsBase() {
     updateButton(ENUM_BUTTON(i));
   }
 
-  GtkWidget **widgets[] = {&m_currentDictionary, &m_currentLanguage};
-  for (GtkWidget **a : widgets) {
-    *a = gtk_label_new("");
-    gtk_widget_set_margin_start(*a, 40);
+  // TODO
+  for (i = 0; i < LABELBUTTON_SIZE; i++) {
+    w = m_labelButton[i] = gtk_label_new("");
+    gtk_widget_set_margin_start(w, 40);
+    w1 = m_labelButtonBox[i] = gtk_event_box_new();
+    gtk_container_add(GTK_CONTAINER(w1), w);
+    g_signal_connect(G_OBJECT(w1), "button-press-event",
+                     G_CALLBACK(on_label_clicked), NULL);
   }
 
   for (i = 0; i < int(MENU_TO_ACCEL_KEY.size()); i++) {
@@ -187,8 +201,10 @@ Frame::Frame() : WordsBase() {
                                std::forward<decltype(args)>(args)...);
     gtk_container_add(GTK_CONTAINER(w), row);
   };
-  createRow(m_button[BUTTON_STARTSTOP], false, m_currentDictionary, false,
-            m_button[BUTTON_DICTIONARY], false, m_currentLanguage, false,
+  createRow(m_button[BUTTON_STARTSTOP], false,
+            m_labelButtonBox[LABELBUTTON_DICTIONRY], false,
+            m_button[BUTTON_DICTIONARY], false,
+            m_labelButtonBox[LABELBUTTON_LANGUAGE], false,
             m_button[BUTTON_LANGUAGE], false);
   createRow(m_combo[COMBOBOX_SORT], true, m_button[BUTTON_SORT_ORDER], false);
   createRow(m_entry[ENTRY_SEARCH], true, m_searchTagLabel, false,
@@ -645,8 +661,8 @@ void Frame::updateLanguage(bool change) {
                     MENU_ENGLISH_LANGUAGE, MENU_RUSSIAN_LANGUAGE);
 
   setPlaceholder(ENTRY_SEARCH, MENU_SEARCH);
-  setLabel(m_currentDictionary, DICTIONARY);
-  setLabel(m_currentLanguage, STRING_LANGUAGE);
+  setLabel(m_labelButton[LABELBUTTON_DICTIONRY], DICTIONARY);
+  setLabel(m_labelButton[LABELBUTTON_LANGUAGE], STRING_LANGUAGE);
   updateButton(BUTTON_LANGUAGE);
   updateButton(BUTTON_FOUND);
   gtk_window_set_title(GTK_WINDOW(m_widget), string(PROGRAM).c_str());
@@ -1347,18 +1363,7 @@ void Frame::saveText() {
   gtk_widget_destroy(dialog);
 }
 
-/*
-JOB_TYPE_FULL - stop calculations if needed, then start new calculations
-JOB_TYPE_SORT_AND_FILTER - stop calculations if needed, then sort and filter
-results JOB_TYPE_FILTER - stop calculations if needed, then filter results
-JOB_TYPE_STOP - stop calculations if needed
-*/
-void Frame::job(ENUM_JOB_TYPE e) {
-  // prsync(magic_enum::enum_name(m_menuClick), magic_enum::enum_name(e));
-  if (oneOf(e, JOB_TYPE_SORT_AND_FILTER, JOB_TYPE_FILTER) && m_result.empty()) {
-    return;
-  }
-
+void Frame::clear(ENUM_JOB_TYPE e) {
   if (e == JOB_TYPE_FULL) {
     SearchResult::out = "";
     m_result.clear();
@@ -1368,14 +1373,27 @@ void Frame::job(ENUM_JOB_TYPE e) {
   m_addstatus = "";
   m_filteredWordsCount = 0;
   setLabel(m_searchTagLabel, "");
+}
 
+/*
+JOB_TYPE_FULL - stop calculations if needed, then start new calculations
+JOB_TYPE_SORT_AND_FILTER - stop calculations if needed, then sort and filter
+results JOB_TYPE_FILTER - stop calculations if needed, then filter results
+JOB_TYPE_STOP - stop calculations if needed
+*/
+void Frame::job(ENUM_JOB_TYPE e) {
+  prsync(magic_enum::enum_name(m_menuClick), magic_enum::enum_name(e));
+  if (oneOf(e, JOB_TYPE_SORT_AND_FILTER, JOB_TYPE_FILTER) && m_result.empty()) {
+    return;
+  }
+
+  clear(e);
   if (!prepare()) {
     m_end = clock();
     updateStatus(STATE_ERROR);
     return;
   }
 
-  // --- ИСПРАВЛЕНИЕ ДЕДЛОКА ---
   // Если старый менеджер еще активен, мы сигнализируем ему остановиться
   // и ОТСОЕДИНЯЕМ (detach), чтобы деструктор jthread НЕ блокировал UI-поток!
   if (m_managerThread.joinable()) {
@@ -1389,10 +1407,12 @@ void Frame::job(ENUM_JOB_TYPE e) {
       g_idle_add_full(G_PRIORITY_HIGH, update_status,
                       GINT_TO_POINTER(STATE_PROCEEDING), NULL);
     }
-    // Безопасно завершаем предыдущий рабочий поток
     if (m_thread.joinable()) {
       m_thread.request_stop();
-      m_thread.join(); // Этот join происходит в фоне, UI не виснет!
+      m_thread.join();
+      if (e == JOB_TYPE_FULL) {
+        clear(e);
+      }
     }
 
     // Обязательно проверяем токен менеджера ПОСЛЕ того, как дождались старый
@@ -1407,7 +1427,6 @@ void Frame::job(ENUM_JOB_TYPE e) {
       return;
     }
 
-    // Запускаем новый рабочий поток
     m_thread = std::jthread([this, e](std::stop_token token) {
       m_token = token;
 
@@ -1417,7 +1436,6 @@ void Frame::job(ENUM_JOB_TYPE e) {
       if (token.stop_requested())
         return;
 
-      // Запуск основной работы
       run(e);
 
       // Проверяем, не отменили ли нас пока работал run(e)
@@ -1487,8 +1505,8 @@ int Frame::getSelectedRadioIndex() {
 void Frame::clickButton(GtkWidget *button) {
   int i;
   ENUM_BUTTON e = ENUM_BUTTON(indexOf(button, m_button));
-    
-  if (oneOf(e, BUTTON_NEXT,BUTTON_PREVIOUS)) {
+
+  if (oneOf(e, BUTTON_NEXT, BUTTON_PREVIOUS)) {
     if (m_tags < 2) {
       return;
     }
@@ -1521,7 +1539,7 @@ void Frame::updateButton(ENUM_BUTTON e, int i) {
   if (i == UPDATEONLY_BUTTON) {
     i = va;
   } else if (i == INVERT_BUTTON) {
-    i=m_buttonValue[e] = !va;
+    i = m_buttonValue[e] = !va;
   } else {
     m_buttonValue[e] = i;
   }
@@ -1545,4 +1563,10 @@ void Frame::updateButton(ENUM_BUTTON e, int i) {
   assert(i < int(v[e].size()));
   s = v[e][i];
   gtk_button_set_image(GTK_BUTTON(m_button[e]), image(s));
+}
+
+void Frame::labelClicked(GtkWidget *box) {
+  int i = indexOf(box, m_labelButtonBox);
+  clickButton(m_button[i == LABELBUTTON_DICTIONRY ? BUTTON_DICTIONARY
+                                                  : BUTTON_LANGUAGE]);
 }
