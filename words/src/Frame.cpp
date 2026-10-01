@@ -164,7 +164,6 @@ Frame::Frame() : WordsBase() {
   m_status = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 2);
   m_statusMessage = gtk_label_new("");
 
-  // TODO
   m_sortbutton = gtk_menu_button_new();
   gtk_menu_button_set_direction(GTK_MENU_BUTTON(m_sortbutton), GTK_ARROW_UP);
   GtkWidget *popover = gtk_popover_new(m_sortbutton);
@@ -173,12 +172,7 @@ Frame::Frame() : WordsBase() {
   gtk_container_add(GTK_CONTAINER(popover), m_sortlist);
   g_signal_connect(G_OBJECT(m_sortlist), "row-activated",
                    G_CALLBACK(on_row_activated), NULL);
-
-  m_sortlistValue = 1; // on update language
-  // auto v = fromTo(SORT_BY_ALPHABET, SORT_BY_DIFFERENT_NUMBER_OF_CHARACTERS);
-  // gtk_button_set_label(GTK_BUTTON(m_sortbutton), v[m_sortlistValue].c_str());
-
-  createTextCombo(COMBOBOX_SORT);
+  m_sortlistValue = 1; // fill on update language
 
   for (auto a : {ENTRY_SEARCH, ENTRY_FILTER}) {
     createEntry(a);
@@ -226,9 +220,7 @@ Frame::Frame() : WordsBase() {
             m_button[BUTTON_DICTIONARY], false,
             m_labelButtonBox[LABELBUTTON_LANGUAGE], false,
             m_button[BUTTON_LANGUAGE], false);
-  createRow(m_sortbutton, true, m_button[BUTTON_SORT_ORDER], false); // TODO
-  // createRow(m_combo[COMBOBOX_SORT], true, m_button[BUTTON_SORT_ORDER],
-  // false);
+  createRow(m_sortbutton, true, m_button[BUTTON_SORT_ORDER], false);
   createRow(m_entry[ENTRY_SEARCH], true, m_searchTagLabel, false,
             m_button[BUTTON_NEXT], false, m_button[BUTTON_PREVIOUS], false);
   createRow(m_entry[ENTRY_FILTER], true, m_button[BUTTON_FOUND], false);
@@ -247,6 +239,7 @@ Frame::Frame() : WordsBase() {
   gtk_paned_pack2(GTK_PANED(w1), w2, TRUE, FALSE);
   gtk_widget_set_margin_start(w2, 5);
   gtk_widget_set_margin_end(w2, 5);
+  gtk_widget_set_margin_bottom(w2, 5);
 
   m_positionSignalId = g_signal_connect(
       w1, "notify::position",
@@ -328,7 +321,6 @@ Frame::Frame() : WordsBase() {
   }
 
   updateLanguage();
-  setComboIndex(COMBOBOX_SORT, 1);
   // update menu enables/disables, after language[] is filled
   updateDictionary();
 
@@ -689,9 +681,6 @@ void Frame::updateLanguage(bool change) {
   updateButton(BUTTON_FOUND);
   gtk_window_set_title(GTK_WINDOW(m_widget), string(PROGRAM).c_str());
   setPlaceholder(ENTRY_FILTER, RESULTS_FILTER);
-
-  refillCombo(COMBOBOX_SORT, SORT_BY_ALPHABET,
-              SORT_BY_DIFFERENT_NUMBER_OF_CHARACTERS);
   setHelperPanel(m_state != STATE_BEGIN);
   refillSort();
 }
@@ -771,10 +760,6 @@ void Frame::comboChanged(ENUM_COMBOBOX e) {
     gtk_widget_set_visible(m_comboline, getComboIndex(e) == 0);
   }
 
-  if (e == COMBOBOX_SORT) {
-    job(JOB_TYPE_SORT_AND_FILTER);
-    return;
-  }
   if (getLastCombobox() == e) {
     updateCharactersLabel();
   }
@@ -1123,7 +1108,7 @@ void Frame::updateStatus(ENUM_STATE state) {
   updateTextView(TEXTVIEW_MAIN, b ? m_out : SearchResult::out);
 
   b = state == STATE_OK && !m_result.empty();
-  updateSensitivity(b, COMBOBOX_SORT, BUTTON_SORT_ORDER, BUTTON_FOUND,
+  updateSensitivity(b, m_sortbutton, BUTTON_SORT_ORDER, BUTTON_FOUND,
                     ENTRY_FILTER);
   updateButton(BUTTON_STARTSTOP);
 }
@@ -1624,11 +1609,11 @@ void Frame::updateSortButton() {
 void Frame::rowActivated(GtkListBoxRow *row) {
   setRowSensitive(true);
   m_sortlistValue = gtk_list_box_row_get_index(row);
-  pr("index", m_sortlistValue);
   updateSortButton();
   GtkPopover *popover =
       gtk_menu_button_get_popover(GTK_MENU_BUTTON(m_sortbutton));
   gtk_popover_popdown(popover);
+  job(JOB_TYPE_SORT_AND_FILTER);
 }
 
 void Frame::setRowSensitive(bool sensitive){

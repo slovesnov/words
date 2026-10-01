@@ -44,7 +44,6 @@ class Frame : WordsBase {
   guint m_debounceTimerId = 0;
   ENUM_ENTRY m_currentEntry = ENTRY_SIZE;
   int m_currentEntryPos;
-  int m_sortlistValue;
 
 public:
   gulong m_positionSignalId = 0;
@@ -235,6 +234,8 @@ public:
             widget = m_entry[id];
           else if constexpr (std::is_same_v<T, ENUM_BUTTON>)
             widget = m_button[id];
+          else if constexpr (std::is_same_v<T, GtkWidget*>)
+            widget = id;
           else {
             // need c++23
             static_assert(false,

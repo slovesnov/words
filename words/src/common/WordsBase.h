@@ -30,8 +30,6 @@ const std::string invalidDifference = "$";
 class WordsBase;
 extern WordsBase *wordsBase;
 
-//#define LGS_NEW
-
 class WordsBase {
   std::string m_ev; // locale m_ev=utf8ToLocale(m_entryValue[ENTRY_TEMPLATE])
 
@@ -40,6 +38,7 @@ protected:
   bool m_checkValue;
   int m_comboValue[COMBOBOX_SIZE];
   int m_radioValue;
+  int m_sortlistValue;
   std::string m_textViewValue; // locale
   std::array<int,BUTTON_SIZE> m_buttonValue;//use array allow assign all values
 
@@ -145,11 +144,6 @@ public:
   void checkKeyboardWordSimplePreProseeding();
   void checkKeyboardWordComplexPreProseeding();
   void checkDictionaryPreProseeding();
-  #ifdef LGS_NEW
-  SolverContext m_lgs;
-  void findLetterGroupSplitPreProseeding();
-  void findLetterGroupSplitPostProseeding();
-#endif
 
   void anagramsPostProseeding();
   void dictionaryStatisticsPostProseeding();

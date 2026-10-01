@@ -60,20 +60,11 @@ const LookupTable<ENUM_MENU, void (WordsBase::*)()> menuPreProseeding = {
      &WordsBase::checkKeyboardWordSimplePreProseeding},
     {MENU_KEYBOARD_WORD_COMPLEX,
      &WordsBase::checkKeyboardWordComplexPreProseeding},
-    {MENU_CHECK_DICTIONARY, &WordsBase::checkDictionaryPreProseeding},
-    //todo order
-#ifdef LGS_NEW
-    {MENU_LETTER_GROUP_SPLIT, &WordsBase::findLetterGroupSplitPreProseeding}
-#endif
-};
+    {MENU_CHECK_DICTIONARY, &WordsBase::checkDictionaryPreProseeding}};
 
 const LookupTable<ENUM_MENU, void (WordsBase::*)()> menuPostProseeding = {
     {MENU_ANAGRAM, &WordsBase::anagramsPostProseeding},
     {MENU_WORD_FREQUENCY, &WordsBase::wordFrequencyPostProseeding},
-    //todo order
-#ifdef LGS_NEW
-    {MENU_LETTER_GROUP_SPLIT, &WordsBase::findLetterGroupSplitPostProseeding},
-#endif
     {MENU_DICTIONARY_STATISTICS,
      &WordsBase::dictionaryStatisticsPostProseeding},
     {MENU_SIMPLE_WORD_SEQUENCE,
@@ -1159,7 +1150,6 @@ l210:
   // pr(timeElapse(begin))
 }
 
-#ifndef LGS_NEW
 void WordsBase::findLetterGroupSplit(int nthread) {
   std::string s, s1, t, lng;
   size_t i, j;
@@ -1220,7 +1210,6 @@ void WordsBase::findLetterGroupSplit(int nthread) {
   }
   pr(timeElapse(begin));
 }
-#endif
 
 void WordsBase::twoDictionaries(int nthread, int nn) {
   VVString to;
@@ -1704,7 +1693,7 @@ void WordsBase::sortFilterResults(ENUM_JOB_TYPE e) {
   std::string s;
 
 #ifndef NOGTK
-  bool find = !m_buttonValue[BUTTON_FOUND] ;
+  bool find = !m_buttonValue[BUTTON_FOUND];
 #endif
   if (m_result.empty()) {
     return;
@@ -1713,9 +1702,9 @@ void WordsBase::sortFilterResults(ENUM_JOB_TYPE e) {
   // auto begin = clock();
   if (e != JOB_TYPE_FILTER) {
     // mtsort
-    std::sort(std::execution::par, m_result.begin(), m_result.end(),
-              SORT_FUNCTION[m_comboValue[COMBOBOX_SORT] * 2 +
-                            m_buttonValue[BUTTON_SORT_ORDER]]);
+    std::sort(
+        std::execution::par, m_result.begin(), m_result.end(),
+        SORT_FUNCTION[m_sortlistValue * 2 + m_buttonValue[BUTTON_SORT_ORDER]]);
   }
   // auto te = timeElapse(begin);
   for (auto const &e : m_result) {
@@ -1736,7 +1725,7 @@ void WordsBase::sortFilterResults(ENUM_JOB_TYPE e) {
       SearchResult::out += std::format(" {} {}", string(WORDS), e.words);
     }
 
-    i = m_comboValue[COMBOBOX_SORT] - (NUMBER_OF_SORTS - 3);
+    i = m_sortlistValue - (NUMBER_OF_SORTS - 3);
     if (i == 0 || i == 1) { // sort by vowels, consonants
       SearchResult::out +=
           " " + string(VOWELS + i) +
@@ -1919,7 +1908,6 @@ PairDCIDCI WordsBase::iterators(int n, int nthread) {
   return iterators(ENUM_DICTIONARY(n), nthread);
 }
 
-// todo
 PairDCIDCI WordsBase::iterators(ENUM_DICTIONARY e, int nthread) {
   Dictionary const &d = m_dictionary[e];
   int total_size = d.size();
@@ -1984,12 +1972,7 @@ void WordsBase::run(ENUM_JOB_TYPE e) {
     }
 
     std::vector<std::jthread> workers;
-    int threads = oneOf(m_menuClick, MENU_CHAIN
-#ifndef LGS_NEW
-                        ,
-                        MENU_LETTER_GROUP_SPLIT
-#endif
-                        )
+    int threads = oneOf(m_menuClick, MENU_CHAIN, MENU_LETTER_GROUP_SPLIT)
                       ? 1
                       : g_get_num_processors();
     prsync(threads, magic_enum::enum_name(m_menuClick));
@@ -2109,7 +2092,7 @@ void WordsBase::cgi() {
       break;
 
     case POST_SORTTYPE:
-      m_comboValue[COMBOBOX_SORT] = j;
+      m_sortlistValue = j;
       break;
 
     case POST_SORTORDER:
@@ -2293,7 +2276,7 @@ const std::string &WordsBase::string(ENUM_MENU e) const {
 
 const std::string &WordsBase::stringUsingDictionary(ENUM_STRING e,
                                                     bool opposite) const {
-  return m_languageAll[getDictionaryIndex()^opposite][e];
+  return m_languageAll[getDictionaryIndex() ^ opposite][e];
 }
 
 const std::string &WordsBase::settings(ENUM_SETTINGS e, int i) const {
@@ -2301,151 +2284,3 @@ const std::string &WordsBase::settings(ENUM_SETTINGS e, int i) const {
   assert(n < SETTINGS_SIZE);
   return m_settingsAll[getDictionaryIndex()][ENUM_SETTINGS(n)];
 }
-
-LetterMask create_mask(const std::string &str) {
-  LetterMask mask = {0};
-  for (unsigned char ch : str) {
-    mask[ch]++;
-  }
-  return mask;
-}
-
-// Проверка: можно ли составить sub_mask из букв parent_mask
-inline bool is_submask(const LetterMask &sub_mask,
-                       const LetterMask &parent_mask) {
-  for (size_t i = 0; i < 256; ++i) {
-    if (parent_mask[i] < sub_mask[i])
-      return false;
-  }
-  return true;
-}
-
-// Вычитание масок
-inline LetterMask subtract_mask(const LetterMask &parent_mask,
-                                const LetterMask &sub_mask) {
-  LetterMask res;
-  for (size_t i = 0; i < 256; ++i) {
-    res[i] = parent_mask[i] - sub_mask[i];
-  }
-  return res;
-}
-
-// Проверка: пустая ли маска (все ли буквы использованы)
-inline bool is_mask_empty(const LetterMask &mask) {
-  for (int count : mask) {
-    if (count > 0)
-      return false;
-  }
-  return true;
-}
-
-// Проверка на точное равенство двух масок
-inline bool are_masks_equal(const LetterMask &m1, const LetterMask &m2) {
-  return m1 == m2;
-}
-
-#ifdef LGS_NEW
-std::string mask_to_sorted_string(const LetterMask& mask) {
-    std::string s;
-    for (size_t i = 0; i < 256; ++i) {
-        if (mask[i] > 0) {
-            s.append(mask[i], static_cast<char>(i));
-        }
-    }
-    return s;
-}
-
-void WordsBase::findLetterGroupSplit(int nthread) {
-    auto begin = clock();
-  size_t total_words = m_lgs.dict.size();
-  if (total_words == 0) return;
-
-  const int num_threads=g_get_num_processors();
-  size_t chunk_size = total_words / num_threads;
-  size_t start = nthread * chunk_size;
-  size_t end = (nthread == num_threads - 1) ? total_words : start + chunk_size;
-
-  std::set<std::vector<std::string>> local_results;
-  const auto &fd = m_lgs.dict;
-
-  for (size_t i = start; i < end; ++i) {
-    const auto &w1 = fd[i];
-    LetterMask rem1 = subtract_mask(m_lgs.target_mask, w1.mask);
-
-    for (size_t j = i; j < total_words; ++j) { 
-      const auto &w2 = fd[j];
-      if (!is_submask(w2.mask, rem1)) continue;
-
-      LetterMask rem2 = subtract_mask(rem1, w2.mask);
-
-      // 1. Проверка на 2 слова (остаток букв пустой)
-      if (is_mask_empty(rem2)) {
-        std::vector<std::string> combo = {w1.word, w2.word};
-        std::sort(combo.begin(), combo.end());
-        local_results.insert(combo);
-        continue;
-      }
-
-      // 2. МГНОВЕННАЯ проверка на 3 слова через Хэш-таблицу O(1)
-      std::string rem2_str = mask_to_sorted_string(rem2);
-      
-      // Ищем в индексе готовую группу слов с точно таким же набором букв
-      auto it = m_lgs.string_index.find(rem2_str);
-      if (it != m_lgs.string_index.end()) {
-        // Если нашли, добавляем все возможные анаграммы этого слова
-        for (const std::string& w3_word : it->second) {
-          std::vector<std::string> combo = {w1.word, w2.word, w3_word};
-          std::sort(combo.begin(), combo.end());
-          local_results.insert(combo);
-        }
-      }
-    }
-  }
-
-  // Объединяем результаты в самом конце под мьютексом
-  std::lock_guard<std::mutex> lock(m_lgs.result_mutex);
-  m_lgs.unique_results.insert(local_results.begin(), local_results.end());
-    prsync(nthread, timeElapse(begin));
-}
-
-void WordsBase::findLetterGroupSplitPostProseeding() {
-  prsync();
-  std::stringstream ss;
-  ss << "[UI Thread] Найдено комбинаций: " << m_lgs.unique_results.size()
-     << std::endl;
-  for (const auto &combo : m_lgs.unique_results) {
-    for (const auto &word : combo)
-      ss << word << " ";
-    ss << "\n";
-  }
-  SearchResult::out =ss.str();
-}
-
-
-void WordsBase::findLetterGroupSplitPreProseeding() {
-    auto begin = clock();
-    m_lgs.target_mask = create_mask(m_ev);
-    
-    m_lgs.dict.clear();
-    m_lgs.string_index.clear();
-
-    Dictionary const &full_dictionary = m_dictionary[getDictionaryIndex()];
-    
-    for (const auto &word : full_dictionary) {
-        LetterMask m = create_mask(word);
-        if (is_submask(m, m_lgs.target_mask)) {
-            // 1. Сохраняем в обычный список для циклов i и j
-            m_lgs.dict.push_back({word, m});
-            
-            // 2. Индексируем для мгновенного поиска третьего слова (цикл k)
-            std::string sorted_word = word;
-            std::sort(sorted_word.begin(), sorted_word.end());
-            m_lgs.string_index[sorted_word].push_back(word);
-        }
-    }
-
-    size_t total_words = m_lgs.dict.size();
-    prsync(total_words, timeElapse(begin));
-}
-
-#endif

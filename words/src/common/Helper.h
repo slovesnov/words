@@ -156,18 +156,3 @@ std::string lowercase_utf8_regex(const std::string& pattern);
 #ifndef NDEBUG
 void print_short_stack_trace(size_t max_lines = 4);
 #endif
-
-using LetterMask = std::array<int, 256>;
-
-struct WordInfo {
-  std::string word;
-  LetterMask mask;
-};
-
-struct SolverContext {
-  LetterMask target_mask;
-  std::vector<WordInfo> dict;
-  std::unordered_map<std::string, std::vector<std::string>> string_index;
-  std::set<std::vector<std::string>> unique_results;
-  std::mutex result_mutex;
-};
