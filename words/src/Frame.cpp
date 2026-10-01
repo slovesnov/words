@@ -656,7 +656,7 @@ void Frame::updateLanguage(bool change) {
 
   setPlaceholder(ENTRY_SEARCH, MENU_SEARCH);
   setLabel(m_currentDictionary, DICTIONARY);
-  setLabel(m_currentLanguage, MENU_LANGUAGE);
+  setLabel(m_currentLanguage, STRING_LANGUAGE);
   updateButton(BUTTON_LANGUAGE);
   gtk_window_set_title(GTK_WINDOW(m_widget), string(PROGRAM).c_str());
   setPlaceholder(ENTRY_FILTER, RESULTS_FILTER);

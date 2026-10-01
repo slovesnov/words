@@ -2390,6 +2390,7 @@ void WordsBase::findLetterGroupSplit(int nthread) {
       }
     }
   }
+  prsync(nthread)
 
   // Объединяем локальные результаты потока с глобальными под блокировкой
   std::lock_guard<std::mutex> lock(m_lgs.result_mutex);
