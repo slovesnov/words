@@ -168,12 +168,7 @@ Frame::Frame() : WordsBase() {
   }
   updateButton(BUTTON_DICTIONARY);
 
-  GtkWidget **widgets[] = {&m_currentDictionary
-#ifdef LANGUAGE_BUTTON
-                           ,
-                           &m_currentLanguage
-#endif
-  };
+  GtkWidget **widgets[] = {&m_currentDictionary, &m_currentLanguage};
 
   for (GtkWidget **a : widgets) {
     *a = gtk_label_new("");
@@ -198,11 +193,8 @@ Frame::Frame() : WordsBase() {
     gtk_container_add(GTK_CONTAINER(w), row);
   };
   createRow(m_button[BUTTON_STARTSTOP], false, m_currentDictionary, false,
-            m_button[BUTTON_DICTIONARY], false
-#ifdef LANGUAGE_BUTTON
-            ,
-            m_currentLanguage, false, m_button[BUTTON_LANGUAGE], false
-#endif
+            m_button[BUTTON_DICTIONARY], false, m_currentLanguage, false,
+            m_button[BUTTON_LANGUAGE], false
 
   );
   createRow(m_combo[COMBOBOX_SORT], true, m_combo[COMBOBOX_SORT_ORDER], false);
@@ -664,10 +656,8 @@ void Frame::updateLanguage(bool change) {
 
   setPlaceholder(ENTRY_SEARCH, MENU_SEARCH);
   setLabel(m_currentDictionary, DICTIONARY);
-#ifdef LANGUAGE_BUTTON
   setLabel(m_currentLanguage, MENU_LANGUAGE);
   updateButton(BUTTON_LANGUAGE);
-#endif
   gtk_window_set_title(GTK_WINDOW(m_widget), string(PROGRAM).c_str());
   setPlaceholder(ENTRY_FILTER, RESULTS_FILTER);
 
@@ -800,12 +790,7 @@ void Frame::createImageCombo(ENUM_COMBOBOX e, int active) {
 void Frame::clickButton(GtkWidget *button) {
   int i;
   ENUM_BUTTON e = ENUM_BUTTON(indexOf(button, m_button));
-  if (oneOf(e, BUTTON_DICTIONARY, BUTTON_STARTSTOP
-#ifdef LANGUAGE_BUTTON
-            ,
-            BUTTON_LANGUAGE
-#endif
-            )) {
+  if (oneOf(e, BUTTON_DICTIONARY, BUTTON_STARTSTOP, BUTTON_LANGUAGE)) {
     auto now = std::chrono::steady_clock::now();
     if (now - last_click_time[e] < std::chrono::milliseconds(TIMER_BUTTON)) {
       return;
@@ -817,12 +802,9 @@ void Frame::clickButton(GtkWidget *button) {
     } else if (e == BUTTON_STARTSTOP) {
       auto b = getStartStopState();
       job(b.imageStart ? JOB_TYPE_FULL : JOB_TYPE_STOP);
-    }
-#ifdef LANGUAGE_BUTTON
-    else if (e == BUTTON_LANGUAGE) {
+    } else if (e == BUTTON_LANGUAGE) {
       updateLanguage(true);
     }
-#endif
   } else {
     if (m_tags < 2) {
       return;
@@ -1168,12 +1150,9 @@ void Frame::updateButton(ENUM_BUTTON e) {
 
   } else if (e == BUTTON_DICTIONARY) {
     s = m_dictionaryIndex ? "ru.gif" : "en.gif";
-  }
-#ifdef LANGUAGE_BUTTON
-  else if (e == BUTTON_LANGUAGE) {
+  } else if (e == BUTTON_LANGUAGE) {
     s = m_languageIndex ? "ru.gif" : "en.gif";
   }
-#endif
 
   gtk_button_set_image(GTK_BUTTON(m_button[e]), image(s));
 }
@@ -1280,8 +1259,8 @@ void Frame::updateEntryValue(ENUM_ENTRY e) {
   m_entryValue[e] = normalizeString(e, s);
 }
 
-std::string Frame::normalizeString(ENUM_ENTRY e, std::string const & q) {
-  std::string s=q;
+std::string Frame::normalizeString(ENUM_ENTRY e, std::string const &q) {
+  std::string s = q;
   // lowercased utf8, changed 'ё' -> 'е'
   bool regex = e == ENTRY_FILTER ||
                (e == ENTRY_TEMPLATE && m_menuClick == MENU_REGULAR_EXPRESSIONS);

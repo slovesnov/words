@@ -24,9 +24,7 @@ class Frame : WordsBase {
   GtkWidget *m_statusMessage;
   GtkWidget *m_searchTagLabel;
   GtkWidget *m_button[BUTTON_SIZE];
-#ifdef LANGUAGE_BUTTON
   GtkWidget *m_currentDictionary;
-#endif
   GtkWidget *m_currentLanguage;
   GtkWidget *m_check;
   GtkWidget *m_comboline;

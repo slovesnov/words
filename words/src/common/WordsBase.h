@@ -20,7 +20,6 @@
 #define PCRE2_CODE_UNIT_WIDTH 8
 #define PCRE2_STATIC
 #include <pcre2.h>
-// define where #include <pcre2.h>
 using UniquePcre2Code = UniqueGtkResource<pcre2_code, pcre2_code_free>;
 using UniquePcre2MatchData =
     UniqueGtkResource<pcre2_match_data, pcre2_match_data_free>;
@@ -30,6 +29,8 @@ const std::string invalidDifference = "$";
 
 class WordsBase;
 extern WordsBase *wordsBase;
+
+//#define LGS_NEW
 
 class WordsBase {
   std::string m_ev; // locale m_ev=utf8ToLocale(m_entryValue[ENTRY_TEMPLATE])
@@ -143,6 +144,11 @@ public:
   void checkKeyboardWordSimplePreProseeding();
   void checkKeyboardWordComplexPreProseeding();
   void checkDictionaryPreProseeding();
+  #ifdef LGS_NEW
+  SolverContext m_lgs;
+  void findLetterGroupSplitPreProseeding();
+  void findLetterGroupSplitPostProseeding();
+#endif
 
   void anagramsPostProseeding();
   void dictionaryStatisticsPostProseeding();
