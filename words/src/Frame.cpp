@@ -1616,31 +1616,23 @@ void Frame::refillSort() {
 }
 
 void Frame::updateSortButton() {
-  GtkListBoxRow *row =
-      gtk_list_box_get_row_at_index(GTK_LIST_BOX(m_sortlist), m_sortlistValue);
-  gtk_widget_set_sensitive(GTK_WIDGET(row), false);
+  setRowSensitive(false);
   const std::string &s = string(SORT_BY_ALPHABET + m_sortlistValue);
   gtk_button_set_label(GTK_BUTTON(m_sortbutton), s.c_str());
 }
 
-void Frame::rowActivated(GtkListBoxRow *r) {
-  // GtkWidget *label = gtk_bin_get_child(GTK_BIN(row));
-  // if (GTK_IS_LABEL(label)) {
-  //   const char *text = gtk_label_get_text(GTK_LABEL(label));
-  //   gtk_button_set_label(GTK_BUTTON(m_sortbutton), text);
-  // }
-  GtkListBoxRow *row =
-      gtk_list_box_get_row_at_index(GTK_LIST_BOX(m_sortlist), m_sortlistValue);
-  gtk_widget_set_sensitive(GTK_WIDGET(row), true);
-  m_sortlistValue = gtk_list_box_row_get_index(r);
+void Frame::rowActivated(GtkListBoxRow *row) {
+  setRowSensitive(true);
+  m_sortlistValue = gtk_list_box_row_get_index(row);
   pr("index", m_sortlistValue);
   updateSortButton();
   GtkPopover *popover =
       gtk_menu_button_get_popover(GTK_MENU_BUTTON(m_sortbutton));
   gtk_popover_popdown(popover);
-    gtk_list_box_unselect_all(GTK_LIST_BOX(m_sortlist));
 }
 
 void Frame::setRowSensitive(bool sensitive){
-  
+  GtkListBoxRow *row =
+      gtk_list_box_get_row_at_index(GTK_LIST_BOX(m_sortlist), m_sortlistValue);
+  gtk_widget_set_sensitive(GTK_WIDGET(row), sensitive);
 }

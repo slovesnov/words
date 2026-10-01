@@ -44,6 +44,11 @@ menuitem:disabled{
 	color:rgb(255,0,0);
 }
 
+list row:selected {
+    background-color: transparent;
+    color: inherit; /* Keeps the text color normal instead of forcing it to white */
+}
+
 frame border{
 	padding:5px;
  	border-radius: .4em;

@@ -248,6 +248,7 @@ public:
         ...);
   }
   void addHelp(ENUM_STRING e);
+  void labelClicked(GtkWidget *box);
 
   // textview functions
   GtkWidget *createTextView(ENUM_TEXTVIEW e, ENUM_STRING n = STRING_SIZE);
@@ -272,7 +273,6 @@ public:
   void updateButton(ENUM_BUTTON e, int i = UPDATEONLY_BUTTON);
 
   //sort list functions
-  void labelClicked(GtkWidget *box);
   void refillSort();
   void rowActivated(GtkListBoxRow *row);
   void updateSortButton();
