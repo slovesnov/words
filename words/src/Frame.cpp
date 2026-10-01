@@ -174,7 +174,6 @@ Frame::Frame() : WordsBase() {
     updateButton(ENUM_BUTTON(i));
   }
 
-  // TODO
   for (i = 0; i < LABELBUTTON_SIZE; i++) {
     w = m_labelButton[i] = gtk_label_new("");
     w1 = m_labelButtonBox[i] = gtk_event_box_new();
