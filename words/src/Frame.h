@@ -137,7 +137,6 @@ public:
 
   void updateDictionary(bool change = false);
   void updateLanguage(bool change = false);
-  void clickButton(GtkWidget *button);
   void removeAccelerators();
   void addAccelerators();
   void newVersionMessage();
@@ -153,14 +152,12 @@ public:
   }
   std::string getProgramVersionString() const;
   void updateStatus(ENUM_STATE state);
-  void updateButton(ENUM_BUTTON e);
   StartStopButtonState getStartStopState() const;
 
   // begin combobox functions
   int getComboIndex(ENUM_COMBOBOX e) const;
   void setComboIndex(ENUM_COMBOBOX e, int v);
   void updateComboValue(ENUM_COMBOBOX e);
-  void createImageCombo(ENUM_COMBOBOX e, int active);
   void refillCombo(ENUM_COMBOBOX e, const VString &v, int active);
   template <typename T>
   void refillCombo(ENUM_COMBOBOX e, T from, T to, int active = -1) {
@@ -265,4 +262,8 @@ public:
   void radioChanged();
   void updateRadioValue();
   int getSelectedRadioIndex();
+
+  // button functions
+  void clickButton(GtkWidget *button);
+  void updateButton(ENUM_BUTTON e, int i = UPDATEONLY_BUTTON);
 };

@@ -41,6 +41,7 @@ protected:
   int m_comboValue[COMBOBOX_SIZE];
   int m_radioValue;
   std::string m_textViewValue; // locale
+  std::array<int,BUTTON_SIZE> m_buttonValue;//use array allow assign all values
 
   Dictionary m_dictionary[DICTIONARY_SIZE];
   std::string m_keyboardOneRow[256][2];
@@ -53,8 +54,6 @@ protected:
   clock_t m_begin, m_end;
   UniquePcre2Code m_regex[2];
   UniquePcre2MatchData m_match[2];
-  int m_languageIndex;
-  int m_dictionaryIndex;
   char m_templateHelper[256];
   std::vector<std::vector<char>> m_template_a;
   Modification m_modifications;
@@ -79,10 +78,18 @@ protected:
   std::string getStatusString();
   std::string getTimeString();
 
-  int getMaximumWordLength() { return m_longestWordLength[m_dictionaryIndex]; }
+  int getMaximumWordLength() { return m_longestWordLength[getDictionaryIndex()]; }
 
   bool prepare();
+#ifdef NOGTK
   void setDictionaryIndex(int i);
+  // void test();
+  void checkLFAllFiles();
+  void showLongestAnagram();            // for MAX_ANAGRAM_LENGTH
+  void showLongestPangram();            // for MAX_PANGRAM_LENGTH
+  void showLongestSimpleWordSequence(); // for MAX_WORD_SEQUENCE_LENGTH
+  void showLongestDoubleWordSequence(); // for MAX_DOUBLE_WORD_SEQUENCE_LENGTH
+#endif
 
   static std::string path(int i, std::string s);
   static VString readFile(int i, std::string s);
@@ -95,12 +102,6 @@ protected:
   bool testFilterRegex(const std::string &s);
 #endif
 
-  // void test();
-  void checkLFAllFiles();
-  void showLongestAnagram();            // for MAX_ANAGRAM_LENGTH
-  void showLongestPangram();            // for MAX_PANGRAM_LENGTH
-  void showLongestSimpleWordSequence(); // for MAX_WORD_SEQUENCE_LENGTH
-  void showLongestDoubleWordSequence(); // for MAX_DOUBLE_WORD_SEQUENCE_LENGTH
 
 public:
   WordsBase();
@@ -165,8 +166,15 @@ public:
   }
   static bool differenceOnlyOneChar(std::string const &a, std::string const &b);
 
+  int getLanguageIndex()const{
+    return m_buttonValue[BUTTON_LANGUAGE];
+  }
+  int getDictionaryIndex()const{
+    return m_buttonValue[BUTTON_DICTIONARY];
+  }
+
   Dictionary const &getDictionary() const {
-    return m_dictionary[m_dictionaryIndex];
+    return m_dictionary[getDictionaryIndex()];
   }
 
   std::string intToStringLocaled(int v);

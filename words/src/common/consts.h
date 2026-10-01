@@ -147,4 +147,7 @@ const LookupTable<ENUM_MENU, ComboData> FROM_TO_COMBO = {
                                           LENGTH, OF_SEQUENCE, CHARACTERS)},
     {MENU_DOUBLE_WORD_SEQUENCE, ComboData(2, MAX_DOUBLE_WORD_SEQUENCE_LENGTH, 2,
                                           LENGTH, OF_SEQUENCE, CHARACTERS)}};
+const int UPDATEONLY_BUTTON=-1;
+const int INVERT_BUTTON=-2;
+
 #endif /*#ifndef NOGTK*/

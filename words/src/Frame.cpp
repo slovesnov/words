@@ -23,7 +23,6 @@ const std::string CONFIG_TAGS[] = {"version",   "language", "dictionary",
                                    "separator", "fontout",  "fontcontrols",
                                    "maximized", "x",        "y",
                                    "width",     "height"};
-
 Frame *frame;
 
 void menu_activate(GtkWidget *widget, ENUM_MENU menu) {
@@ -127,9 +126,9 @@ Frame::Frame() : WordsBase() {
   lockSignals(); // lock, unlock after create
 
   resetSettings(false);
-  if (readConfig(CONFIG_TAGS, s, m_languageIndex, m_dictionaryIndex,
-                 m_separatorPosition, p[0], p[1], m_maximized, m_x, m_y,
-                 m_width, m_height)) {
+  if (readConfig(CONFIG_TAGS, s, m_buttonValue[BUTTON_LANGUAGE],
+                 m_buttonValue[BUTTON_DICTIONARY], m_separatorPosition, p[0],
+                 p[1], m_maximized, m_x, m_y, m_width, m_height)) {
     i = -1;
     for (auto &a : p) {
       i++;
@@ -147,9 +146,7 @@ Frame::Frame() : WordsBase() {
   m_status = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 2);
   m_statusMessage = gtk_label_new("");
 
-  createImageCombo(COMBOBOX_SORT_ORDER, 1);
   createTextCombo(COMBOBOX_SORT);
-  createTextCombo(COMBOBOX_FILTER);
 
   for (auto a : {ENTRY_SEARCH, ENTRY_FILTER}) {
     createEntry(a);
@@ -158,21 +155,19 @@ Frame::Frame() : WordsBase() {
   m_searchTagLabel = gtk_label_new("");
   gtk_widget_set_size_request(m_searchTagLabel, 40, -1);
 
-  std::string im[] = {"down.png", "up.png", "", ""};
+  // TODO
+  m_buttonValue = {0, 0, 0, getDictionaryIndex(), getLanguageIndex(), 1, 0};
   i = -1;
   for (auto &a : m_button) {
     i++;
     a = gtk_button_new();
-    if (oneOf(i, BUTTON_NEXT, BUTTON_PREVIOUS))
-      gtk_button_set_image(GTK_BUTTON(a), image(im[i]));
+    updateButton(ENUM_BUTTON(i));
   }
-  updateButton(BUTTON_DICTIONARY);
 
   GtkWidget **widgets[] = {&m_currentDictionary, &m_currentLanguage};
-
   for (GtkWidget **a : widgets) {
     *a = gtk_label_new("");
-    gtk_widget_set_margin_start(*a, 30);
+    gtk_widget_set_margin_start(*a, 40);
   }
 
   for (i = 0; i < int(MENU_TO_ACCEL_KEY.size()); i++) {
@@ -194,13 +189,11 @@ Frame::Frame() : WordsBase() {
   };
   createRow(m_button[BUTTON_STARTSTOP], false, m_currentDictionary, false,
             m_button[BUTTON_DICTIONARY], false, m_currentLanguage, false,
-            m_button[BUTTON_LANGUAGE], false
-
-  );
-  createRow(m_combo[COMBOBOX_SORT], true, m_combo[COMBOBOX_SORT_ORDER], false);
-  createRow(m_entry[ENTRY_FILTER], true, m_combo[COMBOBOX_FILTER], false);
+            m_button[BUTTON_LANGUAGE], false);
+  createRow(m_combo[COMBOBOX_SORT], true, m_button[BUTTON_SORT_ORDER], false);
   createRow(m_entry[ENTRY_SEARCH], true, m_searchTagLabel, false,
             m_button[BUTTON_NEXT], false, m_button[BUTTON_PREVIOUS], false);
+  createRow(m_entry[ENTRY_FILTER], true, m_button[BUTTON_FOUND], false);
 
   m_panedWidget = w1 = gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
   // left part
@@ -239,7 +232,7 @@ Frame::Frame() : WordsBase() {
 
   // load menu
   i = 0;
-  for (auto &s : readFile(m_languageIndex, "language")) {
+  for (auto &s : readFile(getLanguageIndex(), "language")) {
     if (subMenu.empty() && s.empty()) {
       break;
     }
@@ -298,7 +291,6 @@ Frame::Frame() : WordsBase() {
 
   updateLanguage();
   setComboIndex(COMBOBOX_SORT, 1);
-  setComboIndex(COMBOBOX_FILTER, 0);
   // update menu enables/disables, after language[] is filled
   updateDictionary();
 
@@ -310,8 +302,6 @@ Frame::Frame() : WordsBase() {
   for (auto &a : m_button) {
     g_signal_connect(a, "clicked", G_CALLBACK(button_clicked), NULL);
   }
-  g_signal_connect(m_combo[COMBOBOX_SORT_ORDER], "changed",
-                   G_CALLBACK(combo_changed), gpointer(COMBOBOX_SORT_ORDER));
   g_signal_connect(m_widget, "window-state-event",
                    G_CALLBACK(on_window_state_event), NULL);
   g_signal_connect(m_widget, "delete-event", G_CALLBACK(on_window_delete_event),
@@ -416,9 +406,9 @@ void Frame::clickMenu(ENUM_MENU menu) {
 }
 
 void Frame::destroy() {
-  writeConfig(CONFIG_TAGS, WORDS_VERSION, m_languageIndex, m_dictionaryIndex,
-              m_separatorPosition, m_font[0].get(), m_font[1].get(),
-              m_maximized, m_x, m_y, m_width, m_height);
+  writeConfig(CONFIG_TAGS, WORDS_VERSION, getLanguageIndex(),
+              getDictionaryIndex(), m_separatorPosition, m_font[0].get(),
+              m_font[1].get(), m_maximized, m_x, m_y, m_width, m_height);
   job(JOB_TYPE_STOP);
   gtk_main_quit();
 }
@@ -447,8 +437,8 @@ void Frame::aboutDialog() {
                        EXECUTABLE_FILE_SIZE};
   for (auto id : sid) {
     if (auto key_opt = MAP_URL.get(id)) {
-      s = *key_opt + (m_languageIndex && id != SOURCE_CODE
-                          ? ',' + LNG[m_languageIndex]
+      s = *key_opt + (getLanguageIndex() && id != SOURCE_CODE
+                          ? ',' + LNG[getLanguageIndex()]
                           : "");
       label = gtk_label_new(NULL);
       markup =
@@ -535,7 +525,7 @@ void Frame::setHelperPanel(bool ignoreStateBegin) {
 
   if (auto it = FROM_TO_COMBO.get(m_menuClick)) {
     addComboLineToHelper(string(it->s1, it->s2), it->min,
-                         it->max[m_dictionaryIndex], it->active, it->send);
+                         it->max[getDictionaryIndex()], it->active, it->send);
   }
 
   switch (m_menuClick) {
@@ -611,9 +601,9 @@ void Frame::setHelperPanel(bool ignoreStateBegin) {
 
 void Frame::updateDictionary(bool change) {
   if (change) {
-    m_dictionaryIndex = !m_dictionaryIndex;
+    m_buttonValue[BUTTON_DICTIONARY] = !m_buttonValue[BUTTON_DICTIONARY];
   }
-  updateSensitivity([this](int i) { return m_dictionaryIndex != i; },
+  updateSensitivity([this](int i) { return getDictionaryIndex() != i; },
                     MENU_LOAD_ENGLISH_DICTIONARY, MENU_LOAD_RUSSIAN_DICTIONARY);
   updateButton(BUTTON_DICTIONARY);
 
@@ -631,7 +621,7 @@ void Frame::updateDictionary(bool change) {
 
   if (auto it = FROM_TO_COMBO.get(m_menuClick)) {
     for (auto a : {COMBOBOX_HELPER0, COMBOBOX_HELPER1}) {
-      refillCombo(a, it->min, it->max[m_dictionaryIndex] /*, it->active*/);
+      refillCombo(a, it->min, it->max[getDictionaryIndex()] /*, it->active*/);
     }
   }
 
@@ -642,28 +632,28 @@ void Frame::updateDictionary(bool change) {
 
 void Frame::updateLanguage(bool change) {
   if (change) {
-    m_languageIndex = !m_languageIndex;
+    m_buttonValue[BUTTON_LANGUAGE] = !m_buttonValue[BUTTON_LANGUAGE];
   }
   std::string s;
   int i = -1;
-  for (auto &a : m_menuAll[m_languageIndex]) {
+  for (auto &a : m_menuAll[getLanguageIndex()]) {
     i++;
     setMenuLabel(ENUM_MENU(i), a);
   }
 
-  updateSensitivity([this](int i) { return m_languageIndex != i; },
+  updateSensitivity([this](int i) { return getLanguageIndex() != i; },
                     MENU_ENGLISH_LANGUAGE, MENU_RUSSIAN_LANGUAGE);
 
   setPlaceholder(ENTRY_SEARCH, MENU_SEARCH);
   setLabel(m_currentDictionary, DICTIONARY);
   setLabel(m_currentLanguage, STRING_LANGUAGE);
   updateButton(BUTTON_LANGUAGE);
+  updateButton(BUTTON_FOUND);
   gtk_window_set_title(GTK_WINDOW(m_widget), string(PROGRAM).c_str());
   setPlaceholder(ENTRY_FILTER, RESULTS_FILTER);
 
   refillCombo(COMBOBOX_SORT, SORT_BY_ALPHABET,
               SORT_BY_DIFFERENT_NUMBER_OF_CHARACTERS);
-  refillCombo(COMBOBOX_FILTER, FOUND, NOT_FOUND);
   setHelperPanel(m_state != STATE_BEGIN);
 }
 
@@ -742,9 +732,8 @@ void Frame::comboChanged(ENUM_COMBOBOX e) {
     gtk_widget_set_visible(m_comboline, getComboIndex(e) == 0);
   }
 
-  if (oneOf(e, COMBOBOX_SORT, COMBOBOX_SORT_ORDER, COMBOBOX_FILTER)) {
-    // pr(magic_enum::enum_name(e));
-    job(e == COMBOBOX_FILTER ? JOB_TYPE_FILTER : JOB_TYPE_SORT_AND_FILTER);
+  if (e == COMBOBOX_SORT) {
+    job(JOB_TYPE_SORT_AND_FILTER);
     return;
   }
   if (getLastCombobox() == e) {
@@ -766,51 +755,6 @@ void Frame::comboChanged(ENUM_COMBOBOX e) {
           0) { // any number of matches skip combo not used
   } else {
     job();
-  }
-}
-
-void Frame::createImageCombo(ENUM_COMBOBOX e, int active) {
-  int i;
-  GtkTreeIter iter;
-  GtkCellRenderer *renderer;
-  const char *image[] = {"ascending.png", "descending.png"};
-  GtkListStore *gls = gtk_list_store_new(1, GDK_TYPE_PIXBUF);
-  for (i = 0; i < 2; i++) {
-    gtk_list_store_append(gls, &iter);
-    gtk_list_store_set(gls, &iter, 0, pixbuf(image[i]), -1);
-  }
-  m_combo[e] = gtk_combo_box_new_with_model(GTK_TREE_MODEL(gls));
-  renderer = gtk_cell_renderer_pixbuf_new();
-  gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(m_combo[e]), renderer, TRUE);
-  gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(m_combo[e]), renderer,
-                                 "pixbuf", 0, NULL);
-  setComboIndex(e, active);
-}
-
-void Frame::clickButton(GtkWidget *button) {
-  int i;
-  ENUM_BUTTON e = ENUM_BUTTON(indexOf(button, m_button));
-  if (oneOf(e, BUTTON_DICTIONARY, BUTTON_STARTSTOP, BUTTON_LANGUAGE)) {
-    auto now = std::chrono::steady_clock::now();
-    if (now - last_click_time[e] < std::chrono::milliseconds(TIMER_BUTTON)) {
-      return;
-    }
-    last_click_time[e] = now;
-
-    if (e == BUTTON_DICTIONARY) {
-      updateDictionary(true);
-    } else if (e == BUTTON_STARTSTOP) {
-      auto b = getStartStopState();
-      job(b.imageStart ? JOB_TYPE_FULL : JOB_TYPE_STOP);
-    } else if (e == BUTTON_LANGUAGE) {
-      updateLanguage(true);
-    }
-  } else {
-    if (m_tags < 2) {
-      return;
-    }
-    i = m_tagIndex + (e == BUTTON_NEXT ? 1 : m_tags - 1);
-    updateTags(i % m_tags);
   }
 }
 
@@ -1136,25 +1080,9 @@ void Frame::updateStatus(ENUM_STATE state) {
   updateTextView(TEXTVIEW_MAIN, b ? m_out : SearchResult::out);
 
   b = state == STATE_OK && !m_result.empty();
-  updateSensitivity(b, COMBOBOX_SORT, COMBOBOX_SORT_ORDER, COMBOBOX_FILTER,
+  updateSensitivity(b, COMBOBOX_SORT, BUTTON_SORT_ORDER, BUTTON_FOUND,
                     ENTRY_FILTER);
   updateButton(BUTTON_STARTSTOP);
-}
-
-void Frame::updateButton(ENUM_BUTTON e) {
-  std::string s;
-  if (e == BUTTON_STARTSTOP) {
-    auto b = getStartStopState();
-    updateSensitivity(b.enable, e);
-    s = b.imageStart ? "play.png" : "stop.png";
-
-  } else if (e == BUTTON_DICTIONARY) {
-    s = m_dictionaryIndex ? "ru.gif" : "en.gif";
-  } else if (e == BUTTON_LANGUAGE) {
-    s = m_languageIndex ? "ru.gif" : "en.gif";
-  }
-
-  gtk_button_set_image(GTK_BUTTON(m_button[e]), image(s));
 }
 
 StartStopButtonState Frame::getStartStopState() const {
@@ -1279,7 +1207,7 @@ void Frame::updateCharactersLabel() {
   const int mod10 = n % 10;
   // in the genitive case [ru] в родительном падеже
   ENUM_STRING e;
-  if (m_languageIndex == 0) {
+  if (getLanguageIndex() == 0) {
     b = n == 1;
   } else {
     b = (mod100 < 10 || mod100 > 20) && mod10 == 1;
@@ -1359,9 +1287,10 @@ std::string Frame::getCssFromPango(ENUM_FONT e) {
 void Frame::updateFont(ENUM_FONT e) { loadCSS(getCssFromPango(e)); }
 
 void Frame::resetSettings(bool update) {
-  int oldLanguage = m_languageIndex;
-  int oldDictoinary = m_dictionaryIndex;
-  m_languageIndex = m_dictionaryIndex = getSystemLanguage() == "ru";
+  int oldLanguage = getLanguageIndex();
+  int oldDictoinary = getDictionaryIndex();
+  m_buttonValue[BUTTON_LANGUAGE] = m_buttonValue[BUTTON_DICTIONARY] =
+      getSystemLanguage() == "ru";
   m_separatorPosition = DEFAULT_SEPARATOR_POSITION;
   m_maximized = true;
   m_x = m_y = m_width = m_height = 0;
@@ -1376,9 +1305,9 @@ void Frame::resetSettings(bool update) {
   for (i = 0; i < FONT_SIZE; i++) {
     updateFont(ENUM_FONT(i));
   }
-  if (oldDictoinary != m_dictionaryIndex)
+  if (oldDictoinary != getDictionaryIndex())
     updateDictionary();
-  if (oldLanguage != m_languageIndex)
+  if (oldLanguage != getLanguageIndex())
     updateLanguage();
 
   gtk_paned_set_position(GTK_PANED(m_panedWidget), m_separatorPosition);
@@ -1553,4 +1482,67 @@ int Frame::getSelectedRadioIndex() {
     reverse_index++;
   }
   return -1; // Fallback if none are selected
+}
+
+void Frame::clickButton(GtkWidget *button) {
+  int i;
+  ENUM_BUTTON e = ENUM_BUTTON(indexOf(button, m_button));
+    
+  if (oneOf(e, BUTTON_NEXT,BUTTON_PREVIOUS)) {
+    if (m_tags < 2) {
+      return;
+    }
+    i = m_tagIndex + (e == BUTTON_NEXT ? 1 : m_tags - 1);
+    updateTags(i % m_tags);
+  } else {
+    auto now = std::chrono::steady_clock::now();
+    if (now - last_click_time[e] < std::chrono::milliseconds(TIMER_BUTTON)) {
+      return;
+    }
+    last_click_time[e] = now;
+
+    if (e == BUTTON_STARTSTOP) {
+      auto b = getStartStopState();
+      job(b.imageStart ? JOB_TYPE_FULL : JOB_TYPE_STOP);
+    } else if (e == BUTTON_DICTIONARY) {
+      updateDictionary(true);
+    } else if (e == BUTTON_LANGUAGE) {
+      updateLanguage(true);
+    } else if (oneOf(e, BUTTON_SORT_ORDER, BUTTON_FOUND)) { // TODO
+      updateButton(e, INVERT_BUTTON);
+      job(e == BUTTON_SORT_ORDER ? JOB_TYPE_SORT_AND_FILTER : JOB_TYPE_FILTER);
+    }
+  }
+}
+
+void Frame::updateButton(ENUM_BUTTON e, int i) {
+  std::string s;
+  auto va = m_buttonValue[e];
+  if (i == UPDATEONLY_BUTTON) {
+    i = va;
+  } else if (i == INVERT_BUTTON) {
+    i=m_buttonValue[e] = !va;
+  } else {
+    m_buttonValue[e] = i;
+  }
+  if (e == BUTTON_FOUND) {
+    const ENUM_STRING m[] = {FOUND, NOT_FOUND};
+    assert(i < std::size(m));
+    gtk_button_set_label(GTK_BUTTON(m_button[e]), string(m[i]).c_str());
+    return;
+  }
+  if (e == BUTTON_STARTSTOP) { // i - ignored
+    auto b = getStartStopState();
+    updateSensitivity(b.enable, e);
+    i = b.imageStart;
+  }
+  VVString v = {{"down.png"},
+                {"up.png"},
+                {"stop.png", "play.png"},
+                {"en.gif", "ru.gif"},
+                {"en.gif", "ru.gif"},
+                {"ascending.png", "descending.png"}};
+  assert(i < int(v[e].size()));
+  s = v[e][i];
+  gtk_button_set_image(GTK_BUTTON(m_button[e]), image(s));
 }
