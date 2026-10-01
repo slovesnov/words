@@ -24,10 +24,8 @@ class Frame : WordsBase {
   GtkWidget *m_statusMessage;
   GtkWidget *m_searchTagLabel;
   GtkWidget *m_button[BUTTON_SIZE];
-public:
   GtkWidget *m_labelButton[LABELBUTTON_SIZE];
   GtkWidget *m_labelButtonBox[LABELBUTTON_SIZE];
-  private:
   GtkWidget *m_check;
   GtkWidget *m_comboline;
   GtkWidget *m_radio;

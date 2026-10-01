@@ -177,8 +177,8 @@ Frame::Frame() : WordsBase() {
   // TODO
   for (i = 0; i < LABELBUTTON_SIZE; i++) {
     w = m_labelButton[i] = gtk_label_new("");
-    gtk_widget_set_margin_start(w, 40);
     w1 = m_labelButtonBox[i] = gtk_event_box_new();
+    gtk_widget_set_margin_start(w1, 40);
     gtk_container_add(GTK_CONTAINER(w1), w);
     g_signal_connect(G_OBJECT(w1), "button-press-event",
                      G_CALLBACK(on_label_clicked), NULL);
@@ -765,11 +765,15 @@ void Frame::comboChanged(ENUM_COMBOBOX e) {
       unlockSignals();
     }
   }
+  bool skip = false;
+  if (m_menuClick == MENU_REGULAR_EXPRESSIONS) {
+    skip = m_radioValue == 0;
+  } else if (m_menuClick == MENU_CHARACTER_SEQUENCE) {
+    skip = e != COMBOBOX_HELPER2 && m_radioValue == 0;
+  }
+  //pr("skip", skip);
 
-  if (regexOrCharSequence &&
-      getSelectedRadioIndex() ==
-          0) { // any number of matches skip combo not used
-  } else {
+  if (!skip) {
     job();
   }
 }
