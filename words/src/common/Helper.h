@@ -153,7 +153,7 @@ std::string capitalizeFirstUtf8(const std::string &src);
 ENUM_STRING getLetterDeclension(int number);
 std::vector<IntVector> &sum(ThreadResultVector &v);
 std::string lowercase_utf8_regex(const std::string& pattern);
-
+bool breakMenu(const std::string &s);
 #ifndef NDEBUG
 void print_short_stack_trace(size_t max_lines = 4);
 #endif

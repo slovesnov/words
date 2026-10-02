@@ -278,7 +278,7 @@ Frame::Frame() : WordsBase() {
   // load menu
   i = 0;
   for (auto &s : readFile(getLanguageIndex(), "language")) {
-    if (subMenu.empty() && s.empty()) {
+    if (subMenu.empty() && breakMenu(s)) {
       break;
     }
 
@@ -1592,7 +1592,7 @@ void Frame::updateButton(ENUM_BUTTON e, int i) {
   }
   if (e == BUTTON_FOUND) {
     const ENUM_STRING m[] = {FOUND, NOT_FOUND};
-    assert(i < std::size(m));
+    assert(i < std::ssize(m));
     gtk_button_set_label(GTK_BUTTON(m_button[e]), string(m[i]).c_str());
     return;
   }
@@ -1607,7 +1607,7 @@ void Frame::updateButton(ENUM_BUTTON e, int i) {
                 {"en.gif", "ru.gif"},
                 {"en.gif", "ru.gif"},
                 {"ascending.png", "descending.png"}};
-  assert(i < int(v[e].size()));
+  assert(i < std::ssize(v[e]));
   s = v[e][i];
   gtk_button_set_image(GTK_BUTTON(m_button[e]), image(s));
 }

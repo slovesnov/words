@@ -1741,47 +1741,50 @@ void WordsBase::sortFilterResults(ENUM_JOB_TYPE e) {
 }
 
 void WordsBase::loadLanguages() {
-  std::string s;
-  int i, j, n;
-  bool b;
-  // const int START=1;
+  int i, n;
+  bool menu;
+  VString v, r;
+  const int START = 1;
 
   for (n = 0; n < LANGUAGES; n++) {
-    b = false;
-    i = j = 0;
-    auto &ml = m_languageAll[n];
-    auto v = readFile(n, "language");
-    for (auto const &e : v) {
-      if (b) {
-        if (j < SETTINGS_SIZE) {
-          m_settingsAll[n][j++] = utf8ToLocale(e);
-        } else {
-          ml[(j++) - SETTINGS_SIZE] = e;
+    menu = true;
+    v.clear();
+    i=0;
+    r=readFile(n, "language");
+    for (auto& s : r) {
+      if (menu && breakMenu(s)) {
+        menu = false;
+        /* use only first symbol. In Russian language separator is space, so
+         * ignore comment in language.txt file. Comment in ru/language.txt is
+         * important because otherwise it'll we empty string and looks like a
+         * bug
+         */
+        s = s.substr(0, 1);
+      }
+      if (menu) {
+        assert(!s.empty());
+        if (s == SEPARATOR || s[0] == '}') {
+          continue;
         }
-        continue;
+        if (s.back() == '{') {
+          s.pop_back();
+        }
+        assert(i < MENU_SIZE);
+        m_menuAll[n][i++] = s;
+      } else {
+        v.push_back(s);
       }
-      if (e.empty()) {
-        b = true;
-        continue;
-      }
-      if (e == SEPARATOR || e[0] == '}') {
-        continue;
-      }
-      s = e;
-      if (s.back() == '{') {
-        s.pop_back();
-      }
-      assert(i < MENU_SIZE);
-      m_menuAll[n][i] = s;
-      i++;
     }
     assert(i == MENU_SIZE);
-    assert(j - SETTINGS_SIZE == STRING_SIZE);
-    /* use only first symbol. In Russian language separator is space, so
-     * ignore comment in language.txt file. Comment in ru/language.txt is
-     * important because otherwise it'll we empty string and looks like a bug
-     */
-    ml[SEPARATOR_SYMBOL] = ml[SEPARATOR_SYMBOL].substr(0, 1);
+    assert(v.size() == int(SETTINGS_SIZE) + int(STRING_SIZE));
+
+    auto cut_start = v.begin() + START;
+    auto cut_end = cut_start + SETTINGS_SIZE;
+    std::move(cut_start, cut_end, m_settingsAll[n].begin());
+    v.erase(cut_start, cut_end);
+    std::move(v.begin(), v.end(), m_languageAll[n].begin());
+    for (auto &a : m_settingsAll[n])
+      a = utf8ToLocale(a);
   }
 }
 
