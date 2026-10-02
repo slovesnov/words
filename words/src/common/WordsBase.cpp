@@ -20,7 +20,6 @@
   }
 #endif
 
-std::vector<MapStringStringVector> eqmap;
 const LookupTable<ENUM_MENU, void (WordsBase::*)(int)> menu2VoidInt = {
     {MENU_ANAGRAM, &WordsBase::findAnagram}, // break implemented
     {MENU_SIMPLE_WORD_SEQUENCE,
@@ -1156,14 +1155,14 @@ void WordsBase::findLetterGroupSplit(int nthread) {
 
   auto begin = clock();
   const size_t size = m_ev.length();
-  eqmap.clear();
-  eqmap.resize(size);
+  m_eqmap.clear();
+  m_eqmap.resize(size);
 
   for (auto &s : getDictionary()) {
     j = s.length();
     if (j < size) {
       s1 = getOrderedString(s);
-      auto &m = eqmap[j];
+      auto &m = m_eqmap[j];
       auto it = m.find(s1);
       if (it == m.end()) {
         t = sub(charset, s1);
@@ -1176,6 +1175,15 @@ void WordsBase::findLetterGroupSplit(int nthread) {
     }
   }
 
+  i=0;
+  for (j = 0; j < size; j++) {
+    auto &m = m_eqmap[j];
+    i+=m.size();
+    if(m.size()){
+      pr(j,m.size());
+    }
+  }
+  pr(i)
   pr(timeElapse(begin));
 
   auto v = getAllPairs(charset);
@@ -1186,7 +1194,7 @@ void WordsBase::findLetterGroupSplit(int nthread) {
   }
 
   for (i = 1; i < size; i++) {
-    auto &m = eqmap[i];
+    auto &m = m_eqmap[i];
     for (auto &e : m) {
       t = sub(charset, e.first);
       if (t != invalidDifference) {
@@ -1959,7 +1967,7 @@ void WordsBase::run_thread(int nthread) {
     }
   }
 
-  // prsync(nthread, timeElapse(begin)); 
+  // prsync(nthread, timeElapse(begin));
 }
 
 void WordsBase::run(ENUM_JOB_TYPE e) {
@@ -2162,16 +2170,8 @@ std::string WordsBase::getOrderedString(std::string const &s) {
 
 // get list of dictionary words from ordered string
 std::string WordsBase::getUserString(std::string const &s) {
-  auto &a = eqmap[s.length()].find(s)->second;
-  bool f = true;
-  std::string o;
-  for (auto &e : a) {
-    if (!f) {
-      o += ' ';
-    }
-    o += e;
-    f = false;
-  }
+  auto &a = m_eqmap[s.length()].find(s)->second;
+  std::string o = joinV(a);
   if (a.size() != 1) {
     o = '{' + o + '}';
   }
@@ -2182,11 +2182,11 @@ StringStringVector WordsBase::getAllPairs(std::string const &s,
                                           std::string const &low) {
   StringStringVector v;
   for (size_t i = 1; i < s.size(); i++) {
-    for (auto &e : eqmap[i]) {
+    for (auto &e : m_eqmap[i]) {
       if (low == invalidDifference || low <= e.first) {
         auto a = sub(s, e.first);
         if (a != invalidDifference && e.first <= a) {
-          if (eqmap[a.length()].contains(a)) {
+          if (m_eqmap[a.length()].contains(a)) {
             v.push_back({getUserString(e.first), getUserString(a)});
           }
         }

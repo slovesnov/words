@@ -69,6 +69,8 @@ protected:
   VString m_chdv;
   std::vector<int> m_chd;
   std::vector<AnagramMap> m_anagrams;
+  //
+  std::vector<MapStringStringVector> m_eqmap;
 
   std::stop_token m_token;
 
@@ -177,8 +179,8 @@ public:
   static std::string sub(std::string const &minuend,
                          std::string const &subtrahend);
   static std::string getOrderedString(std::string const &s);
-  static std::string getUserString(std::string const &s);
-  static StringStringVector
+  std::string getUserString(std::string const &s);
+  StringStringVector
   getAllPairs(std::string const &s, std::string const &low = invalidDifference);
   static std::string pairsToString(StringStringVector const &v, bool p = 0);
 
