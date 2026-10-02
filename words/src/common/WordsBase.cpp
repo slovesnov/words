@@ -1959,7 +1959,7 @@ void WordsBase::run_thread(int nthread) {
     }
   }
 
-  // prsync(nthread, timeElapse(begin)); // todo
+  // prsync(nthread, timeElapse(begin)); 
 }
 
 void WordsBase::run(ENUM_JOB_TYPE e) {

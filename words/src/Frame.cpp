@@ -190,7 +190,7 @@ Frame::Frame() : WordsBase() {
   }
 
   m_searchTagLabel = gtk_label_new("");
-  gtk_widget_set_size_request(m_searchTagLabel, 60, -1); // up to 4 digits//todo
+  gtk_widget_set_size_request(m_searchTagLabel, 60, -1);
 
   m_buttonValue = {0, 0, 0, getDictionaryIndex(), getLanguageIndex(), 1, 0};
   i = -1;
@@ -456,6 +456,11 @@ void Frame::destroy() {
               m_font[1].get(), m_maximized, m_x, m_y, m_width, m_height);
   job(JOB_TYPE_STOP);
   gtk_main_quit();
+}
+
+void Frame::windowDeleteEvent() {
+  gtk_window_get_position(GTK_WINDOW(m_widget), &m_x, &m_y);
+  gtk_window_get_size(GTK_WINDOW(m_widget), &m_width, &m_height);
 }
 
 void Frame::aboutDialog() {
@@ -1439,12 +1444,9 @@ void Frame::job(ENUM_JOB_TYPE e) {
     return;
   }
 
-  // Если старый менеджер еще активен, мы сигнализируем ему остановиться
-  // и ОТСОЕДИНЯЕМ (detach), чтобы деструктор jthread НЕ блокировал UI-поток!
   if (m_managerThread.joinable()) {
     m_managerThread.request_stop();
-    m_managerThread
-        .detach(); // Теперь присваивание ниже НЕ вызовет .join() в UI
+    m_managerThread.detach();
   }
 
   m_managerThread = std::jthread([this, e](std::stop_token manager_token) {
@@ -1462,11 +1464,8 @@ void Frame::job(ENUM_JOB_TYPE e) {
       }
     }
 
-    // Обязательно проверяем токен менеджера ПОСЛЕ того, как дождались старый
-    // m_thread
     if (manager_token.stop_requested()) {
-      return; // Если прилетел новый job, просто выходим. Новый менеджер сделает
-              // остальное.
+      return;
     }
 
     if (e == JOB_TYPE_STOP) {
@@ -1482,18 +1481,12 @@ void Frame::job(ENUM_JOB_TYPE e) {
 
       run(e);
 
-      // Проверяем, не отменили ли нас пока работал run(e)
       if (token.stop_requested())
         return;
 
       g_idle_add_full(G_PRIORITY_HIGH, end_job, NULL, NULL);
     });
   });
-}
-
-void Frame::windowDeleteEvent() {
-  gtk_window_get_position(GTK_WINDOW(m_widget), &m_x, &m_y);
-  gtk_window_get_size(GTK_WINDOW(m_widget), &m_width, &m_height);
 }
 
 void Frame::addHelp(ENUM_STRING e) {
