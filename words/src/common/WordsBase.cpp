@@ -1772,8 +1772,6 @@ void WordsBase::loadLanguages() {
     }
     assert(i == MENU_SIZE);
     assert(v.size() - j == int(SETTINGS_SIZE) + int(STRING_SIZE));
-    pr(MENU_SIZE,SETTINGS_SIZE,STRING_SIZE);
-
     auto cut_start = v.begin() + j + START;
     auto cut_end = cut_start + SETTINGS_SIZE;
     std::move(cut_start, cut_end, m_settingsAll[n].begin());
