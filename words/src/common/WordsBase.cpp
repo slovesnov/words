@@ -1741,48 +1741,44 @@ void WordsBase::sortFilterResults(ENUM_JOB_TYPE e) {
 }
 
 void WordsBase::loadLanguages() {
-  int i, n;
-  bool menu;
-  VString v, r;
+  int i, j, n;
+  VString v;
   const int START = 1;
 
   for (n = 0; n < LANGUAGES; n++) {
-    menu = true;
-    v.clear();
-    i=0;
-    r=readFile(n, "language");
-    for (auto& s : r) {
-      if (menu && breakMenu(s)) {
-        menu = false;
+    i = 0;
+    j = -1;
+    v = readFile(n, "language");
+    for (auto &s : v) {
+      j++;
+      if (breakMenu(s)) {
         /* use only first symbol. In Russian language separator is space, so
          * ignore comment in language.txt file. Comment in ru/language.txt is
          * important because otherwise it'll we empty string and looks like a
          * bug
          */
         s = s.substr(0, 1);
+        break;
       }
-      if (menu) {
-        assert(!s.empty());
-        if (s == SEPARATOR || s[0] == '}') {
-          continue;
-        }
-        if (s.back() == '{') {
-          s.pop_back();
-        }
-        assert(i < MENU_SIZE);
-        m_menuAll[n][i++] = s;
-      } else {
-        v.push_back(s);
+      assert(!s.empty());
+      if (s == SEPARATOR || s[0] == '}') {
+        continue;
       }
+      if (s.back() == '{') {
+        s.pop_back();
+      }
+      assert(i < MENU_SIZE);
+      m_menuAll[n][i++] = s;
     }
     assert(i == MENU_SIZE);
-    assert(v.size() == int(SETTINGS_SIZE) + int(STRING_SIZE));
+    assert(v.size() - j == int(SETTINGS_SIZE) + int(STRING_SIZE));
+    pr(MENU_SIZE,SETTINGS_SIZE,STRING_SIZE);
 
-    auto cut_start = v.begin() + START;
+    auto cut_start = v.begin() + j + START;
     auto cut_end = cut_start + SETTINGS_SIZE;
     std::move(cut_start, cut_end, m_settingsAll[n].begin());
     v.erase(cut_start, cut_end);
-    std::move(v.begin(), v.end(), m_languageAll[n].begin());
+    std::move(v.begin() + j, v.end(), m_languageAll[n].begin());
     for (auto &a : m_settingsAll[n])
       a = utf8ToLocale(a);
   }
