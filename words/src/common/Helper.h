@@ -8,12 +8,13 @@
 #pragma once
 
 #include "aslov.h"
-#include "consts_base.h"
 #include "enums.h"
 #include <optional>
 #include <set>
 #include <unordered_map>
 
+//Note cann't move this constant to consts.h
+const int LANGUAGES = 2;
 
 using Dictionary = VString;
 using DictionaryCI = Dictionary::const_iterator;

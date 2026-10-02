@@ -179,3 +179,5 @@ save
 cancel
 You can make this panel narrower or wider if you wish; you can also select the font for the output area and controls in the <i>options</i> menu.
 language
+sorting and filtering of results
+filtering of results

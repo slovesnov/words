@@ -6,9 +6,13 @@
  */
 
 #pragma once
-#include "consts_base.h"
-#include "enums.h"
-
+#include "Helper.h"
+const std::string LANGUAGE[] = {"english", "russian"};
+/*can count LNG[], LNG2TXT using constexpr, but too ugly code */
+const std::string LNG[] = {"en", "ru"};
+const std::string LNG2TXT = "enru.txt";
+static_assert(std::size(LANGUAGE)==LANGUAGES);
+static_assert(std::size(LNG)==LANGUAGES);
 const std::string WORDS_VERSION = "5.0.0";
 const char MAIL[] = "slovesnov@yandex.ru";
 const std::string URL = "https://slovesnov.rf.gd/";
@@ -149,5 +153,6 @@ const LookupTable<ENUM_MENU, ComboData> FROM_TO_COMBO = {
                                           LENGTH, OF_SEQUENCE, CHARACTERS)}};
 const int UPDATEONLY_BUTTON=-1;
 const int INVERT_BUTTON=-2;
-
+constexpr int STATE_BITS  = std::bit_width(static_cast<unsigned>(STATE_SIZE));
+constexpr int STATE_MASK  = (1 << STATE_BITS) - 1;
 #endif /*#ifndef NOGTK*/

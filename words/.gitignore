@@ -1,6 +1,4 @@
-/words.cfg
 /Release/
 /Output/
-/log.txt
 *.exe
 *.o

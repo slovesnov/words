@@ -4,67 +4,24 @@ SHELL := /bin/bash
 # make -j$(nproc) CONFIG=console RUN=1
 # make clean
 # options CONFIG=release|debug|console RUN=1 CLEAR=1
+#        $(error >>> RELEASE. CONFIG="$(CONFIG)" <<<)
 
-# ==============================================================================
-# CASE-INSENSITIVE ARGUMENTS NORMALIZATION (CONFIG, RUN, and CLEAR)
-# ==============================================================================
-lowercase = a b c d e f g h i j k l m n o p q r s t u v w x y z
-uppercase = A B C D E F G H I J K L M N O P Q R S T U V W X Y Z
+get_low_val = $(strip $(shell \
+  match=$$(echo "$(MAKEOVERRIDES)" | grep -Ei '\b$1=' | head -n 1 | sed -E 's/.*$1=([^ ]*).*/\1/I'); \
+  [ -z "$$match" ] && match=$$(env | grep -Ei '^$1=' | head -n 1 | cut -d= -f2); \
+  echo "$${match,,}"))
 
-define to_lower
-$(strip $(eval __val := $1)\
-  $(foreach c,$(join $(uppercase),$(addprefix _,$(lowercase))),\
-    $(eval __val := $(subst $(word 1,$(subst _, ,$c)),$(word 2,$(subst _, ,$c)),$(__val))))\
-  $(__val))
-endef
-
-# 1. Normalize CONFIG / config
-ifdef config
-    USER_CONFIG := $(config)
-else
-    USER_CONFIG := $(CONFIG)
-endif
-
-# Safe fallback definition check
-USER_CONFIG ?= release
-ifeq ($(strip $(USER_CONFIG)),)
-    USER_CONFIG := release
-endif
-
-CONFIG := $(call to_lower,$(USER_CONFIG))
-
-# Direct validation patch: force release if string evaluation ends up blank
+CONFIG := $(call get_low_val,config)
 ifeq ($(CONFIG),)
     CONFIG := release
 endif
 
-# 2. Normalize RUN / run
-ifdef run
-    USER_RUN := $(run)
-else
-    USER_RUN := $(RUN)
-endif
-RUN := $(call to_lower,$(USER_RUN))
+RUN := $(call get_low_val,run)
 
-# 3. Normalize CLEAR / clear
-ifdef clear
-    USER_CLEAR := $(clear)
-else
-    USER_CLEAR := $(CLEAR)
-endif
-CLEAR := $(call to_lower,$(USER_CLEAR))
-# ==============================================================================
-# END OF ARGUMENTS NORMALIZATION
-# ==============================================================================
+CLEAR := $(call get_low_val,clear)
 
 # 1. Screen clearing setup
-ifdef MSYSTEM
-    WIPE_CMD := clear
-else ifdef OS
-    WIPE_CMD := cmd /c cls
-else
-    WIPE_CMD := clear
-endif
+WIPE_CMD := clear
 
 # 2. Compiler and flags settings
 TARGET   := words

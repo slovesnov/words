@@ -6,19 +6,18 @@
  */
 
 #ifdef NOGTK
-	#include "common/WordsBase.h"
+#include "common/WordsBase.h"
 #else
 #include "Frame.h"
-#include "aslov.h"
 #endif
 
 int main(int argc, char **argv) {
 #ifdef NOGTK
-	WordsBase w;
+  WordsBase w;
 #else
-	gtk_init(&argc, &argv);
-	aslovInit(argv);
-	Frame frame;
-	gtk_main();
+  gtk_init(&argc, &argv);
+  aslovInit(argv);
+  Frame frame;
+  gtk_main();
 #endif
 }

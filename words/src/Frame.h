@@ -9,7 +9,6 @@
 
 #include "CheckNewVersion.h"
 #include "common/WordsBase.h"
-#include "common/consts.h"
 
 class Frame : WordsBase {
   static const int COMBOLINE_MARGIN = 3;
@@ -153,7 +152,7 @@ public:
     gtk_label_set_text(GTK_LABEL(w), s.c_str());
   }
   std::string getProgramVersionString() const;
-  void updateStatus(ENUM_STATE state);
+  void updateStatus(ENUM_STATE state,ENUM_JOB_TYPE jobType=JOB_TYPE_SIZE);
   StartStopButtonState getStartStopState() const;
 
   // begin combobox functions
@@ -270,7 +269,8 @@ public:
   int getSelectedRadioIndex();
 
   // button functions
-  void clickButton(GtkWidget *button);
+  void clickButton(ENUM_BUTTON e);
+  void clickButton(GtkWidget*w);
   void updateButton(ENUM_BUTTON e, int i = UPDATEONLY_BUTTON);
 
   //sort list functions

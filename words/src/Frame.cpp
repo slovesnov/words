@@ -92,13 +92,24 @@ gboolean on_window_delete_event(GtkWidget *widget, GdkEvent *event,
   return FALSE;
 }
 
+gboolean on_key_press(GtkWidget *widget, GdkEventKey *event,
+                      gpointer user_data) {
+  if (event->keyval == GDK_KEY_F3) {
+    frame->clickButton(event->state & GDK_SHIFT_MASK ? BUTTON_PREVIOUS
+                                                     : BUTTON_NEXT);
+  }
+  return FALSE;
+}
 gboolean on_debounce_timeout(gpointer data) {
   frame->debounceTimeout(ENUM_ENTRY(GPOINTER_TO_INT(data)));
   return G_SOURCE_REMOVE;
 }
 
 gboolean update_status(gpointer data) {
-  frame->updateStatus(ENUM_STATE(GPOINTER_TO_INT(data)));
+  int packed = GPOINTER_TO_INT(data);
+  ENUM_STATE state = static_cast<ENUM_STATE>(packed & STATE_MASK);
+  ENUM_JOB_TYPE job = static_cast<ENUM_JOB_TYPE>(packed >> STATE_BITS);
+  frame->updateStatus(state, job);
   return G_SOURCE_REMOVE;
 }
 
@@ -166,10 +177,10 @@ Frame::Frame() : WordsBase() {
 
   m_sortbutton = gtk_menu_button_new();
   gtk_menu_button_set_direction(GTK_MENU_BUTTON(m_sortbutton), GTK_ARROW_UP);
-  GtkWidget *popover = gtk_popover_new(m_sortbutton);
-  gtk_menu_button_set_popover(GTK_MENU_BUTTON(m_sortbutton), popover);
+  w = gtk_popover_new(m_sortbutton);
+  gtk_menu_button_set_popover(GTK_MENU_BUTTON(m_sortbutton), w);
   m_sortlist = gtk_list_box_new();
-  gtk_container_add(GTK_CONTAINER(popover), m_sortlist);
+  gtk_container_add(GTK_CONTAINER(w), m_sortlist);
   g_signal_connect(G_OBJECT(m_sortlist), "row-activated",
                    G_CALLBACK(on_row_activated), NULL);
   m_sortlistValue = 1; // fill on update language
@@ -179,7 +190,7 @@ Frame::Frame() : WordsBase() {
   }
 
   m_searchTagLabel = gtk_label_new("");
-  gtk_widget_set_size_request(m_searchTagLabel, 40, -1);
+  gtk_widget_set_size_request(m_searchTagLabel, 60, -1); // up to 4 digits//todo
 
   m_buttonValue = {0, 0, 0, getDictionaryIndex(), getLanguageIndex(), 1, 0};
   i = -1;
@@ -188,6 +199,9 @@ Frame::Frame() : WordsBase() {
     a = gtk_button_new();
     updateButton(ENUM_BUTTON(i));
   }
+
+  gtk_widget_set_tooltip_text(m_button[BUTTON_NEXT], "F3");
+  gtk_widget_set_tooltip_text(m_button[BUTTON_PREVIOUS], "Shift+F3");
 
   for (i = 0; i < LABELBUTTON_SIZE; i++) {
     w = m_labelButton[i] = gtk_label_new("");
@@ -221,8 +235,8 @@ Frame::Frame() : WordsBase() {
             m_labelButtonBox[LABELBUTTON_LANGUAGE], false,
             m_button[BUTTON_LANGUAGE], false);
   createRow(m_sortbutton, true, m_button[BUTTON_SORT_ORDER], false);
-  createRow(m_entry[ENTRY_SEARCH], true, m_searchTagLabel, false,
-            m_button[BUTTON_NEXT], false, m_button[BUTTON_PREVIOUS], false);
+  createRow(m_entry[ENTRY_SEARCH], true, m_button[BUTTON_NEXT], false,
+            m_button[BUTTON_PREVIOUS], false, m_searchTagLabel, false);
   createRow(m_entry[ENTRY_FILTER], true, m_button[BUTTON_FOUND], false);
 
   m_panedWidget = w1 = gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
@@ -337,6 +351,7 @@ Frame::Frame() : WordsBase() {
   g_signal_connect(m_widget, "delete-event", G_CALLBACK(on_window_delete_event),
                    NULL);
   g_signal_connect(m_widget, "destroy", G_CALLBACK(destroy_window), NULL);
+  g_signal_connect(m_widget, "key-press-event", G_CALLBACK(on_key_press), NULL);
 
   if (m_maximized) {
     gtk_window_maximize(GTK_WINDOW(m_widget));
@@ -1064,7 +1079,7 @@ std::string Frame::getProgramVersionString() const {
   return string(PROGRAM, VERSION) + " " + WORDS_VERSION;
 }
 
-void Frame::updateStatus(ENUM_STATE state) {
+void Frame::updateStatus(ENUM_STATE state, ENUM_JOB_TYPE jobType) {
   // prsync(magic_enum::enum_name(state));
   m_state = state;
   bool b = true;
@@ -1085,8 +1100,22 @@ void Frame::updateStatus(ENUM_STATE state) {
     break;
 
   case STATE_PROCEEDING:
-    m_out = oneOf(m_menuClick, MENU_WAITING) ? string(WAITING)
-                                             : string(MENU_SEARCH);
+    switch (jobType) {
+    case JOB_TYPE_FULL:
+      m_out = oneOf(m_menuClick, MENU_WAITING) ? string(WAITING)
+                                               : string(MENU_SEARCH);
+      break;
+    case JOB_TYPE_SORT_AND_FILTER:
+      m_out = string(SORTING_AND_FILTERING_OF_RESULTS);
+      break;
+    case JOB_TYPE_FILTER:
+      m_out = string(FILTERING_OF_RESULTS);
+      break;
+    case JOB_TYPE_STOP:
+    case JOB_TYPE_SIZE:
+      assert(0);
+      break;
+    }
     break;
 
   case STATE_ERROR:
@@ -1095,6 +1124,10 @@ void Frame::updateStatus(ENUM_STATE state) {
 
   case STATE_USER_BREAK:
     m_out = string(OPERATION_CANCELED_BY_USER);
+    break;
+
+  case STATE_SIZE:
+    assert(0);
     break;
   }
 
@@ -1416,8 +1449,10 @@ void Frame::job(ENUM_JOB_TYPE e) {
 
   m_managerThread = std::jthread([this, e](std::stop_token manager_token) {
     if (e != JOB_TYPE_STOP) {
-      g_idle_add_full(G_PRIORITY_HIGH, update_status,
-                      GINT_TO_POINTER(STATE_PROCEEDING), NULL);
+      int packed = (static_cast<int>(e) << STATE_BITS) |
+                   static_cast<int>(STATE_PROCEEDING);
+      g_idle_add_full(G_PRIORITY_HIGH, update_status, GINT_TO_POINTER(packed),
+                      NULL);
     }
     if (m_thread.joinable()) {
       m_thread.request_stop();
@@ -1441,9 +1476,6 @@ void Frame::job(ENUM_JOB_TYPE e) {
 
     m_thread = std::jthread([this, e](std::stop_token token) {
       m_token = token;
-
-      // g_idle_add_full(G_PRIORITY_HIGH, update_status,
-      //                 GINT_TO_POINTER(STATE_PROCEEDING), NULL);
 
       if (token.stop_requested())
         return;
@@ -1514,10 +1546,8 @@ int Frame::getSelectedRadioIndex() {
   return -1; // Fallback if none are selected
 }
 
-void Frame::clickButton(GtkWidget *button) {
+void Frame::clickButton(ENUM_BUTTON e) {
   int i;
-  ENUM_BUTTON e = ENUM_BUTTON(indexOf(button, m_button));
-
   if (oneOf(e, BUTTON_NEXT, BUTTON_PREVIOUS)) {
     if (m_tags < 2) {
       return;
@@ -1543,6 +1573,11 @@ void Frame::clickButton(GtkWidget *button) {
       job(e == BUTTON_SORT_ORDER ? JOB_TYPE_SORT_AND_FILTER : JOB_TYPE_FILTER);
     }
   }
+}
+
+void Frame::clickButton(GtkWidget *w) {
+  ENUM_BUTTON e = ENUM_BUTTON(indexOf(w, m_button));
+  clickButton(e);
 }
 
 void Frame::updateButton(ENUM_BUTTON e, int i) {
@@ -1579,8 +1614,7 @@ void Frame::updateButton(ENUM_BUTTON e, int i) {
 
 void Frame::labelClicked(GtkWidget *box) {
   int i = indexOf(box, m_labelButtonBox);
-  clickButton(m_button[i == LABELBUTTON_DICTIONRY ? BUTTON_DICTIONARY
-                                                  : BUTTON_LANGUAGE]);
+  clickButton(i == LABELBUTTON_DICTIONRY ? BUTTON_DICTIONARY : BUTTON_LANGUAGE);
 }
 
 void Frame::refillSort() {
@@ -1616,7 +1650,7 @@ void Frame::rowActivated(GtkListBoxRow *row) {
   job(JOB_TYPE_SORT_AND_FILTER);
 }
 
-void Frame::setRowSensitive(bool sensitive){
+void Frame::setRowSensitive(bool sensitive) {
   GtkListBoxRow *row =
       gtk_list_box_get_row_at_index(GTK_LIST_BOX(m_sortlist), m_sortlistValue);
   gtk_widget_set_sensitive(GTK_WIDGET(row), sensitive);

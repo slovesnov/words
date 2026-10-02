@@ -6,7 +6,6 @@
  */
 
 #include "WordsBase.h"
-#include "consts.h"
 #include <execution>
 #include <format>
 #include <magic_enum.hpp>
@@ -1364,9 +1363,9 @@ void WordsBase::wordFrequencyPostProseeding() {
       v[1].push_back({m[i], i + 1});
     }
   }
-  std::sort(std::execution::par, v[0].begin(), v[0].end(),
+  std::sort(v[0].begin(), v[0].end(),
             [](auto &a, auto &b) { return a.first > b.first; });
-  std::sort(std::execution::par, v[1].begin(), v[1].end(),
+  std::sort(v[1].begin(), v[1].end(),
             [](auto &a, auto &b) { return a.second < b.second; });
 
   size_t w = toString(v[0][0].first, ',').size(); // max len
@@ -1699,14 +1698,14 @@ void WordsBase::sortFilterResults(ENUM_JOB_TYPE e) {
     return;
   }
   SearchResult::out = "";
-  // auto begin = clock();
+  auto begin = clock();
   if (e != JOB_TYPE_FILTER) {
-    // mtsort
+    // mtsort slowdown
     std::sort(
-        std::execution::par, m_result.begin(), m_result.end(),
+        m_result.begin(), m_result.end(),
         SORT_FUNCTION[m_sortlistValue * 2 + m_buttonValue[BUTTON_SORT_ORDER]]);
   }
-  // auto te = timeElapse(begin);
+  auto te = timeElapse(begin);
   for (auto const &e : m_result) {
     s = fastLocaleToUtf8(e.s);
 #ifndef NOGTK
@@ -1738,7 +1737,7 @@ void WordsBase::sortFilterResults(ENUM_JOB_TYPE e) {
     SearchResult::out += ")";
     RETURN_ON_USER_BREAK
   }
-  // prsync("sort", te, timeElapse(begin)); // todo
+  prsync("sort", te, timeElapse(begin)); // todo
 }
 
 void WordsBase::loadLanguages() {
