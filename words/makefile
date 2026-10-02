@@ -3,8 +3,7 @@ SHELL := /bin/bash
 # make -j $(nproc) RUN=1
 # make -j$(nproc) CONFIG=console RUN=1
 # make clean
-# options CONFIG=release|debug|console RUN=1 CLEAR=1
-#        $(error >>> RELEASE. CONFIG="$(CONFIG)" <<<)
+# options CONFIG=release|debug|console|finalrelease RUN=1 CLEAR=1
 
 get_low_val = $(strip $(shell \
   match=$$(echo "$(MAKEOVERRIDES)" | grep -Ei '\b$1=' | head -n 1 | sed -E 's/.*$1=([^ ]*).*/\1/I'); \
@@ -17,7 +16,6 @@ ifeq ($(CONFIG),)
 endif
 
 RUN := $(call get_low_val,run)
-
 CLEAR := $(call get_low_val,clear)
 
 # 1. Screen clearing setup
@@ -30,8 +28,8 @@ CXX      := g++
 CXXFLAGS := -Wall -std=c++23 -Isrc/common -I$(ASLOV)
 SRCS     := src/main.cpp $(wildcard src/*/*.cpp) $(ASLOV)/aslov.cpp
 
-# GTK dependencies are included for both release and debug configurations
-ifneq ($(filter release debug,$(CONFIG)),)
+# GTK dependencies are included for release, debug, AND finalrelease configurations
+ifneq ($(filter release debug finalrelease,$(CONFIG)),)
     CXXFLAGS   += $(shell pkg-config --cflags gtk+-3.0)
     LIBS       := $(shell pkg-config --libs gtk+-3.0) -lcurl -lpcre2-8
     SRCS       += $(ASLOV)/CheckNewVersion.cpp src/Frame.cpp
@@ -42,6 +40,9 @@ endif
 ifneq ($(filter clean,$(MAKECMDGOALS)),clean)
     ifeq ($(CONFIG), release)
         CXXFLAGS   += -O3 -DNDEBUG
+    else ifeq ($(CONFIG), finalrelease)
+        CXXFLAGS   += -O3 -DNDEBUG
+        LDFLAGS    += -mwindows
     else ifeq ($(CONFIG), debug)
         # Debug mode with full stack trace capability and disabled optimizations
         CXXFLAGS   += -g -O0
@@ -52,7 +53,7 @@ ifneq ($(filter clean,$(MAKECMDGOALS)),clean)
         SRCS       += $(CGI)/cgi.cpp
         LDFLAGS    := -liconv
     else
-        $(error Invalid CONFIG="$(USER_CONFIG)". Valid options are 'release', 'debug' or 'console')
+        $(error Invalid CONFIG="$(CONFIG)". Valid options are 'release', 'finalrelease', 'debug' or 'console')
     endif
 endif
 

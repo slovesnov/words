@@ -1744,6 +1744,8 @@ void WordsBase::loadLanguages() {
   std::string s;
   int i, j, n;
   bool b;
+  // const int START=1;
+
   for (n = 0; n < LANGUAGES; n++) {
     b = false;
     i = j = 0;
