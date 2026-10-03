@@ -7,6 +7,7 @@
 
 #pragma once
 
+#define ASLOV_SHORT_LOGGING
 #include "aslov.h"
 #include "enums.h"
 #include <optional>
@@ -32,7 +33,6 @@ using StringString = std::pair<std::string, std::string>;
 using IntVector = std::vector<int>;
 using StringIntVector = std::vector<StringInt>;
 using StringIntVectorCI = StringIntVector::const_iterator;
-using StringVectorPtr = VString *;
 using IntIntVector = std::vector<IntInt>;
 using IntIntVectorCI = IntIntVector::const_iterator;
 using StringStringVector = std::vector<StringString>;
