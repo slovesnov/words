@@ -1153,15 +1153,15 @@ StringStringVector WordsBase::getAllPairs(std::string const &s,
   StringStringVector v;
   for (size_t i = 1; i < s.size(); i++) {
     for (auto &e : m_eqmap[i]) {
-    if (low == INVALID_DIFFERENCE || low <= e.first) {
-      auto a = sub(s, e.first);
-      if (a != INVALID_DIFFERENCE && e.first <= a) {
+      if (low == INVALID_DIFFERENCE || low <= e.first) {
+        auto a = sub(s, e.first);
+        if (a != INVALID_DIFFERENCE && e.first <= a) {
           if (m_eqmap[a.length()].contains(a)) {
-          v.push_back({m_eqmap.get(e.first), m_eqmap.get(a)});
+            v.push_back({m_eqmap.get(e.first), m_eqmap.get(a)});
+          }
         }
       }
     }
-  }
   }
   return v;
 }
@@ -1185,7 +1185,7 @@ void WordsBase::findLetterGroupSplit(int nthread) {
       if (it == m.end()) {
         t = sub(charset, s1);
         if (t != INVALID_DIFFERENCE) {
-          m.insert({s1, {t,{s}}});
+          m.insert({s1, {t, {s}}});
         }
       } else {
         it->second.add(s);
@@ -1213,17 +1213,17 @@ void WordsBase::findLetterGroupSplit(int nthread) {
 
   for (i = 1; i < size; i++) {
     auto &m = m_eqmap[i];
-  for (auto &e : m) {
-    t = sub(charset, e.first);
-    if (t != INVALID_DIFFERENCE) {
-      auto v = getAllPairs(t, e.first);
-      if (!v.empty()) {
-        n[1]++;
-        SearchResult::out += localeToUtf8(m_eqmap.get(e.first) + " " +
-                                          pairsToString(v, v.size() != 1));
+    for (auto &e : m) {
+      t = sub(charset, e.first);
+      if (t != INVALID_DIFFERENCE) {
+        auto v = getAllPairs(t, e.first);
+        if (!v.empty()) {
+          n[1]++;
+          SearchResult::out += localeToUtf8(m_eqmap.get(e.first) + " " +
+                                            pairsToString(v, v.size() != 1));
+        }
       }
     }
-  }
   }
   if (SearchResult::out.empty()) {
     SearchResult::out = string(SPLITS_NOT_FOUND);

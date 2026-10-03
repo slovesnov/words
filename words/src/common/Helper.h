@@ -176,9 +176,8 @@ public:
 };
 
 using EqMap = std::map<std::string, LetterGroupSplitItem>;
-using VEqMap = std::vector<EqMap>;
 
-class LetterGroupSplitMap : public VEqMap {
+class LetterGroupSplitMap : public std::vector<EqMap> {
 public:
   std::string get(std::string const &s) const {
     auto &a = (*this)[s.length()].find(s)->second;
