@@ -14,8 +14,9 @@
 #include <set>
 #include <unordered_map>
 
-// Note cann't move this constant to consts.h
+// Note cann't move this constants to consts.h
 const int LANGUAGES = 2;
+const std::string INVALID_DIFFERENCE = "$";
 
 using Dictionary = VString;
 using DictionaryCI = Dictionary::const_iterator;
@@ -182,5 +183,23 @@ public:
   std::string get(std::string const &s) const {
     auto &a = (*this)[s.length()].find(s)->second;
     return a.string();
+ 
+  }
+  StringStringVector allPairs(std::string const &s,
+                                 std::string const &low = INVALID_DIFFERENCE) const{
+    StringStringVector v;
+    for (size_t i = 1; i < s.size(); i++) {
+      for (auto &e : (*this)[i]) {
+        if (low == INVALID_DIFFERENCE || low <= e.first) {
+          auto a = sub(s, e.first);
+          if (a != INVALID_DIFFERENCE && e.first <= a) {
+            if ((*this)[a.length()].contains(a)) {
+              v.push_back({get(e.first), get(a)});
+            }
+          }
+        }
+      }
+    }
+    return v;
   }
 };

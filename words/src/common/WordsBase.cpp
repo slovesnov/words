@@ -1148,24 +1148,6 @@ l210:
   // pr(timeElapse(begin))
 }
 
-StringStringVector WordsBase::getAllPairs(std::string const &s,
-                                          std::string const &low) {
-  StringStringVector v;
-  for (size_t i = 1; i < s.size(); i++) {
-    for (auto &e : m_eqmap[i]) {
-      if (low == INVALID_DIFFERENCE || low <= e.first) {
-        auto a = sub(s, e.first);
-        if (a != INVALID_DIFFERENCE && e.first <= a) {
-          if (m_eqmap[a.length()].contains(a)) {
-            v.push_back({m_eqmap.get(e.first), m_eqmap.get(a)});
-          }
-        }
-      }
-    }
-  }
-  return v;
-}
-
 void WordsBase::findLetterGroupSplit(int nthread) {
   std::string s, s1, t, lng;
   size_t i, j;
@@ -1204,7 +1186,7 @@ void WordsBase::findLetterGroupSplit(int nthread) {
   pr(i);
   pr(timeElapse(begin));
 
-  auto v = getAllPairs(charset);
+  auto v = m_eqmap.allPairs(charset);
   size_t n[] = {v.size(), 0};
 
   if (!v.empty()) {
@@ -1216,7 +1198,7 @@ void WordsBase::findLetterGroupSplit(int nthread) {
     for (auto &e : m) {
       t = sub(charset, e.first);
       if (t != INVALID_DIFFERENCE) {
-        auto v = getAllPairs(t, e.first);
+        auto v = m_eqmap.allPairs(t, e.first);
         if (!v.empty()) {
           n[1]++;
           SearchResult::out += localeToUtf8(m_eqmap.get(e.first) + " " +

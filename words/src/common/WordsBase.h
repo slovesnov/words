@@ -23,7 +23,6 @@ using UniquePcre2MatchData =
     UniqueGtkResource<pcre2_match_data, pcre2_match_data_free>;
 
 const char SEPARATOR[] = "SEPARATOR";
-const std::string INVALID_DIFFERENCE = "$";
 
 class WordsBase;
 extern WordsBase *wordsBase;
@@ -176,8 +175,6 @@ public:
 
   void loadLanguages();
 
-  StringStringVector
-  getAllPairs(std::string const &s, std::string const &low = INVALID_DIFFERENCE);
   static std::string pairsToString(StringStringVector const &v, bool p = 0);
 
   bool createRegex(ENUM_ENTRY e);

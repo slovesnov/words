@@ -11,8 +11,8 @@ const std::string LANGUAGE[] = {"english", "russian"};
 /*can count LNG[], LNG2TXT using constexpr, but too ugly code */
 const std::string LNG[] = {"en", "ru"};
 const std::string LNG2TXT = "enru.txt";
-static_assert(std::size(LANGUAGE)==LANGUAGES);
-static_assert(std::size(LNG)==LANGUAGES);
+static_assert(std::size(LANGUAGE) == LANGUAGES);
+static_assert(std::size(LNG) == LANGUAGES);
 const std::string WORDS_VERSION = "5.0.0";
 const char MAIL[] = "slovesnov@yandex.ru";
 const std::string URL = "https://slovesnov.rf.gd/";
@@ -26,6 +26,7 @@ const std::string OPEN_S = std::string(" ") + OPEN_BRACKET;
 const int KEYBOARD_ROWS = 3;
 const int NUMBER_OF_SORTS =
     SORT_BY_DIFFERENT_NUMBER_OF_CHARACTERS - SORT_BY_ALPHABET + 1;
+
 #ifdef NOGTK
 // should match with ENUM_POST
 const std::string POST_NAME[] = {
@@ -151,8 +152,8 @@ const LookupTable<ENUM_MENU, ComboData> FROM_TO_COMBO = {
                                           LENGTH, OF_SEQUENCE, CHARACTERS)},
     {MENU_DOUBLE_WORD_SEQUENCE, ComboData(2, MAX_DOUBLE_WORD_SEQUENCE_LENGTH, 2,
                                           LENGTH, OF_SEQUENCE, CHARACTERS)}};
-const int UPDATEONLY_BUTTON=-1;
-const int INVERT_BUTTON=-2;
-constexpr int STATE_BITS  = std::bit_width(static_cast<unsigned>(STATE_SIZE));
-constexpr int STATE_MASK  = (1 << STATE_BITS) - 1;
+const int UPDATEONLY_BUTTON = -1;
+const int INVERT_BUTTON = -2;
+constexpr int STATE_BITS = std::bit_width(static_cast<unsigned>(STATE_SIZE));
+constexpr int STATE_MASK = (1 << STATE_BITS) - 1;
 #endif /*#ifndef NOGTK*/
