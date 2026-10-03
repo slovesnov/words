@@ -1148,6 +1148,30 @@ l210:
   // pr(timeElapse(begin))
 }
 
+// get list of dictionary words from ordered string
+// std::string WordsBase::getUserString(std::string const &s) {
+//   auto &a = m_eqmap[s.length()].find(s)->second;
+//   return a.string();
+// }
+
+StringStringVector WordsBase::getAllPairs(std::string const &s,
+                                          std::string const &low) {
+  StringStringVector v;
+  for (size_t i = 1; i < s.size(); i++) {
+    for (auto &e : m_eqmap[i]) {
+      if (low == INVALID_DIFFERENCE || low <= e.first) {
+        auto a = sub(s, e.first);
+        if (a != INVALID_DIFFERENCE && e.first <= a) {
+          if (m_eqmap[a.length()].contains(a)) {
+            v.push_back({m_eqmap.get(e.first), m_eqmap.get(a)});
+          }
+        }
+      }
+    }
+  }
+  return v;
+}
+
 void WordsBase::findLetterGroupSplit(int nthread) {
   std::string s, s1, t, lng;
   size_t i, j;
@@ -1166,27 +1190,25 @@ void WordsBase::findLetterGroupSplit(int nthread) {
       auto it = m.find(s1);
       if (it == m.end()) {
         t = sub(charset, s1);
-        if (t != invalidDifference) {
-          m.insert({s1, {s}});
+        if (t != INVALID_DIFFERENCE) {
+          m.insert({s1, {t,{s}}});
         }
       } else {
-        it->second.push_back(s);
+        it->second.add(s);
       }
     }
   }
 
-  clearlog();
-  printlogi 
   i = 0;
   for (j = 0; j < size; j++) {
     auto &m = m_eqmap[j];
     if (m.size()) {
       i += m.size();
       pr(j, m.size());
-      printlog(j, m.size())
     }
   }
-  pr(i) pr(timeElapse(begin));
+  pr(i);
+  pr(timeElapse(begin));
 
   auto v = getAllPairs(charset);
   size_t n[] = {v.size(), 0};
@@ -1199,11 +1221,11 @@ void WordsBase::findLetterGroupSplit(int nthread) {
     auto &m = m_eqmap[i];
     for (auto &e : m) {
       t = sub(charset, e.first);
-      if (t != invalidDifference) {
+      if (t != INVALID_DIFFERENCE) {
         auto v = getAllPairs(t, e.first);
         if (!v.empty()) {
           n[1]++;
-          SearchResult::out += localeToUtf8(getUserString(e.first) + " " +
+          SearchResult::out += localeToUtf8(m_eqmap.get(e.first) + " " +
                                             pairsToString(v, v.size() != 1));
         }
       }
@@ -2136,67 +2158,6 @@ void WordsBase::cgi() {
 }
 
 #endif
-
-std::string WordsBase::sub(std::string const &minuend,
-                           std::string const &subtrahend) {
-  if (minuend.length() < subtrahend.length()) {
-    return invalidDifference;
-  }
-  if (minuend.length() == subtrahend.length()) {
-    return minuend == subtrahend ? "" : invalidDifference;
-  }
-
-  std::string difference;
-  auto p1 = minuend.c_str();
-  auto p = subtrahend.c_str();
-  for (; *p1; p1++) {
-    if (*p1 == *p) {
-      p++;
-      if (!*p) {
-        return difference + (p1 + 1);
-      }
-    } else if (*p1 < *p) {
-      difference += *p1;
-    } else {
-      return invalidDifference;
-    }
-  }
-  return invalidDifference;
-}
-
-std::string WordsBase::getOrderedString(std::string const &s) {
-  auto o = s;
-  std::sort(o.begin(), o.end());
-  return o;
-}
-
-// get list of dictionary words from ordered string
-std::string WordsBase::getUserString(std::string const &s) {
-  auto &a = m_eqmap[s.length()].find(s)->second;
-  std::string o = joinV(a);
-  if (a.size() != 1) {
-    o = '{' + o + '}';
-  }
-  return o;
-}
-
-StringStringVector WordsBase::getAllPairs(std::string const &s,
-                                          std::string const &low) {
-  StringStringVector v;
-  for (size_t i = 1; i < s.size(); i++) {
-    for (auto &e : m_eqmap[i]) {
-      if (low == invalidDifference || low <= e.first) {
-        auto a = sub(s, e.first);
-        if (a != invalidDifference && e.first <= a) {
-          if (m_eqmap[a.length()].contains(a)) {
-            v.push_back({getUserString(e.first), getUserString(a)});
-          }
-        }
-      }
-    }
-  }
-  return v;
-}
 
 // output all pairs to string
 std::string WordsBase::pairsToString(StringStringVector const &v, bool p) {

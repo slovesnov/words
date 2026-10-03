@@ -226,3 +226,88 @@ void print_short_stack_trace(size_t max_lines) {
   pr(s);
 }
 #endif
+std::string sub_my(std::string const &minuend,
+                           std::string const &subtrahend) {
+  if (minuend.length() < subtrahend.length()) {
+    return INVALID_DIFFERENCE;
+  }
+  if (minuend.length() == subtrahend.length()) {
+    return minuend == subtrahend ? "" : INVALID_DIFFERENCE;
+  }
+
+  std::string difference;
+  auto p1 = minuend.c_str();
+  auto p = subtrahend.c_str();
+  for (; *p1; p1++) {
+    if (*p1 == *p) {
+      p++;
+      if (!*p) {
+        return difference + (p1 + 1);
+      }
+    } else if (*p1 < *p) {
+      difference += *p1;
+    } else {
+      return INVALID_DIFFERENCE;
+    }
+  }
+  return INVALID_DIFFERENCE;
+}
+
+
+std::string sub_co(std::string const &minuend, std::string const &subtrahend) {
+    if (minuend.length() < subtrahend.length()) {
+        return INVALID_DIFFERENCE;
+    }
+
+    std::string difference;
+    difference.reserve(minuend.length()); // Выделяем память с запасом
+
+    size_t i = 0; // Указатель для minuend
+    size_t j = 0; // Указатель для subtrahend
+
+    while (i < minuend.length() && j < subtrahend.length()) {
+        if (minuend[i] == subtrahend[j]) {
+            // Символы совпали — мы "вычитаем" его (просто пропускаем и не добавляем в результат)
+            i++;
+            j++;
+        } else if (minuend[i] < subtrahend[j]) {
+            // Текущий символ minuend меньше, значит в subtrahend его уже точно не будет 
+            // (так как обе строки отсортированы). Сохраняем его в результат.
+            difference += minuend[i];
+            i++;
+        } else {
+            // Текущий символ minuend больше, чем в subtrahend. 
+            // Из-за сортировки это означает, что нужный символ из subtrahend был пропущен.
+            return INVALID_DIFFERENCE;
+        }
+    }
+
+    // Если мы успешно обошли весь subtrahend, но в minuend еще остались символы,
+    // просто переносим их остаток в результат.
+    if (j == subtrahend.length()) {
+        difference.append(minuend.substr(i));
+        return difference;
+    }
+
+    // Если subtrahend не закончился, значит не все его символы были найдены
+    return INVALID_DIFFERENCE;
+}
+
+std::string sub(std::string const &minuend,
+                           std::string const &subtrahend) {
+                            auto s=sub_my(minuend,subtrahend);
+                            auto s1=sub_co(minuend,subtrahend);
+                            if(s!=s1){
+                              pr(minuend,subtrahend,s,s1);
+                              exit(1);
+                            }
+                            return s;
+                           }
+
+
+std::string getOrderedString(std::string const &s) {
+  auto o = s;
+  std::sort(o.begin(), o.end());
+  return o;
+}
+

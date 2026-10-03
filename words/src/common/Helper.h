@@ -14,7 +14,7 @@
 #include <set>
 #include <unordered_map>
 
-//Note cann't move this constant to consts.h
+// Note cann't move this constant to consts.h
 const int LANGUAGES = 2;
 
 using Dictionary = VString;
@@ -81,8 +81,8 @@ private:
   std::unordered_map<KeyT, ValueT> m;
 
 public:
-LookupTable(std::initializer_list<std::pair<KeyT, ValueT>> init_list)
-      : m(init_list.begin(), init_list.end()) {} 
+  LookupTable(std::initializer_list<std::pair<KeyT, ValueT>> init_list)
+      : m(init_list.begin(), init_list.end()) {}
 
   bool has(const KeyT &key) const { return m.find(key) != m.end(); }
 
@@ -124,7 +124,7 @@ struct ComboData {
   int min;
   std::array<int, LANGUAGES> max;
   int active;
-  ENUM_STRING s1,s2,send;
+  ENUM_STRING s1, s2, send;
 };
 
 class SearchResult {
@@ -152,8 +152,35 @@ std::string fastUtf8ToLocale(const std::string &src);
 std::string capitalizeFirstUtf8(const std::string &src);
 ENUM_STRING getLetterDeclension(int number);
 std::vector<IntVector> &sum(ThreadResultVector &v);
-std::string lowercase_utf8_regex(const std::string& pattern);
+std::string lowercase_utf8_regex(const std::string &pattern);
 bool breakMenu(const std::string &s);
 #ifndef NDEBUG
 void print_short_stack_trace(size_t max_lines = 4);
 #endif
+
+std::string sub(std::string const &minuend, std::string const &subtrahend);
+std::string getOrderedString(std::string const &s);
+
+class LetterGroupSplitItem {
+public:
+  std::string sub;
+  VString anagrams;
+  void add(const std::string &s) { anagrams.push_back(s); }
+  std::string string() const {
+    std::string o = joinV(anagrams);
+    if (anagrams.size() != 1) {
+      o = '{' + o + '}';
+    }
+    return o;
+  }
+};
+
+using EqMap = std::map<std::string, LetterGroupSplitItem>;
+
+class LetterGroupSplitMap : public std::vector<EqMap> {
+public:
+  std::string get(std::string const &s) const{
+    auto &a = (*this)[s.length()].find(s)->second;
+    return a.string();
+  }
+};
