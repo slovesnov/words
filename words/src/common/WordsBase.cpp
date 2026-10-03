@@ -1148,23 +1148,15 @@ l210:
   // pr(timeElapse(begin))
 }
 
-// get list of dictionary words from ordered string
-// std::string WordsBase::getUserString(std::string const &s) {
-//   auto &a = m_eqmap[s.length()].find(s)->second;
-//   return a.string();
-// }
-
 StringStringVector WordsBase::getAllPairs(std::string const &s,
                                           std::string const &low) {
   StringStringVector v;
-  for (size_t i = 1; i < s.size(); i++) {
-    for (auto &e : m_eqmap[i]) {
-      if (low == INVALID_DIFFERENCE || low <= e.first) {
-        auto a = sub(s, e.first);
-        if (a != INVALID_DIFFERENCE && e.first <= a) {
-          if (m_eqmap[a.length()].contains(a)) {
-            v.push_back({m_eqmap.get(e.first), m_eqmap.get(a)});
-          }
+  for (auto &e : m_eqmap) {
+    if (low == INVALID_DIFFERENCE || low <= e.first) {
+      auto a = sub(s, e.first);
+      if (a != INVALID_DIFFERENCE && e.first <= a) {
+        if (m_eqmap.contains(a)) {
+          v.push_back({m_eqmap.get(e.first), m_eqmap.get(a)});
         }
       }
     }
@@ -1180,18 +1172,17 @@ void WordsBase::findLetterGroupSplit(int nthread) {
   auto begin = clock();
   const size_t size = m_ev.length();
   m_eqmap.clear();
-  m_eqmap.resize(size);
 
   for (auto &s : getDictionary()) {
     j = s.length();
     if (j < size) {
       s1 = getOrderedString(s);
-      auto &m = m_eqmap[j];
+      auto &m = m_eqmap;
       auto it = m.find(s1);
       if (it == m.end()) {
         t = sub(charset, s1);
         if (t != INVALID_DIFFERENCE) {
-          m.insert({s1, {t,{s}}});
+          m.insert({s1, {t, {s}}});
         }
       } else {
         it->second.add(s);
@@ -1201,7 +1192,7 @@ void WordsBase::findLetterGroupSplit(int nthread) {
 
   i = 0;
   for (j = 0; j < size; j++) {
-    auto &m = m_eqmap[j];
+    auto &m = m_eqmap;
     if (m.size()) {
       i += m.size();
       pr(j, m.size());
@@ -1217,17 +1208,15 @@ void WordsBase::findLetterGroupSplit(int nthread) {
     SearchResult::out = localeToUtf8(pairsToString(v)) + "----------------\n";
   }
 
-  for (i = 1; i < size; i++) {
-    auto &m = m_eqmap[i];
-    for (auto &e : m) {
-      t = sub(charset, e.first);
-      if (t != INVALID_DIFFERENCE) {
-        auto v = getAllPairs(t, e.first);
-        if (!v.empty()) {
-          n[1]++;
-          SearchResult::out += localeToUtf8(m_eqmap.get(e.first) + " " +
-                                            pairsToString(v, v.size() != 1));
-        }
+  auto &m = m_eqmap;
+  for (auto &e : m) {
+    t = sub(charset, e.first);
+    if (t != INVALID_DIFFERENCE) {
+      auto v = getAllPairs(t, e.first);
+      if (!v.empty()) {
+        n[1]++;
+        SearchResult::out += localeToUtf8(m_eqmap.get(e.first) + " " +
+                                          pairsToString(v, v.size() != 1));
       }
     }
   }

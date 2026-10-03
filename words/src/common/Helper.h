@@ -177,10 +177,10 @@ public:
 
 using EqMap = std::map<std::string, LetterGroupSplitItem>;
 
-class LetterGroupSplitMap : public std::vector<EqMap> {
+class LetterGroupSplitMap : public EqMap {
 public:
   std::string get(std::string const &s) const{
-    auto &a = (*this)[s.length()].find(s)->second;
+    auto &a = find(s)->second;
     return a.string();
   }
 };
