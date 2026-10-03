@@ -1389,7 +1389,8 @@ void Frame::saveText() {
 
   chooser = GTK_FILE_CHOOSER(dialog);
   gtk_file_chooser_set_do_overwrite_confirmation(chooser, TRUE);
-  gtk_file_chooser_set_current_name(chooser, "untitled.txt");
+  s=string(UNTITLED)+".txt";
+  gtk_file_chooser_set_current_name(chooser, s.c_str());
   // gtk_file_chooser_set_current_folder(chooser, "/home/user/Documents");
 
   for (auto a : {TEXT_FILES, ALL_FILES}) {
