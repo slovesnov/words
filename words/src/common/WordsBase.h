@@ -37,7 +37,8 @@ protected:
   int m_radioValue;
   int m_sortlistValue;
   std::string m_textViewValue; // locale
-  std::array<int,BUTTON_SIZE> m_buttonValue;//use array allow assign all values
+  std::array<int, BUTTON_SIZE>
+      m_buttonValue; // use array allow assign all values
 
   Dictionary m_dictionary[DICTIONARY_SIZE];
   std::string m_keyboardOneRow[256][2];
@@ -76,8 +77,11 @@ protected:
 
   std::string getStatusString();
   std::string getTimeString();
+  int m_threads;
 
-  int getMaximumWordLength() { return m_longestWordLength[getDictionaryIndex()]; }
+  int getMaximumWordLength() {
+    return m_longestWordLength[getDictionaryIndex()];
+  }
 
   bool prepare();
 #ifdef NOGTK
@@ -101,14 +105,12 @@ protected:
   bool testFilterRegex(const std::string &s);
 #endif
 
-
 public:
   WordsBase();
 
   void run(ENUM_JOB_TYPE e);
   void run_thread(int nthread);
-  PairDCIDCI iterators(int n, int nthread);
-  PairDCIDCI iterators(ENUM_DICTIONARY e, int nthread);
+  PairDCIDCI iterators(int nthread, int n = -1);
 
   bool checkPangram(const std::string &s);
   bool checkTemplate(const std::string &s);
@@ -154,19 +156,15 @@ public:
   void letterGroupSplitMergeAllMaps();
 
   void twoDictionaries(int nthread, int n);
-  
+
   static int differentChars(std::string_view s);
   static bool spanIncluding(std::string_view p, std::string_view pattern) {
     return p.find_first_not_of(pattern) == std::string_view::npos;
   }
   static bool differenceOnlyOneChar(std::string const &a, std::string const &b);
 
-  int getLanguageIndex()const{
-    return m_buttonValue[BUTTON_LANGUAGE];
-  }
-  int getDictionaryIndex()const{
-    return m_buttonValue[BUTTON_DICTIONARY];
-  }
+  int getLanguageIndex() const { return m_buttonValue[BUTTON_LANGUAGE]; }
+  int getDictionaryIndex() const { return m_buttonValue[BUTTON_DICTIONARY]; }
 
   Dictionary const &getDictionary() const {
     return m_dictionary[getDictionaryIndex()];

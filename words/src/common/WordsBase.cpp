@@ -98,7 +98,7 @@ const LookupTable<ENUM_MENU, bool (WordsBase::*)(const std::string &)>
 #endif
 
 WordsBase *wordsBase;
-std::unique_ptr<std::barrier<std::function<void()>>> sync_point;//todo
+std::unique_ptr<std::barrier<std::function<void()>>> sync_point; // todo
 
 WordsBase::WordsBase() {
   int i, j;
@@ -148,10 +148,7 @@ WordsBase::WordsBase() {
   m_eqmapt.resize(threads);
 
   sync_point = std::make_unique<std::barrier<std::function<void()>>>(
-    threads, 
-    [this]() noexcept { this->letterGroupSplitMergeAllMaps(); }
-);
-
+      threads, [this]() noexcept { this->letterGroupSplitMergeAllMaps(); });
 
   loadLanguages();
 
@@ -434,7 +431,6 @@ void WordsBase::checkKeyboardWordComplexPreProseeding() {
 
 void WordsBase::checkDictionaryPreProseeding() {
   std::string filename = path(getDictionaryIndex(), "words");
-  int threads = g_get_num_processors();
   std::ifstream file(filename, std::ios::binary);
   if (!file.is_open()) {
     assert(0);
@@ -445,8 +441,8 @@ void WordsBase::checkDictionaryPreProseeding() {
   int i, start;
   char c;
   m_chd.clear();
-  for (i = 0; i < threads; ++i) {
-    start = i * (filesize / threads);
+  for (i = 0; i < m_threads; ++i) {
+    start = i * (filesize / m_threads);
     // adjust start
     // last char in chunk '\n'
     if (i) {
@@ -723,7 +719,7 @@ void WordsBase::showLongestDoubleWordSequence() {
 void WordsBase::findAnagram(int nthread) {
   const int min = m_comboValue[COMBOBOX_HELPER0];
   const int max = m_comboValue[COMBOBOX_HELPER1];
-  auto [it, end] = iterators(getDictionaryIndex(), nthread);
+  auto [it, end] = iterators(nthread);
   auto &local_map = m_anagrams[nthread];
   local_map.clear();
   for (; it != end; it++) {
@@ -768,7 +764,7 @@ void WordsBase::findSimpleWordSequence(int nthread) {
   for (auto &map : v) {
     i++;
     map.clear();
-    auto [it, end] = iterators(getDictionaryIndex(), nthread);
+    auto [it, end] = iterators(nthread);
     for (; it != end; it++) {
       auto const &e = *it;
       if (int(e.length()) >= i) {
@@ -799,7 +795,7 @@ void WordsBase::findDoubleWordSequence(int nthread) {
   for (auto &map : v) {
     i++;
     map.clear();
-    auto [it, end] = iterators(getDictionaryIndex(), nthread);
+    auto [it, end] = iterators(nthread);
     for (; it != end; it++) {
       auto const &e = *it;
       if (int(e.length()) >= i) {
@@ -894,7 +890,7 @@ void WordsBase::simpleDoubleWordSequencePostProseeding() {
 
 void WordsBase::findWordSequenceFull(int nthread) {
   std::string s;
-  auto [it, end] = iterators(getDictionaryIndex(), nthread);
+  auto [it, end] = iterators(nthread);
   for (; it != end; it++) {
     auto const &e = *it;
     if (checkPalindrome(e)) {
@@ -911,7 +907,7 @@ void WordsBase::findWordSequenceFull(int nthread) {
 
 void WordsBase::findModification(int nthread) {
   std::string s;
-  auto [it, end] = iterators(getDictionaryIndex(), nthread);
+  auto [it, end] = iterators(nthread);
   for (; it != end; it++) {
     auto const &e = *it;
     s = m_modifications.apply(e, m_checkValue);
@@ -1168,7 +1164,7 @@ void WordsBase::findLetterGroupSplit(int nthread) {
   eqm.clear();
   eqm.resize(size);
 
-  auto [it, end] = iterators(getDictionaryIndex(), nthread);
+  auto [it, end] = iterators(nthread);
   for (; it != end; it++) {
     auto &s = *it;
     // for (auto &s : getDictionary()) {
@@ -1280,7 +1276,7 @@ void WordsBase::twoDictionaries(int nthread, int nn) {
   VVString k(i);
   IntVector id(i);
 
-  auto [it, end] = iterators(fromIndex, nthread);
+  auto [it, end] = iterators(nthread, fromIndex);
   for (; it != end; it++) {
     auto const &e = *it;
     len = e.length();
@@ -1342,7 +1338,7 @@ void WordsBase::keyboardWords(int nthread) {
     }
   }
 
-  auto [it, end] = iterators(DICTIONARY_EN, nthread);
+  auto [it, end] = iterators(nthread, DICTIONARY_EN);
   for (; it != end; it++) {
     auto const &e = *it;
     p = b;
@@ -1368,7 +1364,7 @@ void WordsBase::wordFrequency(int nthread) {
   const int MAX = getMaximumWordLength();
   auto &m = m_iv[nthread];
   m.assign(MAX, 0);
-  auto [it, end] = iterators(getDictionaryIndex(), nthread);
+  auto [it, end] = iterators(nthread);
   for (; it != end; it++) {
     auto const &e = *it;
     m[e.length() - 1]++; // use length-1
@@ -1495,7 +1491,7 @@ void WordsBase::findWordsSplit(int nthread) {
   std::string t;
   int words;
   std::size_t i, j;
-  auto [it, end] = iterators(getDictionaryIndex(), nthread);
+  auto [it, end] = iterators(nthread);
   m_thread_result[nthread].clear();
   for (; it != end; it++) {
     auto const &e = *it;
@@ -1544,7 +1540,7 @@ void WordsBase::twoCharactersDistribution(int nthread) {
   st.clear(n);
   int &total = st.total;
   auto &a = st.a;
-  auto [it, end] = iterators(getDictionaryIndex(), nthread);
+  auto [it, end] = iterators(nthread);
   for (; it != end; it++) {
     auto const &e = *it;
     if (e.length() < 2) {
@@ -1611,7 +1607,7 @@ void WordsBase::dictionaryStatistics(int nthread) {
   st.clear(SZ_CAPTION, a + 1);
   auto &m = st.a;
   std::string &longestWord = st.s;
-  auto [it, end] = iterators(getDictionaryIndex(), nthread);
+  auto [it, end] = iterators(nthread);
   for (; it != end; it++) {
     auto const &e = *it;
     m[0][a] += e.length();
@@ -1932,21 +1928,16 @@ std::string WordsBase::getTimeString() {
                                      //  m_begin) / CLOCKS_PER_SEC);
 }
 
-PairDCIDCI WordsBase::iterators(int n, int nthread) {
-  return iterators(ENUM_DICTIONARY(n), nthread);
-}
-
-PairDCIDCI WordsBase::iterators(ENUM_DICTIONARY e, int nthread) {
-  Dictionary const &d = m_dictionary[e];
+PairDCIDCI WordsBase::iterators(int nthread, int n) {
+  if (n == -1) {
+    n = getDictionaryIndex();
+  }
+  Dictionary const &d = m_dictionary[n];
   int total_size = d.size();
-  const int total_threads = g_get_num_processors();
-
-  int chunk_size = total_size / total_threads;
-  int remainder = total_size % total_threads;
-
+  int chunk_size = total_size / m_threads;
+  int remainder = total_size % m_threads;
   int start_idx = nthread * chunk_size + std::min(nthread, remainder);
   int end_idx = start_idx + chunk_size + (nthread < remainder ? 1 : 0);
-
   return {d.begin() + start_idx, d.begin() + end_idx};
 }
 
@@ -1968,7 +1959,7 @@ void WordsBase::run_thread(int nthread) {
 
     bool isEnglish = getDictionaryIndex() == DICTIONARY_EN;
     auto n = isEnglish ? DICTIONARY_EN : DICTIONARY_RU_UTF8;
-    auto [it2, end] = iterators(n, nthread);
+    auto [it2, end] = iterators(nthread, n);
     for (; it2 != end; it2++) {
       if (checkRegularExpression(*it2, r.get(), m.get())) {
         auto d = std::distance(m_dictionary[n].cbegin(), it2);
@@ -1979,7 +1970,7 @@ void WordsBase::run_thread(int nthread) {
     }
 
   } else if (auto it = menu2BoolString.get(m_menuClick)) {
-    auto [it2, end] = iterators(getDictionaryIndex(), nthread);
+    auto [it2, end] = iterators(nthread);
     for (; it2 != end; it2++) {
       auto &e = *it2;
       if ((this->*(*it))(e)) {
@@ -2000,12 +1991,8 @@ void WordsBase::run(ENUM_JOB_TYPE e) {
     }
 
     std::vector<std::jthread> workers;
-    int threads = oneOf(m_menuClick, MENU_CHAIN
-                        // todo  , MENU_LETTER_GROUP_SPLIT
-                        )
-                      ? 1
-                      : g_get_num_processors();
-    prsync(threads, magic_enum::enum_name(m_menuClick));
+    int threads = m_menuClick == MENU_CHAIN ? 1 : m_threads;
+    prsync(magic_enum::enum_name(m_menuClick), threads);
     for (int i = 0; i < threads; ++i) {
       workers.emplace_back(run_thread, this, i);
     }
