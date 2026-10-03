@@ -6,6 +6,7 @@
  */
 
 #include "WordsBase.h"
+#include <barrier>
 #include <execution>
 #include <format>
 #include <magic_enum.hpp>
@@ -97,6 +98,7 @@ const LookupTable<ENUM_MENU, bool (WordsBase::*)(const std::string &)>
 #endif
 
 WordsBase *wordsBase;
+std::unique_ptr<std::barrier<std::function<void()>>> sync_point;//todo
 
 WordsBase::WordsBase() {
   int i, j;
@@ -143,6 +145,13 @@ WordsBase::WordsBase() {
   m_chdv.resize(threads);
   m_thread_result.resize(threads);
   m_anagrams.resize(threads);
+  m_eqmapt.resize(threads);
+
+  sync_point = std::make_unique<std::barrier<std::function<void()>>>(
+    threads, 
+    [this]() noexcept { this->letterGroupSplitMergeAllMaps(); }
+);
+
 
   loadLanguages();
 
@@ -1155,14 +1164,18 @@ void WordsBase::findLetterGroupSplit(int nthread) {
 
   auto begin = clock();
   const size_t size = m_ev.length();
-  m_eqmap.clear();
-  m_eqmap.resize(size);
+  auto &eqm = m_eqmapt[nthread];
+  eqm.clear();
+  eqm.resize(size);
 
-  for (auto &s : getDictionary()) {
+  auto [it, end] = iterators(getDictionaryIndex(), nthread);
+  for (; it != end; it++) {
+    auto &s = *it;
+    // for (auto &s : getDictionary()) {
     j = s.length();
     if (j < size) {
       s1 = getOrderedString(s);
-      auto &m = m_eqmap[j];
+      auto &m = eqm[j];
       auto it = m.find(s1);
       if (it == m.end()) {
         t = sub(charset, s1);
@@ -1175,48 +1188,57 @@ void WordsBase::findLetterGroupSplit(int nthread) {
     }
   }
 
-  // i = 0;
-  // for (j = 0; j < size; j++) {
-  //   auto &m = m_eqmap[j];
-  //   if (m.size()) {
-  //     i += m.size();
-  //     pr(j, m.size());
-  //   }
-  // }
-  // pr(i);
-  pr(timeElapse(begin));
-
-  auto v = m_eqmap.allPairs(charset);
-  size_t n[] = {v.size(), 0};
-
-  if (!v.empty()) {
-    SearchResult::out = localeToUtf8(pairsToString(v)) + "----------------\n";
-  }
-
-  for (i = 1; i < size; i++) {
-    auto &m = m_eqmap[i];
-    // int j=-1;
-    for (auto &e : m) {
-      // j++;
-      // auto v = m_eqmap.allPairs(e.second.sub, j);
-      auto v = m_eqmap.allPairs(e.second.sub, e.first);
-      if (!v.empty()) {
-        n[1]++;
-        SearchResult::out += localeToUtf8(m_eqmap.get(e.first) + " " +
-                                          pairsToString(v, v.size() != 1));
+  {
+    std::lock_guard<std::mutex> lock(aslovcout_mutex);
+    i = 0;
+    for (j = 0; j < size; j++) {
+      auto &m = eqm[j];
+      if (m.size()) {
+        i += m.size();
+        pr(j, m.size());
       }
     }
+    pr(i);
+    pr(nthread, timeElapse(begin));
   }
-  if (SearchResult::out.empty()) {
-    SearchResult::out = string(SPLITS_NOT_FOUND);
-  } else {
-    for (i = 0; i < 2; i++) {
-      m_addstatus += string(i ? TRIPLETS : PAIRS) + " " +
-                     intToStringLocaled(n[i]) + (i ? "" : ", ");
+
+  sync_point->arrive_and_wait();
+
+  /*
+    auto v = m_eqmap.allPairs(charset);
+    size_t n[] = {v.size(), 0};
+
+    if (!v.empty()) {
+      SearchResult::out = localeToUtf8(pairsToString(v)) + "----------------\n";
     }
-  }
-  pr(timeElapse(begin));
+
+    for (i = 1; i < size; i++) {
+      auto &m = m_eqmap[i];
+      // int j=-1;
+      for (auto &e : m) {
+        // j++;
+        // auto v = m_eqmap.allPairs(e.second.sub, j);
+        auto v = m_eqmap.allPairs(e.second.sub, e.first);
+        if (!v.empty()) {
+          n[1]++;
+          SearchResult::out += localeToUtf8(m_eqmap.get(e.first) + " " +
+                                            pairsToString(v, v.size() != 1));
+        }
+      }
+    }
+    if (SearchResult::out.empty()) {
+      SearchResult::out = string(SPLITS_NOT_FOUND);
+    } else {
+      for (i = 0; i < 2; i++) {
+        m_addstatus += string(i ? TRIPLETS : PAIRS) + " " +
+                       intToStringLocaled(n[i]) + (i ? "" : ", ");
+      }
+    }
+    pr(timeElapse(begin));
+  */
 }
+
+void WordsBase::letterGroupSplitMergeAllMaps() { pri; }
 
 void WordsBase::twoDictionaries(int nthread, int nn) {
   VVString to;
@@ -1978,7 +2000,9 @@ void WordsBase::run(ENUM_JOB_TYPE e) {
     }
 
     std::vector<std::jthread> workers;
-    int threads = oneOf(m_menuClick, MENU_CHAIN, MENU_LETTER_GROUP_SPLIT)
+    int threads = oneOf(m_menuClick, MENU_CHAIN
+                        // todo  , MENU_LETTER_GROUP_SPLIT
+                        )
                       ? 1
                       : g_get_num_processors();
     prsync(threads, magic_enum::enum_name(m_menuClick));

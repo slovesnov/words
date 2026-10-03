@@ -68,6 +68,7 @@ protected:
   VString m_chdv;
   std::vector<int> m_chd;
   std::vector<AnagramMap> m_anagrams;
+  std::vector<LetterGroupSplitMap> m_eqmapt;
   //
   LetterGroupSplitMap m_eqmap;
 
@@ -150,9 +151,10 @@ public:
   void twoCharactersDistributionPostProseeding();
   void simpleDoubleWordSequencePostProseeding();
   void checkDictionaryPostProseeding();
+  void letterGroupSplitMergeAllMaps();
 
   void twoDictionaries(int nthread, int n);
-
+  
   static int differentChars(std::string_view s);
   static bool spanIncluding(std::string_view p, std::string_view pattern) {
     return p.find_first_not_of(pattern) == std::string_view::npos;
