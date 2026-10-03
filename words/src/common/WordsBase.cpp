@@ -1175,15 +1175,15 @@ void WordsBase::findLetterGroupSplit(int nthread) {
     }
   }
 
-  i = 0;
-  for (j = 0; j < size; j++) {
-    auto &m = m_eqmap[j];
-    if (m.size()) {
-      i += m.size();
-      pr(j, m.size());
-    }
-  }
-  pr(i);
+  // i = 0;
+  // for (j = 0; j < size; j++) {
+  //   auto &m = m_eqmap[j];
+  //   if (m.size()) {
+  //     i += m.size();
+  //     pr(j, m.size());
+  //   }
+  // }
+  // pr(i);
   pr(timeElapse(begin));
 
   auto v = m_eqmap.allPairs(charset);

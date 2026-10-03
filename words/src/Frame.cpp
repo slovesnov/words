@@ -657,15 +657,15 @@ void Frame::updateDictionary(bool change) {
                     MENU_LOAD_ENGLISH_DICTIONARY, MENU_LOAD_RUSSIAN_DICTIONARY);
   updateButton(BUTTON_DICTIONARY);
 
+  lockSignals();//lock signals to prevent entry|combo start new job
   if (auto it = MENU_WITH_ENTRY.get(m_menuClick)) {
     auto e = ENTRY_TEMPLATE;
     std::string s = stringUsingDictionary(*it, true);
     s = normalizeString(e, s);
-    // if user didn't change value of enty we can set it by default
+    // if user didn't change value of entry we can set it by default
     if (s == m_entryValue[e]) {
       s = stringUsingDictionary(*it);
       gtk_entry_set_text(GTK_ENTRY(m_entry[e]), s.c_str());
-      updateEntryValue(e);
     }
   }
 
@@ -674,6 +674,7 @@ void Frame::updateDictionary(bool change) {
       refillCombo(a, it->min, it->max[getDictionaryIndex()] /*, it->active*/);
     }
   }
+  unlockSignals();
 
   if (m_menuClick != MENU_SEARCH) {
     job();
@@ -874,9 +875,6 @@ void Frame::updateComboValue(ENUM_COMBOBOX e) {
     v = getComboIndex(e);
     // v can be =-1 when combobox just created
   }
-
-  // print_short_stack_trace( 6);
-
   m_comboValue[e] = v;
 }
 
@@ -955,7 +953,7 @@ void Frame::debounceTimeout(ENUM_ENTRY e) {
 
 void Frame::entryChanged(ENUM_ENTRY e) {
   bool b;
-  // pr(magic_enum::enum_name(e));
+  //pr(magic_enum::enum_name(e));
   updateEntryValue(e);
   if (e == ENTRY_TEMPLATE) {
     b = prepare();
@@ -1432,7 +1430,8 @@ results JOB_TYPE_FILTER - stop calculations if needed, then filter results
 JOB_TYPE_STOP - stop calculations if needed
 */
 void Frame::job(ENUM_JOB_TYPE e) {
-  // prsync(magic_enum::enum_name(m_menuClick), magic_enum::enum_name(e));
+  //prsync(magic_enum::enum_name(m_menuClick), magic_enum::enum_name(e));
+  // print_short_stack_trace( 6);
   if (oneOf(e, JOB_TYPE_SORT_AND_FILTER, JOB_TYPE_FILTER) && m_result.empty()) {
     return;
   }

@@ -212,7 +212,7 @@ std::string lowercase_utf8_regex(const std::string &pattern) {
 bool breakMenu(const std::string &s) { return s.size() > 1 && s[1] == '#'; }
 
 #ifndef NDEBUG
-void print_short_stack_trace(size_t max_lines) {
+void print_short_stack_trace(int max_lines) {
   auto trace = std::stacktrace::current(1, max_lines);
   std::string s;
   int i = -1;

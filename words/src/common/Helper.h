@@ -17,6 +17,7 @@
 // Note cann't move this constants to consts.h
 const int LANGUAGES = 2;
 const std::string INVALID_DIFFERENCE = "$";
+const int STACK_TRACE_DEPTH=5;
 
 using Dictionary = VString;
 using DictionaryCI = Dictionary::const_iterator;
@@ -156,7 +157,7 @@ std::vector<IntVector> &sum(ThreadResultVector &v);
 std::string lowercase_utf8_regex(const std::string &pattern);
 bool breakMenu(const std::string &s);
 #ifndef NDEBUG
-void print_short_stack_trace(size_t max_lines = 4);
+void print_short_stack_trace(int max_lines = STACK_TRACE_DEPTH);
 #endif
 
 std::string sub(std::string const &minuend, std::string const &subtrahend);
