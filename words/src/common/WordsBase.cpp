@@ -1195,7 +1195,10 @@ void WordsBase::findLetterGroupSplit(int nthread) {
 
   for (i = 1; i < size; i++) {
     auto &m = m_eqmap[i];
+    // int j=-1;
     for (auto &e : m) {
+      // j++;
+      // auto v = m_eqmap.allPairs(e.second.sub, j);
       auto v = m_eqmap.allPairs(e.second.sub, e.first);
       if (!v.empty()) {
         n[1]++;

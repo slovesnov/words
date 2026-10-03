@@ -17,7 +17,7 @@
 // Note cann't move this constants to consts.h
 const int LANGUAGES = 2;
 const std::string INVALID_DIFFERENCE = "$";
-const int STACK_TRACE_DEPTH=5;
+const int STACK_TRACE_DEPTH = 5;
 
 using Dictionary = VString;
 using DictionaryCI = Dictionary::const_iterator;
@@ -184,10 +184,27 @@ public:
   std::string get(std::string const &s) const {
     auto &a = (*this)[s.length()].find(s)->second;
     return a.string();
- 
   }
-  StringStringVector allPairs(std::string const &s,
-                                 std::string const &low = INVALID_DIFFERENCE) const{
+  /*    StringStringVector allPairs(std::string const &s, int index = -1) const
+    { StringStringVector v; for (size_t i = 1; i < s.size(); i++) { int j = -1;
+        for (auto &e : (*this)[i]) {
+          j++;
+          if (j <= index) {
+            auto a = sub(s, e.first);
+            if (a != INVALID_DIFFERENCE && e.first <= a) {
+              if ((*this)[a.length()].contains(a)) {
+                v.push_back({get(e.first), get(a)});
+              }
+            }
+          }
+        }
+      }
+      return v;
+    }
+   */
+  StringStringVector
+  allPairs(std::string const &s,
+           std::string const &low = INVALID_DIFFERENCE) const {
     StringStringVector v;
     for (size_t i = 1; i < s.size(); i++) {
       for (auto &e : (*this)[i]) {
