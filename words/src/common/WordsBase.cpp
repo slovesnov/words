@@ -1196,14 +1196,11 @@ void WordsBase::findLetterGroupSplit(int nthread) {
   for (i = 1; i < size; i++) {
     auto &m = m_eqmap[i];
     for (auto &e : m) {
-      t = sub(charset, e.first);
-      if (t != INVALID_DIFFERENCE) {
-        auto v = m_eqmap.allPairs(t, e.first);
-        if (!v.empty()) {
-          n[1]++;
-          SearchResult::out += localeToUtf8(m_eqmap.get(e.first) + " " +
-                                            pairsToString(v, v.size() != 1));
-        }
+      auto v = m_eqmap.allPairs(e.second.sub, e.first);
+      if (!v.empty()) {
+        n[1]++;
+        SearchResult::out += localeToUtf8(m_eqmap.get(e.first) + " " +
+                                          pairsToString(v, v.size() != 1));
       }
     }
   }
