@@ -1258,8 +1258,6 @@ void WordsBase::findLetterGroupSplit(int nthread) {
                        intToStringLocaled(n[i]) + (i ? "" : ", ");
       }
     }
-    printlog(timeElapse(begin),timeElapse(begin1));
-    printlogi;
     pr(timeElapse(begin),timeElapse(begin1));
 }
 

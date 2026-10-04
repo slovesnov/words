@@ -212,7 +212,7 @@ Frame::Frame() : WordsBase() {
                      G_CALLBACK(on_label_clicked), NULL);
   }
 
-  for (i = 0; i < int(MENU_TO_ACCEL_KEY.size()); i++) {
+  for (i = 0; i < std::ssize(MENU_TO_ACCEL_KEY); i++) {
     m_accelGroup.push_back(gtk_accel_group_new());
   }
   addAccelerators();
