@@ -1397,11 +1397,10 @@ void WordsBase::wordFrequency(int nthread) {
 }
 
 void WordsBase::wordFrequencyPostProseeding() {
-  int i, j;
-  size_t k;
+  int i, j, k;
   const int MAX = getMaximumWordLength();
   IntVector m(MAX, 0);
-  IntIntVector v;
+  IntIntVector v[2];
   std::string s, s1;
   for (auto &e : m_iv) {
     for (i = 0; i < MAX; ++i) {
@@ -1410,27 +1409,26 @@ void WordsBase::wordFrequencyPostProseeding() {
   }
   for (i = 0; i < MAX; ++i) {
     if (m[i] > 0) {
-      v.push_back({m[i], i + 1}); // store actual word length
+      v[0].push_back({m[i], i + 1}); // store actual word length
+      v[1].push_back({m[i], i + 1});
     }
   }
-  std::sort(v.begin(), v.end(),
+  std::sort(v[0].begin(), v[0].end(),
             [](auto &a, auto &b) { return a.first > b.first; });
+  std::sort(v[1].begin(), v[1].end(),
+            [](auto &a, auto &b) { return a.second < b.second; });
 
-  size_t w = toString(v[0].first, ',').size(); // max len
+  size_t w = toString(v[0][0].first, ',').size(); // max len
   int sz = getDictionary().size();
-  const int SP = 20;
+  const int SP = 10;
   const std::string separator(SP, ' ');
   double ev = 0, disp = 0;
-  for (j = 0; j < 2; j++) {
-    if (j) {
-      std::sort(v.begin(), v.end(),
-                [](auto &a, auto &b) { return a.second < b.second; });
-    }
-    for (i = 0; i < std::ssize(v); i++) {
-      // use separator for intToString for understandable view
-      auto &e = v[i];
+  for (i = 0; i < std::ssize(v[0]); i++) {
+    // use separator for intToString for understandable view
+    for (j = 0; j < 2; j++) {
+      auto &e = v[j][i];
       auto pr = double(e.first) / sz;
-      if (!j) {
+      if (j == 0) {
         ev += pr * e.second;
       }
       auto s = std::format("{:2d} {:6.3f}% {:>{}}/{}", e.second, 100. * pr,
@@ -1438,16 +1436,19 @@ void WordsBase::wordFrequencyPostProseeding() {
       if (i == 0 && j == 0) {
         s1 = string(WORD_LENGTH_FREQUENCY);
         k = s.length() + SP - g_utf8_strlen(s1.c_str(), -1);
+        pr(k,s.length(),g_utf8_strlen(s1.c_str(), -1))
         if (k > 0) {
           s1 += std::string(k, ' ');
+        }
+        else{
+          k=1;
         }
         SearchResult::out = s1 + string(WORD_LENGTH_FREQUENCY1);
       }
       SearchResult::out += (j ? separator : "\n") + s;
     }
   }
-  for (i = 0; i < std::ssize(v); i++) {
-    auto &e = v[i];
+  for (auto &e : v[0]) {
     auto pr = double(e.first) / sz;
     double q = e.second - ev;
     disp += pr * q * q;

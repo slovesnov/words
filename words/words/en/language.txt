@@ -31,7 +31,7 @@ keyboard words
 }
 additions{
 dictionary statistics
-words in descending order of frequency and increasing length
+words length statistics
 check dictionary
 SEPARATOR
 two nearby characters distribution
@@ -123,7 +123,7 @@ Search for words that are spelled identically in English and Russian, using stri
 Search for words that are spelled identically in English and Russian. For example, <i>Beep</i> (english) - <i>веер</i> (russian). This search allows non-strict matches, such as <i>game</i> (english) - <i>даме</i> (russian).
 Search for words with identical transliteration in English and Russian. For example, <i>administrator</i> (english word) - <i>администратор</i> (russian word).
 Search pairs of words which after keyboard typing with invalid keyboard locale give valid word on another language. For example, <i>entity</i> (english word) - <i>утешен</i> (russian word).
-Words in descending order of frequency.
+Words by descending frequency.
 Dictionary check finished successfully.
 sorted by alphabet
 sorted by frequency
@@ -163,7 +163,7 @@ triplets
 any
 waiting
 cr symbol found
-Words in ascending order of length.
+Words by ascending length.
 Exception words.
 invalid modification string
 operation canceled by user
