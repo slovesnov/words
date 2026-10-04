@@ -1222,43 +1222,42 @@ void WordsBase::findLetterGroupSplit(int nthread) {
   // }
 
   prsync(nthread, timeElapse(begin));
-  if(nthread){
+  if (nthread) {
     return;
   }
-  
-    auto begin1 = clock();
 
-    auto v = m_eqmap.allPairs(charset);
-    size_t n[] = {v.size(), 0};
+  auto begin1 = clock();
 
-    if (!v.empty()) {
-      SearchResult::out = localeToUtf8(pairsToString(v)) +
-    "----------------\n";
-    }
-//todo RETURN_ON_USER_BREAK
-    for (i = 1; i < size; i++) {
-      auto &m = m_eqmap[i];
-      // int j=-1;
-      for (auto &e : m) {
-        // j++;
-        // auto v = m_eqmap.allPairs(e.second.sub, j);
-        auto v = m_eqmap.allPairs(e.second.sub, e.first);
-        if (!v.empty()) {
-          n[1]++;
-          SearchResult::out += localeToUtf8(m_eqmap.get(e.first) + " " +
-                                            pairsToString(v, v.size() != 1));
-        }
+  auto v = m_eqmap.allPairs(charset);
+  size_t n[] = {v.size(), 0};
+
+  if (!v.empty()) {
+    SearchResult::out = localeToUtf8(pairsToString(v)) + "----------------\n";
+  }
+  // todo RETURN_ON_USER_BREAK
+  for (i = 1; i < size; i++) {
+    auto &m = m_eqmap[i];
+    // int j=-1;
+    for (auto &e : m) {
+      // j++;
+      // auto v = m_eqmap.allPairs(e.second.sub, j);
+      auto v = m_eqmap.allPairs(e.second.sub, e.first);
+      if (!v.empty()) {
+        n[1]++;
+        SearchResult::out += localeToUtf8(m_eqmap.get(e.first) + " " +
+                                          pairsToString(v, v.size() != 1));
       }
     }
-    if (SearchResult::out.empty()) {
-      SearchResult::out = string(SPLITS_NOT_FOUND);
-    } else {
-      for (i = 0; i < 2; i++) {
-        m_addstatus += string(i ? TRIPLETS : PAIRS) + " " +
-                       intToStringLocaled(n[i]) + (i ? "" : ", ");
-      }
+  }
+  if (SearchResult::out.empty()) {
+    SearchResult::out = string(SPLITS_NOT_FOUND);
+  } else {
+    for (i = 0; i < 2; i++) {
+      m_addstatus += string(i ? TRIPLETS : PAIRS) + " " +
+                     intToStringLocaled(n[i]) + (i ? "" : ", ");
     }
-    pr(timeElapse(begin),timeElapse(begin1));
+  }
+  pr(timeElapse(begin), timeElapse(begin1));
 }
 
 void WordsBase::twoDictionaries(int nthread, int nn) {
@@ -1972,17 +1971,13 @@ void WordsBase::run_thread(int nthread) {
 
   if (auto it = COMPLEX_FUNCTION.get(m_menuClick)) {
     (this->*(*it))(nthread);
-  }
-
-  if (m_menuClick == MENU_REGULAR_EXPRESSIONS) {
+  } else if (m_menuClick == MENU_REGULAR_EXPRESSIONS) {
     UniquePcre2Code r;
     UniquePcre2MatchData m;
-  #ifndef NDEBUG
     if (!createRegex(ENTRY_TEMPLATE, r, m)) {
       assert(0);
       return;
     }
-    #endif
 
     bool isEnglish = getDictionaryIndex() == DICTIONARY_EN;
     auto n = isEnglish ? DICTIONARY_EN : DICTIONARY_RU_UTF8;
