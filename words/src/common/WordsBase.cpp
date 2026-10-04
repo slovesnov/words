@@ -1672,7 +1672,7 @@ void WordsBase::dictionaryStatisticsPostProseeding() {
                                 : CHARACTER_FREQUENCY_AT_THE_END_PERCENTS));
   }
 
-  for (i = 0; i < SIZEI(additionalCaption); i++) {
+  for (i = 0; i < std::ssize(additionalCaption); i++) {
     additionalCaption[i] =
         " " + string(i == 0 ? SORTED_BY_ALPHABET : SORTED_BY_FREQUENCY);
   }
