@@ -1934,14 +1934,14 @@ std::string WordsBase::getStatusString() {
     s += ", ";
   }
   if (!m_result.empty()) {
-    s = string(NUMBER_OF_LINES) + " " + intToStringLocaled(m_result.size()) +
+    s = string(LINES) + " " + intToStringLocaled(m_result.size()) +
         ", ";
 #ifndef NOGTK
     s += string(WITH_FILTER) + " " + intToStringLocaled(m_filteredWordsCount) +
          ", ";
 #endif
   }
-  return s + string(TIME_OF_LAST_OPERATION) + " " + getTimeString();
+  return s + string(TIME) + " " + getTimeString();
 }
 
 std::string WordsBase::getTimeString() {

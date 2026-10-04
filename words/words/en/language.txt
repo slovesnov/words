@@ -88,7 +88,7 @@ line
 Proceed symbols
 words
 Search palindromes. Palindrome is a word, that reads the same backwards as forwards. For example <i>rotator</i>.
-number of lines
+lines
 All characters of the word should be on one horizontal or vertical keyboard row.
 All neighbour characters of the word should be adjacent keys (horizontally, vertically or diagonally) on keyboard.
 Full sequence words are pair of words. If read the first word backward one got the second word and vice versa. For example, <i>kramer</i> - <i>remark</i>. Palindromes are ignored.
@@ -118,7 +118,7 @@ Double sequence words. Search two sets of words such that some number of last ch
 from
 to
 number of matches
-time of last operation
+time
 Search for words that are spelled identically in English and Russian, using strict matching. For example, <i>токамак</i> (russian) - <i>TOKAMAK</i> (english) or <i>матамата</i> (russian) - <i>MATAMATA</i> (english). Both words also share the same meaning in both Russian and English. The word must consist only of the letters <i>a, e, k, m, o, t</i>.
 Search for words that are spelled identically in English and Russian. For example, <i>Beep</i> (english) - <i>веер</i> (russian). This search allows non-strict matches, such as <i>game</i> (english) - <i>даме</i> (russian).
 Search for words with identical transliteration in English and Russian. For example, <i>administrator</i> (english word) - <i>администратор</i> (russian word).
