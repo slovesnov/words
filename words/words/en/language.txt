@@ -124,6 +124,7 @@ Search for words that are spelled identically in English and Russian. For exampl
 Search for words with identical transliteration in English and Russian. For example, <i>administrator</i> (english word) - <i>администратор</i> (russian word).
 Search pairs of words which after keyboard typing with invalid keyboard locale give valid word on another language. For example, <i>entity</i> (english word) - <i>утешен</i> (russian word).
 Words by descending frequency.
+Words by ascending length.
 Dictionary check finished successfully.
 sorted by alphabet
 sorted by frequency
@@ -163,7 +164,6 @@ triplets
 any
 waiting
 cr symbol found
-Words by ascending length.
 Exception words.
 invalid modification string
 operation canceled by user

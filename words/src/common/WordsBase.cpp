@@ -1436,14 +1436,10 @@ void WordsBase::wordFrequencyPostProseeding() {
       if (i == 0 && j == 0) {
         s1 = string(WORD_LENGTH_FREQUENCY);
         k = s.length() + SP - g_utf8_strlen(s1.c_str(), -1);
-        pr(k,s.length(),g_utf8_strlen(s1.c_str(), -1))
-        if (k > 0) {
-          s1 += std::string(k, ' ');
+        if (k <= 0) {
+          k = 1;
         }
-        else{
-          k=1;
-        }
-        SearchResult::out = s1 + string(WORD_LENGTH_FREQUENCY1);
+        SearchResult::out = s1 + std::string(k, ' ') + string(WORD_LENGTH_FREQUENCY1);
       }
       SearchResult::out += (j ? separator : "\n") + s;
     }
