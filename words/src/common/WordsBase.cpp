@@ -6,6 +6,7 @@
  */
 
 #include "WordsBase.h"
+#include <cmath>
 #include <execution>
 #include <format>
 #include <magic_enum.hpp>
@@ -1400,7 +1401,7 @@ void WordsBase::wordFrequencyPostProseeding() {
   size_t k;
   const int MAX = getMaximumWordLength();
   IntVector m(MAX, 0);
-  IntIntVector v[2];
+  IntIntVector v;
   std::string s, s1;
   for (auto &e : m_iv) {
     for (i = 0; i < MAX; ++i) {
@@ -1409,26 +1410,31 @@ void WordsBase::wordFrequencyPostProseeding() {
   }
   for (i = 0; i < MAX; ++i) {
     if (m[i] > 0) {
-      v[0].push_back({m[i], i + 1}); // store actual word length
-      v[1].push_back({m[i], i + 1});
+      v.push_back({m[i], i + 1}); // store actual word length
     }
   }
-  std::sort(v[0].begin(), v[0].end(),
+  std::sort(v.begin(), v.end(),
             [](auto &a, auto &b) { return a.first > b.first; });
-  std::sort(v[1].begin(), v[1].end(),
-            [](auto &a, auto &b) { return a.second < b.second; });
 
-  size_t w = toString(v[0][0].first, ',').size(); // max len
+  size_t w = toString(v[0].first, ',').size(); // max len
   int sz = getDictionary().size();
   const int SP = 20;
   const std::string separator(SP, ' ');
-  for (i = 0; i < int(v[0].size()); i++) {
-    // use separator for intToString for understandable view
-    for (j = 0; j < 2; j++) {
-      auto &e = v[j][i];
-      auto s =
-          std::format("{:2d} {:6.3f}% {:>{}}/{}", e.second, 100. * e.first / sz,
-                      toString(e.first, ','), w, toString(sz, ','));
+  double ev = 0, disp = 0;
+  for (j = 0; j < 2; j++) {
+    if (j) {
+      std::sort(v.begin(), v.end(),
+                [](auto &a, auto &b) { return a.second < b.second; });
+    }
+    for (i = 0; i < std::ssize(v); i++) {
+      // use separator for intToString for understandable view
+      auto &e = v[i];
+      auto pr = double(e.first) / sz;
+      if (!j) {
+        ev += pr * e.second;
+      }
+      auto s = std::format("{:2d} {:6.3f}% {:>{}}/{}", e.second, 100. * pr,
+                           toString(e.first, ','), w, toString(sz, ','));
       if (i == 0 && j == 0) {
         s1 = string(WORD_LENGTH_FREQUENCY);
         k = s.length() + SP - g_utf8_strlen(s1.c_str(), -1);
@@ -1439,6 +1445,18 @@ void WordsBase::wordFrequencyPostProseeding() {
       }
       SearchResult::out += (j ? separator : "\n") + s;
     }
+  }
+  for (i = 0; i < std::ssize(v); i++) {
+    auto &e = v[i];
+    auto pr = double(e.first) / sz;
+    double q = e.second - ev;
+    disp += pr * q * q;
+  }
+  i = -1;
+  for (auto &a : {EXPECTED_VALUE, STANDARD_DEVIATION, VARIANCE}) {
+    i++;
+    SearchResult::out += std::format(
+        "\n{} {:.3f}", string(a), i ? (i == 1 ? std::sqrt(disp) : disp) : ev);
   }
 }
 
@@ -1934,8 +1952,7 @@ std::string WordsBase::getStatusString() {
     s += ", ";
   }
   if (!m_result.empty()) {
-    s = string(LINES) + " " + intToStringLocaled(m_result.size()) +
-        ", ";
+    s = string(LINES) + " " + intToStringLocaled(m_result.size()) + ", ";
 #ifndef NOGTK
     s += string(WITH_FILTER) + " " + intToStringLocaled(m_filteredWordsCount) +
          ", ";

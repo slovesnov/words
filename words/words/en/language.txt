@@ -181,3 +181,6 @@ language
 sorting and filtering of results
 filtering of results
 untitled
+expected value
+standard deviation
+variance
