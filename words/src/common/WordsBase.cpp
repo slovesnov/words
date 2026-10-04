@@ -1439,7 +1439,8 @@ void WordsBase::wordFrequencyPostProseeding() {
         if (k <= 0) {
           k = 1;
         }
-        SearchResult::out = s1 + std::string(k, ' ') + string(WORD_LENGTH_FREQUENCY1);
+        SearchResult::out =
+            s1 + std::string(k, ' ') + string(WORD_LENGTH_FREQUENCY1);
       }
       SearchResult::out += (j ? separator : "\n") + s;
     }
@@ -1449,6 +1450,9 @@ void WordsBase::wordFrequencyPostProseeding() {
     double q = e.second - ev;
     disp += pr * q * q;
   }
+  i = std::ssize(v[0]);
+  disp *= i / (i - 1);
+
   i = -1;
   for (auto &a : {EXPECTED_VALUE, STANDARD_DEVIATION, VARIANCE}) {
     i++;
