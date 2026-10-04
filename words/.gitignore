@@ -1,4 +1,4 @@
-/Release/
 /Output/
 *.exe
 *.o
+log.txt

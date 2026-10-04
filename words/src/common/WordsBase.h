@@ -9,10 +9,7 @@
 
 #include "Modification.h"
 #include "consts.h"
-#include <algorithm>
-#include <array>
-#include <cstring>
-#include <ctime>
+#include <barrier>
 #include <thread>
 
 #define PCRE2_CODE_UNIT_WIDTH 8
@@ -70,14 +67,14 @@ protected:
   std::vector<int> m_chd;
   std::vector<AnagramMap> m_anagrams;
   std::vector<LetterGroupSplitMap> m_eqmapt;
-  //
   LetterGroupSplitMap m_eqmap;
-
+  int m_threads;
   std::stop_token m_token;
+  std::unique_ptr<std::barrier<>> m_barrier;
+  std::mutex m_mutex;
 
   std::string getStatusString();
   std::string getTimeString();
-  int m_threads;
 
   int getMaximumWordLength() {
     return m_longestWordLength[getDictionaryIndex()];
@@ -143,6 +140,7 @@ public:
   void twoCharactersDistribution(int nthread);
   void findWordsSplit(int nthread);
 
+  void findLetterGroupSplitPreProseeding();
   void checkKeyboardWordSimplePreProseeding();
   void checkKeyboardWordComplexPreProseeding();
   void checkDictionaryPreProseeding();
@@ -153,7 +151,6 @@ public:
   void twoCharactersDistributionPostProseeding();
   void simpleDoubleWordSequencePostProseeding();
   void checkDictionaryPostProseeding();
-  void letterGroupSplitMergeAllMaps();
 
   void twoDictionaries(int nthread, int n);
 

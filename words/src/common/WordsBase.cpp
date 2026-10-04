@@ -6,7 +6,6 @@
  */
 
 #include "WordsBase.h"
-#include <barrier>
 #include <execution>
 #include <format>
 #include <magic_enum.hpp>
@@ -21,7 +20,7 @@
   }
 #endif
 
-const LookupTable<ENUM_MENU, void (WordsBase::*)(int)> menu2VoidInt = {
+const LookupTable<ENUM_MENU, void (WordsBase::*)(int)> COMPLEX_FUNCTION = {
     {MENU_ANAGRAM, &WordsBase::findAnagram}, // break implemented
     {MENU_SIMPLE_WORD_SEQUENCE,
      &WordsBase::findSimpleWordSequence}, // break implemented
@@ -33,7 +32,7 @@ const LookupTable<ENUM_MENU, void (WordsBase::*)(int)> menu2VoidInt = {
     {MENU_CHAIN, &WordsBase::findChain},               // not implemented
     {MENU_WORDS_SPLIT, &WordsBase::findWordsSplit},    // break implemented
     {MENU_LETTER_GROUP_SPLIT,
-     &WordsBase::findLetterGroupSplit}, // not implemented
+     &WordsBase::findLetterGroupSplit}, // break implemented
     {MENU_TWO_DICTIONARIES_STRICT,
      &WordsBase::twoDictionariesStrict}, // break implemented
     {MENU_TWO_DICTIONARIES_SIMPLE,
@@ -55,6 +54,7 @@ const LookupTable<ENUM_MENU, void (WordsBase::*)(int)> menu2VoidInt = {
 };
 
 const LookupTable<ENUM_MENU, void (WordsBase::*)()> menuPreProseeding = {
+    {MENU_LETTER_GROUP_SPLIT, &WordsBase::findLetterGroupSplitPreProseeding},
     {MENU_KEYBOARD_WORD_SIMPLE,
      &WordsBase::checkKeyboardWordSimplePreProseeding},
     {MENU_KEYBOARD_WORD_COMPLEX,
@@ -80,7 +80,7 @@ const LookupTable<ENUM_MENU, void (WordsBase::*)()> menuPostProseeding = {
 
 // regular expression special proceeding
 const LookupTable<ENUM_MENU, bool (WordsBase::*)(const std::string &)>
-    menu2BoolString = {
+    SIMPLE_FUNCTION = {
         {MENU_PANGRAM, &WordsBase::checkPangram},
         {MENU_TEMPLATE, &WordsBase::checkTemplate},
         {MENU_PALINDROME, &WordsBase::checkPalindrome},
@@ -98,7 +98,6 @@ const LookupTable<ENUM_MENU, bool (WordsBase::*)(const std::string &)>
 #endif
 
 WordsBase *wordsBase;
-std::unique_ptr<std::barrier<std::function<void()>>> sync_point; // todo
 
 WordsBase::WordsBase() {
   int i, j;
@@ -138,17 +137,15 @@ WordsBase::WordsBase() {
   }
   // pr(timeElapse(begin));
 
-  int threads = g_get_num_processors(); // std::hardware_concurrency();
-  m_tr.resize(threads);
-  m_iv.resize(threads);
-  m_ma.resize(threads);
-  m_chdv.resize(threads);
-  m_thread_result.resize(threads);
-  m_anagrams.resize(threads);
-  m_eqmapt.resize(threads);
-
-  sync_point = std::make_unique<std::barrier<std::function<void()>>>(
-      threads, [this]() noexcept { this->letterGroupSplitMergeAllMaps(); });
+  m_threads = g_get_num_processors(); // std::hardware_concurrency();
+  m_tr.resize(m_threads);
+  m_iv.resize(m_threads);
+  m_ma.resize(m_threads);
+  m_chdv.resize(m_threads);
+  m_thread_result.resize(m_threads);
+  m_anagrams.resize(m_threads);
+  m_eqmapt.resize(m_threads);
+  m_barrier = std::make_unique<std::barrier<>>(m_threads);
 
   loadLanguages();
 
@@ -1153,7 +1150,14 @@ l210:
   // pr(timeElapse(begin))
 }
 
+void WordsBase::findLetterGroupSplitPreProseeding() {
+  const size_t size = m_ev.length();
+  m_eqmap.clear();
+  m_eqmap.resize(size);
+}
+
 void WordsBase::findLetterGroupSplit(int nthread) {
+  // prsync(nthread);
   std::string s, s1, t, lng;
   size_t i, j;
   auto charset = getOrderedString(m_ev);
@@ -1167,7 +1171,6 @@ void WordsBase::findLetterGroupSplit(int nthread) {
   auto [it, end] = iterators(nthread);
   for (; it != end; it++) {
     auto &s = *it;
-    // for (auto &s : getDictionary()) {
     j = s.length();
     if (j < size) {
       s1 = getOrderedString(s);
@@ -1181,33 +1184,58 @@ void WordsBase::findLetterGroupSplit(int nthread) {
       } else {
         it->second.add(s);
       }
+      RETURN_ON_USER_BREAK
     }
   }
 
   {
-    std::lock_guard<std::mutex> lock(aslovcout_mutex);
-    i = 0;
-    for (j = 0; j < size; j++) {
-      auto &m = eqm[j];
-      if (m.size()) {
-        i += m.size();
-        pr(j, m.size());
+    std::lock_guard<std::mutex> lock(m_mutex);
+    for (j = 1; j < size; j++) {
+      auto &m = m_eqmap[j];
+      for (auto &[k, v] : eqm[j]) {
+        auto it = m.find(k);
+        if (it == m.end()) {
+          m.insert({k, v});
+        } else {
+          auto &v1 = it->second.anagrams;
+          auto &v2 = v.anagrams;
+          v1.reserve(v1.size() + v2.size());
+          v1.insert(v1.end(), std::make_move_iterator(v2.begin()),
+                    std::make_move_iterator(v2.end()));
+        }
       }
     }
-    pr(i);
-    pr(nthread, timeElapse(begin));
   }
 
-  sync_point->arrive_and_wait();
+  m_barrier->arrive_and_wait();
+  // if (!nthread) {
+  //   std::lock_guard<std::mutex> lock(aslovcout_mutex);
+  //   i = 0;
+  //   for (j = 1; j < size; j++) {
+  //     auto &m = m_eqmap[j];
+  //     if (m.size()) {
+  //       i += m.size();
+  //       pr(j, m.size());
+  //     }
+  //   }
+  //   pr(i, timeElapse(begin));
+  // }
 
-  /*
+  prsync(nthread, timeElapse(begin));
+  if(nthread){
+    return;
+  }
+  
+    auto begin1 = clock();
+
     auto v = m_eqmap.allPairs(charset);
     size_t n[] = {v.size(), 0};
 
     if (!v.empty()) {
-      SearchResult::out = localeToUtf8(pairsToString(v)) + "----------------\n";
+      SearchResult::out = localeToUtf8(pairsToString(v)) +
+    "----------------\n";
     }
-
+//todo RETURN_ON_USER_BREAK
     for (i = 1; i < size; i++) {
       auto &m = m_eqmap[i];
       // int j=-1;
@@ -1230,11 +1258,10 @@ void WordsBase::findLetterGroupSplit(int nthread) {
                        intToStringLocaled(n[i]) + (i ? "" : ", ");
       }
     }
-    pr(timeElapse(begin));
-  */
+    printlog(timeElapse(begin),timeElapse(begin1));
+    printlogi;
+    pr(timeElapse(begin),timeElapse(begin1));
 }
-
-void WordsBase::letterGroupSplitMergeAllMaps() { pri; }
 
 void WordsBase::twoDictionaries(int nthread, int nn) {
   VVString to;
@@ -1945,17 +1972,19 @@ void WordsBase::run_thread(int nthread) {
   // auto begin = clock();
   m_thread_result[nthread].clear();
 
-  if (auto it = menu2VoidInt.get(m_menuClick)) {
+  if (auto it = COMPLEX_FUNCTION.get(m_menuClick)) {
     (this->*(*it))(nthread);
   }
 
   if (m_menuClick == MENU_REGULAR_EXPRESSIONS) {
     UniquePcre2Code r;
     UniquePcre2MatchData m;
+  #ifndef NDEBUG
     if (!createRegex(ENTRY_TEMPLATE, r, m)) {
       assert(0);
       return;
     }
+    #endif
 
     bool isEnglish = getDictionaryIndex() == DICTIONARY_EN;
     auto n = isEnglish ? DICTIONARY_EN : DICTIONARY_RU_UTF8;
@@ -1969,7 +1998,7 @@ void WordsBase::run_thread(int nthread) {
       RETURN_ON_USER_BREAK
     }
 
-  } else if (auto it = menu2BoolString.get(m_menuClick)) {
+  } else if (auto it = SIMPLE_FUNCTION.get(m_menuClick)) {
     auto [it2, end] = iterators(nthread);
     for (; it2 != end; it2++) {
       auto &e = *it2;
