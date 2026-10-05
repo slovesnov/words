@@ -6,7 +6,7 @@ window,dialog,messagedialog {
 }
 
 /*visited link same color with unvisited*/
-dialog label link{
+label link{
 	color:#2a76c6;
 }
 

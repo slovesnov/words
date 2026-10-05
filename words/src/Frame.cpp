@@ -16,7 +16,7 @@ const char CERROR[] = "cerror";
 const int TIMER = 500; // milliseconds
 const int TIMER_BUTTON = 1000;
 const int MIN_LEFT_PANEL_WIDTH = 300;
-const int MIN_RIGHT_PANEL_WIDTH = 400;
+const int MIN_RIGHT_PANEL_WIDTH = 300;
 const int DEFAULT_SEPARATOR_POSITION = 1340;
 const int TEXT_VIEW_MARGIN = 5;
 const std::string CONFIG_TAGS[] = {"version",   "language", "dictionary",
@@ -657,7 +657,7 @@ void Frame::updateDictionary(bool change) {
                     MENU_LOAD_ENGLISH_DICTIONARY, MENU_LOAD_RUSSIAN_DICTIONARY);
   updateButton(BUTTON_DICTIONARY);
 
-  lockSignals();//lock signals to prevent entry|combo start new job
+  lockSignals(); // lock signals to prevent entry|combo start new job
   if (auto it = MENU_WITH_ENTRY.get(m_menuClick)) {
     auto e = ENTRY_TEMPLATE;
     std::string s = stringUsingDictionary(*it, true);
@@ -953,7 +953,7 @@ void Frame::debounceTimeout(ENUM_ENTRY e) {
 
 void Frame::entryChanged(ENUM_ENTRY e) {
   bool b;
-  //pr(magic_enum::enum_name(e));
+  // pr(magic_enum::enum_name(e));
   updateEntryValue(e);
   if (e == ENTRY_TEMPLATE) {
     b = prepare();
@@ -1389,7 +1389,7 @@ void Frame::saveText() {
 
   chooser = GTK_FILE_CHOOSER(dialog);
   gtk_file_chooser_set_do_overwrite_confirmation(chooser, TRUE);
-  s=string(UNTITLED)+".txt";
+  s = string(UNTITLED) + ".txt";
   gtk_file_chooser_set_current_name(chooser, s.c_str());
   // gtk_file_chooser_set_current_folder(chooser, "/home/user/Documents");
 
@@ -1431,8 +1431,8 @@ results JOB_TYPE_FILTER - stop calculations if needed, then filter results
 JOB_TYPE_STOP - stop calculations if needed
 */
 void Frame::job(ENUM_JOB_TYPE e) {
-  //prsync(magic_enum::enum_name(m_menuClick), magic_enum::enum_name(e));
-  // print_short_stack_trace( 6);
+  // prsync(magic_enum::enum_name(m_menuClick), magic_enum::enum_name(e));
+  //  print_short_stack_trace( 6);
   if (oneOf(e, JOB_TYPE_SORT_AND_FILTER, JOB_TYPE_FILTER) && m_result.empty()) {
     return;
   }
@@ -1496,7 +1496,14 @@ void Frame::addHelp(ENUM_STRING e) {
   gtk_label_set_line_wrap(GTK_LABEL(w), TRUE);
   gtk_label_set_max_width_chars(GTK_LABEL(w), 40);
 
-  auto s = replaceAll(string(e), "<br>", "\n");
+  auto s = string(e);
+  if (oneOf(m_menuClick, MENU_DICTIONARY_STATISTICS, MENU_WORD_FREQUENCY)) {
+    s = replaceAll(s, "<a>",
+                   std::format("<a href='{},{}#{}'>", HOMEPAGE,
+                               LNG[getLanguageIndex()],
+                               magic_enum::enum_name(m_menuClick)));
+  }
+  s = replaceAll(s, "<br>", "\n");
   gchar *p = g_markup_printf_escaped(s.c_str());
   gtk_label_set_markup(GTK_LABEL(w), p);
   g_free(p);

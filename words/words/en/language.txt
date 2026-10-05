@@ -34,18 +34,18 @@ dictionary statistics
 words length statistics
 check dictionary
 SEPARATOR
-two nearby characters distribution
-two nearby characters distribution at the beginning of a word
-two nearby characters distribution at the end of a word
+two letters distribution
+first two letters distribution
+last two letters distribution
 }
 options{
-select all and copy to clipboard
+select all and copy
 select all
 copy to clipboard
 save text to file
 SEPARATOR
-select the font for the output window
-select the font for the controls
+output window font
+controls font
 reset settings
 SEPARATOR
 english dictionary
@@ -184,3 +184,5 @@ untitled
 expected value
 standard deviation
 variance
+Dictionary statistics. This <a>page</a> features a chart of logarithmic letter frequency in percent, sorted in descending order of frequency, as well as a visual representation of letter frequency on the keyboard.
+Word length statistics. This <a>page</a> features a chart of word length distribution along with its normal distribution approximation for both Russian and English languages.
