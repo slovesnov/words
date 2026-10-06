@@ -1,6 +1,5 @@
 #!/bin/bash
 
-# Гарантируем, что разделителем тысяч будет именно запятая (,)
 export LC_NUMERIC=en_US.UTF-8
 
 find . -type f \( -name "*.cpp" -o -name "*.h" \) -exec ls -l {} + | sort -rnk5 | awk '

@@ -68,6 +68,7 @@ protected:
   std::vector<AnagramMap> m_anagrams;
   std::vector<LetterGroupSplitMap> m_eqmapt;
   LetterGroupSplitMap m_eqmap;
+  StringIntVector m_si;
   int m_threads;
   std::stop_token m_token;
   std::unique_ptr<std::barrier<>> m_barrier;

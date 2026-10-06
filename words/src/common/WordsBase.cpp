@@ -146,6 +146,7 @@ WordsBase::WordsBase() {
   m_thread_result.resize(m_threads);
   m_anagrams.resize(m_threads);
   m_eqmapt.resize(m_threads);
+  m_si.resize(m_threads);
   m_barrier = std::make_unique<std::barrier<>>(m_threads);
 
   loadLanguages();
@@ -1158,12 +1159,11 @@ void WordsBase::findLetterGroupSplitPreProseeding() {
 }
 
 void WordsBase::findLetterGroupSplit(int nthread) {
-  // prsync(nthread);
   std::string s, s1, t, lng;
-  size_t i, j;
+  size_t i,j;
+  int k,l;
   auto charset = getOrderedString(m_ev);
 
-  auto begin = clock();
   const size_t size = m_ev.length();
   auto &eqm = m_eqmapt[nthread];
   eqm.clear();
@@ -1222,34 +1222,49 @@ void WordsBase::findLetterGroupSplit(int nthread) {
   //   pr(i, timeElapse(begin));
   // }
 
-  prsync(nthread, timeElapse(begin));
+  auto begin = clock();
+
+  size_t n[] = {0, 0};
+
+  if (nthread == 0) {
+    auto v = m_eqmap.allPairs(charset);
+    n[0] = v.size();
+    if (!v.empty()) {
+      SearchResult::out = localeToUtf8(pairsToString(v)) + "----------------\n";
+    }
+  }
+
+  s = "";
+  k = -1;
+  l =0 ;
+  for (i = 1; i < size; i++) {
+    auto &m = m_eqmap[i];
+    for (auto &e : m) {
+      if ((++k) % m_threads == nthread) {
+        auto v = m_eqmap.allPairs(e.second.sub, e.first);
+        if (!v.empty()) {
+          l++;
+          s += localeToUtf8(m_eqmap.get(e.first) + " " +
+                            pairsToString(v, v.size() != 1));
+        }
+      }
+      RETURN_ON_USER_BREAK
+    }
+  }
+  m_si[nthread] = {s, l};
+
+  pr(nthread, timeElapse(begin));
+
+  m_barrier->arrive_and_wait();
   if (nthread) {
     return;
   }
 
-  auto begin1 = clock();
-
-  auto v = m_eqmap.allPairs(charset);
-  size_t n[] = {v.size(), 0};
-
-  if (!v.empty()) {
-    SearchResult::out = localeToUtf8(pairsToString(v)) + "----------------\n";
+  for(auto&a:m_si){
+    SearchResult::out+=a.first;
+    n[1]+=a.second;
   }
-  // todo RETURN_ON_USER_BREAK
-  for (i = 1; i < size; i++) {
-    auto &m = m_eqmap[i];
-    // int j=-1;
-    for (auto &e : m) {
-      // j++;
-      // auto v = m_eqmap.allPairs(e.second.sub, j);
-      auto v = m_eqmap.allPairs(e.second.sub, e.first);
-      if (!v.empty()) {
-        n[1]++;
-        SearchResult::out += localeToUtf8(m_eqmap.get(e.first) + " " +
-                                          pairsToString(v, v.size() != 1));
-      }
-    }
-  }
+
   if (SearchResult::out.empty()) {
     SearchResult::out = string(SPLITS_NOT_FOUND);
   } else {
@@ -1258,7 +1273,8 @@ void WordsBase::findLetterGroupSplit(int nthread) {
                      intToStringLocaled(n[i]) + (i ? "" : ", ");
     }
   }
-  pr(timeElapse(begin), timeElapse(begin1));
+  
+  pr(nthread, timeElapse(begin));
 }
 
 void WordsBase::twoDictionaries(int nthread, int nn) {
@@ -1767,14 +1783,14 @@ void WordsBase::sortFilterResults(ENUM_JOB_TYPE e) {
     return;
   }
   SearchResult::out = "";
-  auto begin = clock();
+  // auto begin = clock();
   if (e != JOB_TYPE_FILTER) {
     // mtsort slowdown
     std::sort(
         m_result.begin(), m_result.end(),
         SORT_FUNCTION[m_sortlistValue * 2 + m_buttonValue[BUTTON_SORT_ORDER]]);
   }
-  auto te = timeElapse(begin);
+  // auto te = timeElapse(begin);
   for (auto const &e : m_result) {
     s = fastLocaleToUtf8(e.s);
 #ifndef NOGTK
@@ -1806,7 +1822,7 @@ void WordsBase::sortFilterResults(ENUM_JOB_TYPE e) {
     SearchResult::out += ")";
     RETURN_ON_USER_BREAK
   }
-  prsync("sort", te, timeElapse(begin)); // todo
+  // prsync("sort", te, timeElapse(begin));
 }
 
 void WordsBase::loadLanguages() {
