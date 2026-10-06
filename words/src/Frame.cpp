@@ -258,7 +258,6 @@ Frame::Frame() : WordsBase() {
   m_positionSignalId = g_signal_connect(
       w1, "notify::position",
       G_CALLBACK(+[](GObject *object, GParamSpec *pspec, gpointer data) {
-        // pr("separator");
         frame->m_separatorPosition = gtk_paned_get_position(GTK_PANED(object));
       }),
       NULL);
@@ -366,7 +365,6 @@ Frame::Frame() : WordsBase() {
   gtk_window_set_focus(GTK_WINDOW(m_widget),
                        NULL); // no focus
   unlockSignals();
-  // pr("###################");
 }
 
 void Frame::clickMenu(ENUM_MENU menu) {
@@ -443,7 +441,6 @@ void Frame::clickMenu(ENUM_MENU menu) {
       b = m_menuClick != MENU_SEARCH;
       setHelperPanel(b);
     }
-    // pr(magic_enum::enum_name(m_menuClick));
     if (b) {
       job();
     }
@@ -800,7 +797,6 @@ void Frame::comboChanged(ENUM_COMBOBOX e) {
   } else if (m_menuClick == MENU_CHARACTER_SEQUENCE) {
     skip = e != COMBOBOX_HELPER2 && m_radioValue == 0;
   }
-  // pr("skip", skip);
 
   if (!skip) {
     job();
@@ -953,7 +949,6 @@ void Frame::debounceTimeout(ENUM_ENTRY e) {
 
 void Frame::entryChanged(ENUM_ENTRY e) {
   bool b;
-  // pr(magic_enum::enum_name(e));
   updateEntryValue(e);
   if (e == ENTRY_TEMPLATE) {
     b = prepare();

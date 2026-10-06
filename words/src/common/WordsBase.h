@@ -85,7 +85,6 @@ protected:
 #ifdef NOGTK
   void setDictionaryIndex(int i);
   // void test();
-  void checkLFAllFiles();
   void showLongestAnagram();            // for MAX_ANAGRAM_LENGTH
   void showLongestPangram();            // for MAX_PANGRAM_LENGTH
   void showLongestSimpleWordSequence(); // for MAX_WORD_SEQUENCE_LENGTH

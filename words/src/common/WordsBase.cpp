@@ -98,6 +98,8 @@ const LookupTable<ENUM_MENU, bool (WordsBase::*)(const std::string &)>
 #include "cgi.h"
 #endif
 
+//#define ONE_THREAD
+
 WordsBase *wordsBase;
 
 WordsBase::WordsBase() {
@@ -110,8 +112,6 @@ WordsBase::WordsBase() {
   const int DICTIONARY_SIZE[] = {393'167, 2'415'401};
   for (i = 0; i < LANGUAGES; i++) {
     k = 0;
-    // clock_t begin = clock();
-
     // load dictionaries
     m_longestWordLength[i] = 0;
     std::ifstream file(path(i, "words"));
@@ -133,12 +133,14 @@ WordsBase::WordsBase() {
     }
     file.close();
 
-    // pr(i, timeElapse(begin), k, DICTIONARY_SIZE[i]);
     assert(k == DICTIONARY_SIZE[i]);
   }
-  // pr(timeElapse(begin));
 
-  m_threads = g_get_num_processors(); // std::hardware_concurrency();
+ #ifdef ONE_THREAD 
+ m_threads = 1;
+ #else
+ m_threads = g_get_num_processors(); // std::hardware_concurrency();
+ #endif
   m_tr.resize(m_threads);
   m_iv.resize(m_threads);
   m_ma.resize(m_threads);
@@ -165,7 +167,6 @@ WordsBase::WordsBase() {
   // setDictionaryIndex(1);
 
   // count longest constants needs when dictionary changed
-  // checkLFAllFiles();
   // system("chcp 1251>nul");
 #endif
 }
@@ -489,7 +490,9 @@ std::string readBinaryFileToString(const std::string &filename) {
   std::ifstream file(filename, std::ios::binary | std::ios::ate);
   std::string s;
   if (!file.is_open()) {
+#ifndef NDEBUG
     pr("error cann't open file " + filename);
+#endif
   } else {
     s.resize(file.tellg());
     file.seekg(0, std::ios::beg);
@@ -503,23 +506,6 @@ void WordsBase::setDictionaryIndex(int i) {
   assert(i >= 0 && i < LANGUAGES);
   m_buttonValue[BUTTON_DICTIONARY] = i;
 }
-void WordsBase::checkLFAllFiles() {
-  auto name = "language";
-
-  auto checkFile = [this](const std::string &filepath) {
-    std::string s = readBinaryFileToString(filepath);
-    if (s.contains('\r')) {
-      pr("file " + filepath + " has CR symbol");
-    }
-  };
-
-  for (int n = 0; n < 2; n++) {
-    checkFile(path(n, name));
-  }
-
-  checkFile(getResourcePath(LNG2TXT));
-}
-
 void outMax(std::string f, std::array<int, 2> r) {
   std::string s;
   for (char c : f.substr(strlen("showLongest"))) {
@@ -1149,7 +1135,6 @@ l210:
   for (auto &e : v) {
     m_result.push_back(SearchResult(e, m_chainHelper[0].length(), j + 2));
   }
-  // pr(timeElapse(begin))
 }
 
 void WordsBase::findLetterGroupSplitPreProseeding() {
@@ -1160,8 +1145,8 @@ void WordsBase::findLetterGroupSplitPreProseeding() {
 
 void WordsBase::findLetterGroupSplit(int nthread) {
   std::string s, s1, t, lng;
-  size_t i,j;
-  int k,l;
+  size_t i, j;
+  int k, l;
   auto charset = getOrderedString(m_ev);
 
   const size_t size = m_ev.length();
@@ -1207,36 +1192,11 @@ void WordsBase::findLetterGroupSplit(int nthread) {
       }
     }
   }
-
   m_barrier->arrive_and_wait();
-  // if (!nthread) {
-  //   std::lock_guard<std::mutex> lock(aslovcout_mutex);
-  //   i = 0;
-  //   for (j = 1; j < size; j++) {
-  //     auto &m = m_eqmap[j];
-  //     if (m.size()) {
-  //       i += m.size();
-  //       pr(j, m.size());
-  //     }
-  //   }
-  //   pr(i, timeElapse(begin));
-  // }
-
-  auto begin = clock();
-
-  size_t n[] = {0, 0};
-
-  if (nthread == 0) {
-    auto v = m_eqmap.allPairs(charset);
-    n[0] = v.size();
-    if (!v.empty()) {
-      SearchResult::out = localeToUtf8(pairsToString(v)) + "----------------\n";
-    }
-  }
 
   s = "";
   k = -1;
-  l =0 ;
+  l = 0;
   for (i = 1; i < size; i++) {
     auto &m = m_eqmap[i];
     for (auto &e : m) {
@@ -1252,17 +1212,21 @@ void WordsBase::findLetterGroupSplit(int nthread) {
     }
   }
   m_si[nthread] = {s, l};
-
-  pr(nthread, timeElapse(begin));
-
   m_barrier->arrive_and_wait();
+
   if (nthread) {
     return;
   }
 
-  for(auto&a:m_si){
-    SearchResult::out+=a.first;
-    n[1]+=a.second;
+  auto v = m_eqmap.allPairs(charset);
+  size_t n[] = {v.size(), 0};
+  if (!v.empty()) {
+    SearchResult::out = localeToUtf8(pairsToString(v)) + "----------------\n";
+  }
+
+  for (auto &a : m_si) {
+    SearchResult::out += a.first;
+    n[1] += a.second;
   }
 
   if (SearchResult::out.empty()) {
@@ -1273,8 +1237,6 @@ void WordsBase::findLetterGroupSplit(int nthread) {
                      intToStringLocaled(n[i]) + (i ? "" : ", ");
     }
   }
-  
-  pr(nthread, timeElapse(begin));
 }
 
 void WordsBase::twoDictionaries(int nthread, int nn) {
@@ -2041,14 +2003,15 @@ void WordsBase::run_thread(int nthread) {
 
 void WordsBase::run(ENUM_JOB_TYPE e) {
   bool userbreak = false;
+  auto begin = clock();
+  int threads = m_menuClick == MENU_CHAIN ? 1 : m_threads;
+  pr(magic_enum::enum_name(m_menuClick), threads);
   if (e == JOB_TYPE_FULL) {
     if (auto it = menuPreProseeding.get(m_menuClick)) {
       (this->*(*it))();
     }
 
     std::vector<std::jthread> workers;
-    int threads = m_menuClick == MENU_CHAIN ? 1 : m_threads;
-    prsync(magic_enum::enum_name(m_menuClick), threads);
     for (int i = 0; i < threads; ++i) {
       workers.emplace_back(run_thread, this, i);
     }
@@ -2074,6 +2037,7 @@ void WordsBase::run(ENUM_JOB_TYPE e) {
     userbreak = m_token.stop_requested();
   }
   m_end = clock();
+  pr(timeElapse(begin));
 }
 
 bool WordsBase::differenceOnlyOneChar(const std::string &a,
