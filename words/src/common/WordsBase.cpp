@@ -2005,7 +2005,7 @@ void WordsBase::run(ENUM_JOB_TYPE e) {
   bool userbreak = false;
   auto begin = clock();
   int threads = m_menuClick == MENU_CHAIN ? 1 : m_threads;
-  pr(magic_enum::enum_name(m_menuClick), threads);
+  //pr(magic_enum::enum_name(m_menuClick), threads);
   if (e == JOB_TYPE_FULL) {
     if (auto it = menuPreProseeding.get(m_menuClick)) {
       (this->*(*it))();
@@ -2037,7 +2037,7 @@ void WordsBase::run(ENUM_JOB_TYPE e) {
     userbreak = m_token.stop_requested();
   }
   m_end = clock();
-  pr(timeElapse(begin));
+  //pr(timeElapse(begin));
 }
 
 bool WordsBase::differenceOnlyOneChar(const std::string &a,
