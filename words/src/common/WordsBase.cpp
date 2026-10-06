@@ -64,20 +64,21 @@ const LookupTable<ENUM_MENU, void (WordsBase::*)()> menuPreProseeding = {
 
 const LookupTable<ENUM_MENU, void (WordsBase::*)()> menuPostProseeding = {
     {MENU_ANAGRAM, &WordsBase::anagramsPostProseeding},
-    {MENU_WORD_FREQUENCY, &WordsBase::wordFrequencyPostProseeding},
-    {MENU_DICTIONARY_STATISTICS,
-     &WordsBase::dictionaryStatisticsPostProseeding},
+    {MENU_LETTER_GROUP_SPLIT,&WordsBase::findLetterGroupSplitPostProseeding},
     {MENU_SIMPLE_WORD_SEQUENCE,
      &WordsBase::simpleDoubleWordSequencePostProseeding},
     {MENU_DOUBLE_WORD_SEQUENCE,
      &WordsBase::simpleDoubleWordSequencePostProseeding},
+    {MENU_DICTIONARY_STATISTICS,
+     &WordsBase::dictionaryStatisticsPostProseeding},
+    {MENU_WORD_FREQUENCY, &WordsBase::wordFrequencyPostProseeding},
+    {MENU_CHECK_DICTIONARY, &WordsBase::checkDictionaryPostProseeding},
     {MENU_TWO_CHARACTERS_DISTRIBUTION,
      &WordsBase::twoCharactersDistributionPostProseeding},
     {MENU_TWO_CHARACTERS_DISTRIBUTION_START,
      &WordsBase::twoCharactersDistributionPostProseeding},
     {MENU_TWO_CHARACTERS_DISTRIBUTION_END,
-     &WordsBase::twoCharactersDistributionPostProseeding},
-    {MENU_CHECK_DICTIONARY, &WordsBase::checkDictionaryPostProseeding}};
+     &WordsBase::twoCharactersDistributionPostProseeding}};
 
 // regular expression special proceeding
 const LookupTable<ENUM_MENU, bool (WordsBase::*)(const std::string &)>
@@ -136,11 +137,11 @@ WordsBase::WordsBase() {
     assert(k == DICTIONARY_SIZE[i]);
   }
 
- #ifdef ONE_THREAD 
- m_threads = 1;
- #else
- m_threads = g_get_num_processors(); // std::hardware_concurrency();
- #endif
+#ifdef ONE_THREAD
+  m_threads = 1;
+#else
+  m_threads = g_get_num_processors(); // std::hardware_concurrency();
+#endif
   m_tr.resize(m_threads);
   m_iv.resize(m_threads);
   m_ma.resize(m_threads);
@@ -149,7 +150,6 @@ WordsBase::WordsBase() {
   m_anagrams.resize(m_threads);
   m_eqmapt.resize(m_threads);
   m_si.resize(m_threads);
-  m_barrier = std::make_unique<std::barrier<>>(m_threads);
 
   loadLanguages();
 
@@ -1141,6 +1141,7 @@ void WordsBase::findLetterGroupSplitPreProseeding() {
   const size_t size = m_ev.length();
   m_eqmap.clear();
   m_eqmap.resize(size);
+  m_latch = std::make_unique<std::latch>(m_threads);
 }
 
 void WordsBase::findLetterGroupSplit(int nthread) {
@@ -1170,7 +1171,11 @@ void WordsBase::findLetterGroupSplit(int nthread) {
       } else {
         it->second.add(s);
       }
-      RETURN_ON_USER_BREAK
+
+      if (m_token.stop_requested()) {
+        m_latch->count_down();
+        return;
+      }
     }
   }
 
@@ -1192,7 +1197,7 @@ void WordsBase::findLetterGroupSplit(int nthread) {
       }
     }
   }
-  m_barrier->arrive_and_wait();
+  m_latch->arrive_and_wait();
 
   s = "";
   k = -1;
@@ -1212,12 +1217,11 @@ void WordsBase::findLetterGroupSplit(int nthread) {
     }
   }
   m_si[nthread] = {s, l};
-  m_barrier->arrive_and_wait();
+}
 
-  if (nthread) {
-    return;
-  }
-
+void WordsBase::findLetterGroupSplitPostProseeding() {
+  int i;
+  auto charset = getOrderedString(m_ev);
   auto v = m_eqmap.allPairs(charset);
   size_t n[] = {v.size(), 0};
   if (!v.empty()) {
@@ -2003,9 +2007,9 @@ void WordsBase::run_thread(int nthread) {
 
 void WordsBase::run(ENUM_JOB_TYPE e) {
   bool userbreak = false;
-  auto begin = clock();
+  //auto begin = clock();
   int threads = m_menuClick == MENU_CHAIN ? 1 : m_threads;
-  //pr(magic_enum::enum_name(m_menuClick), threads);
+  // pr(magic_enum::enum_name(m_menuClick), threads);
   if (e == JOB_TYPE_FULL) {
     if (auto it = menuPreProseeding.get(m_menuClick)) {
       (this->*(*it))();
@@ -2037,7 +2041,7 @@ void WordsBase::run(ENUM_JOB_TYPE e) {
     userbreak = m_token.stop_requested();
   }
   m_end = clock();
-  //pr(timeElapse(begin));
+  // pr(timeElapse(begin));
 }
 
 bool WordsBase::differenceOnlyOneChar(const std::string &a,

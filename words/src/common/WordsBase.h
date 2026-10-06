@@ -9,7 +9,7 @@
 
 #include "Modification.h"
 #include "consts.h"
-#include <barrier>
+#include <latch>
 #include <thread>
 
 #define PCRE2_CODE_UNIT_WIDTH 8
@@ -71,7 +71,7 @@ protected:
   StringIntVector m_si;
   int m_threads;
   std::stop_token m_token;
-  std::unique_ptr<std::barrier<>> m_barrier;
+  std::unique_ptr<std::latch> m_latch;
   std::mutex m_mutex;
 
   std::string getStatusString();
@@ -146,11 +146,12 @@ public:
   void checkDictionaryPreProseeding();
 
   void anagramsPostProseeding();
+  void findLetterGroupSplitPostProseeding();
+  void simpleDoubleWordSequencePostProseeding();
   void dictionaryStatisticsPostProseeding();
   void wordFrequencyPostProseeding();
-  void twoCharactersDistributionPostProseeding();
-  void simpleDoubleWordSequencePostProseeding();
   void checkDictionaryPostProseeding();
+  void twoCharactersDistributionPostProseeding();
 
   void twoDictionaries(int nthread, int n);
 
