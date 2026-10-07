@@ -3,7 +3,7 @@
 #define GTKPATH "c:\msys64\mingw64\"
 #define SITE "https://slovesnov.rf.gd"
 #define APPNAME "words"
-#define VERSION "4.5.0"
+#define VERSION "5.0.0"
 
 [Setup]
 ; NOTE: The value of AppId uniquely identifies this application.
