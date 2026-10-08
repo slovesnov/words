@@ -1588,7 +1588,6 @@ void WordsBase::twoCharactersDistribution(int nthread) {
 
 void WordsBase::twoCharactersDistributionPostProseeding() {
   int i, j;
-  std::string s;
   StringIntVectorCI p;
   const int n = alphabetSize();
   StringIntVector v;
@@ -1602,27 +1601,39 @@ void WordsBase::twoCharactersDistributionPostProseeding() {
   for (i = 0; i < n; i++) {
     for (j = 0; j < n; j++) {
       if (a[i][j] != 0) {
-        s = alphabet()[i];
-        s += alphabet()[j];
+        std::string s = { alphabet()[i], alphabet()[j] };
         v.emplace_back(std::move(s), a[i][j]);
       }
     }
   }
   std::sort(v.begin(), v.end(), sortStringInt);
+  
+  if (v.empty()) return;
+
   p = v.begin();
-  i = format("%.2f", (p->second * 100.) / total).length();
-  j = intToStringLocaled(p->second).length();
-  s = "%s %" + std::to_string(i) + ".2f%% = %" + std::to_string(j) + "s / %s";
+  
+  i = static_cast<int>(std::formatted_size("{:.2f}", (p->second * 100.0) / total));
+  j = static_cast<int>(std::formatted_size("{}", intToStringLocaled(p->second)));
+
   for (p = v.begin(); p != v.end(); p++) {
     if (p != v.begin()) {
       SearchResult::out += "\n";
     }
-    SearchResult::out += localeToUtf8(
-        format(s.c_str(), p->first.c_str(), (p->second * 100.) / total,
-               intToStringLocaled(p->second).c_str(),
-               intToStringLocaled(total).c_str()));
+
+    double percentage = (p->second * 100.0) / total;
+
+    std::string formatted_str = std::format(
+        "{} {:>{}.2f}% = {:>{}} / {}",
+        p->first,
+        percentage, i,
+        intToStringLocaled(p->second), j,
+        intToStringLocaled(total)
+    );
+
+    SearchResult::out += localeToUtf8(formatted_str);
   }
-  m_addstatus = string(PAIRS) + " " + intToStringLocaled(v.size());
+  
+  m_addstatus = std::format("{} {}", string(PAIRS), intToStringLocaled(v.size()));
 }
 
 void WordsBase::dictionaryStatistics(int nthread) {
