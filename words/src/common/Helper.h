@@ -52,6 +52,7 @@ using AnagramMap = std::unordered_map<std::string, VString>;
 
 // Sets
 using StringSet = std::set<std::string>;
+using IntSet = std::set<int>;
 
 class ChainNode {
 public:

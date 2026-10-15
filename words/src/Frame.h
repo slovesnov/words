@@ -278,4 +278,7 @@ public:
   void rowActivated(GtkListBoxRow *row);
   void updateSortButton();
   void setRowSensitive(bool sensitive);
+
+  void updateProceedingThread()override;
+  void updateProceeding();
 };

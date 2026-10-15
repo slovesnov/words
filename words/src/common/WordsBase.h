@@ -51,7 +51,7 @@ protected:
   char m_templateHelper[256];
   std::vector<std::vector<char>> m_template_a;
   Modification m_modifications;
-  std::string m_chainHelper[2];                                    // locale
+  VString m_evwords;                                               // locale
   std::array<std::string, STRING_SIZE> m_languageAll[LANGUAGES];   // utf8
   std::array<std::string, MENU_SIZE> m_menuAll[LANGUAGES];         // utf8
   std::array<std::string, SETTINGS_SIZE> m_settingsAll[LANGUAGES]; // locale
@@ -63,8 +63,8 @@ protected:
   ThreadResultVector m_tr;
   std::vector<IntVector> m_iv;
   std::vector<VMapStringTwoStringVectors> m_ma;
-  VString m_chdv;
-  std::vector<int> m_chd;
+  VString m_vs;
+  IntVector m_chd;
   std::vector<AnagramMap> m_anagrams;
   std::vector<LetterGroupSplitMap> m_eqmapt;
   LetterGroupSplitMap m_eqmap;
@@ -73,6 +73,8 @@ protected:
   std::stop_token m_token;
   std::unique_ptr<std::latch> m_latch;
   std::mutex m_mutex;
+  std::vector<bool> m_chain;
+  std::map<int, int> m_wordLength;
 
   std::string getStatusString();
   std::string getTimeString();
@@ -107,6 +109,7 @@ public:
 
   void run(ENUM_JOB_TYPE e);
   void run_thread(int nthread);
+  IntInt iteratorsSize(int nthread, int total_size);
   PairDCIDCI iterators(int nthread, int n = -1);
 
   bool checkPangram(const std::string &s);
@@ -129,6 +132,7 @@ public:
   void findWordSequenceFull(int nthread);
   void findModification(int nthread);
   void findChain(int nthread);
+  void clusterStatistics(int nthread);
   void findLetterGroupSplit(int nthread);
   void twoDictionariesStrict(int nthread) { twoDictionaries(nthread, 0); }
   void twoDictionariesSimple(int nthread) { twoDictionaries(nthread, 1); }
@@ -155,6 +159,10 @@ public:
 
   void twoDictionaries(int nthread, int n);
 
+  int findLongestChain(const StringSet &exceptions);
+  bool addIfFound(const std::string &s, IntVector &v);
+  IntVector layer(const IntVector &layerIndex);
+  IntVector layer(const std::string &word);
   static int differentChars(std::string_view s);
   static bool spanIncluding(std::string_view p, std::string_view pattern) {
     return p.find_first_not_of(pattern) == std::string_view::npos;
@@ -168,6 +176,7 @@ public:
     return m_dictionary[getDictionaryIndex()];
   }
 
+  static std::string intToString(int v, char c = ',');
   std::string intToStringLocaled(int v);
   void sortFilterResults(ENUM_JOB_TYPE e);
 
@@ -190,4 +199,13 @@ public:
   const std::string &stringUsingDictionary(ENUM_STRING e,
                                            bool opposite = false) const;
   const std::string &settings(ENUM_SETTINGS e, int i = 0) const;
+  virtual void updateProceedingThread();
+  template <typename... Args>
+  void updateProceedingText(bool add, std::string_view fmt, Args &&...args) {
+    auto s = std::vformat(fmt, std::make_format_args(args...));
+    SearchResult::out = (add ? SearchResult::out : "") + s;
+    updateProceedingThread();
+  }
+
+  void clasters(int length);
 };

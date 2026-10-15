@@ -30,8 +30,10 @@ const LookupTable<ENUM_MENU, void (WordsBase::*)(int)> COMPLEX_FUNCTION = {
     {MENU_WORD_SEQUENCE_FULL,
      &WordsBase::findWordSequenceFull},                // not implemented
     {MENU_MODIFICATION, &WordsBase::findModification}, // break implemented
-    {MENU_CHAIN, &WordsBase::findChain},               // not implemented
-    {MENU_WORDS_SPLIT, &WordsBase::findWordsSplit},    // break implemented
+    {MENU_CHAIN, &WordsBase::findChain},               // not implemented(TODO?)
+    {MENU_CLUSTER_STATISTICS,
+     &WordsBase::clusterStatistics},                // not implemented(TODO?)
+    {MENU_WORDS_SPLIT, &WordsBase::findWordsSplit}, // break implemented
     {MENU_LETTER_GROUP_SPLIT,
      &WordsBase::findLetterGroupSplit}, // break implemented
     {MENU_TWO_DICTIONARIES_STRICT,
@@ -64,7 +66,7 @@ const LookupTable<ENUM_MENU, void (WordsBase::*)()> menuPreProseeding = {
 
 const LookupTable<ENUM_MENU, void (WordsBase::*)()> menuPostProseeding = {
     {MENU_ANAGRAM, &WordsBase::anagramsPostProseeding},
-    {MENU_LETTER_GROUP_SPLIT,&WordsBase::findLetterGroupSplitPostProseeding},
+    {MENU_LETTER_GROUP_SPLIT, &WordsBase::findLetterGroupSplitPostProseeding},
     {MENU_SIMPLE_WORD_SEQUENCE,
      &WordsBase::simpleDoubleWordSequencePostProseeding},
     {MENU_DOUBLE_WORD_SEQUENCE,
@@ -99,7 +101,7 @@ const LookupTable<ENUM_MENU, bool (WordsBase::*)(const std::string &)>
 #include "cgi.h"
 #endif
 
-//#define ONE_THREAD
+// #define ONE_THREAD
 
 WordsBase *wordsBase;
 
@@ -109,8 +111,6 @@ WordsBase::WordsBase() {
   // clock_t begin = clock();
 
   int k;
-  // todo on distionary change need to set another values
-  const int DICTIONARY_SIZE[] = {393'167, 2'415'401};
   for (i = 0; i < LANGUAGES; i++) {
     k = 0;
     // load dictionaries
@@ -119,22 +119,22 @@ WordsBase::WordsBase() {
     assert(file.is_open());
     std::string line, s;
     if (i == DICTIONARY_RU)
-      m_dictionary[DICTIONARY_RU_UTF8].resize(DICTIONARY_SIZE[i]);
-    m_dictionary[i].resize(DICTIONARY_SIZE[i]);
+      m_dictionary[DICTIONARY_RU_UTF8].resize(NUMBER_OF_WORDS[i]);
+    m_dictionary[i].resize(NUMBER_OF_WORDS[i]);
     while (std::getline(file, line)) {
       j = line.size();
       if (j > m_longestWordLength[i]) {
         m_longestWordLength[i] = j;
       }
-      assert(k != DICTIONARY_SIZE[i]);
+      m_wordLength[j]++;
+      assert(k != NUMBER_OF_WORDS[i]);
       if (i == DICTIONARY_RU)
         m_dictionary[DICTIONARY_RU_UTF8][k] = fastLocaleToUtf8(line);
       m_dictionary[i][k] = std::move(line);
       k++;
     }
     file.close();
-
-    assert(k == DICTIONARY_SIZE[i]);
+    assert(k == NUMBER_OF_WORDS[i]);
   }
 
 #ifdef ONE_THREAD
@@ -145,7 +145,7 @@ WordsBase::WordsBase() {
   m_tr.resize(m_threads);
   m_iv.resize(m_threads);
   m_ma.resize(m_threads);
-  m_chdv.resize(m_threads);
+  m_vs.resize(m_threads);
   m_thread_result.resize(m_threads);
   m_anagrams.resize(m_threads);
   m_eqmapt.resize(m_threads);
@@ -460,7 +460,7 @@ void WordsBase::checkDictionaryPreProseeding() {
 
 void WordsBase::checkDictionaryPostProseeding() {
   SearchResult::out = ""; // cann't use joinV
-  for (auto &a : m_chdv) {
+  for (auto &a : m_vs) {
     if (!a.empty()) {
       if (!SearchResult::out.empty()) {
         SearchResult::out += "\n";
@@ -471,6 +471,120 @@ void WordsBase::checkDictionaryPostProseeding() {
   if (SearchResult::out.empty()) {
     SearchResult::out = string(DICTIONARY_CHECK_FINISHED_SUCCESSFULLY);
   }
+}
+
+int WordsBase::findLongestChain(const StringSet &exceptions) {
+  auto &words = m_vs;
+  int i, j, k, total, prev;
+  bool b;
+  double bf, te;
+  auto gbegin = clock();
+  words.clear();
+  for (auto &a : getDictionary()) {
+    if (a.size() == m_evwords[0].size()) {
+      if (!exceptions.contains(a))
+        words.push_back(a);
+    }
+  }
+
+  m_chain.assign(words.size(), true);
+
+  int size = words.size();
+  int width = floor(std::log10(size)) + 1;
+  width += (width - 1) / 3; // separators
+  IntVector layerIndex;
+
+  bool found = addIfFound(m_evwords[0], layerIndex);
+
+  std::string n_str = string(NSTRING), layer_str = string(LAYER),
+              total_str = string(TOTAL), left_str = string(LEFT),
+              bf_str = string(BRANCHING_FACTOR), time_str = string(TIME),
+              words_str = string(WORDS_NOMINATIVE_CASE);
+
+  const int TIME_WIDTH = 6;
+  const int BF_WIDTH = std::max(6, int(g_utf8_strlen(bf_str.c_str(), -1)));
+  updateProceedingText(false, "{:>2} {:>{}} {:>{}} {:>{}} {:>{}} {:>{}} {}",
+                       n_str, layer_str, width, total_str, width, left_str,
+                       width, bf_str, BF_WIDTH, time_str, TIME_WIDTH,
+                       words_str);
+  i = 1;
+  total = 0;
+  prev = 1;
+  for (; (b = (i == 1 && !found)) || !layerIndex.empty() /*&& i <= 8*/; i++) {
+    auto begin = clock();
+    layerIndex = b ? layer(m_ev) : layer(layerIndex);
+    j = layerIndex.size();
+    total += j;
+    bf = double(j) / prev;
+    prev = j;
+    layer_str = intToString(layerIndex.size());
+    total_str = intToString(total);
+    left_str = intToString(size - total - found);
+    words_str = "";
+    for (k = 0; k < std::min(3, j); k++) {
+      words_str += (k ? " " : "") + localeToUtf8(words[layerIndex[k]]);
+    }
+    te = timeElapse(begin);
+    updateProceedingText(true,
+                         "\n{:>2} {:>{}} {:>{}} {:>{}} {:{}.2f} {:>{}} {}", i,
+                         layer_str, width, total_str, width, left_str, width,
+                         bf, BF_WIDTH, te, TIME_WIDTH, words_str);
+  }
+  te = timeElapse(gbegin);
+  updateProceedingText(true, "\n{} {:.2f}", time_str, te);
+  return total;
+}
+
+bool WordsBase::addIfFound(const std::string &s, IntVector &v) {
+  const auto &words = m_vs;
+  auto it = std::lower_bound(words.begin(), words.end(), s);
+  if (it != words.end() && *it == s) {
+    int i = std::distance(words.begin(), it);
+    if (m_chain[i]) {
+      m_chain[i] = false;
+      v.push_back(i);
+      return true;
+    }
+  }
+  return false;
+}
+
+IntVector WordsBase::layer(const IntVector &layerIndex) {
+  IntVector v;
+  char q;
+  const auto &words = m_vs;
+  for (auto &li : layerIndex) {
+    std::string s = words[li];
+    for (char &c : s) { // reference
+      for (const char &a : alphabet()) {
+        if (a != c) {
+          q = c;
+          c = a;
+          addIfFound(s, v);
+          c = q;
+        }
+      }
+    }
+  }
+  return v;
+}
+
+IntVector WordsBase::layer(const std::string &word) {
+  IntVector v;
+  size_t i;
+  char q;
+  std::string s = word;
+  for (i = 0; i < s.size(); i++) {
+    for (auto &c : alphabet()) {
+      if (c != s[i]) {
+        q = s[i];
+        s[i] = c;
+        addIfFound(s, v);
+        s[i] = q;
+      }
+    }
+  }
+  return v;
 }
 
 int WordsBase::differentChars(std::string_view s) {
@@ -915,30 +1029,31 @@ void WordsBase::findChain(int nthread) {
   StringSet vs[2];
   ChainNodeVectorCI cni1;
   ChainNode *cp;
-  std::set<std::string> ex;
+  StringSet exceptions;
+
+  v = splitr(trim(m_textViewValue), "\\s+");
+  for (auto &a : v) {
+    if (a.size() == m_evwords[0].length())
+      exceptions.insert(a);
+  }
 
   // auto begin = clock();
-
-  if (differenceOnlyOneChar(m_chainHelper[0], m_chainHelper[1])) {
-    SearchResult::out =
-        localeToUtf8(m_chainHelper[0] + " " + m_chainHelper[1]) + OPEN_S +
-        string(WORDS) + "2)";
+  if (m_evwords.size() == 1) {
+    findLongestChain(exceptions);
     return;
   }
 
-  std::stringstream ss(m_textViewValue);
-  while (ss >> s) {
-    if (s.size() == m_chainHelper[0].length())
-      ex.insert(s);
+  if (differenceOnlyOneChar(m_evwords[0], m_evwords[1])) {
+    SearchResult::out = localeToUtf8(m_evwords[0] + " " + m_evwords[1]) +
+                        OPEN_S + string(WORDS_GENITIVE_CASE) + "2)";
+    return;
   }
 
-  i = 0;
   for (auto &e : getDictionary()) {
-    if (e.length() == m_chainHelper[0].length()) {
-      if (ex.contains(e)) {
-        i++;
-      } else
+    if (e.length() == m_evwords[0].length()) {
+      if (!exceptions.contains(e)) {
         dl[e] = 0;
+      }
     }
   }
 
@@ -946,8 +1061,8 @@ void WordsBase::findChain(int nthread) {
 
   j = 1; // j is step
   for (i = 0; i < 2; i++) {
-    w[i].push_back(m_chainHelper[i]);
-    dl[m_chainHelper[i]] = i == 0 ? j : -j;
+    w[i].push_back(m_evwords[i]);
+    dl[m_evwords[i]] = i == 0 ? j : -j;
   }
   while (1) {
     j++;
@@ -1101,7 +1216,7 @@ l210:
   v.clear();
   while (1) {
     // output tree path
-    s = m_chainHelper[0];
+    s = m_evwords[0];
     for (i = 0; i < j; i++) {
       if (i == 0) {
         k = ni[i];
@@ -1114,7 +1229,7 @@ l210:
       s += node.s;
     }
     s += " ";
-    s += m_chainHelper[1];
+    s += m_evwords[1];
     v.push_back(s);
 
     for (k = j - 1; k > -1; k--) {
@@ -1133,8 +1248,22 @@ l210:
   }
 
   for (auto &e : v) {
-    m_result.push_back(SearchResult(e, m_chainHelper[0].length(), j + 2));
+    m_result.push_back(SearchResult(e, m_evwords[0].length(), j + 2));
   }
+}
+
+void WordsBase::clusterStatistics(int nthread) {
+  auto begin = clock();
+  // int i = -1;
+  // sort by m_wordsLeng
+  for (const auto &[length, count] : m_wordLength) {
+    pr(length, count);
+    // if (i++ == 10) {
+    //   break;
+    // }
+    clasters(length);
+  }
+  updateProceedingText(true, "\ntotal time {}", timeElapse(begin));
 }
 
 void WordsBase::findLetterGroupSplitPreProseeding() {
@@ -1400,7 +1529,7 @@ void WordsBase::wordFrequencyPostProseeding() {
   std::sort(v[1].begin(), v[1].end(),
             [](auto &a, auto &b) { return a.second < b.second; });
 
-  size_t w = toString(v[0][0].first, ',').size(); // max len
+  size_t w = intToString(v[0][0].first).size(); // max len
   int sz = getDictionary().size();
   const int SP = 10;
   const std::string separator(SP, ' ');
@@ -1414,7 +1543,7 @@ void WordsBase::wordFrequencyPostProseeding() {
         ev += pr * e.second;
       }
       auto s = std::format("{:2d} {:6.3f}% {:>{}}/{}", e.second, 100. * pr,
-                           toString(e.first, ','), w, toString(sz, ','));
+                           intToString(e.first), w, intToString(sz));
       if (i == 0 && j == 0) {
         s1 = string(WORD_LENGTH_FREQUENCY);
         k = s.length() + SP - g_utf8_strlen(s1.c_str(), -1);
@@ -1446,19 +1575,19 @@ void WordsBase::wordFrequencyPostProseeding() {
 void WordsBase::checkDictionary(int nthread) {
   std::string s, p = path(getDictionaryIndex(), "words");
   char buffer[256];
-  const int THREADS = m_chdv.size();
+  const int THREADS = m_vs.size();
   const int MAX_ERRORS = 100 / THREADS;
   int line = 0, errors = MAX_ERRORS;
   const bool lastThread = nthread == THREADS - 1;
-  m_chdv[nthread] = "";
+  m_vs[nthread] = "";
 
   auto addError = [&line, &errors, nthread, this](ENUM_STRING error) {
-    m_chdv[nthread] += (m_chdv[nthread].empty() ? "" : "\n") +
-                       capitalizeFirstUtf8(string(STRING_ERROR)) + " " +
-                       string(error) + ", " + string(THREAD) + " " +
-                       std::to_string(nthread + 1) + ", " + string(LINE) + " " +
-                       intToStringLocaled(line) + "." +
-                       (nthread == 0 ? "" : " " + string(THREAD_NOTE));
+    m_vs[nthread] += (m_vs[nthread].empty() ? "" : "\n") +
+                     capitalizeFirstUtf8(string(STRING_ERROR)) + " " +
+                     string(error) + ", " + string(THREAD) + " " +
+                     std::to_string(nthread + 1) + ", " + string(LINE) + " " +
+                     intToStringLocaled(line) + "." +
+                     (nthread == 0 ? "" : " " + string(THREAD_NOTE));
     if (!(--errors)) {
       throw std::runtime_error("");
     }
@@ -1601,19 +1730,22 @@ void WordsBase::twoCharactersDistributionPostProseeding() {
   for (i = 0; i < n; i++) {
     for (j = 0; j < n; j++) {
       if (a[i][j] != 0) {
-        std::string s = { alphabet()[i], alphabet()[j] };
+        std::string s = {alphabet()[i], alphabet()[j]};
         v.emplace_back(std::move(s), a[i][j]);
       }
     }
   }
   std::sort(v.begin(), v.end(), sortStringInt);
-  
-  if (v.empty()) return;
+
+  if (v.empty())
+    return;
 
   p = v.begin();
-  
-  i = static_cast<int>(std::formatted_size("{:.2f}", (p->second * 100.0) / total));
-  j = static_cast<int>(std::formatted_size("{}", intToStringLocaled(p->second)));
+
+  i = static_cast<int>(
+      std::formatted_size("{:.2f}", (p->second * 100.0) / total));
+  j = static_cast<int>(
+      std::formatted_size("{}", intToStringLocaled(p->second)));
 
   for (p = v.begin(); p != v.end(); p++) {
     if (p != v.begin()) {
@@ -1623,17 +1755,14 @@ void WordsBase::twoCharactersDistributionPostProseeding() {
     double percentage = (p->second * 100.0) / total;
 
     std::string formatted_str = std::format(
-        "{} {:>{}.2f}% = {:>{}} / {}",
-        p->first,
-        percentage, i,
-        intToStringLocaled(p->second), j,
-        intToStringLocaled(total)
-    );
+        "{} {:>{}.2f}% = {:>{}} / {}", p->first, percentage, i,
+        intToStringLocaled(p->second), j, intToStringLocaled(total));
 
     SearchResult::out += localeToUtf8(formatted_str);
   }
-  
-  m_addstatus = std::format("{} {}", string(PAIRS), intToStringLocaled(v.size()));
+
+  m_addstatus =
+      std::format("{} {}", string(PAIRS), intToStringLocaled(v.size()));
 }
 
 void WordsBase::dictionaryStatistics(int nthread) {
@@ -1689,11 +1818,11 @@ void WordsBase::dictionaryStatisticsPostProseeding() {
         " " + string(i == 0 ? SORTED_BY_ALPHABET : SORTED_BY_FREQUENCY);
   }
 
-  SearchResult::out = string(PROCEED_SYMBOLS) + " " +
-                      intToStringLocaled(m[0][a]) + ", " + string(WORDS) + " " +
-                      intToStringLocaled(m[1][a]) + "\n" +
-                      string(AVERAGE_WORD_LENGTH_EQUALS) +
-                      std::format(" {:.2f}", (double(m[0][a])) / m[1][a]);
+  SearchResult::out =
+      string(PROCEED_SYMBOLS) + " " + intToStringLocaled(m[0][a]) + ", " +
+      string(WORDS_GENITIVE_CASE) + " " + intToStringLocaled(m[1][a]) + "\n" +
+      string(AVERAGE_WORD_LENGTH_EQUALS) +
+      std::format(" {:.2f}", (double(m[0][a])) / m[1][a]);
 
   IntDouble ve[a];
   const int COLUMNS = a / 3;
@@ -1783,7 +1912,8 @@ void WordsBase::sortFilterResults(ENUM_JOB_TYPE e) {
         s + OPEN_S + string(CHARACTERS) + std::format(" {}", e.length);
 
     if (e.words > 1) {
-      SearchResult::out += std::format(" {} {}", string(WORDS), e.words);
+      SearchResult::out +=
+          std::format(" {} {}", string(WORDS_GENITIVE_CASE), e.words);
     }
 
     i = m_sortlistValue - (NUMBER_OF_SORTS - 3);
@@ -1846,13 +1976,13 @@ void WordsBase::loadLanguages() {
 
 bool WordsBase::prepare() {
   std::string s;
-  int i;
-  std::string::size_type pb, pe;
+  // int i;
 
   if (!MENU_WITH_ENTRY.get(m_menuClick)) {
     return true;
   }
-  m_ev = utf8ToLocale(m_entryValue[ENTRY_TEMPLATE]);
+  std::string evUtf8 = trim(m_entryValue[ENTRY_TEMPLATE]);
+  m_ev = utf8ToLocale(evUtf8);
   if (m_ev.empty()) {
     return false;
   }
@@ -1903,38 +2033,21 @@ bool WordsBase::prepare() {
       }
       j++;
     }
-  } else if (m_menuClick == MENU_CHAIN) { // all symbols from alphabet or spaces
-    // m_chainHelper is only from alphabet checked
-    s = m_ev;
-    pe = -1;
-    for (i = 0; i < 2; i++) {
-      pb = s.find_first_not_of(' ', pe + 1);
-      if (pb == std::string::npos) {
-        return false;
-      }
-      pe = s.find_first_of(' ', pb + 1);
-      if (pe == std::string::npos) {
-        if (i == 1) {
-          m_chainHelper[i] = s.substr(pb);
-        } else {
-          return false;
-        }
-      } else {
-        m_chainHelper[i] = s.substr(pb, pe - pb);
-        if (i == 1) { // only two words allowed
-          if (s.find_first_not_of(' ', pe + 1) != std::string::npos) {
-            return false;
-          }
-        }
-      }
+  } else if (m_menuClick == MENU_CHAIN) {
+    // evUtf8 trimmed and has only alphabet chars
+    m_evwords.clear();
+    for (auto &a : splitr(evUtf8, "\\s+")) {
+      m_evwords.push_back(utf8ToLocale(a));
     }
-
-    if (m_chainHelper[0] == m_chainHelper[1] ||
-        m_chainHelper[0].length() != m_chainHelper[1].length()) {
+    if (m_evwords.size() == 1) {
+      // only if dictionary has words with current
+      return m_wordLength.contains(m_evwords[0].size());
+    } else if (m_evwords.size() == 2) {
+      return m_evwords[0] != m_evwords[1] &&
+             m_evwords[0].size() == m_evwords[1].size();
+    } else {
       return false;
     }
-
-    return true;
   }
 
   return true;
@@ -1963,17 +2076,21 @@ std::string WordsBase::getTimeString() {
                                      //  m_begin) / CLOCKS_PER_SEC);
 }
 
+IntInt WordsBase::iteratorsSize(int nthread, int total_size) {
+  int chunk_size = total_size / m_threads;
+  int remainder = total_size % m_threads;
+  int start_idx = nthread * chunk_size + std::min(nthread, remainder);
+  int end_idx = start_idx + chunk_size + (nthread < remainder ? 1 : 0);
+  return {start_idx, end_idx};
+}
+
 PairDCIDCI WordsBase::iterators(int nthread, int n) {
   if (n == -1) {
     n = getDictionaryIndex();
   }
   Dictionary const &d = m_dictionary[n];
-  int total_size = d.size();
-  int chunk_size = total_size / m_threads;
-  int remainder = total_size % m_threads;
-  int start_idx = nthread * chunk_size + std::min(nthread, remainder);
-  int end_idx = start_idx + chunk_size + (nthread < remainder ? 1 : 0);
-  return {d.begin() + start_idx, d.begin() + end_idx};
+  const auto &p = iteratorsSize(nthread, d.size());
+  return {d.begin() + p.first, d.begin() + p.second};
 }
 
 void WordsBase::run_thread(int nthread) {
@@ -2018,8 +2135,9 @@ void WordsBase::run_thread(int nthread) {
 
 void WordsBase::run(ENUM_JOB_TYPE e) {
   bool userbreak = false;
-  //auto begin = clock();
-  int threads = m_menuClick == MENU_CHAIN ? 1 : m_threads;
+  // auto begin = clock();
+  int threads =
+      oneOf(m_menuClick, MENU_CHAIN, MENU_CLUSTER_STATISTICS,MENU_WORD_FREQUENCY) ? 1 : m_threads;
   // pr(magic_enum::enum_name(m_menuClick), threads);
   if (e == JOB_TYPE_FULL) {
     if (auto it = menuPreProseeding.get(m_menuClick)) {
@@ -2083,6 +2201,8 @@ bool WordsBase::testFilterRegex(const std::string &s) {
 }
 
 #endif
+
+std::string WordsBase::intToString(int v, char c) { return toString(v, c); }
 
 std::string WordsBase::intToStringLocaled(int v) {
   return toString(v, string(SEPARATOR_SYMBOL)[0]);
@@ -2266,4 +2386,36 @@ const std::string &WordsBase::settings(ENUM_SETTINGS e, int i) const {
   int n = int(e) + i;
   assert(n < SETTINGS_SIZE);
   return m_settingsAll[getDictionaryIndex()][ENUM_SETTINGS(n)];
+}
+
+void WordsBase::updateProceedingThread() {}
+
+void WordsBase::clasters(int length) {
+  // auto begin = clock();
+  // IntVector v(MIN_SHOW_LENGTH, 0);
+  // int size = words.size();
+  // auto start = std::chrono::high_resolution_clock::now();
+
+  // std::cout << std::format("length{} {}\n", length, tos(size));
+  // std::vector<bool>::iterator it;
+  // int i; //, j;
+
+  // while ((it = std::find(m_chain.begin(), m_chain.end(), true)) !=
+  //        m_chain.end()) {
+  //   size_t index = std::distance(m_chain.begin(), it);
+  //   i = longestChain(words[index], true, false) + 1;
+  //   if (i < MIN_SHOW_LENGTH) {
+  //     v[i]++;
+  //   } else {
+  //     std::cout << words[index] << " " << tos(i) << "\n";
+  //   }
+  // }
+  // i = -1;
+  // for (auto &a : v) {
+  //   i++;
+  //   if (a) {
+  //     std::cout << std::format("{}:{} ", i, a);
+  //   }
+  // }
+  // std::cout << std::format("time {}", elapse(start)) << std::endl;
 }

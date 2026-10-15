@@ -123,6 +123,11 @@ gboolean new_version_message(gpointer) {
   return G_SOURCE_REMOVE;
 }
 
+gboolean update_proceeding(gpointer data) {
+  frame->updateProceeding();
+  return G_SOURCE_REMOVE;
+}
+
 gboolean on_label_clicked(GtkWidget *widget, GdkEventButton *event,
                           gpointer user_data) {
   if (oneOf(event->type, GDK_BUTTON_PRESS, GDK_2BUTTON_PRESS) &&
@@ -1649,4 +1654,12 @@ void Frame::setRowSensitive(bool sensitive) {
   GtkListBoxRow *row =
       gtk_list_box_get_row_at_index(GTK_LIST_BOX(m_sortlist), m_sortlistValue);
   gtk_widget_set_sensitive(GTK_WIDGET(row), sensitive);
+}
+
+void Frame::updateProceedingThread() {
+  g_idle_add_full(G_PRIORITY_HIGH, update_proceeding, NULL, NULL);
+}
+
+void Frame::updateProceeding() {
+  updateTextView(TEXTVIEW_MAIN, SearchResult::out);
 }
