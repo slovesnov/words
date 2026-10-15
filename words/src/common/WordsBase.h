@@ -72,10 +72,11 @@ protected:
   std::stop_token m_token;
   std::unique_ptr<std::latch> m_latch;
   std::mutex m_mutex;
-  std::vector<bool> m_chain;
+  std::vector<VectorBool> m_chain;
   MapIntInt m_wordLengthMap[LANGUAGES];
   VectorIntInt m_iiv;
   std::atomic<int> m_i;
+  VVString m_vvs;
 
   std::string getStatusString();
   std::string getTimeString();
@@ -160,10 +161,13 @@ public:
 
   void twoDictionaries(int nthread, int n);
 
-  int findLongestChain(const SetString &exceptions);
-  bool addIfFound(const std::string &s, VectorInt &v);
-  VectorInt layer(const VectorInt &layerIndex);
-  VectorInt layer(const std::string &word);
+  void fillDictionaryLength(int nthread, int length,
+                            const SetString &exceptions);
+  int findLongestChain(int nthread, const std::string &word,
+                       const SetString &exceptions);
+  bool addIfFound(int nthread, const std::string &s, VectorInt &v);
+  VectorInt layer(int nthread, const VectorInt &layerIndex);
+  VectorInt layer(int nthread, const std::string &word);
   static int differentChars(std::string_view s);
   static bool spanIncluding(std::string_view p, std::string_view pattern) {
     return p.find_first_not_of(pattern) == std::string_view::npos;
@@ -203,7 +207,7 @@ public:
   virtual void updateProceedingThread();
   void updateProceedingText(std::string s, bool add = true);
 
-  void clasters(int length);
+  void clasters(int nthread, int length);
 
-  const MapIntInt& getWordLengthMap()const;
+  const MapIntInt &getWordLengthMap() const;
 };

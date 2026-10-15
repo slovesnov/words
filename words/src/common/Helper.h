@@ -33,6 +33,7 @@ using StringString = std::pair<std::string, std::string>;
 
 // Vectors
 using VectorInt = std::vector<int>;
+using VectorBool = std::vector<bool>;
 using VectorStringInt = std::vector<StringInt>;
 using VectorStringIntCI = VectorStringInt::const_iterator;
 using VectorIntInt = std::vector<IntInt>;
@@ -206,3 +207,5 @@ public:
     return v;
   }
 };
+
+std::string gets(const VString &v, int width[]);

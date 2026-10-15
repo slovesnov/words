@@ -264,3 +264,12 @@ std::string getOrderedString(std::string const &s) {
   return o;
 }
 
+std::string gets(const VString &v, int width[]) {
+  std::string s;
+  int i = -1;
+  for (const auto &a : v) {
+    i++;
+    s += (i ? " " : "") + std::format("{:>{}}", a, width[i]);
+  }
+  return s;
+}
