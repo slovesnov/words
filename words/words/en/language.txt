@@ -191,7 +191,7 @@ Word length statistics. This <a>page</a> features a chart of word length distrib
 layer
 total
 left
-branching factor
+b-factor
 N
 words
 Cluster help todo

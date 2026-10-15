@@ -513,22 +513,10 @@ int WordsBase::findLongestChain(const StringSet &exceptions) {
     i++;
     auto &q = string(a);
     v.push_back(q);
-    width[i] = std::max(width[i], (int)q.size());
+    width[i] = std::max(width[i], utf8Length(q));
   }
   updateProceedingText(false,
                        gets(v, width) + ' ' + string(WORDS_NOMINATIVE_CASE));
-
-  // std::string n_str = string(NSTRING), layer_str = string(LAYER),
-  //             total_str = string(TOTAL), left_str = string(LEFT),
-  //             bf_str = string(BRANCHING_FACTOR), time_str = string(TIME),
-  //             words_str = string(WORDS_NOMINATIVE_CASE);
-
-  // const int TIME_WIDTH = 6;
-  // const int BF_WIDTH = std::max(6, utf8Length(bf_str));
-  // updateProceedingText(false, "{:>2} {:>{}} {:>{}} {:>{}} {:>{}} {:>{}} {}",
-  //                      n_str, layer_str, width, total_str, width, left_str,
-  //                      width, bf_str, BF_WIDTH, time_str, TIME_WIDTH,
-  //                      words_str);
 
   total = 0;
   prev = 1;
@@ -537,26 +525,16 @@ int WordsBase::findLongestChain(const StringSet &exceptions) {
     layerIndex = b ? layer(m_ev) : layer(layerIndex);
     j = layerIndex.size();
     total += j;
-    // bf_str = std::format("{:.2f}", double(j) / prev);
-    // layer_str = intToString(layerIndex.size());
-    // total_str = intToString(total);
-    // left_str = intToString(size - total - found);
     words_str = "";
     for (k = 0; k < std::min(3, j); k++) {
       words_str += (k ? " " : "") + localeToUtf8(words[layerIndex[k]]);
     }
-    te = timeElapse(begin);
-    // updateProceedingText(true, "\n{:>2} {:>{}} {:>{}} {:>{}} {:>{}} {:>{}}
-    // {}",
-    //                      i, layer_str, width, total_str, width, left_str,
-    //                      width, bf_str, BF_WIDTH, te, TIME_WIDTH, words_str);
-
     v = {std::to_string(i),
          intToString(layerIndex.size()),
          intToString(total),
          intToString(size - total - found),
          std::format("{:.2f}", double(j) / prev),
-         std::format("{:.2f}", te)};
+         std::format("{:.2f}",timeElapse(begin))};
     updateProceedingText(true, "\n"+gets(v, width) + ' ' + words_str);
     prev = j;
   }
