@@ -1051,7 +1051,7 @@ void Frame::updateTags(int n) {
     j = gtk_text_iter_get_line_offset(&start);
     auto p = v[i].find(OPEN_BRACKET);
     if (p != std::string::npos) {
-      i = g_utf8_strlen(v[i].c_str(), p);
+      i = utf8Length(v[i], p);
       if (j >= i) {
         continue;
       }
@@ -1248,7 +1248,6 @@ GtkWidget *Frame::createEntry(ENUM_ENTRY e, ENUM_STRING n) {
 
 void Frame::updateEntryValue(ENUM_ENTRY e) {
   std::string s = gtk_entry_get_text(GTK_ENTRY(m_entry[e]));
-  // m_entryValue[e] =  s; todo
   m_entryValue[e] = normalizeString(e, s);
 }
 
@@ -1257,16 +1256,12 @@ std::string Frame::normalizeString(ENUM_ENTRY e, std::string const &q) {
   // lowercased utf8, changed 'ё' -> 'е'
   bool regex = e == ENTRY_FILTER ||
                (e == ENTRY_TEMPLATE && m_menuClick == MENU_REGULAR_EXPRESSIONS);
-  // printlog(s);
   if (regex) {
     s = lowercase_utf8_regex(s);
   } else {
     s = utf8ToLowerCase(s);
   }
-  // printlog(s, s == q);
-  auto r = replaceAll(s, "ё", "е");
-  // printlog(r, r == q);
-  return r;
+  return replaceAll(s, "ё", "е");
 }
 
 void Frame::updateCharactersLabel() {

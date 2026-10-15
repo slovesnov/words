@@ -471,11 +471,24 @@ void WordsBase::checkDictionaryPostProseeding() {
   }
 }
 
+std::string gets(const VString &v, int width[]) {
+  std::string s;
+  int i = -1;
+  for (const auto &a : v) {
+    i++;
+    s += (i ? " " : " ") + std::format("{:>{}}", a, width[i]);
+  }
+  return s;
+}
+
 int WordsBase::findLongestChain(const StringSet &exceptions) {
   auto &words = m_vs;
   int i, j, k, total, prev;
   bool b;
   double te;
+  std::string s, words_str;
+  IntVector layerIndex;
+  VString v;
   words.clear();
   for (auto &a : getDictionary()) {
     if (a.size() == m_evwords[0].size()) {
@@ -483,27 +496,40 @@ int WordsBase::findLongestChain(const StringSet &exceptions) {
         words.push_back(a);
     }
   }
-
-  m_chain.assign(words.size(), true);
-
   int size = words.size();
-  int width = floor(std::log10(size)) + 1;
-  width += (width - 1) / 3; // separators
-  IntVector layerIndex;
-
+  m_chain.assign(size, true);
   bool found = addIfFound(m_evwords[0], layerIndex);
 
-  std::string n_str = string(NSTRING), layer_str = string(LAYER),
-              total_str = string(TOTAL), left_str = string(LEFT),
-              bf_str = string(BRANCHING_FACTOR), time_str = string(TIME),
-              words_str = string(WORDS_NOMINATIVE_CASE);
-
+  int w = floor(std::log10(size)) + 1;
+  w += (w - 1) / 3; // separators
   const int TIME_WIDTH = 6;
-  const int BF_WIDTH = std::max(6, int(g_utf8_strlen(bf_str.c_str(), -1)));
-  updateProceedingText(false, "{:>2} {:>{}} {:>{}} {:>{}} {:>{}} {:>{}} {}",
-                       n_str, layer_str, width, total_str, width, left_str,
-                       width, bf_str, BF_WIDTH, time_str, TIME_WIDTH,
-                       words_str);
+  const int BF_WIDTH = 6;
+
+  int width[] = {2, w, w, w, BF_WIDTH, TIME_WIDTH};
+  ENUM_STRING en[] = {NSTRING, LAYER, TOTAL, LEFT, BRANCHING_FACTOR, TIME};
+  i = -1;
+  s = "";
+  for (auto a : en) {
+    i++;
+    auto &q = string(a);
+    v.push_back(q);
+    width[i] = std::max(width[i], (int)q.size());
+  }
+  updateProceedingText(false,
+                       gets(v, width) + ' ' + string(WORDS_NOMINATIVE_CASE));
+
+  // std::string n_str = string(NSTRING), layer_str = string(LAYER),
+  //             total_str = string(TOTAL), left_str = string(LEFT),
+  //             bf_str = string(BRANCHING_FACTOR), time_str = string(TIME),
+  //             words_str = string(WORDS_NOMINATIVE_CASE);
+
+  // const int TIME_WIDTH = 6;
+  // const int BF_WIDTH = std::max(6, utf8Length(bf_str));
+  // updateProceedingText(false, "{:>2} {:>{}} {:>{}} {:>{}} {:>{}} {:>{}} {}",
+  //                      n_str, layer_str, width, total_str, width, left_str,
+  //                      width, bf_str, BF_WIDTH, time_str, TIME_WIDTH,
+  //                      words_str);
+
   total = 0;
   prev = 1;
   for (i = 1; (b = (i == 1 && !found)) || !layerIndex.empty(); i++) {
@@ -511,20 +537,28 @@ int WordsBase::findLongestChain(const StringSet &exceptions) {
     layerIndex = b ? layer(m_ev) : layer(layerIndex);
     j = layerIndex.size();
     total += j;
-    bf_str = std::format("{:.2f}",double(j) / prev);
-    prev = j;
-    layer_str = intToString(layerIndex.size());
-    total_str = intToString(total);
-    left_str = intToString(size - total - found);
+    // bf_str = std::format("{:.2f}", double(j) / prev);
+    // layer_str = intToString(layerIndex.size());
+    // total_str = intToString(total);
+    // left_str = intToString(size - total - found);
     words_str = "";
     for (k = 0; k < std::min(3, j); k++) {
       words_str += (k ? " " : "") + localeToUtf8(words[layerIndex[k]]);
     }
     te = timeElapse(begin);
-    updateProceedingText(true,
-                         "\n{:>2} {:>{}} {:>{}} {:>{}} {:>{}} {:>{}} {}", i,
-                         layer_str, width, total_str, width, left_str, width,
-                         bf_str, BF_WIDTH, te, TIME_WIDTH, words_str);
+    // updateProceedingText(true, "\n{:>2} {:>{}} {:>{}} {:>{}} {:>{}} {:>{}}
+    // {}",
+    //                      i, layer_str, width, total_str, width, left_str,
+    //                      width, bf_str, BF_WIDTH, te, TIME_WIDTH, words_str);
+
+    v = {std::to_string(i),
+         intToString(layerIndex.size()),
+         intToString(total),
+         intToString(size - total - found),
+         std::format("{:.2f}", double(j) / prev),
+         std::format("{:.2f}", te)};
+    updateProceedingText(true, "\n"+gets(v, width) + ' ' + words_str);
+    prev = j;
   }
   return total;
 }
@@ -1025,9 +1059,7 @@ void WordsBase::findChain(int nthread) {
   ChainNode *cp;
   StringSet exceptions;
 
-  pri;
   v = splitr(utf8Trim(m_textViewValueUtf8), "\\s+");
-  pri;
   for (auto &a : v) {
     if (a.size() == m_evwords[0].length())
       exceptions.insert(a);
@@ -1528,7 +1560,7 @@ void WordsBase::wordFrequency(int nthread) {
                            intToString(e.first), w, intToString(sz));
       if (i == 0 && j == 0) {
         s1 = string(WORD_LENGTH_FREQUENCY);
-        k = s.length() + SP - g_utf8_strlen(s1.c_str(), -1);
+        k = s.length() + SP - utf8Length(s1);
         if (k <= 0) {
           k = 1;
         }
