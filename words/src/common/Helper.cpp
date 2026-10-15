@@ -20,7 +20,7 @@ void ThreadResult::clear(int n, int n1) {
   }
 }
 
-void ThreadResult::add(std::vector<IntVector> &e) const {
+void ThreadResult::add(std::vector<VectorInt> &e) const {
   size_t i, j;
   for (i = 0; i < e.size(); i++) {
     for (j = 0; j < e[0].size(); j++) {
@@ -83,7 +83,7 @@ std::string capitalizeFirstUtf8(const std::string &src) {
   return std::string(utf8_buf, len) + rest_of_string;
 }
 
-std::vector<IntVector> &sum(ThreadResultVector &v) {
+std::vector<VectorInt> &sum(VectorThreadResult &v) {
   auto &a = v[0].a;
   for (size_t i = 1; i < v.size(); i++) {
     v[i].add(a);

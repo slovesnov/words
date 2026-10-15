@@ -482,12 +482,12 @@ std::string gets(const VString &v, int width[]) {
   return s;
 }
 
-int WordsBase::findLongestChain(const StringSet &exceptions) {
+int WordsBase::findLongestChain(const SetString &exceptions) {
   auto &words = m_vs;
   int i, j, k, total, prev;
   bool b;
   std::string s, words_str;
-  IntVector layerIndex;
+  VectorInt layerIndex;
   VString v;
   words.clear();
   for (auto &a : getDictionary()) {
@@ -541,7 +541,7 @@ int WordsBase::findLongestChain(const StringSet &exceptions) {
   return total;
 }
 
-bool WordsBase::addIfFound(const std::string &s, IntVector &v) {
+bool WordsBase::addIfFound(const std::string &s, VectorInt &v) {
   const auto &words = m_vs;
   auto it = std::lower_bound(words.begin(), words.end(), s);
   if (it != words.end() && *it == s) {
@@ -555,8 +555,8 @@ bool WordsBase::addIfFound(const std::string &s, IntVector &v) {
   return false;
 }
 
-IntVector WordsBase::layer(const IntVector &layerIndex) {
-  IntVector v;
+VectorInt WordsBase::layer(const VectorInt &layerIndex) {
+  VectorInt v;
   char q;
   const auto &words = m_vs;
   for (auto &li : layerIndex) {
@@ -575,8 +575,8 @@ IntVector WordsBase::layer(const IntVector &layerIndex) {
   return v;
 }
 
-IntVector WordsBase::layer(const std::string &word) {
-  IntVector v;
+VectorInt WordsBase::layer(const std::string &word) {
+  VectorInt v;
   size_t i;
   char q;
   std::string s = word;
@@ -839,7 +839,7 @@ void WordsBase::findAnagram(int nthread) {
 }
 
 void WordsBase::anagramsPostProseeding() {
-  AnagramMap final_anagrams;
+  MapAnagram final_anagrams;
   for (auto &local_map : m_anagrams) {
     for (auto &[signature, words] : local_map) {
       auto &final_words = final_anagrams[signature];
@@ -1032,10 +1032,10 @@ void WordsBase::findChain(int nthread) {
   MapStringIntI mi;
   char c;
   std::string s;
-  StringSet vs[2];
-  ChainNodeVectorCI cni1;
+  SetString vs[2];
+  VectorChainNodeCI cni1;
   ChainNode *cp;
-  StringSet exceptions;
+  SetString exceptions;
 
   v = splitr(utf8Trim(m_textViewValueUtf8), "\\s+");
   for (auto &a : v) {
@@ -1137,8 +1137,8 @@ l210:
   j -= 2;
 
   VVString vl(j);
-  std::vector<ChainNodeVector> ch(j);
-  IntVector ni(j), nis(j);
+  std::vector<VectorChainNode> ch(j);
+  VectorInt ni(j), nis(j);
 
   if (j == 1) { // special proceeding for j==1 on change check check
                 // [????->????]
@@ -1260,7 +1260,7 @@ l210:
 
 void WordsBase::clusterStatistics(int nthread) {
   int i = m_i.fetch_add(1);
-  while ((i = m_i.fetch_add(1)) < std::ssize(m_iiv.size())) {
+  while ((i = m_i.fetch_add(1)) < std::ssize(m_iiv)) {
     prsync(nthread, i, m_iiv[i].first, m_iiv[i].second)
   }
 }
@@ -1420,7 +1420,7 @@ void WordsBase::twoDictionaries(int nthread, int nn) {
   Dictionary const &dt = m_dictionary[!fromIndex];
   i = m_longestWordLength[fromIndex];
   VVString k(i);
-  IntVector id(i);
+  VectorInt id(i);
 
   auto [it, end] = iterators(nthread, fromIndex);
   for (; it != end; it++) {
@@ -1509,22 +1509,20 @@ void WordsBase::keyboardWords(int nthread) {
 void WordsBase::wordFrequency(int nthread) {
   int i, j, k;
   const int MAX = getMaximumWordLength();
-  IntVector m(MAX, 0);
-  IntIntVector v[2];
+  VectorInt m(MAX, 0);
+  VectorIntInt v[2];
   std::string s, s1;
 
-  for (const auto &[length, count] : getWordLengthMap()) {
-    for (auto &a : v) {
-      a.push_back({count, length});
-    }
+  for (auto &a : v) {
+    a = {getWordLengthMap().begin(), getWordLengthMap().end()};
   }
 
   std::sort(v[0].begin(), v[0].end(),
-            [](auto &a, auto &b) { return a.first > b.first; });
+            [](auto &a, auto &b) { return a.second > b.second; });
   std::sort(v[1].begin(), v[1].end(),
-            [](auto &a, auto &b) { return a.second < b.second; });
+            [](auto &a, auto &b) { return a.first < b.first; });
 
-  size_t w = intToString(v[0][0].first).size(); // max len
+  size_t w = intToString(v[0][0].second).size(); // max len
   int sz = getDictionary().size();
   const int SP = 10;
   const std::string separator(SP, ' ');
@@ -1533,12 +1531,12 @@ void WordsBase::wordFrequency(int nthread) {
     // use separator for intToString for understandable view
     for (j = 0; j < 2; j++) {
       auto &e = v[j][i];
-      auto pr = double(e.first) / sz;
+      auto pr = double(e.second) / sz;
       if (j == 0) {
-        ev += pr * e.second;
+        ev += pr * e.first;
       }
-      auto s = std::format("{:2d} {:6.3f}% {:>{}}/{}", e.second, 100. * pr,
-                           intToString(e.first), w, intToString(sz));
+      auto s = std::format("{:2d} {:6.3f}% {:>{}}/{}", e.first, 100. * pr,
+                           intToString(e.second), w, intToString(sz));
       if (i == 0 && j == 0) {
         s1 = string(WORD_LENGTH_FREQUENCY);
         k = s.length() + SP - utf8Length(s1);
@@ -1552,8 +1550,8 @@ void WordsBase::wordFrequency(int nthread) {
     }
   }
   for (auto &e : v[0]) {
-    auto pr = double(e.first) / sz;
-    double q = e.second - ev;
+    auto pr = double(e.second) / sz;
+    double q = e.first - ev;
     disp += pr * q * q;
   }
   i = std::ssize(v[0]);
@@ -1712,9 +1710,9 @@ void WordsBase::twoCharactersDistribution(int nthread) {
 
 void WordsBase::twoCharactersDistributionPostProseeding() {
   int i, j;
-  StringIntVectorCI p;
+  VectorStringIntCI p;
   const int n = alphabetSize();
-  StringIntVector v;
+  VectorStringInt v;
   auto &a = sum(m_tr);
   int total = 0;
   for (auto &e : m_tr) {
@@ -2153,7 +2151,7 @@ void WordsBase::run(ENUM_JOB_TYPE e) {
       (this->*(*it))();
     } else if (threads > 1) {
       m_result = m_thread_result | std::views::join |
-                 std::ranges::to<SearchResultVector>();
+                 std::ranges::to<VectorSearchResult>();
     }
 
     userbreak = m_token.stop_requested();
@@ -2297,7 +2295,7 @@ void WordsBase::cgi() {
 #endif
 
 // output all pairs to string
-std::string WordsBase::pairsToString(StringStringVector const &v, bool p) {
+std::string WordsBase::pairsToString(VectorStringString const &v, bool p) {
   std::string sout = "";
   bool first = true;
   if (p) {
@@ -2386,30 +2384,30 @@ const std::string &WordsBase::settings(ENUM_SETTINGS e, int i) const {
 void WordsBase::updateProceedingThread() {}
 
 void WordsBase::clasters(int length) {
-  auto begin = clock();
-  MapIntInt map;
+  // auto begin = clock();
+  // MapIntInt map;
 
-  prsync(length);
-  std::vector<bool>::iterator it;
-  int i; //, j;
+  // prsync(length);
+  // std::vector<bool>::iterator it;
+  // int i; //, j;
 
-  while ((it = std::find(m_chain.begin(), m_chain.end(), true)) !=
-         m_chain.end()) {
-    size_t index = std::distance(m_chain.begin(), it);
-    i = longestChain(words[index], true, false) + 1;
-    if (i < MIN_SHOW_LENGTH) {
-      v[i]++;
-    } else {
-      std::cout << words[index] << " " << tos(i) << "\n";
-    }
-  }
-  i = -1;
-  for (auto &a : v) {
-    i++;
-    if (a) {
-      std::cout << std::format("{}:{} ", i, a);
-    }
-  }
+  // while ((it = std::find(m_chain.begin(), m_chain.end(), true)) !=
+  //        m_chain.end()) {
+  //   size_t index = std::distance(m_chain.begin(), it);
+  //   i = longestChain(words[index], true, false) + 1;
+  //   if (i < MIN_SHOW_LENGTH) {
+  //     v[i]++;
+  //   } else {
+  //     std::cout << words[index] << " " << tos(i) << "\n";
+  //   }
+  // }
+  // i = -1;
+  // for (auto &a : v) {
+  //   i++;
+  //   if (a) {
+  //     std::cout << std::format("{}:{} ", i, a);
+  //   }
+  // }
 }
 
 void WordsBase::updateProceedingText(std::string s, bool add) {

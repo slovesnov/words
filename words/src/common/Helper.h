@@ -32,12 +32,12 @@ using IntInt = std::pair<int, int>;
 using StringString = std::pair<std::string, std::string>;
 
 // Vectors
-using IntVector = std::vector<int>;
-using StringIntVector = std::vector<StringInt>;
-using StringIntVectorCI = StringIntVector::const_iterator;
-using IntIntVector = std::vector<IntInt>;
-using IntIntVectorCI = IntIntVector::const_iterator;
-using StringStringVector = std::vector<StringString>;
+using VectorInt = std::vector<int>;
+using VectorStringInt = std::vector<StringInt>;
+using VectorStringIntCI = VectorStringInt::const_iterator;
+using VectorIntInt = std::vector<IntInt>;
+using VectorIntIntCI = VectorIntInt::const_iterator;
+using VectorStringString = std::vector<StringString>;
 using VVString = std::vector<VString>;
 
 // Maps
@@ -47,34 +47,34 @@ using MapStringStringVectorI = MapStringStringVector::iterator;
 using MapStringInt = std::map<std::string, int>;
 using MapStringIntI = MapStringInt::iterator;
 using MapStringTwoStringVectors = std::map<std::string, TwoStringVectors>;
-using VMapStringTwoStringVectors = std::vector<MapStringTwoStringVectors>;
-using MenuMap = std::map<ENUM_MENU, GtkWidget *>;
-using AnagramMap = std::unordered_map<std::string, VString>;
+using VectorMapStringTwoStringVectors = std::vector<MapStringTwoStringVectors>;
+using MapMenu = std::map<ENUM_MENU, GtkWidget *>;
+using MapAnagram = std::unordered_map<std::string, VString>;
 
 // Sets
-using StringSet = std::set<std::string>;
-using IntSet = std::set<int>;
+using SetString = std::set<std::string>;
+//using SetInt = std::set<int>;
 
 class ChainNode {
 public:
   std::string s;
-  IntVector next;
+  VectorInt next;
   explicit ChainNode(std::string _s) : s(std::move(_s)) {}
 };
 
-using ChainNodeVector = std::vector<ChainNode>;
-using ChainNodeVectorI = ChainNodeVector::iterator;
-using ChainNodeVectorCI = ChainNodeVector::const_iterator;
+using VectorChainNode = std::vector<ChainNode>;
+using VectorChainNodeI = VectorChainNode::iterator;
+using VectorChainNodeCI = VectorChainNode::const_iterator;
 
 class ThreadResult {
 public:
   int total;
-  std::vector<IntVector> a;
+  std::vector<VectorInt> a;
   std::string s;
   void clear(int n, int n1 = -1);
-  void add(std::vector<IntVector> &e) const;
+  void add(std::vector<VectorInt> &e) const;
 };
-using ThreadResultVector = std::vector<ThreadResult>;
+using VectorThreadResult = std::vector<ThreadResult>;
 
 struct StartStopButtonState {
   bool imageStart, enable;
@@ -143,7 +143,7 @@ public:
   SearchResult(std::string _s, int _length, int _words);
 };
 
-using SearchResultVector = std::vector<SearchResult>;
+using VectorSearchResult = std::vector<SearchResult>;
 using BOOL_SEARCH_RESULT_SEARCH_RESULT_FUNCTION =
     bool (*)(const SearchResult &, const SearchResult &);
 
@@ -155,7 +155,7 @@ std::string fastLocaleToUtf8(const std::string &src);
 std::string fastUtf8ToLocale(const std::string &src);
 std::string capitalizeFirstUtf8(const std::string &src);
 ENUM_STRING getLetterDeclension(int number);
-std::vector<IntVector> &sum(ThreadResultVector &v);
+std::vector<VectorInt> &sum(VectorThreadResult &v);
 std::string lowercase_utf8_regex(const std::string &pattern);
 bool breakMenu(const std::string &s);
 #ifndef NDEBUG
@@ -179,18 +179,18 @@ public:
   }
 };
 
-using EqMap = std::map<std::string, LetterGroupSplitItem>;
+using MapEq = std::map<std::string, LetterGroupSplitItem>;
 
-class LetterGroupSplitMap : public std::vector<EqMap> {
+class LetterGroupSplitMap : public std::vector<MapEq> {
 public:
   std::string get(std::string const &s) const {
     auto &a = (*this)[s.length()].find(s)->second;
     return a.string();
   }
-  StringStringVector
+  VectorStringString
   allPairs(std::string const &s,
            std::string const &low = INVALID_DIFFERENCE) const {
-    StringStringVector v;
+    VectorStringString v;
     for (size_t i = 1; i < s.size(); i++) {
       for (auto &e : (*this)[i]) {
         if (low == INVALID_DIFFERENCE || low <= e.first) {

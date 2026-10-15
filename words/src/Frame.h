@@ -35,7 +35,7 @@ class Frame : WordsBase {
 
   std::chrono::steady_clock::time_point last_click_time[BUTTON_SIZE]{};
 
-  MenuMap m_menuMap;
+  MapMenu m_menuMap;
   std::vector<GtkAccelGroup *> m_accelGroup;
   bool m_lockSignals;
   std::jthread m_thread, m_managerThread;

@@ -42,8 +42,8 @@ protected:
   std::string m_keyboardRowDiagonals[256];
   ENUM_MENU m_menuClick; // last search option
   std::string m_out;
-  SearchResultVector m_result;
-  std::vector<SearchResultVector> m_thread_result;
+  VectorSearchResult m_result;
+  std::vector<VectorSearchResult> m_thread_result;
   int m_longestWordLength[LANGUAGES];
   clock_t m_begin, m_end;
   UniquePcre2Code m_regex[2];
@@ -60,21 +60,21 @@ protected:
   int m_filteredWordsCount;
 #endif
   // multithread variables
-  ThreadResultVector m_tr;
-  std::vector<VMapStringTwoStringVectors> m_ma;
+  VectorThreadResult m_tr;
+  std::vector<VectorMapStringTwoStringVectors> m_ma;
   VString m_vs;
-  IntVector m_chd;
-  std::vector<AnagramMap> m_anagrams;
+  VectorInt m_chd;
+  std::vector<MapAnagram> m_anagrams;
   std::vector<LetterGroupSplitMap> m_eqmapt;
   LetterGroupSplitMap m_eqmap;
-  StringIntVector m_si;
+  VectorStringInt m_si;
   int m_threads;
   std::stop_token m_token;
   std::unique_ptr<std::latch> m_latch;
   std::mutex m_mutex;
   std::vector<bool> m_chain;
   MapIntInt m_wordLengthMap[LANGUAGES];
-  IntIntVector m_iiv;
+  VectorIntInt m_iiv;
   std::atomic<int> m_i;
 
   std::string getStatusString();
@@ -160,10 +160,10 @@ public:
 
   void twoDictionaries(int nthread, int n);
 
-  int findLongestChain(const StringSet &exceptions);
-  bool addIfFound(const std::string &s, IntVector &v);
-  IntVector layer(const IntVector &layerIndex);
-  IntVector layer(const std::string &word);
+  int findLongestChain(const SetString &exceptions);
+  bool addIfFound(const std::string &s, VectorInt &v);
+  VectorInt layer(const VectorInt &layerIndex);
+  VectorInt layer(const std::string &word);
   static int differentChars(std::string_view s);
   static bool spanIncluding(std::string_view p, std::string_view pattern) {
     return p.find_first_not_of(pattern) == std::string_view::npos;
@@ -183,7 +183,7 @@ public:
 
   void loadLanguages();
 
-  static std::string pairsToString(StringStringVector const &v, bool p = 0);
+  static std::string pairsToString(VectorStringString const &v, bool p = 0);
 
   bool createRegex(ENUM_ENTRY e);
   bool createRegex(ENUM_ENTRY e, UniquePcre2Code &r, UniquePcre2MatchData &m);
