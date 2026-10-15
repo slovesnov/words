@@ -1248,7 +1248,8 @@ GtkWidget *Frame::createEntry(ENUM_ENTRY e, ENUM_STRING n) {
 
 void Frame::updateEntryValue(ENUM_ENTRY e) {
   std::string s = gtk_entry_get_text(GTK_ENTRY(m_entry[e]));
-  m_entryValue[e] = normalizeString(e, s);
+  // m_entryValue[e] =  s; todo
+   m_entryValue[e] = normalizeString(e, s);
 }
 
 std::string Frame::normalizeString(ENUM_ENTRY e, std::string const &q) {
@@ -1256,12 +1257,16 @@ std::string Frame::normalizeString(ENUM_ENTRY e, std::string const &q) {
   // lowercased utf8, changed 'ё' -> 'е'
   bool regex = e == ENTRY_FILTER ||
                (e == ENTRY_TEMPLATE && m_menuClick == MENU_REGULAR_EXPRESSIONS);
+  // printlog(s);
   if (regex) {
     s = lowercase_utf8_regex(s);
   } else {
     s = utf8ToLowerCase(s);
   }
-  return replaceAll(s, "ё", "е");
+  // printlog(s, s == q);
+  auto r = replaceAll(s, "ё", "е");
+  // printlog(r, r == q);
+  return r;
 }
 
 void Frame::updateCharactersLabel() {

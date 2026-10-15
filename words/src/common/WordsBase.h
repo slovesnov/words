@@ -61,7 +61,6 @@ protected:
 #endif
   // multithread variables
   ThreadResultVector m_tr;
-  std::vector<IntVector> m_iv;
   std::vector<VMapStringTwoStringVectors> m_ma;
   VString m_vs;
   IntVector m_chd;
@@ -153,7 +152,6 @@ public:
   void findLetterGroupSplitPostProseeding();
   void simpleDoubleWordSequencePostProseeding();
   void dictionaryStatisticsPostProseeding();
-  void wordFrequencyPostProseeding();
   void checkDictionaryPostProseeding();
   void twoCharactersDistributionPostProseeding();
 
