@@ -485,6 +485,7 @@ void WordsBase::fillDictionaryLength(int nthread, int length,
         words.push_back(a);
     }
   }
+  m_chain[nthread].assign(words.size(), true);
 }
 
 int WordsBase::findLongestChain(int nthread, const std::string &word,
@@ -496,9 +497,7 @@ int WordsBase::findLongestChain(int nthread, const std::string &word,
   VectorInt layerIndex;
   VString v;
   int size = words.size();
-  m_chain[nthread].assign(size, true);
   bool found = addIfFound(nthread, word, layerIndex);
-
   int w = floor(std::log10(size)) + 1;
   w += (w - 1) / 3; // separators
   const int TIME_WIDTH = 6;
@@ -1258,20 +1257,45 @@ l210:
 }
 
 void WordsBase::clusterStatistics(int nthread) {
-  int i = m_i.fetch_add(1);
+  int i, length;
   while ((i = m_i.fetch_add(1)) < std::ssize(m_iiv)) {
-    prsync(nthread, i, m_iiv[i].first, m_iiv[i].second)
+    length = m_iiv[i].first;
+    prsync(nthread, length);
+
+    auto begin = clock();
+    MapIntInt map;
+    std::string s = std::format("{} {}", string(LENGTH), length);
+    auto &words = m_vvs[nthread];
+    VectorBool::iterator it;
+    int i;
+    fillDictionaryLength(nthread, length, {});
+    // todo indexOf(trhue)
+    while ((it = std::find(m_chain[nthread].begin(), m_chain[nthread].end(),
+                           true)) != m_chain[nthread].end()) {
+      size_t index = std::distance(m_chain[nthread].begin(), it);
+      prsync(index, indexOf(true, m_chain[nthread]));
+      i = findLongestChain(nthread, words[index], {}) + 1;
+      map[i]++;
+    }
+
+    for (const auto &[length, count] : map) {
+      s += std::format(" {}:{}", length, intToString(count));
+    }
+    s += std::format(" {} {:.2f} thread{}\n", string(TIME), timeElapse(begin),
+                     nthread);
+    prsync(s);
+    updateProceedingText(s);
   }
 }
 
 void WordsBase::clusterStatisticsPreProseeding() {
   m_iiv = {getWordLengthMap().begin(), getWordLengthMap().end()};
   std::sort(m_iiv.begin(), m_iiv.end(),
-            [](auto &a, auto &b) { return a.second < b.second; });
-  for (const auto &[length, count] : m_iiv) {
-    pr(length, count);
-  }
-  pr(m_iiv.size());
+            [](auto &a, auto &b) { return a.second < b.second; }); // todo
+  // for (const auto &[length, count] : m_iiv) {
+  //   pr(length, count);
+  // }
+  // pr(m_iiv.size());
   m_i.store(1);
 }
 
@@ -2381,32 +2405,6 @@ const std::string &WordsBase::settings(ENUM_SETTINGS e, int i) const {
 }
 
 void WordsBase::updateProceedingThread() {}
-
-void WordsBase::clasters(int nthread, int length) {
-  auto begin = clock();
-  MapIntInt map;
-  std::string s = std::format("length{}", length);
-  auto &words = m_vvs[nthread];
-
-  prsync(nthread, length);
-  VectorBool::iterator it;
-  int i;
-  fillDictionaryLength(nthread, m_evwords[0].size(), {});
-
-  while ((it = std::find(m_chain[nthread].begin(), m_chain[nthread].end(),
-                         true)) != m_chain[nthread].end()) {
-    size_t index = std::distance(m_chain[nthread].begin(), it);
-    i = findLongestChain(nthread, words[index], {}) + 1;
-    map[i]++;
-  }
-
-  for (const auto &[length, count] : map) {
-    s += std::format(" {}:{}", length, intToString(count));
-  }
-  s += std::format(" {} {:.2f} thread{}", string(TIME), timeElapse(begin),
-                   nthread);
-  updateProceedingText(s);
-}
 
 void WordsBase::updateProceedingText(std::string s, bool add) {
   SearchResult::out = (add ? SearchResult::out : "") + s;

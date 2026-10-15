@@ -206,8 +206,5 @@ public:
   const std::string &settings(ENUM_SETTINGS e, int i = 0) const;
   virtual void updateProceedingThread();
   void updateProceedingText(std::string s, bool add = true);
-
-  void clasters(int nthread, int length);
-
   const MapIntInt &getWordLengthMap() const;
 };
