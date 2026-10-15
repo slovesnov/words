@@ -33,7 +33,7 @@ protected:
   int m_comboValue[COMBOBOX_SIZE];
   int m_radioValue;
   int m_sortlistValue;
-  std::string m_textViewValueUtf8; //do splitr so need utf8
+  std::string m_textViewValueUtf8; // do splitr so need utf8
   std::array<int, BUTTON_SIZE>
       m_buttonValue; // use array allow assign all values
 
@@ -73,7 +73,9 @@ protected:
   std::unique_ptr<std::latch> m_latch;
   std::mutex m_mutex;
   std::vector<bool> m_chain;
-  std::map<int, int> m_wordLength;
+  MapIntInt m_wordLengthMap[LANGUAGES];
+  IntIntVector m_iiv;
+  std::atomic<int> m_i;
 
   std::string getStatusString();
   std::string getTimeString();
@@ -143,6 +145,7 @@ public:
   void twoCharactersDistribution(int nthread);
   void findWordsSplit(int nthread);
 
+  void clusterStatisticsPreProseeding();
   void findLetterGroupSplitPreProseeding();
   void checkKeyboardWordSimplePreProseeding();
   void checkKeyboardWordComplexPreProseeding();
@@ -198,12 +201,9 @@ public:
                                            bool opposite = false) const;
   const std::string &settings(ENUM_SETTINGS e, int i = 0) const;
   virtual void updateProceedingThread();
-  template <typename... Args>
-  void updateProceedingText(bool add, std::string_view fmt, Args &&...args) {
-    auto s = std::vformat(fmt, std::make_format_args(args...));
-    SearchResult::out = (add ? SearchResult::out : "") + s;
-    updateProceedingThread();
-  }
+  void updateProceedingText(std::string s, bool add = true);
 
   void clasters(int length);
+
+  const MapIntInt& getWordLengthMap()const;
 };

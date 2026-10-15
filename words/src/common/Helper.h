@@ -41,6 +41,7 @@ using StringStringVector = std::vector<StringString>;
 using VVString = std::vector<VString>;
 
 // Maps
+using MapIntInt = std::map<int, int>;
 using MapStringStringVector = std::map<std::string, VString>;
 using MapStringStringVectorI = MapStringStringVector::iterator;
 using MapStringInt = std::map<std::string, int>;

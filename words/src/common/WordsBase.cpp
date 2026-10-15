@@ -57,6 +57,7 @@ const LookupTable<ENUM_MENU, void (WordsBase::*)(int)> COMPLEX_FUNCTION = {
 };
 
 const LookupTable<ENUM_MENU, void (WordsBase::*)()> menuPreProseeding = {
+    {MENU_CLUSTER_STATISTICS, &WordsBase::clusterStatisticsPreProseeding},
     {MENU_LETTER_GROUP_SPLIT, &WordsBase::findLetterGroupSplitPreProseeding},
     {MENU_KEYBOARD_WORD_SIMPLE,
      &WordsBase::checkKeyboardWordSimplePreProseeding},
@@ -125,7 +126,7 @@ WordsBase::WordsBase() {
       if (j > m_longestWordLength[i]) {
         m_longestWordLength[i] = j;
       }
-      m_wordLength[j]++;
+      m_wordLengthMap[i][j]++;
       assert(k != NUMBER_OF_WORDS[i]);
       if (i == DICTIONARY_RU)
         m_dictionary[DICTIONARY_RU_UTF8][k] = fastLocaleToUtf8(line);
@@ -485,7 +486,6 @@ int WordsBase::findLongestChain(const StringSet &exceptions) {
   auto &words = m_vs;
   int i, j, k, total, prev;
   bool b;
-  double te;
   std::string s, words_str;
   IntVector layerIndex;
   VString v;
@@ -515,8 +515,8 @@ int WordsBase::findLongestChain(const StringSet &exceptions) {
     v.push_back(q);
     width[i] = std::max(width[i], utf8Length(q));
   }
-  updateProceedingText(false,
-                       gets(v, width) + ' ' + string(WORDS_NOMINATIVE_CASE));
+  updateProceedingText(gets(v, width) + ' ' + string(WORDS_NOMINATIVE_CASE),
+                       false);
 
   total = 0;
   prev = 1;
@@ -534,8 +534,8 @@ int WordsBase::findLongestChain(const StringSet &exceptions) {
          intToString(total),
          intToString(size - total - found),
          std::format("{:.2f}", double(j) / prev),
-         std::format("{:.2f}",timeElapse(begin))};
-    updateProceedingText(true, "\n"+gets(v, width) + ' ' + words_str);
+         std::format("{:.2f}", timeElapse(begin))};
+    updateProceedingText("\n" + gets(v, width) + ' ' + words_str);
     prev = j;
   }
   return total;
@@ -1259,17 +1259,21 @@ l210:
 }
 
 void WordsBase::clusterStatistics(int nthread) {
-  auto begin = clock();
-  // int i = -1;
-  // sort by m_wordsLeng
-  for (const auto &[length, count] : m_wordLength) {
-    pr(length, count);
-    // if (i++ == 10) {
-    //   break;
-    // }
-    clasters(length);
+  int i = m_i.fetch_add(1);
+  while ((i = m_i.fetch_add(1)) < std::ssize(m_iiv.size())) {
+    prsync(nthread, i, m_iiv[i].first, m_iiv[i].second)
   }
-  updateProceedingText(true, "\ntotal time {}", timeElapse(begin));
+}
+
+void WordsBase::clusterStatisticsPreProseeding() {
+  m_iiv = {getWordLengthMap().begin(), getWordLengthMap().end()};
+  std::sort(m_iiv.begin(), m_iiv.end(),
+            [](auto &a, auto &b) { return a.second > b.second; });
+  for (const auto &[length, count] : m_iiv) {
+    pr(length, count);
+  }
+  pr(m_iiv.size());
+  m_i.store(1);
 }
 
 void WordsBase::findLetterGroupSplitPreProseeding() {
@@ -1503,14 +1507,13 @@ void WordsBase::keyboardWords(int nthread) {
 }
 
 void WordsBase::wordFrequency(int nthread) {
-  pr(nthread);
   int i, j, k;
   const int MAX = getMaximumWordLength();
   IntVector m(MAX, 0);
   IntIntVector v[2];
   std::string s, s1;
 
-  for (const auto &[length, count] : m_wordLength) {
+  for (const auto &[length, count] : getWordLengthMap()) {
     for (auto &a : v) {
       a.push_back({count, length});
     }
@@ -2033,7 +2036,7 @@ bool WordsBase::prepare() {
     }
     if (m_evwords.size() == 1) {
       // only if dictionary has words with current
-      return m_wordLength.contains(m_evwords[0].size());
+      return getWordLengthMap().contains(m_evwords[0].size());
     } else if (m_evwords.size() == 2) {
       return m_evwords[0] != m_evwords[1] &&
              m_evwords[0].size() == m_evwords[1].size();
@@ -2128,10 +2131,8 @@ void WordsBase::run_thread(int nthread) {
 void WordsBase::run(ENUM_JOB_TYPE e) {
   bool userbreak = false;
   // auto begin = clock();
-  int threads = oneOf(m_menuClick, MENU_CHAIN, MENU_CLUSTER_STATISTICS,
-                      MENU_WORD_FREQUENCY)
-                    ? 1
-                    : m_threads;
+  int threads =
+      oneOf(m_menuClick, MENU_CHAIN, MENU_WORD_FREQUENCY) ? 1 : m_threads;
   // pr(magic_enum::enum_name(m_menuClick), threads);
   if (e == JOB_TYPE_FULL) {
     if (auto it = menuPreProseeding.get(m_menuClick)) {
@@ -2385,31 +2386,37 @@ const std::string &WordsBase::settings(ENUM_SETTINGS e, int i) const {
 void WordsBase::updateProceedingThread() {}
 
 void WordsBase::clasters(int length) {
-  // auto begin = clock();
-  // IntVector v(MIN_SHOW_LENGTH, 0);
-  // int size = words.size();
-  // auto start = std::chrono::high_resolution_clock::now();
+  auto begin = clock();
+  MapIntInt map;
 
-  // std::cout << std::format("length{} {}\n", length, tos(size));
-  // std::vector<bool>::iterator it;
-  // int i; //, j;
+  prsync(length);
+  std::vector<bool>::iterator it;
+  int i; //, j;
 
-  // while ((it = std::find(m_chain.begin(), m_chain.end(), true)) !=
-  //        m_chain.end()) {
-  //   size_t index = std::distance(m_chain.begin(), it);
-  //   i = longestChain(words[index], true, false) + 1;
-  //   if (i < MIN_SHOW_LENGTH) {
-  //     v[i]++;
-  //   } else {
-  //     std::cout << words[index] << " " << tos(i) << "\n";
-  //   }
-  // }
-  // i = -1;
-  // for (auto &a : v) {
-  //   i++;
-  //   if (a) {
-  //     std::cout << std::format("{}:{} ", i, a);
-  //   }
-  // }
-  // std::cout << std::format("time {}", elapse(start)) << std::endl;
+  while ((it = std::find(m_chain.begin(), m_chain.end(), true)) !=
+         m_chain.end()) {
+    size_t index = std::distance(m_chain.begin(), it);
+    i = longestChain(words[index], true, false) + 1;
+    if (i < MIN_SHOW_LENGTH) {
+      v[i]++;
+    } else {
+      std::cout << words[index] << " " << tos(i) << "\n";
+    }
+  }
+  i = -1;
+  for (auto &a : v) {
+    i++;
+    if (a) {
+      std::cout << std::format("{}:{} ", i, a);
+    }
+  }
+}
+
+void WordsBase::updateProceedingText(std::string s, bool add) {
+  SearchResult::out = (add ? SearchResult::out : "") + s;
+  updateProceedingThread();
+}
+
+const MapIntInt &WordsBase::getWordLengthMap() const {
+  return m_wordLengthMap[getDictionaryIndex()];
 }
