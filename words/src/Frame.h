@@ -254,7 +254,7 @@ public:
   GtkWidget *createTextView(ENUM_TEXTVIEW e, ENUM_STRING n = STRING_SIZE);
   void textviewChanged(ENUM_TEXTVIEW e);
   void updateTextviewValue(ENUM_TEXTVIEW e);
-  std::string getTextViewString(ENUM_TEXTVIEW e, bool locale) const;
+  std::string getTextViewString(ENUM_TEXTVIEW e) const;
   GtkTextBuffer *tvBuffer(ENUM_TEXTVIEW e = TEXTVIEW_MAIN) const;
   void updateTextView(ENUM_TEXTVIEW e, std::string const &s);
 

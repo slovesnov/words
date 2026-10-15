@@ -1197,17 +1197,17 @@ void Frame::textviewChanged(ENUM_TEXTVIEW e) {
 
 void Frame::updateTextviewValue(ENUM_TEXTVIEW e) {
   if (e == TEXTVIEW_HELPER) {
-    m_textViewValue = getTextViewString(e, true);
+    m_textViewValueUtf8 = getTextViewString(e);
   }
 }
 
-std::string Frame::getTextViewString(ENUM_TEXTVIEW e, bool locale) const {
+std::string Frame::getTextViewString(ENUM_TEXTVIEW e) const {
   GtkTextBuffer *buffer = tvBuffer(e);
   GtkTextIter start, end;
   std::string s;
   gtk_text_buffer_get_bounds(buffer, &start, &end);
   gchar *raw_text = gtk_text_buffer_get_text(buffer, &start, &end, FALSE);
-  s = locale ? utf8ToLocale(raw_text) : raw_text;
+  s = raw_text;
   g_free(raw_text);
   return s;
 }
@@ -1249,7 +1249,7 @@ GtkWidget *Frame::createEntry(ENUM_ENTRY e, ENUM_STRING n) {
 void Frame::updateEntryValue(ENUM_ENTRY e) {
   std::string s = gtk_entry_get_text(GTK_ENTRY(m_entry[e]));
   // m_entryValue[e] =  s; todo
-   m_entryValue[e] = normalizeString(e, s);
+  m_entryValue[e] = normalizeString(e, s);
 }
 
 std::string Frame::normalizeString(ENUM_ENTRY e, std::string const &q) {
@@ -1410,7 +1410,7 @@ void Frame::saveText() {
 
   if (res == GTK_RESPONSE_ACCEPT) {
     char *filename = gtk_file_chooser_get_filename(chooser);
-    filePutContent(filename, getTextViewString(TEXTVIEW_MAIN, false));
+    filePutContent(filename, getTextViewString(TEXTVIEW_MAIN));
     g_free(filename);
   }
 

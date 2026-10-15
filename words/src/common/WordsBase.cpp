@@ -1026,7 +1026,7 @@ void WordsBase::findChain(int nthread) {
   StringSet exceptions;
 
   pri;
-  v = splitr(utf8Trim(m_textViewValue), "\\s+");
+  v = splitr(utf8Trim(m_textViewValueUtf8), "\\s+");
   pri;
   for (auto &a : v) {
     if (a.size() == m_evwords[0].length())
@@ -2018,11 +2018,9 @@ bool WordsBase::prepare() {
   } else if (m_menuClick == MENU_CHAIN) {
     // evUtf8 trimmed and has only alphabet chars
     m_evwords.clear();
-  pri;
     for (auto &a : splitr(evUtf8, "\\s+")) {
       m_evwords.push_back(utf8ToLocale(a));
     }
-  pri;
     if (m_evwords.size() == 1) {
       // only if dictionary has words with current
       return m_wordLength.contains(m_evwords[0].size());

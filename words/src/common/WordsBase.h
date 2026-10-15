@@ -33,7 +33,7 @@ protected:
   int m_comboValue[COMBOBOX_SIZE];
   int m_radioValue;
   int m_sortlistValue;
-  std::string m_textViewValue; // locale
+  std::string m_textViewValueUtf8; //do splitr so need utf8
   std::array<int, BUTTON_SIZE>
       m_buttonValue; // use array allow assign all values
 
