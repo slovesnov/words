@@ -1127,8 +1127,7 @@ void Frame::updateStatus(ENUM_STATE state, ENUM_JOB_TYPE jobType) {
   case STATE_PROCEEDING:
     switch (jobType) {
     case JOB_TYPE_FULL:
-      m_out = oneOf(m_menuClick, MENU_WAITING) ? string(WAITING)
-                                               : string(MENU_SEARCH);
+      m_out = string(oneOf(m_menuClick, MENU_WAITING) ? WAITING : MENU_SEARCH);
       break;
     case JOB_TYPE_SORT_AND_FILTER:
       m_out = string(SORTING_AND_FILTERING_OF_RESULTS);
