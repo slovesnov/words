@@ -26,6 +26,8 @@ extern WordsBase *wordsBase;
 
 class WordsBase {
   std::string m_ev; // locale m_ev=utf8ToLocale(m_entryValue[ENTRY_TEMPLATE])
+  VString m_evwords;                                               // locale
+  VString m_tvwords;                                               // locale
 
 protected:
   std::string m_entryValue[ENTRY_SIZE]; // utf8
@@ -51,7 +53,6 @@ protected:
   char m_templateHelper[256];
   std::vector<std::vector<char>> m_template_a;
   Modification m_modifications;
-  VString m_evwords;                                               // locale
   std::array<std::string, STRING_SIZE> m_languageAll[LANGUAGES];   // utf8
   std::array<std::string, MENU_SIZE> m_menuAll[LANGUAGES];         // utf8
   std::array<std::string, SETTINGS_SIZE> m_settingsAll[LANGUAGES]; // locale

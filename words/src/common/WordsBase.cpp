@@ -1039,10 +1039,12 @@ void WordsBase::findChain(int nthread) {
   ChainNode *cp;
   SetString exceptions;
 
-  v = splitr(utf8Trim(m_textViewValueUtf8), "\\s+");
-  for (auto &a : v) {
-    if (a.size() == m_evwords[0].length())
+  i = 0;
+  pr(m_tvwords.size(), m_evwords.size()) for (auto &a : m_tvwords) {
+    pr(a.size()) if (a.size() == m_evwords[0].length()) {
+      i++;
       exceptions.insert(a);
+    }
   }
 
   // auto begin = clock();
@@ -1058,16 +1060,20 @@ void WordsBase::findChain(int nthread) {
     return;
   }
 
+  j = 0;
   for (auto &e : getDictionary()) {
     if (e.length() == m_evwords[0].length()) {
       if (!exceptions.contains(e)) {
         dl[e] = 0;
+      } else {
+        j++;
       }
     }
   }
+  pr(i, j)
 
-  // begin = clock();
-  j = 1; // j is step
+      // begin = clock();
+      j = 1; // j is step
   for (i = 0; i < 2; i++) {
     w[i].push_back(m_evwords[i]);
     dl[m_evwords[i]] = i == 0 ? j : -j;
@@ -1266,7 +1272,8 @@ void WordsBase::clusterStatistics(int nthread) {
     length = m_iiv[i].first;
     auto begin = clock();
     MapIntInt map;
-    std::string s = std::format("{} {}/{}", string(LENGTH), length,m_iiv[i].second);
+    std::string s =
+        std::format("{} {}/{}", string(LENGTH), length, m_iiv[i].second);
     auto &words = m_vvs[nthread];
     VectorBool::iterator it;
     int i;
@@ -1991,7 +1998,11 @@ bool WordsBase::prepare() {
     return true;
   }
   std::string evUtf8 = utf8Trim(m_entryValue[ENTRY_TEMPLATE]);
-  m_ev = utf8ToLocale(evUtf8);
+  auto result = tryUtf8ToLocale(evUtf8);
+  if (!result.has_value()) {
+    return false;
+  }
+  m_ev = *result;
   if (m_ev.empty()) {
     return false;
   }
@@ -2044,10 +2055,9 @@ bool WordsBase::prepare() {
     }
   } else if (m_menuClick == MENU_CHAIN) {
     // evUtf8 trimmed and has only alphabet chars
-    m_evwords.clear();
-    for (auto &a : splitr(evUtf8, "\\s+")) {
-      m_evwords.push_back(utf8ToLocale(a));
-    }
+    m_evwords = getLocaleWords(evUtf8);
+    m_tvwords = getLocaleWords(m_textViewValueUtf8);
+
     if (m_evwords.size() == 1) {
       // only if dictionary has words with current
       return getWordLengthMap().contains(m_evwords[0].size());
@@ -2145,9 +2155,8 @@ void WordsBase::run_thread(int nthread) {
 void WordsBase::run(ENUM_JOB_TYPE e) {
   bool userbreak = false;
   // auto begin = clock();
-  int threads = oneOf(m_menuClick, MENU_CHAIN, MENU_WORD_FREQUENCY)
-                    ? 1
-                    : m_threads;
+  int threads =
+      oneOf(m_menuClick, MENU_CHAIN, MENU_WORD_FREQUENCY) ? 1 : m_threads;
   // pr(magic_enum::enum_name(m_menuClick), threads);
   if (e == JOB_TYPE_FULL) {
     if (auto it = menuPreProseeding.get(m_menuClick)) {

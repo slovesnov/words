@@ -228,34 +228,34 @@ void print_short_stack_trace(int max_lines) {
 #endif
 
 std::string sub(std::string const &minuend, std::string const &subtrahend) {
-    if (minuend.length() < subtrahend.length()) {
-        return INVALID_DIFFERENCE;
-    }
-
-    std::string difference;
-    difference.reserve(minuend.length());
-
-    size_t i = 0;
-    size_t j = 0;
-
-    while (i < minuend.length() && j < subtrahend.length()) {
-        if (minuend[i] == subtrahend[j]) {
-            i++;
-            j++;
-        } else if (minuend[i] < subtrahend[j]) {
-            difference += minuend[i];
-            i++;
-        } else {
-            return INVALID_DIFFERENCE;
-        }
-    }
-
-    if (j == subtrahend.length()) {
-        difference.append(minuend.substr(i));
-        return difference;
-    }
-
+  if (minuend.length() < subtrahend.length()) {
     return INVALID_DIFFERENCE;
+  }
+
+  std::string difference;
+  difference.reserve(minuend.length());
+
+  size_t i = 0;
+  size_t j = 0;
+
+  while (i < minuend.length() && j < subtrahend.length()) {
+    if (minuend[i] == subtrahend[j]) {
+      i++;
+      j++;
+    } else if (minuend[i] < subtrahend[j]) {
+      difference += minuend[i];
+      i++;
+    } else {
+      return INVALID_DIFFERENCE;
+    }
+  }
+
+  if (j == subtrahend.length()) {
+    difference.append(minuend.substr(i));
+    return difference;
+  }
+
+  return INVALID_DIFFERENCE;
 }
 
 std::string getOrderedString(std::string const &s) {
@@ -272,4 +272,16 @@ std::string gets(const VString &v, int width[]) {
     s += (i ? " " : "") + std::format("{:>{}}", a, width[i]);
   }
   return s;
+}
+
+VString getLocaleWords(const std::string &strUtf8) {
+  VString rawWords = splitr(utf8Trim(strUtf8), "\\s+");
+  VString result;
+  result.reserve(rawWords.size());
+  for (const auto &word : rawWords) {
+    if (auto localeWord = tryUtf8ToLocale(word)) {
+      result.push_back(std::move(*localeWord));
+    }
+  }
+  return result;
 }

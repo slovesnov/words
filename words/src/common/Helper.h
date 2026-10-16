@@ -209,3 +209,4 @@ public:
 };
 
 std::string gets(const VString &v, int width[]);
+VString getLocaleWords(const std::string& strUtf8);
