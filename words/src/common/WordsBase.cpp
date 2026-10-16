@@ -505,16 +505,18 @@ int WordsBase::findLongestChain(int nthread, const std::string &word,
 
   int width[] = {2, w, w, w, BF_WIDTH, TIME_WIDTH};
   ENUM_STRING en[] = {NSTRING, LAYER, TOTAL, LEFT, BRANCHING_FACTOR, TIME};
-  i = -1;
-  s = "";
-  for (auto a : en) {
-    i++;
-    auto &q = string(a);
-    v.push_back(q);
-    width[i] = std::max(width[i], utf8Length(q));
+  if (m_menuClick == MENU_CHAIN) {
+    i = -1;
+    s = "";
+    for (auto a : en) {
+      i++;
+      auto &q = string(a);
+      v.push_back(q);
+      width[i] = std::max(width[i], utf8Length(q));
+    }
+    updateProceedingText(gets(v, width) + ' ' + string(WORDS_NOMINATIVE_CASE),
+                         false);
   }
-  updateProceedingText(gets(v, width) + ' ' + string(WORDS_NOMINATIVE_CASE),
-                       false);
 
   total = 0;
   prev = 1;
@@ -523,18 +525,20 @@ int WordsBase::findLongestChain(int nthread, const std::string &word,
     layerIndex = b ? layer(nthread, m_ev) : layer(nthread, layerIndex);
     j = layerIndex.size();
     total += j;
-    words_str = "";
-    for (k = 0; k < std::min(3, j); k++) {
-      words_str += (k ? " " : "") + localeToUtf8(words[layerIndex[k]]);
+    if (m_menuClick == MENU_CHAIN) {
+      words_str = "";
+      for (k = 0; k < std::min(3, j); k++) {
+        words_str += (k ? " " : "") + localeToUtf8(words[layerIndex[k]]);
+      }
+      v = {std::to_string(i),
+           intToString(layerIndex.size()),
+           intToString(total),
+           intToString(size - total - found),
+           std::format("{:.2f}", double(j) / prev),
+           std::format("{:.2f}", timeElapse(begin))};
+      updateProceedingText("\n" + gets(v, width) + ' ' + words_str);
+      prev = j;
     }
-    v = {std::to_string(i),
-         intToString(layerIndex.size()),
-         intToString(total),
-         intToString(size - total - found),
-         std::format("{:.2f}", double(j) / prev),
-         std::format("{:.2f}", timeElapse(begin))};
-    updateProceedingText("\n" + gets(v, width) + ' ' + words_str);
-    prev = j;
   }
   return total;
 }
@@ -1260,21 +1264,15 @@ void WordsBase::clusterStatistics(int nthread) {
   int i, length;
   while ((i = m_i.fetch_add(1)) < std::ssize(m_iiv)) {
     length = m_iiv[i].first;
-    prsync(nthread, length);
-
     auto begin = clock();
     MapIntInt map;
-    std::string s = std::format("{} {}", string(LENGTH), length);
+    std::string s = std::format("{} {}/{}", string(LENGTH), length,m_iiv[i].second);
     auto &words = m_vvs[nthread];
     VectorBool::iterator it;
     int i;
     fillDictionaryLength(nthread, length, {});
-    // todo indexOf(trhue)
-    while ((it = std::find(m_chain[nthread].begin(), m_chain[nthread].end(),
-                           true)) != m_chain[nthread].end()) {
-      size_t index = std::distance(m_chain[nthread].begin(), it);
-      prsync(index, indexOf(true, m_chain[nthread]));
-      i = findLongestChain(nthread, words[index], {}) + 1;
+    while ((i = indexOf(true, m_chain[nthread])) != -1) {
+      i = findLongestChain(nthread, words[i], {}) + 1;
       map[i]++;
     }
 
@@ -1283,7 +1281,6 @@ void WordsBase::clusterStatistics(int nthread) {
     }
     s += std::format(" {} {:.2f} thread{}\n", string(TIME), timeElapse(begin),
                      nthread);
-    prsync(s);
     updateProceedingText(s);
   }
 }
@@ -1291,11 +1288,7 @@ void WordsBase::clusterStatistics(int nthread) {
 void WordsBase::clusterStatisticsPreProseeding() {
   m_iiv = {getWordLengthMap().begin(), getWordLengthMap().end()};
   std::sort(m_iiv.begin(), m_iiv.end(),
-            [](auto &a, auto &b) { return a.second < b.second; }); // todo
-  // for (const auto &[length, count] : m_iiv) {
-  //   pr(length, count);
-  // }
-  // pr(m_iiv.size());
+            [](auto &a, auto &b) { return a.second > b.second; }); // todo
   m_i.store(1);
 }
 
@@ -2152,8 +2145,9 @@ void WordsBase::run_thread(int nthread) {
 void WordsBase::run(ENUM_JOB_TYPE e) {
   bool userbreak = false;
   // auto begin = clock();
-  int threads =
-      oneOf(m_menuClick, MENU_CHAIN, MENU_WORD_FREQUENCY) ? 1 : m_threads;
+  int threads = oneOf(m_menuClick, MENU_CHAIN, MENU_WORD_FREQUENCY)
+                    ? 1
+                    : m_threads;
   // pr(magic_enum::enum_name(m_menuClick), threads);
   if (e == JOB_TYPE_FULL) {
     if (auto it = menuPreProseeding.get(m_menuClick)) {
@@ -2407,7 +2401,10 @@ const std::string &WordsBase::settings(ENUM_SETTINGS e, int i) const {
 void WordsBase::updateProceedingThread() {}
 
 void WordsBase::updateProceedingText(std::string s, bool add) {
-  SearchResult::out = (add ? SearchResult::out : "") + s;
+  {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    SearchResult::out = (add ? SearchResult::out : "") + s;
+  }
   updateProceedingThread();
 }
 

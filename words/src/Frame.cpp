@@ -124,7 +124,8 @@ gboolean new_version_message(gpointer) {
 }
 
 gboolean update_proceeding(gpointer data) {
-  frame->updateProceeding();
+  gchar *text_to_display = static_cast<gchar *>(data);
+  frame->updateProceeding(text_to_display);
   return G_SOURCE_REMOVE;
 }
 
@@ -1216,8 +1217,8 @@ GtkTextBuffer *Frame::tvBuffer(ENUM_TEXTVIEW e) const {
   return gtk_text_view_get_buffer(GTK_TEXT_VIEW(m_text[e]));
 }
 
-void Frame::updateTextView(ENUM_TEXTVIEW e, std::string const &s) {
-  gtk_text_buffer_set_text(tvBuffer(e), s.c_str(), -1);
+void Frame::updateTextView(ENUM_TEXTVIEW e, std::string_view s) {
+  gtk_text_buffer_set_text(tvBuffer(e), s.data(), static_cast<gssize>(s.size()));
   if (e == TEXTVIEW_MAIN) {
     updateSensitivity(m_state == STATE_OK && !s.empty(), MENU_SAVE_TEXT);
   } else {
@@ -1657,9 +1658,16 @@ void Frame::setRowSensitive(bool sensitive) {
 }
 
 void Frame::updateProceedingThread() {
-  g_idle_add_full(G_PRIORITY_HIGH, update_proceeding, NULL, NULL);
+  std::string string_snapshot;
+  {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    string_snapshot = SearchResult::out;
+  }
+  gchar *text_for_gtk = g_strdup(string_snapshot.c_str());
+  g_idle_add_full(G_PRIORITY_HIGH, update_proceeding, text_for_gtk,
+                  (GDestroyNotify)g_free);
 }
 
-void Frame::updateProceeding() {
-  updateTextView(TEXTVIEW_MAIN, SearchResult::out);
+void Frame::updateProceeding(const char* text) {
+  updateTextView(TEXTVIEW_MAIN, text);
 }

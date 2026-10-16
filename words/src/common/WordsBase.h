@@ -164,7 +164,7 @@ public:
   void fillDictionaryLength(int nthread, int length,
                             const SetString &exceptions);
   int findLongestChain(int nthread, const std::string &word,
-                       const SetString &exceptions);
+                       const SetString &exceptions/*={}*/);
   bool addIfFound(int nthread, const std::string &s, VectorInt &v);
   VectorInt layer(int nthread, const VectorInt &layerIndex);
   VectorInt layer(int nthread, const std::string &word);
