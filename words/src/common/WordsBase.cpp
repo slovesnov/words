@@ -6,6 +6,7 @@
  */
 
 #include "WordsBase.h"
+#include <cmath>
 #include <execution>
 #include <format>
 #include <magic_enum.hpp>
@@ -584,8 +585,8 @@ VectorInt WordsBase::chainLayer(int nthread, const VectorInt &layerIndex) {
   return total_v;
 }
 
-int WordsBase::chainAddIfFound(int nthread, const std::string &s, VectorInt &v,
-                               const VectorInt &otherSide) {
+char WordsBase::chainAddIfFound(int nthread, const std::string &s, VectorInt &v,
+                                const VectorInt &otherSide) {
   const auto &words = m_vvs[nthread];
   auto it = std::lower_bound(words.begin(), words.end(), s);
   if (it != words.end() && *it == s) {
@@ -593,13 +594,12 @@ int WordsBase::chainAddIfFound(int nthread, const std::string &s, VectorInt &v,
     if (m_chain[nthread][i]) {
       m_chain[nthread][i] = false;
       v.push_back(i);
+      return 1;
+    } else if (oneOf(i, otherSide)) {
       return -1;
-    } else {
-      if (oneOf(i, otherSide))
-        return i;
     }
   }
-  return -1;
+  return 0;
 }
 
 std::pair<VectorInt, bool> WordsBase::chainLayer(int nthread,
@@ -607,15 +607,13 @@ std::pair<VectorInt, bool> WordsBase::chainLayer(int nthread,
                                                  const VectorInt &otherSide) {
   VectorInt v;
   std::string s = word;
-  int j;
   for (size_t i = 0; i < s.size(); ++i) {
     char original_char = s[i];
     for (const char &c : alphabet()) {
       if (c != original_char) {
         s[i] = c;
-        j=chainAddIfFound(nthread, s, v, otherSide);
-        if (j >= 0) {
-          return {{j}, true};
+        if (chainAddIfFound(nthread, s, v, otherSide) < 0) {
+          return {{}, true};
         }
       }
     }
@@ -1072,15 +1070,6 @@ void WordsBase::findModification(int nthread) {
 }
 
 void WordsBase::findChain(int nthread) {
-  // int i, j, k, l, n, mx[2];
-  // MapStringInt dl;
-  // VString v, w[2];
-  // MapStringIntI mi;
-  // char c;
-  // std::string s;
-  // SetString vs[2];
-  // VectorChainNodeCI cni1;
-  // ChainNode *cp;
   SetString exceptions;
 
   for (auto &a : m_tvwords) {
@@ -1115,22 +1104,24 @@ void WordsBase::findChain(int nthread) {
 
   for (layer = 2;; layer++) {
     j = layerIndex[1].size() < layerIndex[0].size();
-    int l0 = layerIndex[0].size(), l1 = layerIndex[1].size();
+    // int l0 = layerIndex[0].size(), l1 = layerIndex[1].size();
     b = !found[j] && first[i];
     auto p = b ? chainLayer(nthread, m_evwords[j], layerIndex[!j])
                : chainLayer(nthread, layerIndex[j], layerIndex[!j]);
 
-    const auto &words = m_vvs[nthread];
+    // const auto &words = m_vvs[nthread];
     if (p.second) {
-      pr("layer", layer, "found") break;
+      pr("layer", layer, "found");
+      // printlog("layer", layer, "found",words[p.first[0]]);
+      break;
     }
-    pr("layer", layer, j, p.first.size(), l0, l1);
-    std::string s;
-    s = "";
-    for (auto &a:p.first) {
-      s += words[a] + " ";
-    }
-    printlog("layer", layer, j, p.first.size(), l0, l1,s);
+    pr("layer", layer, j ? "right" : "left", p.first.size());
+    // std::string s;
+    // s = "";
+    // for (auto &a:p.first) {
+    //   s += words[a] + " ";
+    // }
+    // printlog("layer", layer, j, p.first.size(), l0, l1,s);
     layerIndex[j] = p.first;
     if (layerIndex[j].empty()) {
       pr("not found");
@@ -1144,27 +1135,27 @@ void WordsBase::findChain(int nthread) {
 }
 
 void WordsBase::clusterStatistics(int nthread) {
-  int i, length;
+  int i, j, length;
   while ((i = m_i.fetch_add(1)) < std::ssize(m_iiv)) {
     length = m_iiv[i].first;
     auto begin = clock();
     MapIntInt map;
-    std::string s =
-        std::format("{} {}/{}", string(LENGTH), length, m_iiv[i].second);
+    std::string s = std::format("{} {}/{}", string(LENGTH), intToString(length),
+                                intToString(m_iiv[i].second));
     auto &words = m_vvs[nthread];
     VectorBool::iterator it;
-    int i;
+    j = 0;
     fillDictionaryLength(nthread, length, {});
-    while ((i = indexOf(true, m_chain[nthread])) != -1) {
-      i = findLongestChain(nthread, words[i], {}) + 1;
+    while ((j = indexOf(true, m_chain[nthread], j)) != -1) {
+      int i = findLongestChain(nthread, words[j], {}) + 1;
       map[i]++;
     }
 
     for (const auto &[length, count] : map) {
-      s += std::format(" {}:{}", length, intToString(count));
+      s += std::format(" {}:{}", intToString(length), intToString(count));
     }
-    s += std::format(" {} {:.2f} thread{}\n", string(TIME), timeElapse(begin),
-                     nthread);
+    s += std::format(" {} {:.2f} {}{}\n", string(TIME), timeElapse(begin),
+                     string(THREAD), nthread);
     updateProceedingText(s);
   }
 }

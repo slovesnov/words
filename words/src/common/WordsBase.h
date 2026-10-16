@@ -170,7 +170,7 @@ public:
   VectorInt chainLayer(int nthread, const VectorInt &layerIndex);
   VectorInt chainLayer(int nthread, const std::string &word);
 
-  int chainAddIfFound(int nthread, const std::string &s, VectorInt &v,const VectorInt &otherSide);
+  char chainAddIfFound(int nthread, const std::string &s, VectorInt &v,const VectorInt &otherSide);
   std::pair<VectorInt,bool> chainLayer(int nthread, const VectorInt &layerIndex,const VectorInt &otherSide);
   std::pair<VectorInt,bool> chainLayer(int nthread, const std::string &word,const VectorInt &otherSide);
   static int differentChars(std::string_view s);

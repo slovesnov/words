@@ -194,4 +194,4 @@ left
 b-factor
 N
 words
-Cluster help todo
+Words of the same length can be divided into clusters. Words belong to the same cluster if they can be connected by a chain (see <i>search chains of words</i>). Statistics for all lengths are displayed as a set of pairs <i>word_count: set_count</i>.
