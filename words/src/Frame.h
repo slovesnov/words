@@ -36,7 +36,6 @@ class Frame : WordsBase {
   std::chrono::steady_clock::time_point last_click_time[BUTTON_SIZE]{};
 
   MapMenu m_menuMap;
-  std::vector<GtkAccelGroup *> m_accelGroup;
   bool m_lockSignals;
   std::jthread m_thread, m_managerThread;
   CheckNewVersion m_newVersion;
@@ -138,8 +137,6 @@ public:
 
   void updateDictionary(bool change = false);
   void updateLanguage(bool change = false);
-  void removeAccelerators();
-  void addAccelerators();
   void newVersionMessage();
 
   template <typename T> void setLabel(GtkWidget *w, T &&e) {
@@ -191,7 +188,6 @@ public:
   void entryChanged(ENUM_ENTRY e);
   void updateEntryValue(ENUM_ENTRY e);
   std::string normalizeString(ENUM_ENTRY e, std::string const &q);
-  void entryFocusChanged(bool in);
   void setDebounceTimer(ENUM_ENTRY e);
   void debounceTimeout(ENUM_ENTRY e);
   template <typename T> void setPlaceholder(ENUM_ENTRY e, T t) {
@@ -281,4 +277,6 @@ public:
 
   void updateProceedingThread()override;
   void updateProceeding(const char* text);
+std::string getTextToCopyFromFocus();
+  
 };

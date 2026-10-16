@@ -1039,10 +1039,8 @@ void WordsBase::findChain(int nthread) {
   ChainNode *cp;
   SetString exceptions;
 
-  i = 0;
-  pr(m_tvwords.size(), m_evwords.size()) for (auto &a : m_tvwords) {
-    pr(a.size()) if (a.size() == m_evwords[0].length()) {
-      i++;
+  for (auto &a : m_tvwords) {
+    if (a.size() == m_evwords[0].length()) {
       exceptions.insert(a);
     }
   }
@@ -1060,20 +1058,16 @@ void WordsBase::findChain(int nthread) {
     return;
   }
 
-  j = 0;
   for (auto &e : getDictionary()) {
     if (e.length() == m_evwords[0].length()) {
       if (!exceptions.contains(e)) {
         dl[e] = 0;
-      } else {
-        j++;
       }
     }
   }
-  pr(i, j)
 
-      // begin = clock();
-      j = 1; // j is step
+  // begin = clock();
+  j = 1; // j is step
   for (i = 0; i < 2; i++) {
     w[i].push_back(m_evwords[i]);
     dl[m_evwords[i]] = i == 0 ? j : -j;
