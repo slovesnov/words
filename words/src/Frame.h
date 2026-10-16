@@ -278,5 +278,6 @@ public:
   void updateProceedingThread()override;
   void updateProceeding(const char* text);
 std::string getTextToCopyFromFocus();
-  
+
+bool isValid()const;
 };

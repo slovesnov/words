@@ -26,8 +26,53 @@ const std::string CONFIG_TAGS[] = {"version",   "language", "dictionary",
 Frame *frame;
 
 void menu_activate(GtkWidget *widget, ENUM_MENU menu) {
-  pr(magic_enum::enum_name(menu),int(menu))
+  // pr(magic_enum::enum_name(menu), int(menu))
   frame->clickMenu(menu);
+}
+
+gboolean on_window_key_press(GtkWidget *widget, GdkEventKey *event,
+                             gpointer user_data) {
+  // Check if the Control modifier is actively pressed
+  if ((event->state & GDK_CONTROL_MASK) && !(event->state & GDK_MOD1_MASK)) {
+
+    ENUM_MENU target_menu;
+    bool key_found = false;
+
+    switch (event->keyval) {
+    case GDK_KEY_a:
+    case GDK_KEY_A:
+      target_menu = MENU_EDIT_SELECT_ALL;
+      key_found = true;
+      break;
+    case GDK_KEY_c:
+    case GDK_KEY_C:
+      target_menu = MENU_EDIT_COPY_TO_CLIPBOARD;
+      key_found = true;
+      break;
+    case GDK_KEY_b:
+    case GDK_KEY_B:
+      target_menu = MENU_EDIT_SELECT_ALL_AND_COPY_TO_CLIPBOARD;
+      key_found = true;
+      break;
+    case GDK_KEY_s:
+    case GDK_KEY_S:
+      target_menu = MENU_SAVE_TEXT;
+      key_found = true;
+      break;
+    }
+
+    if (key_found) {
+      // Forward directly to your app menu driver logic safely with a NULL
+      // widget
+      menu_activate(NULL, target_menu);
+
+      // Signal GTK that we have consumed the key press entirely
+      return GDK_EVENT_STOP;
+    }
+  }
+
+  // Propagate standard navigation strings/characters onwards normally
+  return GDK_EVENT_PROPAGATE;
 }
 
 void combo_changed(GtkComboBox *comboBox, ENUM_COMBOBOX e) {
@@ -324,14 +369,53 @@ Frame::Frame() : WordsBase() {
       {MENU_EDIT_SELECT_ALL, GDK_KEY_A},
       {MENU_EDIT_COPY_TO_CLIPBOARD, GDK_KEY_C},
       {MENU_SAVE_TEXT, GDK_KEY_S}};
-  auto common_accel_group = gtk_accel_group_new();
-  gtk_window_add_accel_group(GTK_WINDOW(m_widget),
-                             common_accel_group);
+
   for (auto [e, key] : MENU_TO_ACCEL_KEY) {
-    gtk_widget_add_accelerator(m_menuMap[e], "activate", common_accel_group,
-                               key, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
+
+    // GtkWidget *item = m_menuMap[e];
+
+    std::string shortcut_text = "";
+    switch (key) {
+    case GDK_KEY_A:
+    case GDK_KEY_a:
+      shortcut_text = "Ctrl+A";
+      break;
+    case GDK_KEY_C:
+    case GDK_KEY_c:
+      shortcut_text = "Ctrl+C";
+      break;
+    case GDK_KEY_B:
+    case GDK_KEY_b:
+      shortcut_text = "Ctrl+B";
+      break;
+    case GDK_KEY_S:
+    case GDK_KEY_s:
+      shortcut_text = "Ctrl+S";
+      break;
+    }
+
+    // Если у вас в GtkBox есть GtkLabel с текстом пункта, вы можете просто
+    // дописать туда эту строку (например: "Выделить всё\t\t\tCtrl+A")
+    // Или, если это стандартный пункт, куда вы просто доложили картинку:
+    // gtk_menu_item_set_label(GTK_MENU_ITEM(item), (base_text + "\t" +
+    // shortcut_text).c_str());
   }
-  g_object_unref(common_accel_group);
+
+  /*TODO
+      std::pair<ENUM_MENU, int> MENU_TO_ACCEL_KEY[] = {
+          {MENU_EDIT_SELECT_ALL_AND_COPY_TO_CLIPBOARD, GDK_KEY_B},
+          {MENU_EDIT_SELECT_ALL, GDK_KEY_A},
+          {MENU_EDIT_COPY_TO_CLIPBOARD, GDK_KEY_C},
+          {MENU_SAVE_TEXT, GDK_KEY_S}};
+      auto common_accel_group = gtk_accel_group_new();
+      gtk_window_add_accel_group(GTK_WINDOW(m_widget),
+                                 common_accel_group);
+      for (auto [e, key] : MENU_TO_ACCEL_KEY) {
+        gtk_widget_add_accelerator(m_menuMap[e], "activate", common_accel_group,
+                                   key, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
+      }
+      g_object_unref(common_accel_group);
+    */
 
   updateLanguage();
   // update menu enables/disables, after language[] is filled
@@ -351,6 +435,9 @@ Frame::Frame() : WordsBase() {
                    NULL);
   g_signal_connect(m_widget, "destroy", G_CALLBACK(destroy_window), NULL);
   g_signal_connect(m_widget, "key-press-event", G_CALLBACK(on_key_press), NULL);
+
+  g_signal_connect(G_OBJECT(m_widget), "key-press-event",
+                   G_CALLBACK(on_window_key_press), NULL);
 
   if (m_maximized) {
     gtk_window_maximize(GTK_WINDOW(m_widget));
@@ -374,7 +461,7 @@ void Frame::clickMenu(ENUM_MENU menu) {
   ENUM_FONT e;
   bool b;
 
-  //pr(magic_enum::enum_name(menu));
+  // pr(magic_enum::enum_name(menu));
 
   switch (menu) {
 
@@ -507,6 +594,7 @@ void Frame::clickMenu(ENUM_MENU menu) {
 }
 
 void Frame::destroy() {
+  pr();
   writeConfig(CONFIG_TAGS, WORDS_VERSION, getLanguageIndex(),
               getDictionaryIndex(), m_separatorPosition, m_font[0].get(),
               m_font[1].get(), m_maximized, m_x, m_y, m_width, m_height);
@@ -515,6 +603,7 @@ void Frame::destroy() {
 }
 
 void Frame::windowDeleteEvent() {
+  pr();
   gtk_window_get_position(GTK_WINDOW(m_widget), &m_x, &m_y);
   gtk_window_get_size(GTK_WINDOW(m_widget), &m_width, &m_height);
 }
@@ -1243,7 +1332,9 @@ std::string Frame::getTextViewString(ENUM_TEXTVIEW e) const {
 }
 
 GtkTextBuffer *Frame::tvBuffer(ENUM_TEXTVIEW e) const {
-  pr(GTK_IS_TEXT_VIEW(m_text[e]),magic_enum::enum_name(e))
+  // pr(GTK_IS_TEXT_VIEW(m_text[e]), int(e), magic_enum::enum_name(e),
+  //    "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+  // print_short_stack_trace(10);
   return gtk_text_view_get_buffer(GTK_TEXT_VIEW(m_text[e]));
 }
 
@@ -1467,11 +1558,15 @@ void Frame::job(ENUM_JOB_TYPE e) {
     return;
   }
 
-  clear(e);
-  if (!prepare()) {
-    m_end = clock();
-    updateStatus(STATE_ERROR);
-    return;
+  pr(isValid());
+
+  if (isValid()) {
+    clear(e);
+    if (!prepare()) {
+      m_end = clock();
+      updateStatus(STATE_ERROR);
+      return;
+    }
   }
 
   if (m_managerThread.joinable()) {
@@ -1499,7 +1594,8 @@ void Frame::job(ENUM_JOB_TYPE e) {
     }
 
     if (e == JOB_TYPE_STOP) {
-      g_idle_add_full(G_PRIORITY_HIGH, end_job, NULL, NULL);
+      if (isValid())
+        g_idle_add_full(G_PRIORITY_HIGH, end_job, NULL, NULL);
       return;
     }
 
@@ -1710,8 +1806,8 @@ std::string Frame::getTextToCopyFromFocus() {
   // 1. Case: Focus is inside a GtkTextView
   if (GTK_IS_TEXT_VIEW(focus_widget)) {
     GtkTextView *text_view = GTK_TEXT_VIEW(focus_widget);
-    pr(GTK_IS_TEXT_VIEW(text_view))
-    GtkTextBuffer *buffer = gtk_text_view_get_buffer(text_view);
+    pr(GTK_IS_TEXT_VIEW(text_view)) GtkTextBuffer *buffer =
+        gtk_text_view_get_buffer(text_view);
     GtkTextIter start, end;
 
     // If there is an active selection, get only the selected part [INDEX]
@@ -1756,4 +1852,9 @@ std::string Frame::getTextToCopyFromFocus() {
   }
 
   return ""; // Focus is on a non-text widget
+}
+
+bool Frame::isValid() const {
+  return m_widget && GTK_IS_WIDGET(m_widget) &&
+         !gtk_widget_in_destruction(m_widget);
 }
