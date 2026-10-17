@@ -198,7 +198,6 @@ public:
   }
 };
 
-std::string gets(const VString &v, int width[]);
 VString getLocaleWords(const std::string& strUtf8);
 
 int indexOfOrdered(const std::string &s,const VString&a);

@@ -25,9 +25,9 @@ class WordsBase;
 extern WordsBase *wordsBase;
 
 class WordsBase {
-  std::string m_ev; // locale m_ev=utf8ToLocale(m_entryValue[ENTRY_TEMPLATE])
-  VString m_evwords;                                               // locale
-  VString m_tvwords;                                               // locale
+  std::string m_ev;  // locale m_ev=utf8ToLocale(m_entryValue[ENTRY_TEMPLATE])
+  VString m_evwords; // locale
+  VString m_tvwords; // locale
 
 protected:
   std::string m_entryValue[ENTRY_SIZE]; // utf8
@@ -164,15 +164,16 @@ public:
 
   void fillDictionaryLength(int nthread, int length,
                             const SetString &exceptions);
-  int findLongestChain(int nthread, const std::string &word,
-                       const SetString &exceptions/*={}*/);
-  bool chainAddIfFound(int nthread, const std::string &s, VectorInt &v);
-  VectorInt chainLayer(int nthread, const VectorInt &layerIndex);
-  VectorInt chainLayer(int nthread, const std::string &word);
+  int findLongestChain(int nthread, int wordIndex,
+                       const SetString &exceptions = {});
 
-  char chainAddIfFound(int nthread, const std::string &s, VectorInt &v,const VectorInt &otherSide);
-  std::pair<VectorInt,bool> chainLayer(int nthread, const VectorInt &layerIndex,const VectorInt &otherSide);
-  std::pair<VectorInt,bool> chainLayer(int nthread, const std::string &word,const VectorInt &otherSide);
+  bool chainAddIfFound(int nthread, const std::string &s, VectorInt &v,
+                       const VectorInt &otherSide = {});
+  std::pair<VectorInt, bool> chainLayer(int nthread,
+                                        const VectorInt &layerIndex,
+                                        const VectorInt &otherSide = {});
+  std::pair<VectorInt, bool> chainLayer(int nthread, const std::string &word,
+                                        const VectorInt &otherSide = {});
   static int differentChars(std::string_view s);
   static bool spanIncluding(std::string_view p, std::string_view pattern) {
     return p.find_first_not_of(pattern) == std::string_view::npos;
@@ -212,7 +213,7 @@ public:
   virtual void updateProceedingThread();
   void updateProceedingText(std::string s, bool add = true);
   const MapIntInt &getWordLengthMap() const;
-std::array<VectorInt,2> relations(int nthread, VectorInt const &v1,
-                          VectorInt const &v2);
-                          virtual void showDrawingArea(){};
+  std::array<VectorInt, 2> relations(int nthread, VectorInt const &v1,
+                                     VectorInt const &v2);
+  virtual void showDrawingArea() {};
 };
