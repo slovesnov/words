@@ -149,7 +149,7 @@ public:
     gtk_label_set_text(GTK_LABEL(w), s.c_str());
   }
   std::string getProgramVersionString() const;
-  void updateStatus(ENUM_STATE state,ENUM_JOB_TYPE jobType=JOB_TYPE_SIZE);
+  void updateStatus(ENUM_STATE state, ENUM_JOB_TYPE jobType = JOB_TYPE_SIZE);
   StartStopButtonState getStartStopState() const;
 
   // begin combobox functions
@@ -229,7 +229,7 @@ public:
             widget = m_entry[id];
           else if constexpr (std::is_same_v<T, ENUM_BUTTON>)
             widget = m_button[id];
-          else if constexpr (std::is_same_v<T, GtkWidget*>)
+          else if constexpr (std::is_same_v<T, GtkWidget *>)
             widget = id;
           else {
             // need c++23
@@ -266,18 +266,18 @@ public:
 
   // button functions
   void clickButton(ENUM_BUTTON e);
-  void clickButton(GtkWidget*w);
+  void clickButton(GtkWidget *w);
   void updateButton(ENUM_BUTTON e, int i = UPDATEONLY_BUTTON);
 
-  //sort list functions
+  // sort list functions
   void refillSort();
   void rowActivated(GtkListBoxRow *row);
   void updateSortButton();
   void setRowSensitive(bool sensitive);
 
-  void updateProceedingThread()override;
-  void updateProceeding(const char* text);
-std::string getTextToCopyFromFocus();
+  void updateProceedingThread() override;
+  void updateProceeding(const char *text);
+  std::string getTextToCopyFromFocus();
 
-bool isValid()const;
+  bool isValid() const;
 };

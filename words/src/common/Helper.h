@@ -57,17 +57,6 @@ using MapAnagram = std::unordered_map<std::string, VString>;
 using SetString = std::set<std::string>;
 //using SetInt = std::set<int>;
 
-class ChainNode {
-public:
-  std::string s;
-  VectorInt next;
-  explicit ChainNode(std::string _s) : s(std::move(_s)) {}
-};
-
-using VectorChainNode = std::vector<ChainNode>;
-using VectorChainNodeI = VectorChainNode::iterator;
-using VectorChainNodeCI = VectorChainNode::const_iterator;
-
 class ThreadResult {
 public:
   int total;
