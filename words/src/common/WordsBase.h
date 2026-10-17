@@ -21,9 +21,6 @@ using UniquePcre2MatchData =
 
 const char SEPARATOR[] = "SEPARATOR";
 
-class WordsBase;
-extern WordsBase *wordsBase;
-
 class WordsBase {
   std::string m_ev;  // locale m_ev=utf8ToLocale(m_entryValue[ENTRY_TEMPLATE])
   VString m_evwords; // locale
@@ -217,3 +214,5 @@ public:
                                      VectorInt const &v2);
   virtual void showDrawingArea() {};
 };
+
+extern WordsBase *wordsBase;

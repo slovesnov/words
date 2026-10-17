@@ -55,7 +55,7 @@ using MapAnagram = std::unordered_map<std::string, VString>;
 
 // Sets
 using SetString = std::set<std::string>;
-//using SetInt = std::set<int>;
+// using SetInt = std::set<int>;
 
 class ThreadResult {
 public:
@@ -198,6 +198,6 @@ public:
   }
 };
 
-VString getLocaleWords(const std::string& strUtf8);
+VString getLocaleWords(const std::string &strUtf8);
 
-int indexOfOrdered(const std::string &s,const VString&a);
+int indexOfOrdered(const std::string &s, const VString &a);
