@@ -20,7 +20,7 @@ void ThreadResult::clear(int n, int n1) {
   }
 }
 
-void ThreadResult::add(std::vector<VectorInt> &e) const {
+void ThreadResult::add(VectorVectorInt &e) const {
   size_t i, j;
   for (i = 0; i < e.size(); i++) {
     for (j = 0; j < e[0].size(); j++) {
@@ -83,7 +83,7 @@ std::string capitalizeFirstUtf8(const std::string &src) {
   return std::string(utf8_buf, len) + rest_of_string;
 }
 
-std::vector<VectorInt> &sum(VectorThreadResult &v) {
+VectorVectorInt &sum(VectorThreadResult &v) {
   auto &a = v[0].a;
   for (size_t i = 1; i < v.size(); i++) {
     v[i].add(a);
@@ -284,4 +284,13 @@ VString getLocaleWords(const std::string &strUtf8) {
     }
   }
   return result;
+}
+
+int indexOfOrdered(const std::string &s, const VString &a) {
+  auto it = std::lower_bound(a.begin(), a.end(), s);
+  if (it != a.end() && *it == s) {
+    return std::distance(a.begin(), it);
+  } else {
+    return -1;
+  }
 }

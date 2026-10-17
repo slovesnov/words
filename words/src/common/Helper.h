@@ -33,6 +33,7 @@ using StringString = std::pair<std::string, std::string>;
 
 // Vectors
 using VectorInt = std::vector<int>;
+using VectorVectorInt = std::vector<VectorInt>;
 using VectorBool = std::vector<bool>;
 using VectorStringInt = std::vector<StringInt>;
 using VectorStringIntCI = VectorStringInt::const_iterator;
@@ -70,10 +71,10 @@ using VectorChainNodeCI = VectorChainNode::const_iterator;
 class ThreadResult {
 public:
   int total;
-  std::vector<VectorInt> a;
+  VectorVectorInt a;
   std::string s;
   void clear(int n, int n1 = -1);
-  void add(std::vector<VectorInt> &e) const;
+  void add(VectorVectorInt &e) const;
 };
 using VectorThreadResult = std::vector<ThreadResult>;
 
@@ -156,7 +157,7 @@ std::string fastLocaleToUtf8(const std::string &src);
 std::string fastUtf8ToLocale(const std::string &src);
 std::string capitalizeFirstUtf8(const std::string &src);
 ENUM_STRING getLetterDeclension(int number);
-std::vector<VectorInt> &sum(VectorThreadResult &v);
+VectorVectorInt &sum(VectorThreadResult &v);
 std::string lowercase_utf8_regex(const std::string &pattern);
 bool breakMenu(const std::string &s);
 #ifndef NDEBUG
@@ -210,3 +211,5 @@ public:
 
 std::string gets(const VString &v, int width[]);
 VString getLocaleWords(const std::string& strUtf8);
+
+int indexOfOrdered(const std::string &s,const VString&a);

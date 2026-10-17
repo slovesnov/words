@@ -546,15 +546,11 @@ int WordsBase::findLongestChain(int nthread, const std::string &word,
 
 bool WordsBase::chainAddIfFound(int nthread, const std::string &s,
                                 VectorInt &v) {
-  const auto &words = m_vvs[nthread];
-  auto it = std::lower_bound(words.begin(), words.end(), s);
-  if (it != words.end() && *it == s) {
-    int i = std::distance(words.begin(), it);
-    if (m_chain[nthread][i]) {
-      m_chain[nthread][i] = false;
-      v.push_back(i);
-      return true;
-    }
+  int i = indexOfOrdered(s, m_vvs[nthread]);
+  if (i != -1 && m_chain[nthread][i]) {
+    m_chain[nthread][i] = false;
+    v.push_back(i);
+    return true;
   }
   return false;
 }
@@ -1069,6 +1065,43 @@ void WordsBase::findModification(int nthread) {
   }
 }
 
+// struct Chain {
+//   std::string left, right;
+//   VectorVectorInt index;
+// };
+
+std::array<VectorInt, 2> WordsBase::relations(int nthread, VectorInt const &v1,
+                                              VectorInt const &v2) {
+  auto &words = m_vvs[nthread];
+  VectorBool c[] = {VectorBool(v1.size(), false), VectorBool(v2.size(), false)};
+  int i, j;
+  i = -1;
+  for (auto &a : v1) {
+    i++;
+    j = -1;
+    for (auto &b : v2) {
+      j++;
+      if (differenceOnlyOneChar(words[a], words[b])) {
+        c[0][i] = true;
+        c[1][j] = true;
+      }
+    }
+  }
+
+  std::array<VectorInt, 2> r;
+  for (i = 0; i < 2; i++) {
+    auto &v = r[i];
+    j = -1;
+    for (auto const &a : c[i]) {
+      j++;
+      if (a) {
+        v.push_back(i == 0 ? v1[j] : v2[j]);
+      }
+    }
+  }
+  return r;
+}
+
 void WordsBase::findChain(int nthread) {
   SetString exceptions;
 
@@ -1078,9 +1111,10 @@ void WordsBase::findChain(int nthread) {
     }
   }
 
+  fillDictionaryLength(nthread, m_evwords[0].size(), exceptions);
+
   // auto begin = clock();
   if (m_evwords.size() == 1) {
-    fillDictionaryLength(nthread, m_evwords[0].size(), exceptions);
     findLongestChain(nthread, m_evwords[0], exceptions);
     return;
   }
@@ -1091,43 +1125,91 @@ void WordsBase::findChain(int nthread) {
     return;
   }
 
-  fillDictionaryLength(nthread, m_evwords[0].size(), exceptions);
   int i, j, layer;
-  VectorInt layerIndex[2];
-  bool found[2], first[2], b;
+  VectorVectorInt layerIndex[2];
+  VectorInt *ptr[2];
+  auto &words = m_vvs[nthread];
+  std::string s, s1;
   i = -1;
   for (auto &a : m_evwords) {
     i++;
-    first[i] = true;
-    found[i] = chainAddIfFound(nthread, a, layerIndex[i]);
+    if (!std::ranges::binary_search(words, a)) {
+      words.push_back(a);
+      m_chain[nthread].push_back(true);
+    }
+    layerIndex[i].push_back({});
+    chainAddIfFound(nthread, a, layerIndex[i][0]);
   }
 
   for (layer = 2;; layer++) {
-    j = layerIndex[1].size() < layerIndex[0].size();
-    // int l0 = layerIndex[0].size(), l1 = layerIndex[1].size();
-    b = !found[j] && first[i];
-    auto p = b ? chainLayer(nthread, m_evwords[j], layerIndex[!j])
-               : chainLayer(nthread, layerIndex[j], layerIndex[!j]);
+    i = -1;
+    for (auto &a : ptr) {
+      i++;
+      a = &layerIndex[i][layerIndex[i].size() - 1];
+    }
+    j = ptr[1]->size() < ptr[0]->size();
 
-    // const auto &words = m_vvs[nthread];
+    auto p = chainLayer(nthread, *ptr[j], *ptr[!j]);
+
     if (p.second) {
-      pr("layer", layer, "found");
-      // printlog("layer", layer, "found",words[p.first[0]]);
       break;
     }
-    pr("layer", layer, j ? "right" : "left", p.first.size());
-    // std::string s;
-    // s = "";
-    // for (auto &a:p.first) {
-    //   s += words[a] + " ";
-    // }
-    // printlog("layer", layer, j, p.first.size(), l0, l1,s);
-    layerIndex[j] = p.first;
-    if (layerIndex[j].empty()) {
-      pr("not found");
-      break;
+    if (p.first.empty()) {
+      SearchResult::out=string(NO_CHAINS_FOUND);
+      return;
+    }
+    layerIndex[j].push_back(p.first);
+  }
+
+  // clearlog();
+
+  i = -1;
+  for (auto &a : ptr) {
+    i++;
+    a = &layerIndex[i][layerIndex[i].size() - 1];
+  }
+  auto res = relations(nthread, *ptr[0], *ptr[1]);
+
+  for (i = 0; i < 2; i++) {
+    auto &li = layerIndex[i];
+    j = li.size() - 1;
+    // pr(i, li[j].size(), res[i].size());
+    li[j] = res[i];
+  }
+
+  for (i = 0; i < 2; i++) {
+    auto &li = layerIndex[i];
+    for (j = li.size() - 1; j > 1; j--) {
+      res = relations(nthread, li[j - 1], li[j]);
+      // pr(i, j, li[j - 1].size(), res[0].size());
+      li[j - 1] = res[0];
     }
   }
+
+  // for (i = 0; i < 2; i++) {
+  //   auto &li = layerIndex[i];
+  //   s = "";
+  //   for (auto &a : li) {
+  //     s += std::format(" {}", a.size());
+  //   }
+  //   pr(s);
+  // }
+
+  layerIndex[0].insert(layerIndex[0].end(), layerIndex[1].rbegin(),
+                       layerIndex[1].rend());
+
+  s = "";
+  i = -1;
+  for (auto &e : layerIndex[0]) {
+    i++;
+    s += std::format("layer{} size{}", i, e.size());
+    // for (auto &b : e) {
+    //   s += " " + words[b];
+    // }
+    s += "\n";
+  }
+  SearchResult::out = s; // pr(s);
+                         // printlog(s);
 
   // for (auto &e : v) {
   //   m_result.push_back(SearchResult(e, m_evwords[0].length(), j + 2));
@@ -1163,7 +1245,7 @@ void WordsBase::clusterStatistics(int nthread) {
 void WordsBase::clusterStatisticsPreProseeding() {
   m_iiv = {getWordLengthMap().begin(), getWordLengthMap().end()};
   std::sort(m_iiv.begin(), m_iiv.end(),
-            [](auto &a, auto &b) { return a.second > b.second; }); // todo
+            [](auto &a, auto &b) { return a.second > b.second; });
   m_i.store(0);
 }
 
@@ -1928,10 +2010,12 @@ bool WordsBase::prepare() {
 
     if (m_evwords.size() == 1) {
       // only if dictionary has words with current
-      return getWordLengthMap().contains(m_evwords[0].size());
+      return getWordLengthMap().contains(m_evwords[0].size()) &&
+             !oneOf(m_evwords[0], m_tvwords);
     } else if (m_evwords.size() == 2) {
       return m_evwords[0] != m_evwords[1] &&
-             m_evwords[0].size() == m_evwords[1].size();
+             m_evwords[0].size() == m_evwords[1].size() &&
+             !oneOf(m_evwords[0], m_tvwords) && !oneOf(m_evwords[1], m_tvwords);
     } else {
       return false;
     }
