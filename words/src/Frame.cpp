@@ -30,6 +30,22 @@ std::pair<ENUM_MENU, int> MENU_TO_ACCEL_KEY[] = {
     {MENU_SAVE_TEXT, GDK_KEY_S}};
 Frame *frame;
 
+gboolean on_draw(GtkWidget *widget, cairo_t *cr, gpointer data) {
+  guint width = gtk_widget_get_allocated_width(widget);
+  guint height = gtk_widget_get_allocated_height(widget);
+
+  cairo_set_source_rgb(cr, 1.0, 1.0,
+                       1.0); // 1.0, 1.0, 1.0 — это чистый БЕЛЫЙ цвет
+  cairo_paint(cr);           // Закрашивает абсолютно всю область DrawingArea
+
+  cairo_set_source_rgb(cr, 0.2, 0.4, 0.8); // Синий цвет
+  cairo_arc(cr, width / 2.0, height / 2.0, MIN(width, height) / 4.0, 0,
+            2 * G_PI);
+  cairo_fill(cr);
+
+  return FALSE;
+}
+
 void menu_activate(GtkWidget *widget, ENUM_MENU menu) {
   frame->clickMenu(menu);
 }
@@ -231,8 +247,24 @@ Frame::Frame() : WordsBase() {
 
   m_panedWidget = w1 = gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
   // left part
-  w2 = createBox(GTK_ORIENTATION_VERTICAL, 0, createTextView(TEXTVIEW_MAIN),
-                 true, m_status, false);
+
+  m_stack = gtk_stack_new();
+  gtk_stack_set_transition_type(GTK_STACK(m_stack),
+                                GTK_STACK_TRANSITION_TYPE_NONE);
+
+  GtkWidget *drawing_area = gtk_drawing_area_new();
+  g_signal_connect(G_OBJECT(drawing_area), "draw", G_CALLBACK(on_draw), NULL);
+
+  GtkWidget *scroll_graphics = gtk_scrolled_window_new(NULL, NULL);
+  gtk_container_add(GTK_CONTAINER(scroll_graphics), drawing_area);
+
+  gtk_stack_add_named(GTK_STACK(m_stack), createTextView(TEXTVIEW_MAIN),
+                      "text");
+  gtk_stack_add_named(GTK_STACK(m_stack), scroll_graphics, "graphics");
+
+  w2 = createBox(GTK_ORIENTATION_VERTICAL, 0, m_stack, true, m_status, false);
+  // w2 = createBox(GTK_ORIENTATION_VERTICAL, 0, createTextView(TEXTVIEW_MAIN),
+  //                true, m_status, false);
   gtk_widget_set_size_request(w2, MIN_LEFT_PANEL_WIDTH, -1);
   gtk_paned_pack1(GTK_PANED(w1), w2, FALSE, FALSE);
 
@@ -1127,7 +1159,8 @@ void Frame::updateStatus(ENUM_STATE state, ENUM_JOB_TYPE jobType) {
   case STATE_PROCEEDING:
     switch (jobType) {
     case JOB_TYPE_FULL:
-      m_out = oneOf(m_menuClick, MENU_WAITING) ? string(WAITING) : string(MENU_SEARCH);
+      m_out = oneOf(m_menuClick, MENU_WAITING) ? string(WAITING)
+                                               : string(MENU_SEARCH);
       break;
     case JOB_TYPE_SORT_AND_FILTER:
       m_out = string(SORTING_AND_FILTERING_OF_RESULTS);
@@ -1746,4 +1779,9 @@ std::string Frame::getTextToCopyFromFocus() {
 bool Frame::isValid() const {
   return m_widget && GTK_IS_WIDGET(m_widget) &&
          !gtk_widget_in_destruction(m_widget);
+}
+
+void Frame::showDrawingArea() {
+  gtk_stack_set_visible_child_name(GTK_STACK(m_stack), "graphics");
+  // gtk_stack_set_visible_child_name(GTK_STACK(m_stack), "text");
 }

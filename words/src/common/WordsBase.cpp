@@ -102,7 +102,7 @@ const LookupTable<ENUM_MENU, bool (WordsBase::*)(const std::string &)>
 #include "cgi.h"
 #endif
 
-// #define ONE_THREAD
+// #define ONE_THREADgf
 
 WordsBase *wordsBase;
 
@@ -1125,7 +1125,7 @@ void WordsBase::findChain(int nthread) {
     return;
   }
 
-  int i, j, layer;
+  int i, j;
   VectorVectorInt layerIndex[2];
   VectorInt *ptr[2];
   auto &words = m_vvs[nthread];
@@ -1141,7 +1141,7 @@ void WordsBase::findChain(int nthread) {
     chainAddIfFound(nthread, a, layerIndex[i][0]);
   }
 
-  for (layer = 2;; layer++) {
+  while (true) {
     i = -1;
     for (auto &a : ptr) {
       i++;
@@ -1155,7 +1155,7 @@ void WordsBase::findChain(int nthread) {
       break;
     }
     if (p.first.empty()) {
-      SearchResult::out=string(NO_CHAINS_FOUND);
+      SearchResult::out = string(NO_CHAINS_FOUND);
       return;
     }
     layerIndex[j].push_back(p.first);
@@ -1214,6 +1214,7 @@ void WordsBase::findChain(int nthread) {
   // for (auto &e : v) {
   //   m_result.push_back(SearchResult(e, m_evwords[0].length(), j + 2));
   // }
+  showDrawingArea();
 }
 
 void WordsBase::clusterStatistics(int nthread) {

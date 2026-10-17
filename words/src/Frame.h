@@ -31,6 +31,7 @@ class Frame : WordsBase {
   GtkWidget *m_charactersLabel;
   GtkWidget *m_sortbutton;
   GtkWidget *m_sortlist;
+  GtkWidget *m_stack;
   SafePangoFontDesc m_font[FONT_SIZE];
 
   std::chrono::steady_clock::time_point last_click_time[BUTTON_SIZE]{};
@@ -280,4 +281,5 @@ public:
   std::string getTextToCopyFromFocus();
 
   bool isValid() const;
+  void showDrawingArea() override;
 };
