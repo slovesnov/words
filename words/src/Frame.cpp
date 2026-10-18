@@ -919,13 +919,7 @@ void Frame::endJob() {
   updateStatus(m_token.stop_requested() ? STATE_USER_BREAK : STATE_OK);
   // update tags if user searched something
   updateTags(0);
-  if (m_currentEntry !=
-      ENTRY_SIZE) { // means calls from entry changed,restor focus and position
-    gtk_widget_grab_focus(m_entry[m_currentEntry]);
-    gtk_editable_set_position(GTK_EDITABLE(m_entry[m_currentEntry]),
-                              m_currentEntryPos);
-    m_currentEntry = ENTRY_SIZE; // reset value
-  }
+  restoreFocusedState();
 }
 
 int Frame::getComboIndex(ENUM_COMBOBOX e) const {
@@ -982,9 +976,8 @@ void Frame::setDebounceTimer(ENUM_ENTRY e) {
 
 void Frame::debounceTimeout(ENUM_ENTRY e) {
   m_debounceTimerId = 0;
-  // store current entry, because after thread loose focus and cursor position
-  m_currentEntry = e;
-  m_currentEntryPos = gtk_editable_get_position(GTK_EDITABLE(m_entry[e]));
+  // store current entry, because after thread lose focus and cursor position
+  captureFocusedState();
 
   switch (e) {
   case ENTRY_TEMPLATE:
@@ -1784,4 +1777,67 @@ bool Frame::isValid() const {
 void Frame::showDrawingArea() {
   gtk_stack_set_visible_child_name(GTK_STACK(m_stack), "graphics");
   // gtk_stack_set_visible_child_name(GTK_STACK(m_stack), "text");
+}
+
+void Frame::captureFocusedState() {
+  // Get the widget that currently has the window focus
+  m_focused_widget = gtk_window_get_focus(GTK_WINDOW(m_widget));
+
+  // If no widget is focused, there is nothing to save
+  if (!m_focused_widget)
+    return;
+
+  // Check the widget type to correctly retrieve its cursor/selection
+  // coordinates
+  if (GTK_IS_TEXT_VIEW(m_focused_widget)) {
+    GtkTextBuffer *buffer =
+        gtk_text_view_get_buffer(GTK_TEXT_VIEW(m_focused_widget));
+    GtkTextIter start, end;
+
+    if (gtk_text_buffer_get_selection_bounds(buffer, &start, &end)) {
+      m_sel_start = gtk_text_iter_get_offset(&start);
+      m_sel_end = gtk_text_iter_get_offset(&end);
+    } else {
+      // If nothing is selected, store the current cursor offset
+      GtkTextMark *cursor_mark = gtk_text_buffer_get_insert(buffer);
+      gtk_text_buffer_get_iter_at_mark(buffer, &start, cursor_mark);
+      m_sel_start = m_sel_end = gtk_text_iter_get_offset(&start);
+    }
+  } else if (GTK_IS_ENTRY(m_focused_widget)) {
+    if (!gtk_editable_get_selection_bounds(GTK_EDITABLE(m_focused_widget),
+                                           &m_sel_start, &m_sel_end)) {
+      // If nothing is selected, start and end offsets are equal to the cursor
+      // position
+      m_sel_start = m_sel_end =
+          gtk_editable_get_position(GTK_EDITABLE(m_focused_widget));
+    }
+  } else {
+    // Reset the pointer if the focused element is a button or other non-text
+    // widget
+    m_focused_widget = nullptr;
+  }
+}
+
+void Frame::restoreFocusedState() {
+  // Return early if no compatible text widget was focused before the job
+  // started
+  if (!m_focused_widget)
+    return;
+
+  // Restore input focus back to the saved widget
+  gtk_widget_grab_focus(m_focused_widget);
+
+  // Restore cursor position or selection region based on the widget type
+  if (GTK_IS_TEXT_VIEW(m_focused_widget)) {
+    GtkTextBuffer *buffer =
+        gtk_text_view_get_buffer(GTK_TEXT_VIEW(m_focused_widget));
+    GtkTextIter start, end;
+
+    gtk_text_buffer_get_iter_at_offset(buffer, &start, m_sel_start);
+    gtk_text_buffer_get_iter_at_offset(buffer, &end, m_sel_end);
+    gtk_text_buffer_select_range(buffer, &start, &end);
+  } else if (GTK_IS_ENTRY(m_focused_widget)) {
+    gtk_editable_select_region(GTK_EDITABLE(m_focused_widget), m_sel_start,
+                               m_sel_end);
+  }
 }

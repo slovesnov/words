@@ -22,7 +22,6 @@
   }
 #define RETURN_ON_USER_BREAK_VALUE(v)                                          \
   if (m_token.stop_requested()) {                                              \
-    prsync(nthread);                                                           \
     return v;                                                                  \
   }
 #endif
@@ -36,9 +35,10 @@ const LookupTable<ENUM_MENU, void (WordsBase::*)(int)> COMPLEX_FUNCTION = {
     {MENU_WORD_SEQUENCE_FULL,
      &WordsBase::findWordSequenceFull},                // not implemented
     {MENU_MODIFICATION, &WordsBase::findModification}, // break implemented
-    {MENU_CHAIN, &WordsBase::findChain},               // not implemented(TODO?)
+    {MENU_CHAIN, &WordsBase::findChain}, // if one word break implemented, if
+                                         // two words not need
     {MENU_CLUSTER_STATISTICS,
-     &WordsBase::clusterStatistics},                // not implemented(TODO?)
+     &WordsBase::clusterStatistics},                // break implemented
     {MENU_WORDS_SPLIT, &WordsBase::findWordsSplit}, // break implemented
     {MENU_LETTER_GROUP_SPLIT,
      &WordsBase::findLetterGroupSplit}, // break implemented
@@ -575,19 +575,6 @@ public:
   }
 };
 
-std::atomic<double> max_time{0.0}; // Переменная типа double
-
-void update_max(int nthread, double current_time) {
-  double prev_max = max_time.load();
-  while (current_time > prev_max &&
-         !max_time.compare_exchange_weak(prev_max, current_time)) {
-  }
-
-  if (current_time > prev_max) {
-    prsync(nthread, "new max time", current_time);
-  }
-}
-
 int WordsBase::findLongestChain(int nthread, int wordIndex,
                                 const SetString &exceptions) {
   auto &words = m_vvs[nthread];
@@ -612,10 +599,7 @@ int WordsBase::findLongestChain(int nthread, int wordIndex,
   total = 0;
   prev = 1;
   for (i = 2;; i++) {
-    auto begin = clock();
     layerIndex = chainLayer(nthread, layerIndex).first;
-    double v = timeElapse(begin);
-    update_max(nthread, v);
     j = layerIndex.size();
     if (!j) {
       break;

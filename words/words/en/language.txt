@@ -190,7 +190,6 @@ Dictionary statistics. This <a>page</a> features a chart of logarithmic letter f
 Word length statistics. This <a>page</a> features a chart of word length distribution along with its normal distribution approximation for both Russian and English languages.
 layer
 total
-left
 b-factor
 N
 words

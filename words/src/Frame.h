@@ -41,8 +41,9 @@ class Frame : WordsBase {
   std::jthread m_thread, m_managerThread;
   CheckNewVersion m_newVersion;
   guint m_debounceTimerId = 0;
-  ENUM_ENTRY m_currentEntry = ENTRY_SIZE;
-  int m_currentEntryPos;
+  GtkWidget *m_focused_widget = nullptr;
+  gint m_sel_start = 0;
+  gint m_sel_end = 0;
 
 public:
   gulong m_positionSignalId = 0;
@@ -282,4 +283,6 @@ public:
 
   bool isValid() const;
   void showDrawingArea() override;
+  void captureFocusedState();
+  void restoreFocusedState();
 };
