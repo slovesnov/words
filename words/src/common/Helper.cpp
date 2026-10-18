@@ -284,3 +284,5 @@ int indexOfOrdered(const std::string &s, const VString &a) {
     return -1;
   }
 }
+
+std::string squareBrackets(int v) { return std::format("[{}]", v); }

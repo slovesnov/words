@@ -151,6 +151,7 @@ public:
   void checkDictionaryPreProseeding();
 
   void anagramsPostProseeding();
+  void clusterStatisticsPostProseeding();
   void findLetterGroupSplitPostProseeding();
   void simpleDoubleWordSequencePostProseeding();
   void dictionaryStatisticsPostProseeding();

@@ -194,4 +194,4 @@ left
 b-factor
 N
 words
-Words of the same length can be divided into clusters. Words belong to the same cluster if they can be connected by a chain (see <i>search chains of words</i>). Statistics for all lengths are displayed as a set of pairs <i>word_count: set_count</i>.
+Words of the same length can be divided into clusters. Words belong to the same cluster if they can be connected by a chain (see <i>search chains of words</i>). Statistics for all lengths are displayed as a <i>[length]</i> and set of pairs <i>word_count: set_count</i>.

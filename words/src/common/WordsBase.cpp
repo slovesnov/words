@@ -14,10 +14,16 @@
 
 #ifdef NOGTK
 #define RETURN_ON_USER_BREAK
+#define RETURN_ON_USER_BREAK_VALUE
 #else
 #define RETURN_ON_USER_BREAK                                                   \
   if (m_token.stop_requested()) {                                              \
     return;                                                                    \
+  }
+#define RETURN_ON_USER_BREAK_VALUE(v)                                          \
+  if (m_token.stop_requested()) {                                              \
+    prsync(nthread);                                                           \
+    return v;                                                                  \
   }
 #endif
 
@@ -68,6 +74,7 @@ const LookupTable<ENUM_MENU, void (WordsBase::*)()> menuPreProseeding = {
 
 const LookupTable<ENUM_MENU, void (WordsBase::*)()> menuPostProseeding = {
     {MENU_ANAGRAM, &WordsBase::anagramsPostProseeding},
+    {MENU_CLUSTER_STATISTICS, &WordsBase::clusterStatisticsPostProseeding},
     {MENU_LETTER_GROUP_SPLIT, &WordsBase::findLetterGroupSplitPostProseeding},
     {MENU_SIMPLE_WORD_SEQUENCE,
      &WordsBase::simpleDoubleWordSequencePostProseeding},
@@ -596,14 +603,9 @@ int WordsBase::findLongestChain(int nthread, int wordIndex,
   const int BF_WIDTH = 6;
 
   TableFormat table({NSTRING, LAYER, BRANCHING_FACTOR}, {2, w, BF_WIDTH});
-  // TableFormat table({NSTRING, LAYER, TOTAL, LEFT, BRANCHING_FACTOR, TIME},
-  //                   {2, w, w, w, BF_WIDTH, TIME_WIDTH});
   if (m_menuClick == MENU_CHAIN) {
-    // total = 1;
     s = table.string(WORDS_NOMINATIVE_CASE) +
         table.string(1, layerIndex.size(), "", localeToUtf8(words[wordIndex]));
-    // table.string(i, layerIndex.size(), total, size - total, "", 0.,
-    //              localeToUtf8(words[wordIndex]));
     updateProceedingText(s, false);
   }
 
@@ -628,11 +630,10 @@ int WordsBase::findLongestChain(int nthread, int wordIndex,
         words_str += "…";
       }
       s = table.string(i, layerIndex.size(), double(j) / prev, words_str);
-      // s = table.string(i, layerIndex.size(), total, size - total,
-      //                  double(j) / prev, timeElapse(begin), words_str);
       updateProceedingText(s);
       prev = j;
     }
+    RETURN_ON_USER_BREAK_VALUE(-1)
   }
   return total;
 }
@@ -1233,7 +1234,6 @@ void WordsBase::findChain(int nthread) {
   layerIndex[0].insert(layerIndex[0].end(), layerIndex[1].rbegin(),
                        layerIndex[1].rend());
   TableFormat table({NSTRING}, {2});
-  // TableFormat table({NSTRING, LAYER}, {2, 0});
   s = table.string(WORDS_NOMINATIVE_CASE);
   i = 0;
   for (auto &e : layerIndex[0]) {
@@ -1246,7 +1246,6 @@ void WordsBase::findChain(int nthread) {
     }
     s1 += " " + intToString(e.size());
     s += table.string(i, s1);
-    // s += table.string(i, e.size(), s1);
   }
   SearchResult::out = s;
   // for (auto &e : v) {
@@ -1257,48 +1256,49 @@ void WordsBase::findChain(int nthread) {
 
 void WordsBase::clusterStatistics(int nthread) {
   int i, j, length;
-  double maxt = 0, v;
+  std::string s;
   while ((i = m_i.fetch_add(1)) < std::ssize(m_iiv)) {
     length = m_iiv[i].first;
-    // prsync(nthread,length)
     MapIntInt map;
-    std::string s = std::format("{} {}/{}", string(LENGTH), intToString(length),
-                                intToString(m_iiv[i].second));
     j = 0;
     fillDictionaryLength(nthread, length, {});
-    // prsync(nthread,length)
     while ((j = indexOf(true, m_chain[nthread], j)) != -1) {
       m_chain[nthread][j] = false;
-      // prsync(j)
-      auto begin = clock();
-      int i = findLongestChain(nthread, j) + 1;
-      map[i]++;
-
-      v = timeElapse(begin);
-      if (v > maxt) {
-        maxt = v;
-        prsync(nthread, maxt);
+      int i = findLongestChain(nthread, j);
+      if (i == -1) { // user break
+        return;
       }
-
-      RETURN_ON_USER_BREAK
+      map[i + 1]++;
     }
-    // prsync(nthread)
 
-    for (const auto &[length, count] : map) {
-      s += std::format(" {}:{}", length, intToString(count));
+    std::string s = "";
+    for (const auto &[words, count] : map) {
+      s += std::format(" {}:{}", intToString(words), intToString(count));
     }
-    s += "\n";
-    // s += std::format(" {} {:.2f} {}{}\n", string(TIME), timeElapse(begin),
-    //                  string(THREAD), nthread);
+    m_si.push_back({s, length});
+    s = squareBrackets(length) + s + "\n";
     updateProceedingText(s);
   }
 }
 
 void WordsBase::clusterStatisticsPreProseeding() {
   m_iiv = {getWordLengthMap().begin(), getWordLengthMap().end()};
+  m_si.clear();
   std::sort(m_iiv.begin(), m_iiv.end(),
             [](auto &a, auto &b) { return a.second > b.second; });
   m_i.store(0);
+}
+
+void WordsBase::clusterStatisticsPostProseeding() {
+  std::sort(m_si.begin(), m_si.end(),
+            [](auto &a, auto &b) { return a.second < b.second; });
+  int i = -1;
+  std::string s;
+  for (auto &p : m_si) {
+    i++;
+    s += (i ? "\n" : "") + squareBrackets(p.second) + p.first;
+  }
+  updateProceedingText(s, false);
 }
 
 void WordsBase::findLetterGroupSplitPreProseeding() {
