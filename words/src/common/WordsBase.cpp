@@ -482,13 +482,12 @@ void WordsBase::checkDictionaryPostProseeding() {
   }
 }
 
-void WordsBase::fillDictionaryLength(int nthread, int length,
-                                     const SetString &exceptions) {
+void WordsBase::fillDictionaryLength(int nthread, size_t length) {
   auto &words = m_vvs[nthread];
   words.clear();
   for (auto &a : getDictionary()) {
-    if (int(a.size()) == length) {
-      if (!exceptions.contains(a))
+    if (a.size() == length) {
+      if (!m_ss.contains(a))
         words.push_back(a);
     }
   }
@@ -575,8 +574,7 @@ public:
   }
 };
 
-int WordsBase::findLongestChain(int nthread, int wordIndex,
-                                const SetString &exceptions) {
+int WordsBase::findLongestChain(int nthread, int wordIndex) {
   auto &words = m_vvs[nthread];
   int i, j, k, total, prev;
   std::string s, words_str;
@@ -1137,20 +1135,13 @@ std::array<VectorInt, 2> WordsBase::relations(int nthread, VectorInt const &v1,
 }
 
 void WordsBase::findChain(int nthread) {
-  SetString exceptions;
   int i, j;
   VectorVectorInt layerIndex[2];
   VectorInt *ptr[2];
   auto &words = m_vvs[nthread];
   std::string s, s1;
 
-  for (auto &a : m_tvwords) {
-    if (a.size() == m_evwords[0].length()) {
-      exceptions.insert(a);
-    }
-  }
-
-  fillDictionaryLength(nthread, m_evwords[0].size(), exceptions);
+  fillDictionaryLength(nthread, m_evwords[0].size());
   i = -1;
   for (auto &a : m_evwords) {
     i++;
@@ -1159,12 +1150,14 @@ void WordsBase::findChain(int nthread) {
       m_chain[nthread].push_back(true);
     }
     layerIndex[i].push_back({});
+    prsync(nthread, i, layerIndex[i][0].size());
     chainAddIfFound(nthread, a, layerIndex[i][0]);
+    prsync(nthread, i, layerIndex[i][0].size());
   }
 
   // auto begin = clock();
   if (m_evwords.size() == 1) {
-    findLongestChain(nthread, layerIndex[i][0][0], exceptions);
+    findLongestChain(nthread, layerIndex[0][0][0]);
     return;
   }
 
@@ -1235,7 +1228,7 @@ void WordsBase::findChain(int nthread) {
   // for (auto &e : v) {
   //   m_result.push_back(SearchResult(e, m_evwords[0].length(), j + 2));
   // }
-  // showDrawingArea();
+  //showDrawingArea();
 }
 
 void WordsBase::clusterStatistics(int nthread) {
@@ -1245,7 +1238,7 @@ void WordsBase::clusterStatistics(int nthread) {
     length = m_iiv[i].first;
     MapIntInt map;
     j = 0;
-    fillDictionaryLength(nthread, length, {});
+    fillDictionaryLength(nthread, length);
     while ((j = indexOf(true, m_chain[nthread], j)) != -1) {
       m_chain[nthread][j] = false;
       int i = findLongestChain(nthread, j);
@@ -1266,6 +1259,7 @@ void WordsBase::clusterStatistics(int nthread) {
 }
 
 void WordsBase::clusterStatisticsPreProseeding() {
+  m_ss.clear(); // used in fillDictionaryLength() so clear
   m_iiv = {getWordLengthMap().begin(), getWordLengthMap().end()};
   m_si.clear();
   std::sort(m_iiv.begin(), m_iiv.end(),
@@ -1978,7 +1972,7 @@ void WordsBase::loadLanguages() {
 
 bool WordsBase::prepare() {
   std::string s;
-  // int i;
+  // pr(magic_enum::enum_name(m_menuClick));
 
   if (!MENU_WITH_ENTRY.get(m_menuClick)) {
     return true;
@@ -2044,16 +2038,34 @@ bool WordsBase::prepare() {
     m_evwords = getLocaleWords(evUtf8);
     m_tvwords = getLocaleWords(m_textViewValueUtf8);
 
+    if (m_evwords.size() != 1 && m_evwords.size() != 2) {
+      return false;
+    }
+
+    if (!getWordLengthMap().contains(
+            m_evwords[0].size())) { // no words such length
+      return false;
+    }
+
+    // filter words
+    m_ss.clear();
+    for (auto &a : m_tvwords) {
+      if (a.size() == m_evwords[0].size()) {
+        m_ss.insert(a);
+      }
+    }
+
+    if (std::any_of(m_evwords.begin(), m_evwords.end(), [this](auto &a) {
+          return m_ss.contains(a);
+        })) { // one of the words in filterd words
+      return false;
+    }
+
     if (m_evwords.size() == 1) {
-      // only if dictionary has words with current
-      return getWordLengthMap().contains(m_evwords[0].size()) &&
-             !oneOf(m_evwords[0], m_tvwords);
+      return true;
     } else if (m_evwords.size() == 2) {
       return m_evwords[0] != m_evwords[1] &&
-             m_evwords[0].size() == m_evwords[1].size() &&
-             !oneOf(m_evwords[0], m_tvwords) && !oneOf(m_evwords[1], m_tvwords);
-    } else {
-      return false;
+             m_evwords[0].size() == m_evwords[1].size();
     }
   }
 
@@ -2103,7 +2115,6 @@ PairDCIDCI WordsBase::iterators(int nthread, int n) {
 void WordsBase::run_thread(int nthread) {
   // auto begin = clock();
   m_thread_result[nthread].clear();
-
   if (auto it = COMPLEX_FUNCTION.get(m_menuClick)) {
     (this->*(*it))(nthread);
   } else if (m_menuClick == MENU_REGULAR_EXPRESSIONS) {
@@ -2136,7 +2147,6 @@ void WordsBase::run_thread(int nthread) {
       RETURN_ON_USER_BREAK
     }
   }
-
   // prsync(nthread, timeElapse(begin));
 }
 
@@ -2155,6 +2165,7 @@ void WordsBase::run(ENUM_JOB_TYPE e) {
     for (int i = 0; i < threads; ++i) {
       workers.emplace_back(run_thread, this, i);
     }
+
     for (auto &t : workers) {
       if (t.joinable()) {
         t.join();

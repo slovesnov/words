@@ -150,7 +150,7 @@ VectorVectorInt &sum(VectorThreadResult &v);
 std::string lowercase_utf8_regex(const std::string &pattern);
 bool breakMenu(const std::string &s);
 #ifndef NDEBUG
-void print_short_stack_trace(int max_lines = STACK_TRACE_DEPTH);
+void printShortStackTrace(int max_lines = STACK_TRACE_DEPTH);
 #endif
 
 std::string sub(std::string const &minuend, std::string const &subtrahend);

@@ -470,7 +470,9 @@ void Frame::clickMenu(ENUM_MENU menu) {
 
     if (menu == MENU_EDIT_COPY_TO_CLIPBOARD ||
         menu == MENU_EDIT_SELECT_ALL_AND_COPY_TO_CLIPBOARD) {
-      gtk_widget_grab_focus(GTK_WIDGET(m_text[TEXTVIEW_MAIN]));
+      pr(m_textview[TEXTVIEW_MAIN]);
+      gtk_widget_grab_focus(m_textview[TEXTVIEW_MAIN]);
+      pr(m_textview[TEXTVIEW_MAIN]);
 
       std::string mainText = getTextToCopyFromFocus();
       if (!mainText.empty()) {
@@ -1061,8 +1063,8 @@ void Frame::updateTags(int n) {
       scroll = s_iter;
     }
 
-    gtk_text_view_scroll_to_iter(GTK_TEXT_VIEW(m_text[TEXTVIEW_MAIN]), &scroll,
-                                 0.0, true, .5, .5);
+    gtk_text_view_scroll_to_iter(GTK_TEXT_VIEW(m_textview[TEXTVIEW_MAIN]),
+                                 &scroll, 0.0, true, .5, .5);
 
     setLabel(m_searchTagLabel,
              std::format("{}/{}", m_tags == 0 ? 0 : m_tagIndex + 1, m_tags));
@@ -1118,8 +1120,8 @@ void Frame::updateTags(int n) {
   }
 
   if (m_tags > 0) {
-    gtk_text_view_scroll_to_iter(GTK_TEXT_VIEW(m_text[TEXTVIEW_MAIN]), &scroll,
-                                 0.0, true, .5, .5);
+    gtk_text_view_scroll_to_iter(GTK_TEXT_VIEW(m_textview[TEXTVIEW_MAIN]),
+                                 &scroll, 0.0, true, .5, .5);
   }
   setLabel(m_searchTagLabel,
            std::format("{}/{}", m_tags == 0 ? 0 : m_tagIndex + 1, m_tags));
@@ -1203,7 +1205,7 @@ StartStopButtonState Frame::getStartStopState() const {
 
 GtkWidget *Frame::createTextView(ENUM_TEXTVIEW e, ENUM_STRING n) {
   std::string s;
-  auto t = m_text[e] = gtk_text_view_new();
+  auto t = m_textview[e] = gtk_text_view_new();
   auto w = gtk_scrolled_window_new(NULL, NULL);
   gtk_container_add(GTK_CONTAINER(w), t);
   gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(t), GTK_WRAP_WORD);
@@ -1237,6 +1239,7 @@ void Frame::textviewChanged(ENUM_TEXTVIEW e) {
     updateTextviewValue(e);
     if (!isSignalsLocked()) {
       // proceed same as template entry changed
+      // focus and selected stored using gtk_window_get_focus so it's ok
       setDebounceTimer(ENTRY_TEMPLATE);
     }
   }
@@ -1260,7 +1263,7 @@ std::string Frame::getTextViewString(ENUM_TEXTVIEW e) const {
 }
 
 GtkTextBuffer *Frame::tvBuffer(ENUM_TEXTVIEW e) const {
-  return gtk_text_view_get_buffer(GTK_TEXT_VIEW(m_text[e]));
+  return gtk_text_view_get_buffer(GTK_TEXT_VIEW(m_textview[e]));
 }
 
 void Frame::updateTextView(ENUM_TEXTVIEW e, std::string_view s) {
@@ -1471,7 +1474,6 @@ JOB_TYPE_STOP - stop calculations if needed
 */
 void Frame::job(ENUM_JOB_TYPE e) {
   // prsync(magic_enum::enum_name(m_menuClick), magic_enum::enum_name(e));
-  //  print_short_stack_trace( 6);
   if (oneOf(e, JOB_TYPE_SORT_AND_FILTER, JOB_TYPE_FILTER) && m_result.empty()) {
     return;
   }
@@ -1489,7 +1491,6 @@ void Frame::job(ENUM_JOB_TYPE e) {
     m_managerThread.request_stop();
     m_managerThread.detach();
   }
-
   m_managerThread = std::jthread([this, e](std::stop_token manager_token) {
     if (e != JOB_TYPE_STOP) {
       int packed = (static_cast<int>(e) << STATE_BITS) |
@@ -1775,13 +1776,16 @@ bool Frame::isValid() const {
 }
 
 void Frame::showDrawingArea() {
+  pri;
   gtk_stack_set_visible_child_name(GTK_STACK(m_stack), "graphics");
   // gtk_stack_set_visible_child_name(GTK_STACK(m_stack), "text");
 }
 
 void Frame::captureFocusedState() {
   // Get the widget that currently has the window focus
+  // pri;
   m_focused_widget = gtk_window_get_focus(GTK_WINDOW(m_widget));
+  // pr(m_focused_widget);
 
   // If no widget is focused, there is nothing to save
   if (!m_focused_widget)
@@ -1825,7 +1829,9 @@ void Frame::restoreFocusedState() {
     return;
 
   // Restore input focus back to the saved widget
+  pr(m_focused_widget);
   gtk_widget_grab_focus(m_focused_widget);
+  pr(m_focused_widget);
 
   // Restore cursor position or selection region based on the widget type
   if (GTK_IS_TEXT_VIEW(m_focused_widget)) {

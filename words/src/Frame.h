@@ -15,7 +15,7 @@ class Frame : WordsBase {
 
   GtkWidget *m_widget;
   GtkWidget *m_menu;
-  GtkWidget *m_text[TEXTVIEW_SIZE];
+  GtkWidget *m_textview[TEXTVIEW_SIZE];
   GtkWidget *m_helperUp;
   GtkWidget *m_combo[COMBOBOX_SIZE];
   GtkWidget *m_entry[ENTRY_SIZE];

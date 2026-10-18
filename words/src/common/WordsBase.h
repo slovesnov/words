@@ -75,6 +75,7 @@ protected:
   VectorIntInt m_iiv;
   std::atomic<int> m_i;
   VVString m_vvs;
+  SetString m_ss;
 
   std::string getStatusString();
   std::string getTimeString();
@@ -160,10 +161,8 @@ public:
 
   void twoDictionaries(int nthread, int n);
 
-  void fillDictionaryLength(int nthread, int length,
-                            const SetString &exceptions);
-  int findLongestChain(int nthread, int wordIndex,
-                       const SetString &exceptions = {});
+  void fillDictionaryLength(int nthread, size_t length);
+  int findLongestChain(int nthread, int wordIndex);
 
   bool chainAddIfFound(int nthread, const std::string &s, VectorInt &v,
                        const VectorInt &otherSide = {});

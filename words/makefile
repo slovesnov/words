@@ -39,7 +39,8 @@ endif
 # Only validate CONFIG if we are NOT running 'make clean'
 ifneq ($(filter clean,$(MAKECMDGOALS)),clean)
     ifeq ($(CONFIG), release)
-        CXXFLAGS   += -O3 -DNDEBUG
+        CXXFLAGS   += -O3
+        LDFLAGS    += -lstdc++exp
     else ifeq ($(CONFIG), finalrelease)
         CXXFLAGS   += -O3 -DNDEBUG
         LDFLAGS    += -mwindows
