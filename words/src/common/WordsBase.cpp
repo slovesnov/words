@@ -568,6 +568,19 @@ public:
   }
 };
 
+std::atomic<double> max_time{0.0}; // Переменная типа double
+
+void update_max(int nthread, double current_time) {
+  double prev_max = max_time.load();
+  while (current_time > prev_max &&
+         !max_time.compare_exchange_weak(prev_max, current_time)) {
+  }
+
+  if (current_time > prev_max) {
+    prsync(nthread, "new max time", current_time);
+  }
+}
+
 int WordsBase::findLongestChain(int nthread, int wordIndex,
                                 const SetString &exceptions) {
   auto &words = m_vvs[nthread];
@@ -579,25 +592,28 @@ int WordsBase::findLongestChain(int nthread, int wordIndex,
   int w = std::to_string(size).length();
   w += (w - 1) / 3; // separators
   const int MAX_WORDS = 5;
-  const int TIME_WIDTH = 6;
+  // const int TIME_WIDTH = 6;
   const int BF_WIDTH = 6;
 
-  TableFormat table({NSTRING, LAYER, TOTAL, LEFT, BRANCHING_FACTOR, TIME},
-                    {2, w, w, w, BF_WIDTH, TIME_WIDTH});
+  TableFormat table({NSTRING, LAYER, BRANCHING_FACTOR}, {2, w, BF_WIDTH});
+  // TableFormat table({NSTRING, LAYER, TOTAL, LEFT, BRANCHING_FACTOR, TIME},
+  //                   {2, w, w, w, BF_WIDTH, TIME_WIDTH});
   if (m_menuClick == MENU_CHAIN) {
-    i = 0;
-    total = 1;
+    // total = 1;
     s = table.string(WORDS_NOMINATIVE_CASE) +
-        table.string(i, layerIndex.size(), total, size - total, "",
-                     0., localeToUtf8(words[wordIndex]));
+        table.string(1, layerIndex.size(), "", localeToUtf8(words[wordIndex]));
+    // table.string(i, layerIndex.size(), total, size - total, "", 0.,
+    //              localeToUtf8(words[wordIndex]));
     updateProceedingText(s, false);
   }
 
   total = 0;
   prev = 1;
-  for (i = 1;; i++) {
+  for (i = 2;; i++) {
     auto begin = clock();
     layerIndex = chainLayer(nthread, layerIndex).first;
+    double v = timeElapse(begin);
+    update_max(nthread, v);
     j = layerIndex.size();
     if (!j) {
       break;
@@ -611,8 +627,9 @@ int WordsBase::findLongestChain(int nthread, int wordIndex,
       if (j > MAX_WORDS) {
         words_str += "…";
       }
-      s = table.string(i, layerIndex.size(), total, size - total,
-                       double(j) / prev, timeElapse(begin), words_str);
+      s = table.string(i, layerIndex.size(), double(j) / prev, words_str);
+      // s = table.string(i, layerIndex.size(), total, size - total,
+      //                  double(j) / prev, timeElapse(begin), words_str);
       updateProceedingText(s);
       prev = j;
     }
@@ -1136,6 +1153,11 @@ std::array<VectorInt, 2> WordsBase::relations(int nthread, VectorInt const &v1,
 
 void WordsBase::findChain(int nthread) {
   SetString exceptions;
+  int i, j;
+  VectorVectorInt layerIndex[2];
+  VectorInt *ptr[2];
+  auto &words = m_vvs[nthread];
+  std::string s, s1;
 
   for (auto &a : m_tvwords) {
     if (a.size() == m_evwords[0].length()) {
@@ -1144,11 +1166,6 @@ void WordsBase::findChain(int nthread) {
   }
 
   fillDictionaryLength(nthread, m_evwords[0].size(), exceptions);
-  int i, j;
-  VectorVectorInt layerIndex[2];
-  VectorInt *ptr[2];
-  auto &words = m_vvs[nthread];
-  std::string s, s1;
   i = -1;
   for (auto &a : m_evwords) {
     i++;
@@ -1203,7 +1220,6 @@ void WordsBase::findChain(int nthread) {
   for (i = 0; i < 2; i++) {
     auto &li = layerIndex[i];
     j = li.size() - 1;
-    // pr(i, li[j].size(), res[i].size());
     li[j] = res[i];
   }
 
@@ -1216,9 +1232,10 @@ void WordsBase::findChain(int nthread) {
   }
   layerIndex[0].insert(layerIndex[0].end(), layerIndex[1].rbegin(),
                        layerIndex[1].rend());
-  TableFormat table({NSTRING, LAYER}, {2, 0});
+  TableFormat table({NSTRING}, {2});
+  // TableFormat table({NSTRING, LAYER}, {2, 0});
   s = table.string(WORDS_NOMINATIVE_CASE);
-  i = -1;
+  i = 0;
   for (auto &e : layerIndex[0]) {
     i++;
     s1 = "";
@@ -1227,7 +1244,9 @@ void WordsBase::findChain(int nthread) {
       j++;
       s1 += (j ? " " : "") + localeToUtf8(words[b]);
     }
-    s += table.string(i, e.size(), s1);
+    s1 += " " + intToString(e.size());
+    s += table.string(i, s1);
+    // s += table.string(i, e.size(), s1);
   }
   SearchResult::out = s;
   // for (auto &e : v) {
@@ -1238,26 +1257,39 @@ void WordsBase::findChain(int nthread) {
 
 void WordsBase::clusterStatistics(int nthread) {
   int i, j, length;
+  double maxt = 0, v;
   while ((i = m_i.fetch_add(1)) < std::ssize(m_iiv)) {
     length = m_iiv[i].first;
-    auto begin = clock();
+    // prsync(nthread,length)
     MapIntInt map;
     std::string s = std::format("{} {}/{}", string(LENGTH), intToString(length),
                                 intToString(m_iiv[i].second));
-    // auto &words = m_vvs[nthread];
-    VectorBool::iterator it;
     j = 0;
     fillDictionaryLength(nthread, length, {});
+    // prsync(nthread,length)
     while ((j = indexOf(true, m_chain[nthread], j)) != -1) {
+      m_chain[nthread][j] = false;
+      // prsync(j)
+      auto begin = clock();
       int i = findLongestChain(nthread, j) + 1;
       map[i]++;
+
+      v = timeElapse(begin);
+      if (v > maxt) {
+        maxt = v;
+        prsync(nthread, maxt);
+      }
+
+      RETURN_ON_USER_BREAK
     }
+    // prsync(nthread)
 
     for (const auto &[length, count] : map) {
-      s += std::format(" {}:{}", intToString(length), intToString(count));
+      s += std::format(" {}:{}", length, intToString(count));
     }
-    s += std::format(" {} {:.2f} {}{}\n", string(TIME), timeElapse(begin),
-                     string(THREAD), nthread);
+    s += "\n";
+    // s += std::format(" {} {:.2f} {}{}\n", string(TIME), timeElapse(begin),
+    //                  string(THREAD), nthread);
     updateProceedingText(s);
   }
 }
