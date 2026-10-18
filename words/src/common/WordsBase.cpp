@@ -482,17 +482,61 @@ void WordsBase::checkDictionaryPostProseeding() {
   }
 }
 
-void WordsBase::fillDictionaryLength(int nthread, size_t length) {
+//if bounds not found in dictionary then they are added to dictionary
+void WordsBase::fillDictionaryLength(int nthread, size_t length,
+                                     const VString &bounds) {
   auto &words = m_vvs[nthread];
   words.clear();
-  for (auto &a : getDictionary()) {
-    if (a.size() == length) {
-      if (!m_ss.contains(a))
-        words.push_back(a);
-    }
+
+  const auto& dict = getDictionary();
+  words.reserve(dict.size() / 10 + bounds.size()); // Pre-allocate memory once
+
+  size_t bounds_idx = 0;
+  size_t bounds_size = bounds.size();
+  size_t added_count = 0; // Tracks the number of bounds words missing from the dictionary
+
+  // 1. Fast inline sorting for bounds (maximum of 2 elements)
+  const VString* sorted_bounds = &bounds;
+  VString local_bounds;
+  if (bounds_size == 2 && bounds[1] < bounds[0]) {
+    local_bounds = {bounds[1], bounds[0]};
+    sorted_bounds = &local_bounds;
   }
-  m_chain[nthread].assign(words.size(), true);
+
+  // 2. Single-pass linear merge O(N)
+  for (const auto &a : dict) {
+    if (a.size() != length || m_ss.contains(a)) {
+      continue;
+    }
+
+    // Insert bounds elements that come alphabetically before the current dictionary word
+    while (bounds_idx < bounds_size && (*sorted_bounds)[bounds_idx] < a) {
+      words.push_back((*sorted_bounds)[bounds_idx]);
+      ++bounds_idx;
+      ++added_count; // The word was missing from the dictionary; increment count
+    }
+
+    // If the bounds element matches the dictionary word, skip it to prevent duplicates
+    if (bounds_idx < bounds_size && (*sorted_bounds)[bounds_idx] == a) {
+      ++bounds_idx;
+      // Do not increment added_count since the word is already present in the dictionary
+    }
+
+    words.push_back(a);
+  }
+
+  // 3. Append remaining bounds elements that come alphabetically after all dictionary words
+  while (bounds_idx < bounds_size) {
+    words.push_back((*sorted_bounds)[bounds_idx]);
+    ++bounds_idx;
+    ++added_count; // The word was missing from the dictionary; increment count
+  }
+
+  pr(added_count);
+  // 4. Update the execution chain layout
+  m_chain[nthread].assign(words.size()+added_count, true);
 }
+
 
 class TableFormat {
 private:
@@ -1141,18 +1185,14 @@ void WordsBase::findChain(int nthread) {
   auto &words = m_vvs[nthread];
   std::string s, s1;
 
-  fillDictionaryLength(nthread, m_evwords[0].size());
+  fillDictionaryLength(nthread, m_evwords[0].size(), m_evwords);
   i = -1;
   for (auto &a : m_evwords) {
     i++;
-    if (!std::ranges::binary_search(words, a)) {
-      words.push_back(a);
-      m_chain[nthread].push_back(true);
-    }
     layerIndex[i].push_back({});
     prsync(nthread, i, layerIndex[i][0].size());
     chainAddIfFound(nthread, a, layerIndex[i][0]);
-    prsync(nthread, i, layerIndex[i][0].size());
+    prsync(nthread, i, layerIndex[i][0].size(),layerIndex[i][0][0], words.size());
   }
 
   // auto begin = clock();
@@ -1228,7 +1268,7 @@ void WordsBase::findChain(int nthread) {
   // for (auto &e : v) {
   //   m_result.push_back(SearchResult(e, m_evwords[0].length(), j + 2));
   // }
-  //showDrawingArea();
+   showDrawingArea();
 }
 
 void WordsBase::clusterStatistics(int nthread) {

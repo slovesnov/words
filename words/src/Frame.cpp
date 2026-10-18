@@ -1783,9 +1783,8 @@ void Frame::showDrawingArea() {
 
 void Frame::captureFocusedState() {
   // Get the widget that currently has the window focus
-  // pri;
   m_focused_widget = gtk_window_get_focus(GTK_WINDOW(m_widget));
-  // pr(m_focused_widget);
+  pr(m_focused_widget,GTK_IS_TEXT_VIEW(m_focused_widget),GTK_IS_ENTRY(m_focused_widget));
 
   // If no widget is focused, there is nothing to save
   if (!m_focused_widget)

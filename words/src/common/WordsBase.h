@@ -161,7 +161,8 @@ public:
 
   void twoDictionaries(int nthread, int n);
 
-  void fillDictionaryLength(int nthread, size_t length);
+  void fillDictionaryLength(int nthread, size_t length,
+                            const VString &bounds = {});
   int findLongestChain(int nthread, int wordIndex);
 
   bool chainAddIfFound(int nthread, const std::string &s, VectorInt &v,
