@@ -5,6 +5,16 @@ window,dialog,messagedialog {
 	background-image:url('words/images/bg0.jpg');
 }
 
+link,
+link:hover,
+link:active,
+link:focus {
+    outline-color: transparent;
+    outline-style: none;
+    outline-width: 0px;
+    box-shadow: none;
+}
+
 /*visited link same color with unvisited*/
 label link{
 	color:#2a76c6;
@@ -47,12 +57,6 @@ menuitem:disabled{
 list row:selected {
     background-color: transparent;
     color: inherit; /* Keeps the text color normal instead of forcing it to white */
-}
-
-frame border{
-	padding:5px;
- 	border-radius: .4em;
-	border-color: black;
 }
 
 menu separator {

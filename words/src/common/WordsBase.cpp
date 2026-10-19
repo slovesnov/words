@@ -482,21 +482,22 @@ void WordsBase::checkDictionaryPostProseeding() {
   }
 }
 
-//if bounds not found in dictionary then they are added to dictionary
+// if bounds not found in dictionary then they are added to dictionary
 void WordsBase::fillDictionaryLength(int nthread, size_t length,
                                      const VString &bounds) {
   auto &words = m_vvs[nthread];
   words.clear();
 
-  const auto& dict = getDictionary();
+  const auto &dict = getDictionary();
   words.reserve(dict.size() / 10 + bounds.size()); // Pre-allocate memory once
 
   size_t bounds_idx = 0;
   size_t bounds_size = bounds.size();
-  size_t added_count = 0; // Tracks the number of bounds words missing from the dictionary
+  size_t added_count =
+      0; // Tracks the number of bounds words missing from the dictionary
 
   // 1. Fast inline sorting for bounds (maximum of 2 elements)
-  const VString* sorted_bounds = &bounds;
+  const VString *sorted_bounds = &bounds;
   VString local_bounds;
   if (bounds_size == 2 && bounds[1] < bounds[0]) {
     local_bounds = {bounds[1], bounds[0]};
@@ -509,23 +510,28 @@ void WordsBase::fillDictionaryLength(int nthread, size_t length,
       continue;
     }
 
-    // Insert bounds elements that come alphabetically before the current dictionary word
+    // Insert bounds elements that come alphabetically before the current
+    // dictionary word
     while (bounds_idx < bounds_size && (*sorted_bounds)[bounds_idx] < a) {
       words.push_back((*sorted_bounds)[bounds_idx]);
       ++bounds_idx;
-      ++added_count; // The word was missing from the dictionary; increment count
+      ++added_count; // The word was missing from the dictionary; increment
+                     // count
     }
 
-    // If the bounds element matches the dictionary word, skip it to prevent duplicates
+    // If the bounds element matches the dictionary word, skip it to prevent
+    // duplicates
     if (bounds_idx < bounds_size && (*sorted_bounds)[bounds_idx] == a) {
       ++bounds_idx;
-      // Do not increment added_count since the word is already present in the dictionary
+      // Do not increment added_count since the word is already present in the
+      // dictionary
     }
 
     words.push_back(a);
   }
 
-  // 3. Append remaining bounds elements that come alphabetically after all dictionary words
+  // 3. Append remaining bounds elements that come alphabetically after all
+  // dictionary words
   while (bounds_idx < bounds_size) {
     words.push_back((*sorted_bounds)[bounds_idx]);
     ++bounds_idx;
@@ -533,7 +539,7 @@ void WordsBase::fillDictionaryLength(int nthread, size_t length,
   }
 
   // 4. Update the execution chain layout
-  m_chain[nthread].assign(words.size()+added_count, true);
+  m_chain[nthread].assign(words.size() + added_count, true);
 }
 
 class TableFormat {
@@ -596,7 +602,11 @@ public:
           s += (i ? " " : "");
           s += formatCell(i == std::size(m_en) ? en : m_en[i], i);
         }
+#ifdef NOGTK
         return s;
+#else
+        return "<b>" + s + "</b>";
+#endif
       }
     }
 
@@ -611,7 +621,6 @@ public:
           i++;
         }(args),
         ...);
-
     return s;
   }
 };

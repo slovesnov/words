@@ -149,6 +149,8 @@ Frame::Frame() : WordsBase() {
   m_menuClick = MENU_SEARCH;
   lockSignals(); // lock, unlock after create
 
+  //clearlog();
+
   resetSettings(false);
   if (readConfig(CONFIG_TAGS, s, m_buttonValue[BUTTON_LANGUAGE],
                  m_buttonValue[BUTTON_DICTIONARY], m_separatorPosition, p[0],
@@ -883,7 +885,7 @@ std::string Frame::getMenuLabel(ENUM_MENU e) {
 }
 
 void Frame::endJob() {
-  prsync("endJob");
+  // prsync("endJob");
   if (m_thread.joinable())
     m_thread.join();
 
@@ -1044,7 +1046,9 @@ void Frame::updateTags(int n) {
   gint i, j;
 
   gtk_text_buffer_get_bounds(buffer, &start, &end);
-  gtk_text_buffer_remove_all_tags(buffer, &start, &end);
+  gtk_text_buffer_remove_tag_by_name(buffer, activeTag, &start, &end);
+  gtk_text_buffer_remove_tag_by_name(buffer, markTag, &start, &end);
+  // gtk_text_buffer_remove_all_tags(buffer, &start, &end);
   clearTagMarks();
 
   if (s.empty()) {
@@ -1235,11 +1239,18 @@ GtkTextBuffer *Frame::tvBuffer(ENUM_TEXTVIEW e) const {
   return gtk_text_view_get_buffer(GTK_TEXT_VIEW(m_textview[e]));
 }
 
-void Frame::updateTextView(ENUM_TEXTVIEW e, std::string_view s) {
-  gtk_text_buffer_set_text(tvBuffer(e), s.data(),
-                           static_cast<gssize>(s.size()));
+void Frame::updateTextView(ENUM_TEXTVIEW e, std::string_view markup) {
+  // pr(markup.substr(0, 10), markup.size())
+  GtkTextBuffer *buffer = tvBuffer(e);
+  gtk_text_buffer_set_text(buffer, "", 0);
+  GtkTextIter iter;
+  gtk_text_buffer_get_start_iter(buffer, &iter);
+  gtk_text_buffer_insert_markup(buffer, &iter, markup.data(),
+                                static_cast<gssize>(markup.size()));
+  // gtk_text_buffer_set_text(buffer, markup.data(),
+  //                            static_cast<gssize>(markup.size()));
   if (e == TEXTVIEW_MAIN) {
-    updateSensitivity(m_state == STATE_OK && !s.empty(), MENU_SAVE_TEXT);
+    updateSensitivity(m_state == STATE_OK && !markup.empty(), MENU_SAVE_TEXT);
   } else {
     updateTextviewValue(e);
   }
@@ -1446,8 +1457,6 @@ void Frame::job(ENUM_JOB_TYPE e) {
   if (oneOf(e, JOB_TYPE_SORT_AND_FILTER, JOB_TYPE_FILTER) && m_result.empty()) {
     return;
   }
-
-  printShortStackTrace();
 
   if (isValid()) {
     clear(e);

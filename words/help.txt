@@ -1,4 +1,22 @@
-5.0.0 22 10 2026
+5.0.1 ??
+added search for the longest chains
+added splitting by clusters
+simplified the chain search code
+removed multithreading from word length statistics due to lack of necessity
+fixed a crash when pasting text that cannot be transcoded to the local locale
+fixed Ctrl+A and Ctrl+C combinations did not always work correctly
+fixed cursor restoration after calculation if it was in the TextView
+
+[ru]
+добавился поиск длинейших цепочек
+добавилось разбиение по кластерам
+упрощен код поиска цепочек
+убрана многозадачность из статистики длины слов из-за ненадобности
+исправлено если в поле вcтавить текст который нельзя перекодировать в локаль программа падала
+исправлено комбинации ctrl+a и ctrl+c не всегда корректно работали
+исправлено восстановление курсора после расчета если он был в textview
+
+5.0.0 22 9 2026
 russian dictionary now contains 2,415,401 words (was 445,342)
 english dictionary now contains 393,167 words (was 134,511)
 added strict-match search across both dictionaries

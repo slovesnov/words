@@ -253,7 +253,7 @@ public:
   void updateTextviewValue(ENUM_TEXTVIEW e);
   std::string getTextViewString(ENUM_TEXTVIEW e) const;
   GtkTextBuffer *tvBuffer(ENUM_TEXTVIEW e = TEXTVIEW_MAIN) const;
-  void updateTextView(ENUM_TEXTVIEW e, std::string_view s);
+  void updateTextView(ENUM_TEXTVIEW e, std::string_view markup);
 
   // check functons
   void createCheck(ENUM_STRING e, bool set);
