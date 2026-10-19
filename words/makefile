@@ -46,7 +46,7 @@ ifneq ($(filter clean,$(MAKECMDGOALS)),clean)
         LDFLAGS    += -mwindows
     else ifeq ($(CONFIG), debug)
         # Debug mode with full stack trace capability and disabled optimizations
-        CXXFLAGS   += -g -O0
+        CXXFLAGS   += -O0 -g
         LDFLAGS    += -lstdc++exp
     else ifeq ($(CONFIG), console)
         CGI        := ../../cgi/cgi/src/cgi

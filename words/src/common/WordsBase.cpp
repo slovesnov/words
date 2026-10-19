@@ -532,11 +532,9 @@ void WordsBase::fillDictionaryLength(int nthread, size_t length,
     ++added_count; // The word was missing from the dictionary; increment count
   }
 
-  pr(added_count);
   // 4. Update the execution chain layout
   m_chain[nthread].assign(words.size()+added_count, true);
 }
-
 
 class TableFormat {
 private:
@@ -628,7 +626,6 @@ int WordsBase::findLongestChain(int nthread, int wordIndex) {
   int w = std::to_string(size).length();
   w += (w - 1) / 3; // separators
   const int MAX_WORDS = 5;
-  // const int TIME_WIDTH = 6;
   const int BF_WIDTH = 6;
 
   TableFormat table({NSTRING, LAYER, BRANCHING_FACTOR}, {2, w, BF_WIDTH});
@@ -1190,9 +1187,7 @@ void WordsBase::findChain(int nthread) {
   for (auto &a : m_evwords) {
     i++;
     layerIndex[i].push_back({});
-    prsync(nthread, i, layerIndex[i][0].size());
     chainAddIfFound(nthread, a, layerIndex[i][0]);
-    prsync(nthread, i, layerIndex[i][0].size(),layerIndex[i][0][0], words.size());
   }
 
   // auto begin = clock();
@@ -1268,7 +1263,6 @@ void WordsBase::findChain(int nthread) {
   // for (auto &e : v) {
   //   m_result.push_back(SearchResult(e, m_evwords[0].length(), j + 2));
   // }
-   showDrawingArea();
 }
 
 void WordsBase::clusterStatistics(int nthread) {

@@ -30,22 +30,6 @@ std::pair<ENUM_MENU, int> MENU_TO_ACCEL_KEY[] = {
     {MENU_SAVE_TEXT, GDK_KEY_S}};
 Frame *frame;
 
-gboolean on_draw(GtkWidget *widget, cairo_t *cr, gpointer data) {
-  guint width = gtk_widget_get_allocated_width(widget);
-  guint height = gtk_widget_get_allocated_height(widget);
-
-  cairo_set_source_rgb(cr, 1.0, 1.0,
-                       1.0); // 1.0, 1.0, 1.0 — это чистый БЕЛЫЙ цвет
-  cairo_paint(cr);           // Закрашивает абсолютно всю область DrawingArea
-
-  cairo_set_source_rgb(cr, 0.2, 0.4, 0.8); // Синий цвет
-  cairo_arc(cr, width / 2.0, height / 2.0, MIN(width, height) / 4.0, 0,
-            2 * G_PI);
-  cairo_fill(cr);
-
-  return FALSE;
-}
-
 void menu_activate(GtkWidget *widget, ENUM_MENU menu) {
   frame->clickMenu(menu);
 }
@@ -248,23 +232,8 @@ Frame::Frame() : WordsBase() {
   m_panedWidget = w1 = gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
   // left part
 
-  m_stack = gtk_stack_new();
-  gtk_stack_set_transition_type(GTK_STACK(m_stack),
-                                GTK_STACK_TRANSITION_TYPE_NONE);
-
-  GtkWidget *drawing_area = gtk_drawing_area_new();
-  g_signal_connect(G_OBJECT(drawing_area), "draw", G_CALLBACK(on_draw), NULL);
-
-  GtkWidget *scroll_graphics = gtk_scrolled_window_new(NULL, NULL);
-  gtk_container_add(GTK_CONTAINER(scroll_graphics), drawing_area);
-
-  gtk_stack_add_named(GTK_STACK(m_stack), createTextView(TEXTVIEW_MAIN),
-                      "text");
-  gtk_stack_add_named(GTK_STACK(m_stack), scroll_graphics, "graphics");
-
-  w2 = createBox(GTK_ORIENTATION_VERTICAL, 0, m_stack, true, m_status, false);
-  // w2 = createBox(GTK_ORIENTATION_VERTICAL, 0, createTextView(TEXTVIEW_MAIN),
-  //                true, m_status, false);
+  w2 = createBox(GTK_ORIENTATION_VERTICAL, 0, createTextView(TEXTVIEW_MAIN),
+                 true, m_status, false);
   gtk_widget_set_size_request(w2, MIN_LEFT_PANEL_WIDTH, -1);
   gtk_paned_pack1(GTK_PANED(w1), w2, FALSE, FALSE);
 
@@ -914,14 +883,16 @@ std::string Frame::getMenuLabel(ENUM_MENU e) {
 }
 
 void Frame::endJob() {
-  // prsync("endJob");
-  //  make unjoinable
+  prsync("endJob");
   if (m_thread.joinable())
     m_thread.join();
-  updateStatus(m_token.stop_requested() ? STATE_USER_BREAK : STATE_OK);
-  // update tags if user searched something
-  updateTags(0);
-  restoreFocusedState();
+
+  if (isValid()) {
+    updateStatus(m_token.stop_requested() ? STATE_USER_BREAK : STATE_OK);
+    // update tags if user searched something
+    updateTags(0);
+    restoreFocusedState();
+  }
 }
 
 int Frame::getComboIndex(ENUM_COMBOBOX e) const {
@@ -978,8 +949,6 @@ void Frame::setDebounceTimer(ENUM_ENTRY e) {
 
 void Frame::debounceTimeout(ENUM_ENTRY e) {
   m_debounceTimerId = 0;
-  // store current entry, because after thread lose focus and cursor position
-  captureFocusedState();
 
   switch (e) {
   case ENTRY_TEMPLATE:
@@ -1478,6 +1447,8 @@ void Frame::job(ENUM_JOB_TYPE e) {
     return;
   }
 
+  printShortStackTrace();
+
   if (isValid()) {
     clear(e);
     if (!prepare()) {
@@ -1485,6 +1456,8 @@ void Frame::job(ENUM_JOB_TYPE e) {
       updateStatus(STATE_ERROR);
       return;
     }
+    // store current entry, because after thread lose focus and cursor position
+    captureFocusedState();
   }
 
   if (m_managerThread.joinable()) {
@@ -1775,16 +1748,9 @@ bool Frame::isValid() const {
          !gtk_widget_in_destruction(m_widget);
 }
 
-void Frame::showDrawingArea() {
-  pri;
-  gtk_stack_set_visible_child_name(GTK_STACK(m_stack), "graphics");
-  // gtk_stack_set_visible_child_name(GTK_STACK(m_stack), "text");
-}
-
 void Frame::captureFocusedState() {
   // Get the widget that currently has the window focus
   m_focused_widget = gtk_window_get_focus(GTK_WINDOW(m_widget));
-  pr(m_focused_widget,GTK_IS_TEXT_VIEW(m_focused_widget),GTK_IS_ENTRY(m_focused_widget));
 
   // If no widget is focused, there is nothing to save
   if (!m_focused_widget)
@@ -1828,9 +1794,7 @@ void Frame::restoreFocusedState() {
     return;
 
   // Restore input focus back to the saved widget
-  pr(m_focused_widget);
   gtk_widget_grab_focus(m_focused_widget);
-  pr(m_focused_widget);
 
   // Restore cursor position or selection region based on the widget type
   if (GTK_IS_TEXT_VIEW(m_focused_widget)) {

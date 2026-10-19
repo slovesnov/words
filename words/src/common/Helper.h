@@ -10,7 +10,6 @@
 #define ASLOV_SHORT_LOGGING
 #include "aslov.h"
 #include "enums.h"
-#include <optional>
 #include <set>
 #include <unordered_map>
 
