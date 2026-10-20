@@ -134,7 +134,6 @@ public:
 
   void clickMenu(ENUM_MENU menu);
   void setMenuLabel(ENUM_MENU e, std::string const &text);
-  std::string getMenuLabel(ENUM_MENU e);
 
   void updateDictionary(bool change = false);
   void updateLanguage(bool change = false);

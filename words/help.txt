@@ -1,7 +1,7 @@
 5.0.1 ??
 added search for the longest chains
 added splitting by clusters
-simplified the chain search code
+simplified and accelerated chain search code
 removed multithreading from word length statistics due to lack of necessity
 fixed a crash when pasting text that cannot be transcoded to the local locale
 fixed Ctrl+A and Ctrl+C combinations did not always work correctly
@@ -10,7 +10,7 @@ fixed cursor restoration after calculation if it was in the TextView
 [ru]
 добавился поиск длинейших цепочек
 добавилось разбиение по кластерам
-упрощен код поиска цепочек
+упрощен и ускорен код поиска цепочек
 убрана многозадачность из статистики длины слов из-за ненадобности
 исправлено если в поле вcтавить текст который нельзя перекодировать в локаль программа падала
 исправлено комбинации ctrl+a и ctrl+c не всегда корректно работали

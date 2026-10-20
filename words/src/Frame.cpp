@@ -525,7 +525,7 @@ void Frame::aboutDialog() {
   GdkPixbuf *pi;
 
   dialog = gtk_dialog_new();
-  gtk_window_set_title(GTK_WINDOW(dialog), getMenuLabel(MENU_ABOUT).c_str());
+  gtk_window_set_title(GTK_WINDOW(dialog), string(MENU_ABOUT).c_str());
   hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
   gtk_container_add(GTK_CONTAINER(hbox), img);
   box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
@@ -869,18 +869,6 @@ void Frame::setMenuLabel(ENUM_MENU e, std::string const &text) {
     gtk_label_set_label(GTK_LABEL(g_list_nth(list, 1)->data), text.c_str());
   } else {
     gtk_menu_item_set_label(GTK_MENU_ITEM(w), text.c_str());
-  }
-}
-
-std::string Frame::getMenuLabel(ENUM_MENU e) {
-  GtkWidget *w = m_menuMap[e];
-  if (MENU_TO_ICON_FILE.has(e)) {
-    w = gtk_bin_get_child(GTK_BIN(w));
-    GList *list = gtk_container_get_children(GTK_CONTAINER(w));
-    assert(g_list_length(list) == 2);
-    return gtk_label_get_label(GTK_LABEL(g_list_nth(list, 1)->data));
-  } else {
-    return gtk_menu_item_get_label(GTK_MENU_ITEM(w));
   }
 }
 
