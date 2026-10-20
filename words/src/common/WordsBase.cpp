@@ -1257,7 +1257,7 @@ void WordsBase::findChain(int nthread) {
       SearchResult::out = string(NO_CHAINS_FOUND);
       return;
     }
-    // std::sort(p.first.begin(), p.first.end()); // todo
+    std::sort(p.first.begin(), p.first.end());
     layerIndex[j].push_back(p.first);
   }
 

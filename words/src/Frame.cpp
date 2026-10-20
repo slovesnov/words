@@ -242,7 +242,8 @@ Frame::Frame() : WordsBase() {
   // right part
   w2 = createBox(GTK_ORIENTATION_VERTICAL, 3, m_helperUp, false,
                  //  gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0), true,
-                 w, false);
+                 w, true);
+  gtk_widget_set_valign(GTK_WIDGET(w), GTK_ALIGN_END);
   gtk_widget_set_size_request(w2, MIN_RIGHT_PANEL_WIDTH, -1);
   gtk_paned_pack2(GTK_PANED(w1), w2, TRUE, FALSE);
   gtk_widget_set_margin_start(w2, 5);
@@ -1502,65 +1503,34 @@ void Frame::job(ENUM_JOB_TYPE e) {
 }
 
 void Frame::addHelp(ENUM_STRING e) {
-  VString v;
+  // Note 20oct2026 for very long strings >1000-1100 can be invalid height of
+  // components, split on several labels doesn't help
   auto s = string(e);
   const std::string BR = "<br>";
+  pr(utf8Length(s));
+  printlog(utf8Length(s));
 
-  if (m_menuClick == MENU_MODIFICATION) { // todo
-    v = split(s, BR);
-    // VString v1 = split(s, BR);
-    //bad i=0;i<8 ифв
-    // for(int i=6;i<int(v1.size());i++){
-    //   v.push_back(v1[i]);
-    // }
-    // // int i = utf8Length(s);
-    // size_t pos, prevpos = 0;
-    // int delta, mindelta = i + 1;
-    // i /= 2;
-    // for (pos = s.find(BR, 0); pos != std::string::npos;
-    //      pos = s.find(BR, pos + BR.length())) {
-    //   delta = std::abs(int(pos) - i);
-    //   if (delta >= mindelta) {
-    //     break;
-    //   }
-    //   mindelta = delta;
-    //   prevpos = pos;
-    // }
+  auto w = gtk_label_new("");
+  gtk_container_add(GTK_CONTAINER(m_helperUp), w);
+  // add(m_helperUp, w, false);
+  gtk_label_set_justify(GTK_LABEL(w), GTK_JUSTIFY_LEFT);
+  // gtk_label_set_justify(GTK_LABEL(w), GTK_JUSTIFY_FILL);
+  gtk_label_set_line_wrap(GTK_LABEL(w), TRUE);
+  gtk_label_set_line_wrap_mode(GTK_LABEL(w), PANGO_WRAP_WORD_CHAR);
+  // gtk_label_set_max_width_chars(GTK_LABEL(w), 80);
+  // gtk_label_set_width_chars(GTK_LABEL(w), 20);
 
-    // if (prevpos == 0) {
-    //   v = {s};//will be bad label height
-    // } else {
-    //   v = {s.substr(0, prevpos), s.substr(prevpos + BR.length())};
-    // }
-
-     pr(v.size());
-  } else {
+  if (oneOf(m_menuClick, MENU_DICTIONARY_STATISTICS, MENU_WORD_FREQUENCY)) {
+    s = replaceAll(s, "<a>",
+                   std::format("<a href='{},{}#{}'>", HOMEPAGE,
+                               LNG[getLanguageIndex()],
+                               magic_enum::enum_name(m_menuClick)));
   }
-    v = {s};
+  s = replaceAll(s, BR, "\n");
 
-  for (auto &s : v) {
-    auto w = gtk_label_new("");
-    gtk_container_add(GTK_CONTAINER(m_helperUp), w);
-    // add(m_helperUp, w, false);
-    gtk_label_set_justify(GTK_LABEL(w), GTK_JUSTIFY_LEFT);
-    // gtk_label_set_justify(GTK_LABEL(w), GTK_JUSTIFY_FILL);
-    gtk_label_set_line_wrap(GTK_LABEL(w), TRUE);
-    gtk_label_set_line_wrap_mode(GTK_LABEL(w), PANGO_WRAP_WORD_CHAR);
-    // gtk_label_set_max_width_chars(GTK_LABEL(w), 80);
-    // gtk_label_set_width_chars(GTK_LABEL(w), 20);
-
-    if (oneOf(m_menuClick, MENU_DICTIONARY_STATISTICS, MENU_WORD_FREQUENCY)) {
-      s = replaceAll(s, "<a>",
-                     std::format("<a href='{},{}#{}'>", HOMEPAGE,
-                                 LNG[getLanguageIndex()],
-                                 magic_enum::enum_name(m_menuClick)));
-    }
-    s = replaceAll(s, BR, "\n");
-
-    gchar *p = g_markup_printf_escaped(s.c_str());
-    gtk_label_set_markup(GTK_LABEL(w), p);
-    g_free(p);
-  }
+  gchar *p = g_markup_printf_escaped(s.c_str());
+  gtk_label_set_markup(GTK_LABEL(w), p);
+  g_free(p);
 }
 
 void Frame::createCheck(ENUM_STRING e, bool set) {

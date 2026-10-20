@@ -6,6 +6,7 @@ removed multithreading from word length statistics due to lack of necessity
 fixed a crash when pasting text that cannot be transcoded to the local locale
 fixed Ctrl+A and Ctrl+C combinations did not always work correctly
 fixed cursor restoration after calculation if it was in the TextView
+fixed invalid height for modification of words
 
 [ru]
 добавился поиск длинейших цепочек
@@ -15,6 +16,7 @@ fixed cursor restoration after calculation if it was in the TextView
 исправлено если в поле вcтавить текст который нельзя перекодировать в локаль программа падала
 исправлено комбинации ctrl+a и ctrl+c не всегда корректно работали
 исправлено восстановление курсора после расчета если он был в textview
+исправлена неправильная высота для поиска модификаций
 
 5.0.0 22 9 2026
 russian dictionary now contains 2,415,401 words (was 445,342)
