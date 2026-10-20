@@ -162,6 +162,17 @@ WordsBase::WordsBase() {
 
   loadLanguages();
 
+  for (n = 0; n < 2; n++) {
+    j = -1;
+    for (auto &s : m_languageAll[n]) {
+      j++;
+      if (utf8Length(s) > 1000) {
+        pr(n, j, s);
+        printlog(n, j, s);
+      }
+    }
+  }
+
   // showLongestAnagram();
   // showLongestPangram();
   // showLongestSimpleWordSequence();
@@ -671,36 +682,36 @@ int WordsBase::findLongestChain(int nthread, int wordIndex) {
 }
 
 bool WordsBase::chainAddIfFound(int nthread, const std::string &s, VectorInt &v,
-                                const VectorInt &otherSide) {
+                                const VectorInt &otherSideOrdered) {
   int i = indexOfOrdered(s, m_vvs[nthread]);
   if (i != -1) {
     if (m_chain[nthread][i]) {
       m_chain[nthread][i] = false;
       v.push_back(i);
       return false;
-    } else if (oneOf(i, otherSide)) {
+    } else if (std::ranges::binary_search(otherSideOrdered, i)) { // todo
       return true;
     }
   }
   return false;
 }
 
-std::pair<VectorInt, bool> WordsBase::chainLayer(int nthread,
-                                                 const VectorInt &layerIndex,
-                                                 const VectorInt &otherSide) {
+std::pair<VectorInt, bool>
+WordsBase::chainLayer(int nthread, const VectorInt &layerIndex,
+                      const VectorInt &otherSideOrdered) {
   VectorInt total_v;
   const auto &words = m_vvs[nthread];
 
   for (const auto &li : layerIndex) {
-    VectorInt v; 
+    VectorInt v;
     std::string s = words[li];
-    
+
     for (size_t i = 0; i < s.size(); ++i) {
       char original_char = s[i];
       for (const char &c : alphabet()) {
         if (c != original_char) {
           s[i] = c;
-          if (chainAddIfFound(nthread, s, v, otherSide)) {
+          if (chainAddIfFound(nthread, s, v, otherSideOrdered)) {
             return {{}, true};
           }
         }
@@ -1221,10 +1232,9 @@ void WordsBase::findChain(int nthread) {
       SearchResult::out = string(NO_CHAINS_FOUND);
       return;
     }
+    // std::sort(p.first.begin(), p.first.end()); // todo
     layerIndex[j].push_back(p.first);
   }
-
-  // clearlog();
 
   i = -1;
   for (auto &a : ptr) {

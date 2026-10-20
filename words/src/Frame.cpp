@@ -149,7 +149,7 @@ Frame::Frame() : WordsBase() {
   m_menuClick = MENU_SEARCH;
   lockSignals(); // lock, unlock after create
 
-  //clearlog();
+  // clearlog();
 
   resetSettings(false);
   if (readConfig(CONFIG_TAGS, s, m_buttonValue[BUTTON_LANGUAGE],
@@ -168,6 +168,7 @@ Frame::Frame() : WordsBase() {
   m_menu = gtk_menu_bar_new();
 
   m_helperUp = gtk_box_new(GTK_ORIENTATION_VERTICAL, 3);
+  /// addClass(m_helperUp, "hu");todo
 
   m_status = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 2);
   m_statusMessage = gtk_label_new("");
@@ -240,8 +241,9 @@ Frame::Frame() : WordsBase() {
   gtk_paned_pack1(GTK_PANED(w1), w2, FALSE, FALSE);
 
   // right part
-  w2 = createBox(GTK_ORIENTATION_VERTICAL, 3, m_helperUp, false,
-                 gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0), true, w, false);
+  w2 = createBox(GTK_ORIENTATION_VERTICAL, 3, m_helperUp, true,
+                 //  gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0), true,
+                 w, false);
   gtk_widget_set_size_request(w2, MIN_RIGHT_PANEL_WIDTH, -1);
   gtk_paned_pack2(GTK_PANED(w1), w2, TRUE, FALSE);
   gtk_widget_set_margin_start(w2, 5);
@@ -1502,10 +1504,25 @@ void Frame::job(ENUM_JOB_TYPE e) {
 
 void Frame::addHelp(ENUM_STRING e) {
   auto w = gtk_label_new("");
-  gtk_container_add(GTK_CONTAINER(m_helperUp), w);
-  gtk_label_set_justify(GTK_LABEL(w), GTK_JUSTIFY_FILL);
+
+  // GtkWidget *scroll = gtk_scrolled_window_new(NULL, NULL);
+  // gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scroll),
+  // GTK_POLICY_NEVER,
+  //                                GTK_POLICY_AUTOMATIC);
+
+  // gtk_container_add(GTK_CONTAINER(scroll), w);
+  // gtk_container_add(GTK_CONTAINER(m_helperUp), scroll);
+  // gtk_box_pack_start(GTK_BOX(m_helperUp), scroll, TRUE, TRUE, 0);
+  // add(m_helperUp,scroll,true);
+  // gtk_box_pack_start(GTK_BOX(m_helperUp), scroll, FALSE, FALSE, 0);
+
+  // gtk_box_pack_start(GTK_BOX(m_helperUp), w, FALSE, FALSE, 0);
+  // gtk_container_add(GTK_CONTAINER(m_helperUp), w);
+  gtk_label_set_justify(GTK_LABEL(w), GTK_JUSTIFY_FILL); // GTK_JUSTIFY_LEFT
   gtk_label_set_line_wrap(GTK_LABEL(w), TRUE);
-  gtk_label_set_max_width_chars(GTK_LABEL(w), 40);
+  gtk_label_set_line_wrap_mode(GTK_LABEL(w), PANGO_WRAP_WORD_CHAR);
+  gtk_label_set_max_width_chars(GTK_LABEL(w), 80);
+  // gtk_label_set_width_chars(GTK_LABEL(w), 20);
 
   auto s = string(e);
   if (oneOf(m_menuClick, MENU_DICTIONARY_STATISTICS, MENU_WORD_FREQUENCY)) {
@@ -1515,9 +1532,42 @@ void Frame::addHelp(ENUM_STRING e) {
                                magic_enum::enum_name(m_menuClick)));
   }
   s = replaceAll(s, "<br>", "\n");
+
+  // if (m_menuClick == MENU_MODIFICATION) { // todo
+  //   pr(utf8Length(s));
+  //   s = utf8Substring(s, 0, 1100);
+  // }
+
   gchar *p = g_markup_printf_escaped(s.c_str());
   gtk_label_set_markup(GTK_LABEL(w), p);
   g_free(p);
+
+  // auto w = gtk_label_new("");
+  // // ... ваши стандартные настройки метки w (LEFT, LINE_WRAP и т.д.) ...
+  // gtk_label_set_markup(GTK_LABEL(w), s.c_str());
+
+  //need for find modificatin option too long text incorrect height of element
+  GtkWidget *scroll = gtk_scrolled_window_new(NULL, NULL);
+  gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scroll), GTK_POLICY_NEVER,
+                                 GTK_POLICY_NEVER);
+
+  // 1. ОГРАНИЧИВАЕМ МИНИМАЛЬНУЮ И МАКСИМАЛЬНУЮ ВЫСОТУ СКРОЛЛА
+  // Первое число (-1) — ширина (пусть адаптируется сама)
+  // Второе число (150) — минимальная высота в пикселях, которую займет скролл
+  gtk_scrolled_window_set_min_content_height(GTK_SCROLLED_WINDOW(scroll), 50);
+
+  // КРИТИЧЕСКИ ВАЖНО ДЛЯ GTK 3:
+  // Включаем режим динамического расширения высоты под контент
+  gtk_scrolled_window_set_propagate_natural_height(GTK_SCROLLED_WINDOW(scroll),
+                                                   TRUE);
+
+  gtk_container_add(GTK_CONTAINER(scroll), w);
+
+  // 2. ИСПРАВЛЕНИЕ УПАКОВКИ:
+  // Упаковываем scroll внутрь m_helperUp БЕЗ вертикального расширения (FALSE,
+  // FALSE). Это заставит скролл сжаться строго по высоте текста!
+  add(m_helperUp, scroll, false);
+  // gtk_box_pack_start(GTK_BOX(m_helperUp), scroll, FALSE, FALSE, 0);
 }
 
 void Frame::createCheck(ENUM_STRING e, bool set) {

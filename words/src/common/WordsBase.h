@@ -166,10 +166,10 @@ public:
   int findLongestChain(int nthread, int wordIndex);
 
   bool chainAddIfFound(int nthread, const std::string &s, VectorInt &v,
-                       const VectorInt &otherSide = {});
+                       const VectorInt &otherSideOrdered = {});
   std::pair<VectorInt, bool> chainLayer(int nthread,
                                         const VectorInt &layerIndex,
-                                        const VectorInt &otherSide = {});
+                                        const VectorInt &otherSideOrdered = {});
   static int differentChars(std::string_view s);
   static bool spanIncluding(std::string_view p, std::string_view pattern) {
     return p.find_first_not_of(pattern) == std::string_view::npos;
