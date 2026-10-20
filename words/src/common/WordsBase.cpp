@@ -174,30 +174,30 @@ WordsBase::WordsBase() {
       }
     }
    */
-/*   clearlog();
-  std::string text = string(MODIFICATION_HELP);
-  j = utf8Length(text);
-  pr(j);
-  std::string target = "<br>";
-  // Start searching from index 0
-  size_t pos, prevpos = 0;
-  int delta, mindelta = j + 1;
-  j /= 2;
-  for (pos = text.find(target, 0); pos != std::string::npos;
-       pos = text.find(target, pos + target.length())) {
-    delta = std::abs(int(pos) - j);
-    pr(pos, delta, mindelta);
-    if (delta >= mindelta) {
-      break;
+  /*   clearlog();
+    std::string text = string(MODIFICATION_HELP);
+    j = utf8Length(text);
+    pr(j);
+    std::string target = "<br>";
+    // Start searching from index 0
+    size_t pos, prevpos = 0;
+    int delta, mindelta = j + 1;
+    j /= 2;
+    for (pos = text.find(target, 0); pos != std::string::npos;
+         pos = text.find(target, pos + target.length())) {
+      delta = std::abs(int(pos) - j);
+      pr(pos, delta, mindelta);
+      if (delta >= mindelta) {
+        break;
+      }
+      mindelta = delta;
+      prevpos = pos;
     }
-    mindelta = delta;
-    prevpos = pos;
-  }
 
-  pr(prevpos);
-  printlog(text.substr(0, prevpos), "########################",
-           text.substr(prevpos + target.length()));
- */
+    pr(prevpos);
+    printlog(text.substr(0, prevpos), "########################",
+             text.substr(prevpos + target.length()));
+   */
   // showLongestAnagram();
   // showLongestPangram();
   // showLongestSimpleWordSequence();
@@ -1182,8 +1182,8 @@ void WordsBase::findModification(int nthread) {
   }
 }
 
-std::array<VectorInt, 2> WordsBase::relations(int nthread, VectorInt const &v1,
-                                              VectorInt const &v2) {
+std::array<VectorInt, 2> WordsBase::relations2(int nthread, VectorInt const &v1,
+                                               VectorInt const &v2) {
   auto &words = m_vvs[nthread];
   VectorBool c[] = {VectorBool(v1.size(), false), VectorBool(v2.size(), false)};
   int i, j;
@@ -1212,6 +1212,32 @@ std::array<VectorInt, 2> WordsBase::relations(int nthread, VectorInt const &v1,
     }
   }
   return r;
+}
+
+VectorInt WordsBase::relations(int nthread, VectorInt const &v1,
+                               VectorInt const &v2) {
+  auto &words = m_vvs[nthread];
+  VectorBool c = VectorBool(v1.size(), false);
+  int i;
+  i = -1;
+  for (auto &a : v1) {
+    i++;
+    for (auto &b : v2) {
+      if (differenceOnlyOneChar(words[a], words[b])) {
+        c[i] = true;
+      }
+    }
+  }
+
+  VectorInt v;
+  i = -1;
+  for (auto const &a : c) {
+    i++;
+    if (a) {
+      v.push_back(v1[i]);
+    }
+  }
+  return v;
 }
 
 void WordsBase::findChain(int nthread) {
@@ -1266,7 +1292,7 @@ void WordsBase::findChain(int nthread) {
     i++;
     a = &layerIndex[i][layerIndex[i].size() - 1];
   }
-  auto res = relations(nthread, *ptr[0], *ptr[1]);
+  auto res = relations2(nthread, *ptr[0], *ptr[1]);
 
   for (i = 0; i < 2; i++) {
     auto &li = layerIndex[i];
@@ -1277,8 +1303,13 @@ void WordsBase::findChain(int nthread) {
   for (i = 0; i < 2; i++) {
     auto &li = layerIndex[i];
     for (j = li.size() - 1; j > 1; j--) {
-      res = relations(nthread, li[j - 1], li[j]);
-      li[j - 1] = res[0];
+      res = relations2(nthread, li[j - 1], li[j]);
+      // li[j - 1] = res[0];
+      li[j - 1] = relations(nthread, li[j - 1], li[j]);
+      if (li[j - 1] != res[0]) {
+        pr("error");
+        exit(0);
+      }
     }
   }
   layerIndex[0].insert(layerIndex[0].end(), layerIndex[1].rbegin(),

@@ -1507,8 +1507,9 @@ void Frame::addHelp(ENUM_STRING e) {
   // components, split on several labels doesn't help
   auto s = string(e);
   const std::string BR = "<br>";
-  pr(utf8Length(s));
-  printlog(utf8Length(s));
+  std::string q=replaceAllr(s, "<.*?>", "");
+  printlog(s,q)
+  // pr(utf8Length(s),utf8Length(q));
 
   auto w = gtk_label_new("");
   gtk_container_add(GTK_CONTAINER(m_helperUp), w);

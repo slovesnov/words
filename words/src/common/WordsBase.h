@@ -209,7 +209,9 @@ public:
   virtual void updateProceedingThread();
   void updateProceedingText(std::string s, bool add = true);
   const MapIntInt &getWordLengthMap() const;
-  std::array<VectorInt, 2> relations(int nthread, VectorInt const &v1,
+  std::array<VectorInt, 2> relations2(int nthread, VectorInt const &v1,
+                                     VectorInt const &v2);
+  VectorInt relations(int nthread, VectorInt const &v1,
                                      VectorInt const &v2);
 };
 
