@@ -1217,24 +1217,13 @@ std::array<VectorInt, 2> WordsBase::relations2(int nthread, VectorInt const &v1,
 VectorInt WordsBase::relations(int nthread, VectorInt const &v1,
                                VectorInt const &v2) {
   auto &words = m_vvs[nthread];
-  VectorBool c = VectorBool(v1.size(), false);
-  int i;
-  i = -1;
+  VectorInt v;
   for (auto &a : v1) {
-    i++;
     for (auto &b : v2) {
       if (differenceOnlyOneChar(words[a], words[b])) {
-        c[i] = true;
+        v.push_back(a);
+        break;
       }
-    }
-  }
-
-  VectorInt v;
-  i = -1;
-  for (auto const &a : c) {
-    i++;
-    if (a) {
-      v.push_back(v1[i]);
     }
   }
   return v;
