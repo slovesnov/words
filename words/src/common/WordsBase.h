@@ -170,8 +170,6 @@ public:
   std::pair<VectorInt, bool> chainLayer(int nthread,
                                         const VectorInt &layerIndex,
                                         const VectorInt &otherSide = {});
-  std::pair<VectorInt, bool> chainLayer(int nthread, const std::string &word,
-                                        const VectorInt &otherSide = {});
   static int differentChars(std::string_view s);
   static bool spanIncluding(std::string_view p, std::string_view pattern) {
     return p.find_first_not_of(pattern) == std::string_view::npos;

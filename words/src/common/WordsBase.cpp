@@ -686,37 +686,31 @@ bool WordsBase::chainAddIfFound(int nthread, const std::string &s, VectorInt &v,
 }
 
 std::pair<VectorInt, bool> WordsBase::chainLayer(int nthread,
-                                                 const std::string &word,
-                                                 const VectorInt &otherSide) {
-  VectorInt v;
-  std::string s = word;
-  for (size_t i = 0; i < s.size(); ++i) {
-    char original_char = s[i];
-    for (const char &c : alphabet()) {
-      if (c != original_char) {
-        s[i] = c;
-        if (chainAddIfFound(nthread, s, v, otherSide)) {
-          return {{}, true};
-        }
-      }
-    }
-    s[i] = original_char;
-  }
-  return {v, false};
-}
-
-std::pair<VectorInt, bool> WordsBase::chainLayer(int nthread,
                                                  const VectorInt &layerIndex,
                                                  const VectorInt &otherSide) {
   VectorInt total_v;
   const auto &words = m_vvs[nthread];
+
   for (const auto &li : layerIndex) {
-    auto p = chainLayer(nthread, words[li], otherSide);
-    if (p.second) {
-      return p;
+    VectorInt v; 
+    std::string s = words[li];
+    
+    for (size_t i = 0; i < s.size(); ++i) {
+      char original_char = s[i];
+      for (const char &c : alphabet()) {
+        if (c != original_char) {
+          s[i] = c;
+          if (chainAddIfFound(nthread, s, v, otherSide)) {
+            return {{}, true};
+          }
+        }
+      }
+      s[i] = original_char;
     }
-    total_v.insert(total_v.end(), p.first.begin(), p.first.end());
+
+    total_v.insert(total_v.end(), v.begin(), v.end());
   }
+
   return {total_v, false};
 }
 

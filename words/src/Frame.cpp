@@ -441,9 +441,7 @@ void Frame::clickMenu(ENUM_MENU menu) {
 
     if (menu == MENU_EDIT_COPY_TO_CLIPBOARD ||
         menu == MENU_EDIT_SELECT_ALL_AND_COPY_TO_CLIPBOARD) {
-      pr(m_textview[TEXTVIEW_MAIN]);
       gtk_widget_grab_focus(m_textview[TEXTVIEW_MAIN]);
-      pr(m_textview[TEXTVIEW_MAIN]);
 
       std::string mainText = getTextToCopyFromFocus();
       if (!mainText.empty()) {
