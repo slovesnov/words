@@ -162,18 +162,42 @@ WordsBase::WordsBase() {
 
   loadLanguages();
 
-  for (int n = 0; n < 2; n++) {
-    j = -1;
-    for (auto &s : m_languageAll[n]) {
-      j++;
-      if (utf8Length(s) > 500) {
-        pr(n, j, magic_enum::enum_name(ENUM_STRING(j)), utf8Length(s),
-           utf8Substring(s, 0, 50));
-        printlog(n, j, s);
+  /*   for (int n = 0; n < 2; n++) {
+      j = -1;
+      for (auto &s : m_languageAll[n]) {
+        j++;
+        if (utf8Length(s) > 500) {
+          pr(n, j, magic_enum::enum_name(ENUM_STRING(j)), utf8Length(s),
+             utf8Substring(s, 0, 50));
+          printlog(n, j, s);
+        }
       }
     }
+   */
+/*   clearlog();
+  std::string text = string(MODIFICATION_HELP);
+  j = utf8Length(text);
+  pr(j);
+  std::string target = "<br>";
+  // Start searching from index 0
+  size_t pos, prevpos = 0;
+  int delta, mindelta = j + 1;
+  j /= 2;
+  for (pos = text.find(target, 0); pos != std::string::npos;
+       pos = text.find(target, pos + target.length())) {
+    delta = std::abs(int(pos) - j);
+    pr(pos, delta, mindelta);
+    if (delta >= mindelta) {
+      break;
+    }
+    mindelta = delta;
+    prevpos = pos;
   }
 
+  pr(prevpos);
+  printlog(text.substr(0, prevpos), "########################",
+           text.substr(prevpos + target.length()));
+ */
   // showLongestAnagram();
   // showLongestPangram();
   // showLongestSimpleWordSequence();

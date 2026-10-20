@@ -168,7 +168,6 @@ Frame::Frame() : WordsBase() {
   m_menu = gtk_menu_bar_new();
 
   m_helperUp = gtk_box_new(GTK_ORIENTATION_VERTICAL, 3);
-  /// addClass(m_helperUp, "hu");todo
 
   m_status = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 2);
   m_statusMessage = gtk_label_new("");
@@ -241,7 +240,7 @@ Frame::Frame() : WordsBase() {
   gtk_paned_pack1(GTK_PANED(w1), w2, FALSE, FALSE);
 
   // right part
-  w2 = createBox(GTK_ORIENTATION_VERTICAL, 3, m_helperUp, true,
+  w2 = createBox(GTK_ORIENTATION_VERTICAL, 3, m_helperUp, false,
                  //  gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0), true,
                  w, false);
   gtk_widget_set_size_request(w2, MIN_RIGHT_PANEL_WIDTH, -1);
@@ -1503,51 +1502,62 @@ void Frame::job(ENUM_JOB_TYPE e) {
 }
 
 void Frame::addHelp(ENUM_STRING e) {
-  auto w = gtk_label_new("");
-
-  // GtkWidget *scroll = gtk_scrolled_window_new(NULL, NULL);
-  // gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scroll),
-  // GTK_POLICY_NEVER,
-  //                                GTK_POLICY_AUTOMATIC);
-
-  // gtk_container_add(GTK_CONTAINER(scroll), w);
-  add(m_helperUp, w, false);
-
-  // gtk_container_add(GTK_CONTAINER(m_helperUp), scroll);
-  // gtk_box_pack_start(GTK_BOX(m_helperUp), scroll, TRUE, TRUE, 0);
-  // add(m_helperUp,scroll,true);
-  // gtk_box_pack_start(GTK_BOX(m_helperUp), scroll, FALSE, FALSE, 0);
-
-  // gtk_box_pack_start(GTK_BOX(m_helperUp), w, FALSE, FALSE, 0);
-  // gtk_container_add(GTK_CONTAINER(m_helperUp), w);
-  gtk_label_set_justify(GTK_LABEL(w), GTK_JUSTIFY_FILL); // GTK_JUSTIFY_LEFT
-  gtk_label_set_line_wrap(GTK_LABEL(w), TRUE);
-  gtk_label_set_line_wrap_mode(GTK_LABEL(w), PANGO_WRAP_WORD_CHAR);
-  gtk_label_set_max_width_chars(GTK_LABEL(w), 80);
-  // gtk_label_set_width_chars(GTK_LABEL(w), 20);
-
+  VString v;
   auto s = string(e);
-  if (oneOf(m_menuClick, MENU_DICTIONARY_STATISTICS, MENU_WORD_FREQUENCY)) {
-    s = replaceAll(s, "<a>",
-                   std::format("<a href='{},{}#{}'>", HOMEPAGE,
-                               LNG[getLanguageIndex()],
-                               magic_enum::enum_name(m_menuClick)));
-  }
-  s = replaceAll(s, "<br>", "\n");
+  const std::string BR = "<br>";
 
   if (m_menuClick == MENU_MODIFICATION) { // todo
-    pr(utf8Length(s));
-    // s = utf8Substring(s, 0, 1100);
+    VString v1 = split(s, BR);
+    for(int i=0;i<7;i++){
+      v.push_back(v1[i])
+    }
+    // int i = utf8Length(s);
+    // size_t pos, prevpos = 0;
+    // int delta, mindelta = i + 1;
+    // i /= 2;
+    // for (pos = s.find(BR, 0); pos != std::string::npos;
+    //      pos = s.find(BR, pos + BR.length())) {
+    //   delta = std::abs(int(pos) - i);
+    //   if (delta >= mindelta) {
+    //     break;
+    //   }
+    //   mindelta = delta;
+    //   prevpos = pos;
+    // }
+
+    // if (prevpos == 0) {
+    //   v = {s};//will be bad label height
+    // } else {
+    //   v = {s.substr(0, prevpos), s.substr(prevpos + BR.length())};
+    // }
+
+    pr(v.size());
+  } else {
+    v = {s};
   }
 
-  gchar *p = g_markup_printf_escaped(s.c_str());
-  gtk_label_set_markup(GTK_LABEL(w), p);
-  g_free(p);
+  for (auto &s : v) {
+    auto w = gtk_label_new("");
+    //gtk_container_add(GTK_CONTAINER(m_helperUp), w);
+     add(m_helperUp, w, false);
+    gtk_label_set_justify(GTK_LABEL(w), GTK_JUSTIFY_LEFT);
+    // gtk_label_set_justify(GTK_LABEL(w), GTK_JUSTIFY_FILL);
+    gtk_label_set_line_wrap(GTK_LABEL(w), TRUE);
+    gtk_label_set_line_wrap_mode(GTK_LABEL(w), PANGO_WRAP_WORD_CHAR);
+    // gtk_label_set_max_width_chars(GTK_LABEL(w), 80);
+    // gtk_label_set_width_chars(GTK_LABEL(w), 20);
 
-  PangoLayout *layout = gtk_label_get_layout(GTK_LABEL(w));
-  if (layout) {
-    pango_layout_set_width(layout, 600 * PANGO_SCALE);
-    // Замените 600 на примерную базовую ширину вашего окна
+    if (oneOf(m_menuClick, MENU_DICTIONARY_STATISTICS, MENU_WORD_FREQUENCY)) {
+      s = replaceAll(s, "<a>",
+                     std::format("<a href='{},{}#{}'>", HOMEPAGE,
+                                 LNG[getLanguageIndex()],
+                                 magic_enum::enum_name(m_menuClick)));
+    }
+    s = replaceAll(s, BR, "\n");
+
+    gchar *p = g_markup_printf_escaped(s.c_str());
+    gtk_label_set_markup(GTK_LABEL(w), p);
+    g_free(p);
   }
 }
 
