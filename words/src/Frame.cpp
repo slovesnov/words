@@ -1507,11 +1507,13 @@ void Frame::addHelp(ENUM_STRING e) {
   const std::string BR = "<br>";
 
   if (m_menuClick == MENU_MODIFICATION) { // todo
-    VString v1 = split(s, BR);
-    for(int i=0;i<7;i++){
-      v.push_back(v1[i])
-    }
-    // int i = utf8Length(s);
+    v = split(s, BR);
+    // VString v1 = split(s, BR);
+    //bad i=0;i<8 ифв
+    // for(int i=6;i<int(v1.size());i++){
+    //   v.push_back(v1[i]);
+    // }
+    // // int i = utf8Length(s);
     // size_t pos, prevpos = 0;
     // int delta, mindelta = i + 1;
     // i /= 2;
@@ -1531,15 +1533,15 @@ void Frame::addHelp(ENUM_STRING e) {
     //   v = {s.substr(0, prevpos), s.substr(prevpos + BR.length())};
     // }
 
-    pr(v.size());
+     pr(v.size());
   } else {
-    v = {s};
   }
+    v = {s};
 
   for (auto &s : v) {
     auto w = gtk_label_new("");
-    //gtk_container_add(GTK_CONTAINER(m_helperUp), w);
-     add(m_helperUp, w, false);
+    gtk_container_add(GTK_CONTAINER(m_helperUp), w);
+    // add(m_helperUp, w, false);
     gtk_label_set_justify(GTK_LABEL(w), GTK_JUSTIFY_LEFT);
     // gtk_label_set_justify(GTK_LABEL(w), GTK_JUSTIFY_FILL);
     gtk_label_set_line_wrap(GTK_LABEL(w), TRUE);
