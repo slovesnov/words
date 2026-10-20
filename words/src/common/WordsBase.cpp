@@ -162,12 +162,13 @@ WordsBase::WordsBase() {
 
   loadLanguages();
 
-  for (n = 0; n < 2; n++) {
+  for (int n = 0; n < 2; n++) {
     j = -1;
     for (auto &s : m_languageAll[n]) {
       j++;
-      if (utf8Length(s) > 1000) {
-        pr(n, j, s);
+      if (utf8Length(s) > 500) {
+        pr(n, j, magic_enum::enum_name(ENUM_STRING(j)), utf8Length(s),
+           utf8Substring(s, 0, 50));
         printlog(n, j, s);
       }
     }

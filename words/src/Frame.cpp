@@ -1511,6 +1511,8 @@ void Frame::addHelp(ENUM_STRING e) {
   //                                GTK_POLICY_AUTOMATIC);
 
   // gtk_container_add(GTK_CONTAINER(scroll), w);
+  add(m_helperUp, w, false);
+
   // gtk_container_add(GTK_CONTAINER(m_helperUp), scroll);
   // gtk_box_pack_start(GTK_BOX(m_helperUp), scroll, TRUE, TRUE, 0);
   // add(m_helperUp,scroll,true);
@@ -1533,41 +1535,20 @@ void Frame::addHelp(ENUM_STRING e) {
   }
   s = replaceAll(s, "<br>", "\n");
 
-  // if (m_menuClick == MENU_MODIFICATION) { // todo
-  //   pr(utf8Length(s));
-  //   s = utf8Substring(s, 0, 1100);
-  // }
+  if (m_menuClick == MENU_MODIFICATION) { // todo
+    pr(utf8Length(s));
+    // s = utf8Substring(s, 0, 1100);
+  }
 
   gchar *p = g_markup_printf_escaped(s.c_str());
   gtk_label_set_markup(GTK_LABEL(w), p);
   g_free(p);
 
-  // auto w = gtk_label_new("");
-  // // ... ваши стандартные настройки метки w (LEFT, LINE_WRAP и т.д.) ...
-  // gtk_label_set_markup(GTK_LABEL(w), s.c_str());
-
-  //need for find modificatin option too long text incorrect height of element
-  GtkWidget *scroll = gtk_scrolled_window_new(NULL, NULL);
-  gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scroll), GTK_POLICY_NEVER,
-                                 GTK_POLICY_NEVER);
-
-  // 1. ОГРАНИЧИВАЕМ МИНИМАЛЬНУЮ И МАКСИМАЛЬНУЮ ВЫСОТУ СКРОЛЛА
-  // Первое число (-1) — ширина (пусть адаптируется сама)
-  // Второе число (150) — минимальная высота в пикселях, которую займет скролл
-  gtk_scrolled_window_set_min_content_height(GTK_SCROLLED_WINDOW(scroll), 50);
-
-  // КРИТИЧЕСКИ ВАЖНО ДЛЯ GTK 3:
-  // Включаем режим динамического расширения высоты под контент
-  gtk_scrolled_window_set_propagate_natural_height(GTK_SCROLLED_WINDOW(scroll),
-                                                   TRUE);
-
-  gtk_container_add(GTK_CONTAINER(scroll), w);
-
-  // 2. ИСПРАВЛЕНИЕ УПАКОВКИ:
-  // Упаковываем scroll внутрь m_helperUp БЕЗ вертикального расширения (FALSE,
-  // FALSE). Это заставит скролл сжаться строго по высоте текста!
-  add(m_helperUp, scroll, false);
-  // gtk_box_pack_start(GTK_BOX(m_helperUp), scroll, FALSE, FALSE, 0);
+  PangoLayout *layout = gtk_label_get_layout(GTK_LABEL(w));
+  if (layout) {
+    pango_layout_set_width(layout, 600 * PANGO_SCALE);
+    // Замените 600 на примерную базовую ширину вашего окна
+  }
 }
 
 void Frame::createCheck(ENUM_STRING e, bool set) {
