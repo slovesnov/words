@@ -211,8 +211,6 @@ public:
   const MapIntInt &getWordLengthMap() const;
   std::array<VectorInt, 2> relations2(int nthread, VectorInt const &v1,
                                      VectorInt const &v2);
-  std::array<VectorInt, 2> relations21(int nthread, VectorInt const &v1,
-                                     VectorInt const &v2);
   VectorInt relations(int nthread, VectorInt const &v1,
                                      VectorInt const &v2);
 };

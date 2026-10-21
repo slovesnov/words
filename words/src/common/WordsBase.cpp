@@ -1214,53 +1214,6 @@ std::array<VectorInt, 2> WordsBase::relations2(int nthread, VectorInt const &v1,
   return r;
 }
 
-std::array<VectorInt, 2>
-WordsBase::relations21(int nthread, VectorInt const &v1, VectorInt const &v2) {
-  std::array<VectorInt, 2> r;
-  int j;
-  auto &words = m_vvs[nthread];
-  VectorBool cc(v1.size(), false);
-  VString vv;
-  vv.reserve(v1.size());
-  for (auto a : v1) {
-    vv.push_back(words[a]);
-  }
-
-  // k = -1;
-  for (const auto &a : v2) {
-    // k++;
-    VectorInt v;
-    std::string s = words[a];
-    bool b = false;
-    for (size_t i = 0; i < s.size(); ++i) {
-      char original_char = s[i];
-      for (const char &c : alphabet()) {
-        if (c != original_char) {
-          s[i] = c;
-          j = indexOfOrdered(s, vv);
-          if (j != -1) {
-            cc[j] = true; // j k
-            if (!b) {
-              b = true;
-              r[1].push_back(a);
-            }
-          }
-        }
-      }
-      s[i] = original_char;
-    }
-  }
-
-  j = -1;
-  for (auto a : cc) {
-    j++;
-    if (a) {
-      r[0].push_back(v1[j]);
-    }
-  }
-  return r;
-}
-
 VectorInt WordsBase::relations(int nthread, VectorInt const &v1,
                                VectorInt const &v2) {
   auto &words = m_vvs[nthread];
@@ -1328,23 +1281,7 @@ void WordsBase::findChain(int nthread) {
     i++;
     a = &layerIndex[i][layerIndex[i].size() - 1];
   }
-  clock_t begin;
-  begin = clock();
   auto res = relations2(nthread, *ptr[0], *ptr[1]);
-  double v = timeElapse(begin);
-  begin = clock();
-  auto res1 = relations21(nthread, *ptr[0], *ptr[1]);
-  pr(v, timeElapse(begin));
-  if (res[0] != res1[0] || res[1] != res1[1]) {
-    if (res[0] != res1[0]) {
-      pr("error0", res[0].size(), res1[0].size());
-    }
-    if (res[1] != res1[1]) {
-      pr("error1");
-    }
-
-    exit(0);
-  }
 
   for (i = 0; i < 2; i++) {
     auto &li = layerIndex[i];
@@ -1355,13 +1292,21 @@ void WordsBase::findChain(int nthread) {
   for (i = 0; i < 2; i++) {
     auto &li = layerIndex[i];
     for (j = li.size() - 1; j > 1; j--) {
-      // todo time compare
-      //  res = relations2(nthread, li[j - 1], li[j]);
+
+      clock_t begin;
+      begin = clock();
       li[j - 1] = relations(nthread, li[j - 1], li[j]);
-      // if (li[j - 1] != res[0]) {
-      //   pr("error");
-      //   exit(0);
-      // }
+      double v = timeElapse(begin);
+      begin = clock();
+      res = relations2(nthread, li[j - 1], li[j]);
+      pr(v, timeElapse(begin));
+      if (li[j - 1] != res[0]) {
+        pr("error");
+        exit(0);
+      }
+
+      //  res = relations2(nthread, li[j - 1], li[j]);//was comment
+//      li[j - 1] = relations(nthread, li[j - 1], li[j]);
     }
   }
   layerIndex[0].insert(layerIndex[0].end(), layerIndex[1].rbegin(),
