@@ -1214,6 +1214,46 @@ std::array<VectorInt, 2> WordsBase::relations2(int nthread, VectorInt const &v1,
   return r;
 }
 
+std::array<VectorInt, 2>
+WordsBase::relations21(int nthread, VectorInt const &v1, VectorInt const &v2) {
+  auto &words = m_vvs[nthread];
+  std::array<VectorInt, 2> r;
+  VectorBool c[] = {VectorBool(v1.size(), false), VectorBool(v2.size(), false)};
+  size_t i, j;
+  for (i = 0; i < v1.size(); i++) {
+    for (j = 0; j < v2.size(); j++) {
+      if ((!c[0][i] || !c[1][j]) &&
+          differenceOnlyOneChar(words[v1[i]], words[v2[j]])) {
+        if (!c[0][i]) {
+          c[0][i] = true;
+          // r[0].push_back(v1[i]);
+        }
+        if (!c[1][j]) {
+          c[1][j] = true;
+          // r[1].push_back(v2[j]);
+        }
+      }
+    }
+  }
+
+  //std::array<VectorInt, 2> r;
+  for (i = 0; i < 2; i++) {
+    auto &v = r[i];
+    j = -1;
+    for (auto const &a : c[i]) {
+      j++;
+      if (a) {
+        v.push_back(i == 0 ? v1[j] : v2[j]);
+      }
+    }
+  }
+  // pr(r[0].size(), r[1].size(), v1.size(), v2.size());
+  // for (i = 0; i < 2; i++) {
+  //   std::sort(r[i].begin(), r[i].end());
+  // }
+  return r;
+}
+
 VectorInt WordsBase::relations(int nthread, VectorInt const &v1,
                                VectorInt const &v2) {
   auto &words = m_vvs[nthread];
@@ -1281,7 +1321,17 @@ void WordsBase::findChain(int nthread) {
     i++;
     a = &layerIndex[i][layerIndex[i].size() - 1];
   }
+  clock_t begin;
+  begin = clock();
   auto res = relations2(nthread, *ptr[0], *ptr[1]);
+  double v = timeElapse(begin);
+  begin = clock();
+  auto res1 = relations21(nthread, *ptr[0], *ptr[1]);
+  pr(v, timeElapse(begin));
+  if (res[0] != res1[0] || res[1] != res1[1]) {
+    pr("error");
+    exit(0);
+  }
 
   for (i = 0; i < 2; i++) {
     auto &li = layerIndex[i];
@@ -1292,13 +1342,13 @@ void WordsBase::findChain(int nthread) {
   for (i = 0; i < 2; i++) {
     auto &li = layerIndex[i];
     for (j = li.size() - 1; j > 1; j--) {
-      res = relations2(nthread, li[j - 1], li[j]);
-      // li[j - 1] = res[0];
+      // todo time compare
+      //  res = relations2(nthread, li[j - 1], li[j]);
       li[j - 1] = relations(nthread, li[j - 1], li[j]);
-      if (li[j - 1] != res[0]) {
-        pr("error");
-        exit(0);
-      }
+      // if (li[j - 1] != res[0]) {
+      //   pr("error");
+      //   exit(0);
+      // }
     }
   }
   layerIndex[0].insert(layerIndex[0].end(), layerIndex[1].rbegin(),
