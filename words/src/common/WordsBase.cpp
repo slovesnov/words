@@ -1216,41 +1216,48 @@ std::array<VectorInt, 2> WordsBase::relations2(int nthread, VectorInt const &v1,
 
 std::array<VectorInt, 2>
 WordsBase::relations21(int nthread, VectorInt const &v1, VectorInt const &v2) {
-  auto &words = m_vvs[nthread];
   std::array<VectorInt, 2> r;
-  VectorBool c[] = {VectorBool(v1.size(), false), VectorBool(v2.size(), false)};
-  size_t i, j;
-  for (i = 0; i < v1.size(); i++) {
-    for (j = 0; j < v2.size(); j++) {
-      if ((!c[0][i] || !c[1][j]) &&
-          differenceOnlyOneChar(words[v1[i]], words[v2[j]])) {
-        if (!c[0][i]) {
-          c[0][i] = true;
-          // r[0].push_back(v1[i]);
-        }
-        if (!c[1][j]) {
-          c[1][j] = true;
-          // r[1].push_back(v2[j]);
+  int j;
+  auto &words = m_vvs[nthread];
+  VectorBool cc(v1.size(), false);
+  VString vv;
+  vv.reserve(v1.size());
+  for (auto a : v1) {
+    vv.push_back(words[a]);
+  }
+
+  // k = -1;
+  for (const auto &a : v2) {
+    // k++;
+    VectorInt v;
+    std::string s = words[a];
+    bool b = false;
+    for (size_t i = 0; i < s.size(); ++i) {
+      char original_char = s[i];
+      for (const char &c : alphabet()) {
+        if (c != original_char) {
+          s[i] = c;
+          j = indexOfOrdered(s, vv);
+          if (j != -1) {
+            cc[j] = true; // j k
+            if (!b) {
+              b = true;
+              r[1].push_back(a);
+            }
+          }
         }
       }
+      s[i] = original_char;
     }
   }
 
-  //std::array<VectorInt, 2> r;
-  for (i = 0; i < 2; i++) {
-    auto &v = r[i];
-    j = -1;
-    for (auto const &a : c[i]) {
-      j++;
-      if (a) {
-        v.push_back(i == 0 ? v1[j] : v2[j]);
-      }
+  j = -1;
+  for (auto a : cc) {
+    j++;
+    if (a) {
+      r[0].push_back(v1[j]);
     }
   }
-  // pr(r[0].size(), r[1].size(), v1.size(), v2.size());
-  // for (i = 0; i < 2; i++) {
-  //   std::sort(r[i].begin(), r[i].end());
-  // }
   return r;
 }
 
@@ -1329,7 +1336,13 @@ void WordsBase::findChain(int nthread) {
   auto res1 = relations21(nthread, *ptr[0], *ptr[1]);
   pr(v, timeElapse(begin));
   if (res[0] != res1[0] || res[1] != res1[1]) {
-    pr("error");
+    if (res[0] != res1[0]) {
+      pr("error0", res[0].size(), res1[0].size());
+    }
+    if (res[1] != res1[1]) {
+      pr("error1");
+    }
+
     exit(0);
   }
 
