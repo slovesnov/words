@@ -1507,15 +1507,15 @@ void Frame::addHelp(ENUM_STRING e) {
   // components, split on several labels doesn't help
   auto s = string(e);
   const std::string BR = "<br>";
-  std::string q=replaceAllr(s, "<.*?>", "");
-  printlog(s,q)
-  // pr(utf8Length(s),utf8Length(q));
+  std::string q = replaceAllr(s, "<.*?>", "");
+  // printlog(s,q)
+  pr(utf8Length(s), utf8Length(q));
 
   auto w = gtk_label_new("");
   gtk_container_add(GTK_CONTAINER(m_helperUp), w);
   // add(m_helperUp, w, false);
-  gtk_label_set_justify(GTK_LABEL(w), GTK_JUSTIFY_LEFT);
-  // gtk_label_set_justify(GTK_LABEL(w), GTK_JUSTIFY_FILL);
+  //gtk_label_set_justify(GTK_LABEL(w), GTK_JUSTIFY_LEFT);
+  gtk_label_set_justify(GTK_LABEL(w), GTK_JUSTIFY_FILL);
   gtk_label_set_line_wrap(GTK_LABEL(w), TRUE);
   gtk_label_set_line_wrap_mode(GTK_LABEL(w), PANGO_WRAP_WORD_CHAR);
   // gtk_label_set_max_width_chars(GTK_LABEL(w), 80);
