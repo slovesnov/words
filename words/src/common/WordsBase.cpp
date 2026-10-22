@@ -688,6 +688,7 @@ int WordsBase::findLongestChain(int nthread, int wordIndex) {
     if (!j) {
       break;
     }
+    pr(i,j)
     total += j;
     if (m_menuClick == MENU_CHAIN) {
       words_str = "";
@@ -1292,21 +1293,7 @@ void WordsBase::findChain(int nthread) {
   for (i = 0; i < 2; i++) {
     auto &li = layerIndex[i];
     for (j = li.size() - 1; j > 1; j--) {
-
-      clock_t begin;
-      begin = clock();
       li[j - 1] = relations(nthread, li[j - 1], li[j]);
-      double v = timeElapse(begin);
-      begin = clock();
-      res = relations2(nthread, li[j - 1], li[j]);
-      pr(v, timeElapse(begin));
-      if (li[j - 1] != res[0]) {
-        pr("error");
-        exit(0);
-      }
-
-      //  res = relations2(nthread, li[j - 1], li[j]);//was comment
-//      li[j - 1] = relations(nthread, li[j - 1], li[j]);
     }
   }
   layerIndex[0].insert(layerIndex[0].end(), layerIndex[1].rbegin(),
