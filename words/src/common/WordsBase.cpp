@@ -581,141 +581,37 @@ void WordsBase::fillDictionaryLength(int nthread, size_t length,
   m_chainChar.assign(words.size() + added_count, 1);
 }
 
-class TableFormat {
-private:
-  std::vector<ENUM_STRING> m_en;
-  std::vector<int> m_width;
-
-  template <typename T> std::string formatCell(const T &arg, size_t i) const {
-    using DecayedT = std::decay_t<T>;
-
-    // 1. If it's an ENUM_STRING, convert it to std::string using wordsBase
-    if constexpr (std::is_same_v<DecayedT, ENUM_STRING>) {
-      std::string word_str = wordsBase->string(arg);
-      return formatCell(word_str, i); // Recursively format the converted string
-    }
-    // 2. Standard formatting logic for all other types
-    else {
-      // If it's the last (+1) argument, print WITHOUT alignment
-      if (i == m_width.size()) {
-        return std::format("{}", arg);
-      }
-
-      if constexpr (std::is_floating_point_v<DecayedT>) {
-        // For double/float: right-align, width m_width[i], 2 decimal places
-        return std::format("{:>{}.2f}", arg, m_width[i]);
-      } else if constexpr (std::is_convertible_v<T, std::string_view>) {
-        return std::format("{:>{}}", arg, m_width[i]);
-      } else {
-        return std::format("{:>{}}", toString(arg, ','), m_width[i]);
-      }
-    }
-  }
-
-public:
-  TableFormat(std::initializer_list<ENUM_STRING> en,
-              std::initializer_list<int> width)
-      : m_en(en), m_width(width) {
-    assert(en.size() == width.size());
-    int i = -1;
-    for (auto a : en) {
-      i++;
-      m_width[i] = std::max(m_width[i], utf8Length(wordsBase->string(a)));
-    }
-  }
-
-  template <typename... Args> std::string string(Args... args) const {
-    const size_t args_count = sizeof...(args);
-    size_t i = 0;
-
-    if constexpr (args_count == 1) {
-      using FirstArgT =
-          std::decay_t<std::tuple_element_t<0, std::tuple<Args...>>>;
-      if constexpr (std::is_same_v<FirstArgT, ENUM_STRING>) {
-        ENUM_STRING en = [args...](auto first, auto...) {
-          return first;
-        }(args...);
-
-        std::string s;
-        for (; i <= std::size(m_en); ++i) {
-          s += (i ? " " : "");
-          s += formatCell(i == std::size(m_en) ? en : m_en[i], i);
-        }
-#ifdef NOGTK
-        return s;
-#else
-        return "<b>" + s + "</b>";
-#endif
-      }
-    }
-
-    assert(args_count == m_width.size() || args_count == m_width.size() + 1);
-
-    std::string s = "\n";
-
-    (
-        [&](const auto &arg) {
-          s += (i ? " " : "");
-          s += formatCell(arg, i);
-          i++;
-        }(args),
-        ...);
-    return s;
-  }
-};
-
-int WordsBase::findLongestChain(int nthread, int wordIndex) {
+int WordsBase::findLongestChain(int nthread) {
   auto &words = m_vvs[nthread];
-  int i, j, k, total, prev;
+  int i, total;
   std::string s, words_str;
-  VectorInt &layerIndex = m_chd;
   VString v;
   int size = words.size();
   int w = std::to_string(size).length();
   w += (w - 1) / 3; // separators
-  const int MAX_WORDS = 5;
-  const int BF_WIDTH = 6;
-
-  TableFormat table({NSTRING, LAYER, BRANCHING_FACTOR}, {2, w, BF_WIDTH});
   if (m_menuClick == MENU_CHAIN && !nthread) {
-    s = table.string(WORDS_NOMINATIVE_CASE) +
-        table.string(1, layerIndex.size(), "", localeToUtf8(words[wordIndex]));
+    m_table.init({NSTRING, LAYER, BRANCHING_FACTOR}, {2, w, 6});
+    s = m_table.string(WORDS_NOMINATIVE_CASE) +
+        m_table.string(1, 1, "", localeToUtf8(words[m_chd[0]]));
     updateProceedingText(s, false);
   }
 
   total = 0;
-  prev = 1;
-  for (i = 2;; i++) {
+  while (true) {
     // auto begin = clock();
     if (m_menuClick == MENU_CHAIN) {
-      prsync(nthread, m_chd.size());
       m_vii[nthread] = chainLayer1(nthread, m_chd);
-      prsync();
       m_barrier->arrive_and_wait();
-      j = m_chd.size();
-      prsync(nthread, j);
+      i = m_chd.size();
     } else {
-      layerIndex = chainLayer(nthread, layerIndex).first;
-      j = layerIndex.size();
+      m_vii[nthread] = chainLayer(nthread, m_vii[nthread]).first;
+      i = m_vii[nthread].size();
     }
-
-    if (!j) {
+    if (!i) {
       break;
     }
-    // prsync(i, j, timeElapse(begin));
-    total += j;
-    if (m_menuClick == MENU_CHAIN && !nthread) {
-      words_str = "";
-      for (k = 0; k < std::min(MAX_WORDS, j); k++) {
-        words_str += (k ? " " : "") + localeToUtf8(words[layerIndex[k]]);
-      }
-      if (j > MAX_WORDS) {
-        words_str += "…";
-      }
-      s = table.string(i, layerIndex.size(), double(j) / prev, words_str);
-      updateProceedingText(s);
-      prev = j;
-    }
+    // prsync(i, i, timeElapse(begin));
+    total += i;
     RETURN_ON_USER_BREAK_VALUE(-1)
   }
   return total;
@@ -789,7 +685,7 @@ VectorInt WordsBase::chainLayer1(int nthread, const VectorInt &layerIndex) {
     // prsync(s, s.size());
     // printlog(s)
 
-        for (size_t i = 0; i < s.size(); ++i) {
+    for (size_t i = 0; i < s.size(); ++i) {
       char original_char = s[i];
       for (const char &c : alphabet()) {
         if (c != original_char) {
@@ -1292,12 +1188,28 @@ VectorInt WordsBase::relations(int nthread, VectorInt const &v1,
 }
 
 void WordsBase::mergeLayers() noexcept {
-  pri;
   m_chd.clear();
   for (const auto &a : m_vii) {
     m_chd.insert(m_chd.end(), a.begin(), a.end());
   }
-  pri;
+
+  auto &words = m_vvs[0];
+  const int MAX_WORDS = 5;
+
+  int i, j = m_chd.size();
+  if (j) {
+    std::string words_str;
+    for (i = 0; i < std::min(MAX_WORDS, j); i++) {
+      words_str += (i ? " " : "") + localeToUtf8(words[m_chd[i]]);
+    }
+    if (j > MAX_WORDS) {
+      words_str += "…";
+    }
+    std::string s =
+        m_table.string(m_table.m_rows + 1, j, double(j) / m_i, words_str);
+    updateProceedingText(s);
+    m_i = j;
+  }
 }
 
 void WordsBase::findChainPreProseeding() {
@@ -1315,6 +1227,7 @@ void WordsBase::findChainPreProseeding() {
         m_threads, [this]() noexcept { this->mergeLayers(); });
 
     m_chd = {m_layerIndex[0][0][0]};
+    m_i = 1;
   }
 }
 
@@ -1377,8 +1290,8 @@ void WordsBase::findChain(int nthread) {
   }
   m_layerIndex[0].insert(m_layerIndex[0].end(), m_layerIndex[1].rbegin(),
                          m_layerIndex[1].rend());
-  TableFormat table({NSTRING}, {2});
-  s = table.string(WORDS_NOMINATIVE_CASE);
+  m_table.init({NSTRING}, {2});
+  s = m_table.string(WORDS_NOMINATIVE_CASE);
   i = 0;
   for (auto &e : m_layerIndex[0]) {
     i++;
@@ -1389,7 +1302,7 @@ void WordsBase::findChain(int nthread) {
       s1 += (j ? " " : "") + localeToUtf8(words[b]);
     }
     s1 += " " + intToString(e.size());
-    s += table.string(i, s1);
+    s += m_table.string(i, s1);
   }
   SearchResult::out = s;
 }
@@ -1404,7 +1317,7 @@ void WordsBase::clusterStatistics(int nthread) {
     fillDictionaryLength(nthread, length);
     while ((j = indexOf(true, m_chain[nthread], j)) != -1) {
       m_chain[nthread][j] = false;
-      m_chd = {j};
+      m_vii[nthread] = {j};
       int i = findLongestChain(nthread, j);
       if (i == -1) { // user break
         return;

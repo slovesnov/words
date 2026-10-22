@@ -10,9 +10,9 @@
 #include "Modification.h"
 #include "consts.h"
 #include <barrier>
+#include <functional>
 #include <latch>
 #include <thread>
-#include <functional>
 
 #define PCRE2_CODE_UNIT_WIDTH 8
 #define PCRE2_STATIC
@@ -23,7 +23,103 @@ using UniquePcre2MatchData =
 
 const char SEPARATOR[] = "SEPARATOR";
 
+class WordsBase;
+extern WordsBase *wordsBase;
 class WordsBase {
+  class TableFormat {
+  private:
+    std::vector<ENUM_STRING> m_en;
+    std::vector<int> m_width;
+  public:
+    int m_rows;
+  private:
+
+    template <typename T> std::string formatCell(const T &arg, size_t i) const {
+      using DecayedT = std::decay_t<T>;
+
+      // 1. If it's an ENUM_STRING, convert it to std::string using wordsBase
+      if constexpr (std::is_same_v<DecayedT, ENUM_STRING>) {
+        std::string word_str = wordsBase->string(arg);
+        return formatCell(word_str,
+                          i); // Recursively format the converted string
+      }
+      // 2. Standard formatting logic for all other types
+      else {
+        // If it's the last (+1) argument, print WITHOUT alignment
+        if (i == m_width.size()) {
+          return std::format("{}", arg);
+        }
+
+        if constexpr (std::is_floating_point_v<DecayedT>) {
+          // For double/float: right-align, width m_width[i], 2 decimal places
+          return std::format("{:>{}.2f}", arg, m_width[i]);
+        } else if constexpr (std::is_convertible_v<T, std::string_view>) {
+          return std::format("{:>{}}", arg, m_width[i]);
+        } else {
+          return std::format("{:>{}}", toString(arg, ','), m_width[i]);
+        }
+      }
+    }
+
+  public:
+    TableFormat() {}
+    TableFormat(std::initializer_list<ENUM_STRING> en,
+                std::initializer_list<int> width) {
+      init(en, width);
+    }
+    void init(std::initializer_list<ENUM_STRING> en,
+              std::initializer_list<int> width) {
+      m_rows = 0;
+      m_en = en;
+      m_width = width;
+      assert(en.size() == width.size());
+      int i = -1;
+      for (auto a : en) {
+        i++;
+        m_width[i] = std::max(m_width[i], utf8Length(wordsBase->string(a)));
+      }
+    }
+
+    template <typename... Args> std::string string(Args... args) {
+      const size_t args_count = sizeof...(args);
+      size_t i = 0;
+      m_rows++;
+      if constexpr (args_count == 1) {
+        using FirstArgT =
+            std::decay_t<std::tuple_element_t<0, std::tuple<Args...>>>;
+        if constexpr (std::is_same_v<FirstArgT, ENUM_STRING>) {
+          ENUM_STRING en = [args...](auto first, auto...) {
+            return first;
+          }(args...);
+
+          std::string s;
+          for (; i <= std::size(m_en); ++i) {
+            s += (i ? " " : "");
+            s += formatCell(i == std::size(m_en) ? en : m_en[i], i);
+          }
+#ifdef NOGTK
+          return s;
+#else
+          return "<b>" + s + "</b>";
+#endif
+        }
+      }
+
+      assert(args_count == m_width.size() || args_count == m_width.size() + 1);
+
+      std::string s = "\n";
+
+      (
+          [&](const auto &arg) {
+            s += (i ? " " : "");
+            s += formatCell(arg, i);
+            i++;
+          }(args),
+          ...);
+      return s;
+    }
+  };
+
   std::string m_ev;  // locale m_ev=utf8ToLocale(m_entryValue[ENTRY_TEMPLATE])
   VString m_evwords; // locale
   VString m_tvwords; // locale
@@ -82,6 +178,7 @@ protected:
   VVString m_vvs;
   SetString m_ss;
   VectorVectorInt m_layerIndex[2], m_vii;
+  TableFormat m_table;
 
   std::string getStatusString();
   std::string getTimeString();
@@ -232,5 +329,3 @@ public:
                                       VectorInt const &v2);
   VectorInt relations(int nthread, VectorInt const &v1, VectorInt const &v2);
 };
-
-extern WordsBase *wordsBase;
