@@ -19,8 +19,9 @@ const std::string INVALID_DIFFERENCE = "$";
 const int STACK_TRACE_DEPTH = 5;
 
 using Dictionary = VString;
-using DictionaryCI = Dictionary::const_iterator;
-using PairDCIDCI = std::pair<DictionaryCI, DictionaryCI>;
+template <typename T>
+using PairVectorIterators = std::pair<typename std::vector<T>::const_iterator, 
+                                      typename std::vector<T>::const_iterator>;
 using uchar = unsigned char;
 using TwoStringVectors = std::array<VString, 2>;
 

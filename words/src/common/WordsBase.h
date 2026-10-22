@@ -10,6 +10,7 @@
 #include "Modification.h"
 #include "consts.h"
 #include <latch>
+#include <barrier>
 #include <thread>
 
 #define PCRE2_CODE_UNIT_WIDTH 8
@@ -70,6 +71,7 @@ protected:
   std::stop_token m_token;
   std::unique_ptr<std::latch> m_latch;
   std::mutex m_mutex;
+  std::unique_ptr<std::barrier<>> m_barrier;
   std::vector<VectorBool> m_chain;
   std::vector<char> m_chainChar;
   MapIntInt m_wordLengthMap[LANGUAGES];
@@ -112,8 +114,17 @@ public:
 
   void run(ENUM_JOB_TYPE e);
   void run_thread(int nthread);
-  IntInt iteratorsSize(int nthread, int total_size);
-  PairDCIDCI iterators(int nthread, int n = -1);
+
+  template <typename T>
+  PairVectorIterators<T> iterators(int nthread, const std::vector<T> &v) {
+    int chunk_size = v.size() / m_threads;
+    int remainder = v.size() % m_threads;
+    int start_idx = nthread * chunk_size + std::min(nthread, remainder);
+    int end_idx = start_idx + chunk_size + (nthread < remainder ? 1 : 0);
+    return {v.begin() + start_idx, v.begin() + end_idx};
+  }
+
+  PairVectorIterators<std::string> iterators(int nthread, int n = -1);
 
   bool checkPangram(const std::string &s);
   bool checkTemplate(const std::string &s);
@@ -174,7 +185,7 @@ public:
   std::pair<VectorInt, bool> chainLayer(int nthread,
                                         const VectorInt &layerIndex,
                                         const VectorInt &otherSideOrdered = {});
-  VectorInt chainLayer1(int nthread, const VectorInt &layerIndex );
+  VectorInt chainLayer1(int nthread, const VectorInt &layerIndex);
   static int differentChars(std::string_view s);
   static bool spanIncluding(std::string_view p, std::string_view pattern) {
     return p.find_first_not_of(pattern) == std::string_view::npos;

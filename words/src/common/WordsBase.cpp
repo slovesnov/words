@@ -685,8 +685,11 @@ int WordsBase::findLongestChain(int nthread, int wordIndex) {
   total = 0;
   prev = 1;
   for (i = 2;; i++) {
-    //auto begin = clock();
+    // auto begin = clock();
     layerIndex = chainLayer(nthread, layerIndex).first;
+
+    // chainLayer1
+
     j = layerIndex.size();
     if (!j) {
       break;
@@ -767,11 +770,10 @@ void WordsBase::chainAddIfFound(const std::string &s, VectorInt &v) {
   }
 }
 VectorInt WordsBase::chainLayer1(int nthread, const VectorInt &layerIndex) {
-  const auto &words = m_vvs[0];//here 0
+  const auto &words = m_vvs[0]; // here 0
   VectorInt total_v;
-  auto p = iteratorsSize(nthread, layerIndex.size());
-  for (auto it = layerIndex.begin() + p.first; it != layerIndex.begin() + p.second;
-       it++) {
+  auto [it, end] = iterators(nthread, layerIndex);
+  for (; it != end; it++) {
     VectorInt v;
     std::string s = words[*it];
 
@@ -1272,12 +1274,12 @@ VectorInt WordsBase::relations(int nthread, VectorInt const &v1,
 }
 
 void WordsBase::findChainPreProseeding() {
-  const int nthread=0;
+  const int nthread = 0;
   fillDictionaryLength(nthread, m_evwords[0].size(), m_evwords);
   int i = -1;
   for (auto &a : m_evwords) {
     i++;
-    m_layerIndex[i]={{}};
+    m_layerIndex[i] = {{}};
     chainAddIfFound(nthread, a, m_layerIndex[i][0]);
   }
 }
@@ -2222,21 +2224,8 @@ std::string WordsBase::getTimeString() {
                                      //  m_begin) / CLOCKS_PER_SEC);
 }
 
-IntInt WordsBase::iteratorsSize(int nthread, int total_size) {
-  int chunk_size = total_size / m_threads;
-  int remainder = total_size % m_threads;
-  int start_idx = nthread * chunk_size + std::min(nthread, remainder);
-  int end_idx = start_idx + chunk_size + (nthread < remainder ? 1 : 0);
-  return {start_idx, end_idx};
-}
-
-PairDCIDCI WordsBase::iterators(int nthread, int n) {
-  if (n == -1) {
-    n = getDictionaryIndex();
-  }
-  Dictionary const &d = m_dictionary[n];
-  const auto &p = iteratorsSize(nthread, d.size());
-  return {d.begin() + p.first, d.begin() + p.second};
+PairVectorIterators<std::string> WordsBase::iterators(int nthread, int n) {
+  return iterators(nthread, m_dictionary[n == -1 ? getDictionaryIndex() : n]);
 }
 
 void WordsBase::run_thread(int nthread) {
