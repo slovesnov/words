@@ -9,9 +9,10 @@
 
 #include "Modification.h"
 #include "consts.h"
-#include <latch>
 #include <barrier>
+#include <latch>
 #include <thread>
+#include <functional>
 
 #define PCRE2_CODE_UNIT_WIDTH 8
 #define PCRE2_STATIC
@@ -71,7 +72,8 @@ protected:
   std::stop_token m_token;
   std::unique_ptr<std::latch> m_latch;
   std::mutex m_mutex;
-  std::unique_ptr<std::barrier<>> m_barrier;
+  using BarrierCallback = std::move_only_function<void() noexcept>;
+  std::unique_ptr<std::barrier<BarrierCallback>> m_barrier;
   std::vector<VectorBool> m_chain;
   std::vector<char> m_chainChar;
   MapIntInt m_wordLengthMap[LANGUAGES];
@@ -79,10 +81,11 @@ protected:
   std::atomic<int> m_i;
   VVString m_vvs;
   SetString m_ss;
-  VectorVectorInt m_layerIndex[2];
+  VectorVectorInt m_layerIndex[2], m_vii;
 
   std::string getStatusString();
   std::string getTimeString();
+  void mergeLayers() noexcept;
 
   int getMaximumWordLength() {
     return m_longestWordLength[getDictionaryIndex()];

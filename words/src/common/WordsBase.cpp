@@ -160,6 +160,7 @@ WordsBase::WordsBase() {
   m_si.resize(m_threads);
   m_chain.resize(m_threads);
   m_vvs.resize(m_threads);
+  m_vii.resize(m_threads);
 
   loadLanguages();
 
@@ -667,7 +668,7 @@ int WordsBase::findLongestChain(int nthread, int wordIndex) {
   auto &words = m_vvs[nthread];
   int i, j, k, total, prev;
   std::string s, words_str;
-  VectorInt layerIndex = {wordIndex};
+  VectorInt &layerIndex = m_chd;
   VString v;
   int size = words.size();
   int w = std::to_string(size).length();
@@ -686,11 +687,18 @@ int WordsBase::findLongestChain(int nthread, int wordIndex) {
   prev = 1;
   for (i = 2;; i++) {
     // auto begin = clock();
-    layerIndex = chainLayer(nthread, layerIndex).first;
+    if (m_menuClick == MENU_CHAIN) {
+      prsync(nthread, m_chd.size());
+      m_vii[nthread] = chainLayer1(nthread, m_chd);
+      prsync();
+      m_barrier->arrive_and_wait();
+      j = m_chd.size();
+      prsync(nthread, j);
+    } else {
+      layerIndex = chainLayer(nthread, layerIndex).first;
+      j = layerIndex.size();
+    }
 
-    // chainLayer1
-
-    j = layerIndex.size();
     if (!j) {
       break;
     }
@@ -769,28 +777,38 @@ void WordsBase::chainAddIfFound(const std::string &s, VectorInt &v) {
     }
   }
 }
+
 VectorInt WordsBase::chainLayer1(int nthread, const VectorInt &layerIndex) {
   const auto &words = m_vvs[0]; // here 0
   VectorInt total_v;
   auto [it, end] = iterators(nthread, layerIndex);
   for (; it != end; it++) {
     VectorInt v;
+    // prsync(*it, words.size());
     std::string s = words[*it];
+    // prsync(s, s.size());
+    // printlog(s)
 
-    for (size_t i = 0; i < s.size(); ++i) {
+        for (size_t i = 0; i < s.size(); ++i) {
       char original_char = s[i];
       for (const char &c : alphabet()) {
         if (c != original_char) {
           s[i] = c;
-          chainAddIfFound(nthread, s, v);
+          // prsync();
+          chainAddIfFound(s, v);
+          // prsync();
         }
       }
       s[i] = original_char;
     }
 
+    // prsync();
+
     total_v.insert(total_v.end(), v.begin(), v.end());
+    // prsync();
   }
 
+  // prsync();
   return total_v;
 }
 
@@ -1273,6 +1291,15 @@ VectorInt WordsBase::relations(int nthread, VectorInt const &v1,
   return v;
 }
 
+void WordsBase::mergeLayers() noexcept {
+  pri;
+  m_chd.clear();
+  for (const auto &a : m_vii) {
+    m_chd.insert(m_chd.end(), a.begin(), a.end());
+  }
+  pri;
+}
+
 void WordsBase::findChainPreProseeding() {
   const int nthread = 0;
   fillDictionaryLength(nthread, m_evwords[0].size(), m_evwords);
@@ -1281,6 +1308,13 @@ void WordsBase::findChainPreProseeding() {
     i++;
     m_layerIndex[i] = {{}};
     chainAddIfFound(nthread, a, m_layerIndex[i][0]);
+  }
+  // using only if one word
+  if (m_evwords.size() == 1) {
+    m_barrier = std::make_unique<std::barrier<BarrierCallback>>(
+        m_threads, [this]() noexcept { this->mergeLayers(); });
+
+    m_chd = {m_layerIndex[0][0][0]};
   }
 }
 
@@ -1292,7 +1326,7 @@ void WordsBase::findChain(int nthread) {
 
   // auto begin = clock();
   if (m_evwords.size() == 1) {
-    findLongestChain(nthread, m_layerIndex[0][0][0]);
+    findLongestChain(nthread, m_chd[0]);
     return;
   }
 
@@ -1370,6 +1404,7 @@ void WordsBase::clusterStatistics(int nthread) {
     fillDictionaryLength(nthread, length);
     while ((j = indexOf(true, m_chain[nthread], j)) != -1) {
       m_chain[nthread][j] = false;
+      m_chd = {j};
       int i = findLongestChain(nthread, j);
       if (i == -1) { // user break
         return;
@@ -2269,8 +2304,10 @@ void WordsBase::run_thread(int nthread) {
 void WordsBase::run(ENUM_JOB_TYPE e) {
   bool userbreak = false;
   // auto begin = clock();
-  int threads =
-      oneOf(m_menuClick, MENU_CHAIN, MENU_WORD_FREQUENCY) ? 1 : m_threads;
+  int threads = m_menuClick == MENU_WORD_FREQUENCY ||
+                        (m_menuClick == MENU_CHAIN && m_evwords.size() == 2)
+                    ? 1
+                    : m_threads;
   // pr(magic_enum::enum_name(m_menuClick), threads);
   if (e == JOB_TYPE_FULL) {
     if (auto it = menuPreProseeding.get(m_menuClick)) {
