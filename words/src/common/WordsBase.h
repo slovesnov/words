@@ -71,11 +71,13 @@ protected:
   std::unique_ptr<std::latch> m_latch;
   std::mutex m_mutex;
   std::vector<VectorBool> m_chain;
+  std::vector<char> m_chainChar;
   MapIntInt m_wordLengthMap[LANGUAGES];
   VectorIntInt m_iiv;
   std::atomic<int> m_i;
   VVString m_vvs;
   SetString m_ss;
+  VectorVectorInt m_layerIndex[2];
 
   std::string getStatusString();
   std::string getTimeString();
@@ -145,6 +147,7 @@ public:
   void twoCharactersDistribution(int nthread);
   void findWordsSplit(int nthread);
 
+  void findChainPreProseeding();
   void clusterStatisticsPreProseeding();
   void findLetterGroupSplitPreProseeding();
   void checkKeyboardWordSimplePreProseeding();
@@ -167,9 +170,11 @@ public:
 
   bool chainAddIfFound(int nthread, const std::string &s, VectorInt &v,
                        const VectorInt &otherSideOrdered = {});
+  void chainAddIfFound(const std::string &s, VectorInt &v);
   std::pair<VectorInt, bool> chainLayer(int nthread,
                                         const VectorInt &layerIndex,
                                         const VectorInt &otherSideOrdered = {});
+  VectorInt chainLayer1(int nthread, const VectorInt &layerIndex );
   static int differentChars(std::string_view s);
   static bool spanIncluding(std::string_view p, std::string_view pattern) {
     return p.find_first_not_of(pattern) == std::string_view::npos;
@@ -210,9 +215,8 @@ public:
   void updateProceedingText(std::string s, bool add = true);
   const MapIntInt &getWordLengthMap() const;
   std::array<VectorInt, 2> relations2(int nthread, VectorInt const &v1,
-                                     VectorInt const &v2);
-  VectorInt relations(int nthread, VectorInt const &v1,
-                                     VectorInt const &v2);
+                                      VectorInt const &v2);
+  VectorInt relations(int nthread, VectorInt const &v1, VectorInt const &v2);
 };
 
 extern WordsBase *wordsBase;

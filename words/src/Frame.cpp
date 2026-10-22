@@ -241,7 +241,6 @@ Frame::Frame() : WordsBase() {
 
   // right part
   w2 = createBox(GTK_ORIENTATION_VERTICAL, 3, m_helperUp, false,
-                 //  gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0), true,
                  w, true);
   gtk_widget_set_valign(GTK_WIDGET(w), GTK_ALIGN_END);
   gtk_widget_set_size_request(w2, MIN_RIGHT_PANEL_WIDTH, -1);

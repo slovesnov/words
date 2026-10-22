@@ -64,6 +64,7 @@ const LookupTable<ENUM_MENU, void (WordsBase::*)(int)> COMPLEX_FUNCTION = {
 };
 
 const LookupTable<ENUM_MENU, void (WordsBase::*)()> menuPreProseeding = {
+    {MENU_CHAIN, &WordsBase::findChainPreProseeding},
     {MENU_CLUSTER_STATISTICS, &WordsBase::clusterStatisticsPreProseeding},
     {MENU_LETTER_GROUP_SPLIT, &WordsBase::findLetterGroupSplitPreProseeding},
     {MENU_KEYBOARD_WORD_SIMPLE,
@@ -576,6 +577,7 @@ void WordsBase::fillDictionaryLength(int nthread, size_t length,
 
   // 4. Update the execution chain layout
   m_chain[nthread].assign(words.size() + added_count, true);
+  m_chainChar.assign(words.size() + added_count, 1);
 }
 
 class TableFormat {
@@ -674,7 +676,7 @@ int WordsBase::findLongestChain(int nthread, int wordIndex) {
   const int BF_WIDTH = 6;
 
   TableFormat table({NSTRING, LAYER, BRANCHING_FACTOR}, {2, w, BF_WIDTH});
-  if (m_menuClick == MENU_CHAIN) {
+  if (m_menuClick == MENU_CHAIN && !nthread) {
     s = table.string(WORDS_NOMINATIVE_CASE) +
         table.string(1, layerIndex.size(), "", localeToUtf8(words[wordIndex]));
     updateProceedingText(s, false);
@@ -683,14 +685,15 @@ int WordsBase::findLongestChain(int nthread, int wordIndex) {
   total = 0;
   prev = 1;
   for (i = 2;; i++) {
+    //auto begin = clock();
     layerIndex = chainLayer(nthread, layerIndex).first;
     j = layerIndex.size();
     if (!j) {
       break;
     }
-    pr(i,j)
+    // prsync(i, j, timeElapse(begin));
     total += j;
-    if (m_menuClick == MENU_CHAIN) {
+    if (m_menuClick == MENU_CHAIN && !nthread) {
       words_str = "";
       for (k = 0; k < std::min(MAX_WORDS, j); k++) {
         words_str += (k ? " " : "") + localeToUtf8(words[layerIndex[k]]);
@@ -715,7 +718,7 @@ bool WordsBase::chainAddIfFound(int nthread, const std::string &s, VectorInt &v,
       m_chain[nthread][i] = false;
       v.push_back(i);
       return false;
-    } else if (std::ranges::binary_search(otherSideOrdered, i)) { // todo
+    } else if (std::ranges::binary_search(otherSideOrdered, i)) {
       return true;
     }
   }
@@ -749,6 +752,44 @@ WordsBase::chainLayer(int nthread, const VectorInt &layerIndex,
   }
 
   return {total_v, false};
+}
+
+void WordsBase::chainAddIfFound(const std::string &s, VectorInt &v) {
+  const auto &words = m_vvs[0];
+  int i = indexOfOrdered(s, words);
+  if (i != -1) {
+    std::atomic_ref<char> mask_cell(m_chainChar[i]);
+    char expected = 1;
+    if (mask_cell.compare_exchange_strong(expected, 0,
+                                          std::memory_order_relaxed)) {
+      v.push_back(i);
+    }
+  }
+}
+VectorInt WordsBase::chainLayer1(int nthread, const VectorInt &layerIndex) {
+  const auto &words = m_vvs[0];//here 0
+  VectorInt total_v;
+  auto p = iteratorsSize(nthread, layerIndex.size());
+  for (auto it = layerIndex.begin() + p.first; it != layerIndex.begin() + p.second;
+       it++) {
+    VectorInt v;
+    std::string s = words[*it];
+
+    for (size_t i = 0; i < s.size(); ++i) {
+      char original_char = s[i];
+      for (const char &c : alphabet()) {
+        if (c != original_char) {
+          s[i] = c;
+          chainAddIfFound(nthread, s, v);
+        }
+      }
+      s[i] = original_char;
+    }
+
+    total_v.insert(total_v.end(), v.begin(), v.end());
+  }
+
+  return total_v;
 }
 
 int WordsBase::differentChars(std::string_view s) {
@@ -1230,24 +1271,26 @@ VectorInt WordsBase::relations(int nthread, VectorInt const &v1,
   return v;
 }
 
+void WordsBase::findChainPreProseeding() {
+  const int nthread=0;
+  fillDictionaryLength(nthread, m_evwords[0].size(), m_evwords);
+  int i = -1;
+  for (auto &a : m_evwords) {
+    i++;
+    m_layerIndex[i]={{}};
+    chainAddIfFound(nthread, a, m_layerIndex[i][0]);
+  }
+}
+
 void WordsBase::findChain(int nthread) {
   int i, j;
-  VectorVectorInt layerIndex[2];
   VectorInt *ptr[2];
   auto &words = m_vvs[nthread];
   std::string s, s1;
 
-  fillDictionaryLength(nthread, m_evwords[0].size(), m_evwords);
-  i = -1;
-  for (auto &a : m_evwords) {
-    i++;
-    layerIndex[i].push_back({});
-    chainAddIfFound(nthread, a, layerIndex[i][0]);
-  }
-
   // auto begin = clock();
   if (m_evwords.size() == 1) {
-    findLongestChain(nthread, layerIndex[0][0][0]);
+    findLongestChain(nthread, m_layerIndex[0][0][0]);
     return;
   }
 
@@ -1261,7 +1304,7 @@ void WordsBase::findChain(int nthread) {
     i = -1;
     for (auto &a : ptr) {
       i++;
-      a = &layerIndex[i][layerIndex[i].size() - 1];
+      a = &m_layerIndex[i][m_layerIndex[i].size() - 1];
     }
     j = ptr[1]->size() < ptr[0]->size();
 
@@ -1274,34 +1317,34 @@ void WordsBase::findChain(int nthread) {
       return;
     }
     std::sort(p.first.begin(), p.first.end());
-    layerIndex[j].push_back(p.first);
+    m_layerIndex[j].push_back(p.first);
   }
 
   i = -1;
   for (auto &a : ptr) {
     i++;
-    a = &layerIndex[i][layerIndex[i].size() - 1];
+    a = &m_layerIndex[i][m_layerIndex[i].size() - 1];
   }
   auto res = relations2(nthread, *ptr[0], *ptr[1]);
 
   for (i = 0; i < 2; i++) {
-    auto &li = layerIndex[i];
+    auto &li = m_layerIndex[i];
     j = li.size() - 1;
     li[j] = res[i];
   }
 
   for (i = 0; i < 2; i++) {
-    auto &li = layerIndex[i];
+    auto &li = m_layerIndex[i];
     for (j = li.size() - 1; j > 1; j--) {
       li[j - 1] = relations(nthread, li[j - 1], li[j]);
     }
   }
-  layerIndex[0].insert(layerIndex[0].end(), layerIndex[1].rbegin(),
-                       layerIndex[1].rend());
+  m_layerIndex[0].insert(m_layerIndex[0].end(), m_layerIndex[1].rbegin(),
+                         m_layerIndex[1].rend());
   TableFormat table({NSTRING}, {2});
   s = table.string(WORDS_NOMINATIVE_CASE);
   i = 0;
-  for (auto &e : layerIndex[0]) {
+  for (auto &e : m_layerIndex[0]) {
     i++;
     s1 = "";
     j = -1;
@@ -1313,9 +1356,6 @@ void WordsBase::findChain(int nthread) {
     s += table.string(i, s1);
   }
   SearchResult::out = s;
-  // for (auto &e : v) {
-  //   m_result.push_back(SearchResult(e, m_evwords[0].length(), j + 2));
-  // }
 }
 
 void WordsBase::clusterStatistics(int nthread) {
