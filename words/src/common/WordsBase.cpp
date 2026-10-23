@@ -7,7 +7,6 @@
 
 #include "WordsBase.h"
 #include <cmath>
-#include <execution>
 #include <format>
 #include <magic_enum.hpp>
 #include <ranges>
@@ -25,6 +24,8 @@
     return v;                                                                  \
   }
 #endif
+
+//#define ALWAYS_ONE_THREAD_MENU_CHAIN
 
 const LookupTable<ENUM_MENU, void (WordsBase::*)(int)> COMPLEX_FUNCTION = {
     {MENU_ANAGRAM, &WordsBase::findAnagram}, // break implemented
@@ -581,6 +582,7 @@ void WordsBase::fillDictionaryLength(int nthread, size_t length,
   m_chainChar.assign(words.size() + added_count, 1);
 }
 
+// todo
 clock_t tm[4];
 
 int WordsBase::findLongestChain(int nthread) {
@@ -599,10 +601,34 @@ int WordsBase::findLongestChain(int nthread) {
     updateProceedingText(s, false);
   }
 
+#ifdef ALWAYS_ONE_THREAD_MENU_CHAIN
+  m_i = 1;
+#endif
   total = 0;
   do {
     tm[nthread] = clock();
-    // auto begin = clock();
+#ifdef ALWAYS_ONE_THREAD_MENU_CHAIN
+    auto begin = clock();
+    m_vii[nthread] = chainLayer(nthread, m_vii[nthread]).first;
+    i = m_vii[nthread].size();
+
+    if (i) {
+      pr(m_table.m_rows, intToString(i), timeElapse(begin));
+      std::string words_str;
+      const int MAX_WORDS = 5;
+      int j = i;
+      for (int i = 0; i < std::min(MAX_WORDS, j); i++) {
+        words_str += (i ? " " : "") + localeToUtf8(words[m_vii[nthread][i]]);
+      }
+      if (j > MAX_WORDS) {
+        words_str += "…";
+      }
+      std::string s =
+          m_table.string(m_table.m_rows, j, double(j) / m_i, words_str);
+      updateProceedingText(s);
+      m_i = j;
+    }
+#else
     if (m_menuClick == MENU_CHAIN) {
       m_vii[nthread] = chainLayer1(nthread, m_chd);
       m_barrier->arrive_and_wait();
@@ -611,6 +637,7 @@ int WordsBase::findLongestChain(int nthread) {
       m_vii[nthread] = chainLayer(nthread, m_vii[nthread]).first;
       i = m_vii[nthread].size();
     }
+#endif
     total += i;
     RETURN_ON_USER_BREAK_VALUE(-1)
   } while (i);
@@ -1198,8 +1225,8 @@ void WordsBase::mergeLayers() noexcept {
     updateProceedingText(s);
     m_i = j;
     std::sort(tm, tm + 4);
-    prsync(m_table.m_rows - 1, intToString(j), timeElapse(tm[0]), timeElapse(tm[1]),
-           timeElapse(tm[2]), timeElapse(tm[3]));
+    prsync(m_table.m_rows - 1, intToString(j), timeElapse(tm[0]),
+           timeElapse(tm[1]), timeElapse(tm[2]), timeElapse(tm[3]));
   }
 }
 
@@ -1217,6 +1244,9 @@ void WordsBase::findChainPreProseeding() {
     m_barrier = std::make_unique<std::barrier<BarrierCallback>>(
         m_threads, [this]() noexcept { this->mergeLayers(); });
 
+#ifdef ALWAYS_ONE_THREAD_MENU_CHAIN
+    m_vii[0] = {m_layerIndex[0][0][0]};
+#endif
     m_chd = {m_layerIndex[0][0][0]};
     m_i = 1;
   }
@@ -2206,11 +2236,17 @@ void WordsBase::run_thread(int nthread) {
 
 void WordsBase::run(ENUM_JOB_TYPE e) {
   bool userbreak = false;
-  // auto begin = clock();
+// auto begin = clock();
+#ifdef ALWAYS_ONE_THREAD_MENU_CHAIN
+  int threads = m_menuClick == MENU_WORD_FREQUENCY || m_menuClick == MENU_CHAIN
+                    ? 1
+                    : m_threads;
+#else
   int threads = m_menuClick == MENU_WORD_FREQUENCY ||
                         (m_menuClick == MENU_CHAIN && m_evwords.size() == 2)
                     ? 1
                     : m_threads;
+#endif
   // pr(magic_enum::enum_name(m_menuClick), threads);
   if (e == JOB_TYPE_FULL) {
     if (auto it = menuPreProseeding.get(m_menuClick)) {
