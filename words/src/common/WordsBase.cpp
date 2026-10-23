@@ -581,6 +581,8 @@ void WordsBase::fillDictionaryLength(int nthread, size_t length,
   m_chainChar.assign(words.size() + added_count, 1);
 }
 
+clock_t tm[4];
+
 int WordsBase::findLongestChain(int nthread) {
   auto &words = m_vvs[nthread];
   int i, total;
@@ -590,14 +592,16 @@ int WordsBase::findLongestChain(int nthread) {
   int w = std::to_string(size).length();
   w += (w - 1) / 3; // separators
   if (m_menuClick == MENU_CHAIN && !nthread) {
-    m_table.init({NSTRING, LAYER, BRANCHING_FACTOR}, {2, w, 6});
-    s = m_table.string(WORDS_NOMINATIVE_CASE) +
-        m_table.string(1, 1, "", localeToUtf8(words[m_chd[0]]));
+    s = m_table.createWithTitle(NSTRING, LAYER, BRANCHING_FACTOR, 2, w, 6,
+                                WORDS_NOMINATIVE_CASE);
+    // cann't use in one row
+    s += m_table.string(1, 1, "", localeToUtf8(words[m_chd[0]]));
     updateProceedingText(s, false);
   }
 
   total = 0;
-  while (true) {
+  do {
+    tm[nthread] = clock();
     // auto begin = clock();
     if (m_menuClick == MENU_CHAIN) {
       m_vii[nthread] = chainLayer1(nthread, m_chd);
@@ -607,13 +611,9 @@ int WordsBase::findLongestChain(int nthread) {
       m_vii[nthread] = chainLayer(nthread, m_vii[nthread]).first;
       i = m_vii[nthread].size();
     }
-    if (!i) {
-      break;
-    }
-    // prsync(i, i, timeElapse(begin));
     total += i;
     RETURN_ON_USER_BREAK_VALUE(-1)
-  }
+  } while (i);
   return total;
 }
 
@@ -630,6 +630,19 @@ bool WordsBase::chainAddIfFound(int nthread, const std::string &s, VectorInt &v,
     }
   }
   return false;
+}
+
+void WordsBase::chainAddIfFound(const std::string &s, VectorInt &v) {
+  const auto &words = m_vvs[0];
+  int i = indexOfOrdered(s, words);
+  if (i != -1) {
+    std::atomic_ref<char> mask_cell(m_chainChar[i]);
+    char expected = 1;
+    if (mask_cell.compare_exchange_strong(expected, 0,
+                                          std::memory_order_relaxed)) {
+      v.push_back(i);
+    }
+  }
 }
 
 std::pair<VectorInt, bool>
@@ -661,50 +674,25 @@ WordsBase::chainLayer(int nthread, const VectorInt &layerIndex,
   return {total_v, false};
 }
 
-void WordsBase::chainAddIfFound(const std::string &s, VectorInt &v) {
-  const auto &words = m_vvs[0];
-  int i = indexOfOrdered(s, words);
-  if (i != -1) {
-    std::atomic_ref<char> mask_cell(m_chainChar[i]);
-    char expected = 1;
-    if (mask_cell.compare_exchange_strong(expected, 0,
-                                          std::memory_order_relaxed)) {
-      v.push_back(i);
-    }
-  }
-}
-
 VectorInt WordsBase::chainLayer1(int nthread, const VectorInt &layerIndex) {
   const auto &words = m_vvs[0]; // here 0
   VectorInt total_v;
   auto [it, end] = iterators(nthread, layerIndex);
   for (; it != end; it++) {
     VectorInt v;
-    // prsync(*it, words.size());
     std::string s = words[*it];
-    // prsync(s, s.size());
-    // printlog(s)
-
     for (size_t i = 0; i < s.size(); ++i) {
       char original_char = s[i];
       for (const char &c : alphabet()) {
         if (c != original_char) {
           s[i] = c;
-          // prsync();
           chainAddIfFound(s, v);
-          // prsync();
         }
       }
       s[i] = original_char;
     }
-
-    // prsync();
-
     total_v.insert(total_v.end(), v.begin(), v.end());
-    // prsync();
   }
-
-  // prsync();
   return total_v;
 }
 
@@ -1206,9 +1194,12 @@ void WordsBase::mergeLayers() noexcept {
       words_str += "…";
     }
     std::string s =
-        m_table.string(m_table.m_rows + 1, j, double(j) / m_i, words_str);
+        m_table.string(m_table.m_rows, j, double(j) / m_i, words_str);
     updateProceedingText(s);
     m_i = j;
+    std::sort(tm, tm + 4);
+    prsync(m_table.m_rows - 1, intToString(j), timeElapse(tm[0]), timeElapse(tm[1]),
+           timeElapse(tm[2]), timeElapse(tm[3]));
   }
 }
 
@@ -1239,7 +1230,7 @@ void WordsBase::findChain(int nthread) {
 
   // auto begin = clock();
   if (m_evwords.size() == 1) {
-    findLongestChain(nthread, m_chd[0]);
+    findLongestChain(nthread);
     return;
   }
 
@@ -1290,8 +1281,7 @@ void WordsBase::findChain(int nthread) {
   }
   m_layerIndex[0].insert(m_layerIndex[0].end(), m_layerIndex[1].rbegin(),
                          m_layerIndex[1].rend());
-  m_table.init({NSTRING}, {2});
-  s = m_table.string(WORDS_NOMINATIVE_CASE);
+  s = m_table.createWithTitle(NSTRING, 2, WORDS_NOMINATIVE_CASE);
   i = 0;
   for (auto &e : m_layerIndex[0]) {
     i++;
@@ -1318,7 +1308,7 @@ void WordsBase::clusterStatistics(int nthread) {
     while ((j = indexOf(true, m_chain[nthread], j)) != -1) {
       m_chain[nthread][j] = false;
       m_vii[nthread] = {j};
-      int i = findLongestChain(nthread, j);
+      int i = findLongestChain(nthread);
       if (i == -1) { // user break
         return;
       }

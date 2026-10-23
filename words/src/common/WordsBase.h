@@ -30,10 +30,11 @@ class WordsBase {
   private:
     std::vector<ENUM_STRING> m_en;
     std::vector<int> m_width;
+
   public:
     int m_rows;
-  private:
 
+  private:
     template <typename T> std::string formatCell(const T &arg, size_t i) const {
       using DecayedT = std::decay_t<T>;
 
@@ -56,9 +57,25 @@ class WordsBase {
         } else if constexpr (std::is_convertible_v<T, std::string_view>) {
           return std::format("{:>{}}", arg, m_width[i]);
         } else {
-          return std::format("{:>{}}", toString(arg, ','), m_width[i]);
+          return std::format("{:>{}}", WordsBase::intToString(arg), m_width[i]);
         }
       }
+    }
+
+    // Helper function performing pack expansion using compile-time indices
+    template <typename Tuple, size_t... EnIndices, size_t... WidthIndices>
+    std::string createWithTitleImpl(Tuple &&t,
+                                    std::index_sequence<EnIndices...>,
+                                    std::index_sequence<WidthIndices...>) {
+      constexpr size_t N = sizeof...(EnIndices);
+      // 1. Call init() by extracting the first N elements and the next N
+      // elements from the tuple We add N to WidthIndices to shift into the
+      // second half of the tuple
+      init({static_cast<ENUM_STRING>(std::get<EnIndices>(t))...},
+           {static_cast<int>(std::get<WidthIndices + N>(t))...});
+
+      // 2. Call string() with the very last element (index 2N)
+      return string(std::get<2 * N>(t));
     }
 
   public:
@@ -104,7 +121,6 @@ class WordsBase {
 #endif
         }
       }
-
       assert(args_count == m_width.size() || args_count == m_width.size() + 1);
 
       std::string s = "\n";
@@ -117,6 +133,25 @@ class WordsBase {
           }(args),
           ...);
       return s;
+    }
+
+    // New function: accepts an odd number of arguments (2n + 1)
+    template <typename... Args> std::string createWithTitle(Args... args) {
+      // Compile-time check ensuring the number of arguments is odd and at least
+      // 1
+      static_assert(sizeof...(Args) % 2 != 0,
+                    "Argument count must be odd (2n + 1)");
+
+      constexpr size_t N = (sizeof...(Args) - 1) / 2;
+
+      // Pack all arguments into a tuple for convenient slicing without copying
+      auto args_tuple = std::forward_as_tuple(args...);
+
+      // Call the private helper function, passing index sequences for packet
+      // splitting
+      return createWithTitleImpl(
+          args_tuple, std::make_index_sequence<N>{}, // Indices from 0 to N-1
+          std::make_index_sequence<N>{});            // Indices from N to 2N-1
     }
   };
 
@@ -277,7 +312,7 @@ public:
 
   void fillDictionaryLength(int nthread, size_t length,
                             const VString &bounds = {});
-  int findLongestChain(int nthread, int wordIndex);
+  int findLongestChain(int nthread);
 
   bool chainAddIfFound(int nthread, const std::string &s, VectorInt &v,
                        const VectorInt &otherSideOrdered = {});
