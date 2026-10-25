@@ -1857,7 +1857,8 @@ void WordsBase::dictionaryStatisticsPostProseeding() {
 
   IntDouble ve[a];
   const int COLUMNS = a / 3;
-  std::vector<double> frequency(alphabetSize());
+  SearchResult::vd.resize(a);
+  VectorDouble frequency(a);
   constexpr std::string_view F = "{} {:>6.3f}  ";
 
   for (j = 0; j < SZ_CAPTION; j++) {
@@ -1874,6 +1875,10 @@ void WordsBase::dictionaryStatisticsPostProseeding() {
 
       ve[i] = {i, v};
       frequency[i] = v;
+    }
+
+    if (!j) {
+      SearchResult::vd = frequency;
     }
 
     SearchResult::out += "\n\n" + caption[j] + additionalCaption[1];

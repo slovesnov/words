@@ -16,6 +16,7 @@ class Frame : WordsBase {
   GtkWidget *m_widget;
   GtkWidget *m_menu;
   GtkWidget *m_textview[TEXTVIEW_SIZE];
+  GtkWidget *m_textviewscrolled[TEXTVIEW_SIZE];
   GtkWidget *m_helperUp;
   GtkWidget *m_combo[COMBOBOX_SIZE];
   GtkWidget *m_entry[ENTRY_SIZE];
@@ -31,6 +32,8 @@ class Frame : WordsBase {
   GtkWidget *m_charactersLabel;
   GtkWidget *m_sortbutton;
   GtkWidget *m_sortlist;
+  GtkWidget *m_box;
+  GtkWidget *m_area;
   SafePangoFontDesc m_font[FONT_SIZE];
 
   std::chrono::steady_clock::time_point last_click_time[BUTTON_SIZE]{};

@@ -92,6 +92,7 @@ VectorVectorInt &sum(VectorThreadResult &v) {
 }
 
 std::string SearchResult::out;
+VectorDouble SearchResult::vd;
 
 SearchResult::SearchResult(std::string _s, int _length, int _words) {
   unsigned i, l;
@@ -286,3 +287,83 @@ int indexOfOrdered(const std::string &s, const VString &a) {
 }
 
 std::string squareBrackets(int v) { return std::format("[{}]", v); }
+
+void cairo_rounded_rectangle(cairo_t *cr, double x, double y, double width,
+                             double height, double radius) {
+  // Ensure the radius isn't larger than half the width or height
+  if (radius > width / 2.0)
+    radius = width / 2.0;
+  if (radius > height / 2.0)
+    radius = height / 2.0;
+
+  // Degrees to radians conversion helper constant
+  double degrees = G_PI / 180.0;
+
+  cairo_new_sub_path(cr);
+  // Top-right corner arc
+  cairo_arc(cr, x + width - radius, y + radius, radius, -90 * degrees,
+            0 * degrees);
+  // Bottom-right corner arc
+  cairo_arc(cr, x + width - radius, y + height - radius, radius, 0 * degrees,
+            90 * degrees);
+  // Bottom-left corner arc
+  cairo_arc(cr, x + radius, y + height - radius, radius, 90 * degrees,
+            180 * degrees);
+  // Top-left corner arc
+  cairo_arc(cr, x + radius, y + radius, radius, 180 * degrees, 270 * degrees);
+  cairo_close_path(cr);
+}
+
+/* Helper function to convert HSL to RGB (Normalized 0.0 - 1.0 for GTK/Cairo) */
+void hsl_to_rgb(double h, double s, double l, double *r, double *g, double *b) {
+  // Convert percentages to fractions
+  s /= 100.0;
+  l /= 100.0;
+
+  double c = (1.0 - fabs(2.0 * l - 1.0)) * s;
+  double x = c * (1.0 - fabs(fmod(h / 60.0, 2.0) - 1.0));
+  double m = l - c / 2.0;
+
+  double rt = 0, gt = 0, bt = 0;
+
+  if (h >= 0 && h < 60) {
+    rt = c;
+    gt = x;
+    bt = 0;
+  } else if (h >= 60 && h < 120) {
+    rt = x;
+    gt = c;
+    bt = 0;
+  } else if (h >= 120 && h < 180) {
+    rt = 0;
+    gt = c;
+    bt = x;
+  } else if (h >= 180 && h < 240) {
+    rt = 0;
+    gt = x;
+    bt = c;
+  } else if (h >= 240 && h < 300) {
+    rt = x;
+    gt = 0;
+    bt = c;
+  } else if (h >= 300 && h < 360) {
+    rt = c;
+    gt = 0;
+    bt = x;
+  }
+
+  *r = rt + m;
+  *g = gt + m;
+  *b = bt + m;
+}
+
+void draw_with_hsl_color(cairo_t *cr, double ratio) {
+  double hue = (1.0 - ratio) * 120.0;
+  double r, g, b;
+
+  // Convert hue to rgb vectors
+  hsl_to_rgb(hue, 85.0, 65.0, &r, &g, &b);
+
+  // Apply color values directly to Cairo state machine context
+  cairo_set_source_rgb(cr, r, g, b);
+}

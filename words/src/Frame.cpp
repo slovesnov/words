@@ -30,6 +30,126 @@ std::pair<ENUM_MENU, int> MENU_TO_ACCEL_KEY[] = {
     {MENU_SAVE_TEXT, GDK_KEY_S}};
 Frame *frame;
 
+gboolean on_draw(GtkWidget *widget, cairo_t *cr, gpointer user_data) {
+  gint width = gtk_widget_get_allocated_width(widget);
+  // gint height = gtk_widget_get_allocated_height(widget);
+
+  cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+  cairo_paint(cr);
+
+  gdouble rect_width = 50.0;
+  gdouble rect_height = 52.0;
+  gdouble radius = 6.0;
+  gdouble row_gap = 6;
+  gdouble shift = 20;
+  VectorDouble v = SearchResult::vd;
+  bool russian = wordsBase->getDictionaryIndex() == 1;
+
+  PangoLayout *layout = gtk_widget_create_pango_layout(widget, NULL);
+  PangoFontDescription *desc = pango_font_description_from_string("Arial 16");
+  pango_layout_set_font_description(layout, desc);
+  pango_font_description_free(desc);
+
+  double va;
+  int sx = 20, sy = 20, i, j, x, y;
+  char c;
+  std::string s;
+
+  const int a = wordsBase->alphabetSize();
+  IntDouble vec[a];
+  for (i = 0; i < a; i++) {
+    vec[i] = {i, v[i]};
+  }
+  std::sort(vec, vec + a, sortIntDouble);
+
+  auto [min_it, max_it] = std::minmax_element(v.begin(), v.end());
+  double min_val = *min_it;
+  double max_val = *max_it;
+  for (i = 0; i < KEYBOARD_ROWS; i++) {
+    auto &rs = wordsBase->settings(SETTINGS_KEYBOARD_ROW1, i);
+    for (j = 0; j < int(rs.length()) + (russian && i == 2); j++) {
+      x = sx + (rect_width + row_gap) * j + shift * i;
+      y = sy + (rect_height + row_gap) * i;
+
+      c = j == int(rs.length()) ? '-' : rs[j];
+      cairo_rounded_rectangle(cr, x, y, rect_width, rect_height, radius);
+
+      va = v[wordsBase->alphabetIndex(c)];
+      draw_with_hsl_color(cr, va / max_val);
+      cairo_fill_preserve(cr);
+
+      cairo_set_source_rgb(cr, 0.8, 0.8, 0.8);
+      cairo_set_line_width(cr, 2);
+      cairo_stroke(cr);
+
+      std::string letter = localeToUtf8(std::string(1, c));
+      s = std::format("{}<span font_desc='Arial 10'>\n{:.3f}%</span>", letter,
+                      va);
+
+      pango_layout_set_markup(layout, s.c_str(), -1);
+
+      pango_layout_set_alignment(layout, PANGO_ALIGN_CENTER);
+
+      int text_width, text_height;
+      pango_layout_get_size(layout, &text_width, &text_height);
+      gdouble tx = x + (rect_width - ((double)text_width / PANGO_SCALE)) / 2.0;
+      gdouble ty =
+          y + (rect_height - ((double)text_height / PANGO_SCALE)) / 2.0;
+
+      cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+      cairo_move_to(cr, tx, ty);
+      pango_cairo_show_layout(cr, layout);
+    }
+  }
+
+  pango_layout_set_attributes(layout, NULL);
+  // g_object_unref(layout);
+  // layout = gtk_widget_create_pango_layout(widget, NULL);
+
+  desc = pango_font_description_from_string("Arial Bold 10");
+  pango_layout_set_font_description(layout, desc);
+  pango_font_description_free(desc);
+  const int graph_height = 300;
+  const int cell_width = width / a;
+  sy += (rect_height + row_gap) * KEYBOARD_ROWS + 40;
+  cairo_move_to(cr, sx, sy);
+  cairo_line_to(cr, sx, sy + graph_height);
+  cairo_line_to(cr, width, sy + graph_height);
+  cairo_stroke(cr);
+  radius = 12;
+  for (i = 0; i < a; i++) {
+    gdouble center_x = sx + cell_width * i + radius;
+    // log(min_val) => graph_height, log(max_val) => 0
+    gdouble center_y = sy + (std::log(vec[i].second) - std::log(max_val)) /
+                                (std::log(min_val) - std::log(max_val)) *
+                                graph_height;
+    cairo_arc(cr, center_x, center_y, radius, 0, 2 * G_PI);
+    cairo_set_source_rgb(cr, 1.0, 0.3, 0.3);
+    cairo_fill(cr);
+
+    c = wordsBase->alphabet()[vec[i].first];
+    s = localeToUtf8(std::string(1, c));
+    pango_layout_set_text(layout, s.c_str(), -1);
+
+    int text_width, text_height;
+    pango_layout_get_size(layout, &text_width, &text_height);
+
+    gdouble pango_to_pixels = 1.0 / PANGO_SCALE;
+    gdouble t_width = text_width * pango_to_pixels;
+    gdouble t_height = text_height * pango_to_pixels;
+
+    gdouble tx = center_x - t_width / 2;
+    gdouble ty = center_y - t_height / 2;
+
+    cairo_set_source_rgb(cr, 0, 0, 0);
+    cairo_move_to(cr, tx, ty);
+    pango_cairo_show_layout(cr, layout);
+  }
+  g_object_unref(layout);
+
+  return FALSE;
+}
+
 void menu_activate(GtkWidget *widget, ENUM_MENU menu) {
   frame->clickMenu(menu);
 }
@@ -233,15 +353,15 @@ Frame::Frame() : WordsBase() {
 
   m_panedWidget = w1 = gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
   // left part
-
-  w2 = createBox(GTK_ORIENTATION_VERTICAL, 0, createTextView(TEXTVIEW_MAIN),
-                 true, m_status, false);
+  m_box = createBox(GTK_ORIENTATION_VERTICAL, 0, createTextView(TEXTVIEW_MAIN),
+                    true);
+  g_object_ref(m_textviewscrolled[TEXTVIEW_MAIN]);
+  w2 = createBox(GTK_ORIENTATION_VERTICAL, 0, m_box, true, m_status, false);
   gtk_widget_set_size_request(w2, MIN_LEFT_PANEL_WIDTH, -1);
   gtk_paned_pack1(GTK_PANED(w1), w2, FALSE, FALSE);
 
   // right part
-  w2 = createBox(GTK_ORIENTATION_VERTICAL, 3, m_helperUp, false,
-                 w, true);
+  w2 = createBox(GTK_ORIENTATION_VERTICAL, 3, m_helperUp, false, w, true);
   gtk_widget_set_valign(GTK_WIDGET(w), GTK_ALIGN_END);
   gtk_widget_set_size_request(w2, MIN_RIGHT_PANEL_WIDTH, -1);
   gtk_paned_pack2(GTK_PANED(w1), w2, TRUE, FALSE);
@@ -429,7 +549,7 @@ void Frame::clickMenu(ENUM_MENU menu) {
     }
 
     // ==========================================
-    // 2. SCENARIO: FALLBACK TO MAIN m_textView
+    // 2. SCENARIO: FALLBACK TO MAIN m_textview
     // ==========================================
     buffer = tvBuffer();
 
@@ -503,6 +623,7 @@ void Frame::clickMenu(ENUM_MENU menu) {
 }
 
 void Frame::destroy() {
+  g_object_unref(m_textviewscrolled[TEXTVIEW_MAIN]);
   writeConfig(CONFIG_TAGS, WORDS_VERSION, getLanguageIndex(),
               getDictionaryIndex(), m_separatorPosition, m_font[0].get(),
               m_font[1].get(), m_maximized, m_x, m_y, m_width, m_height);
@@ -881,6 +1002,36 @@ void Frame::endJob() {
     // update tags if user searched something
     updateTags(0);
     restoreFocusedState();
+
+    if (m_menuClick == MENU_DICTIONARY_STATISTICS) {
+      gtk_container_remove(GTK_CONTAINER(m_box),
+                           m_textviewscrolled[TEXTVIEW_MAIN]);
+
+      GtkWidget *notebook = gtk_notebook_new();
+      gtk_notebook_set_tab_pos(GTK_NOTEBOOK(notebook), GTK_POS_TOP);
+
+      m_area = gtk_drawing_area_new();
+      int i = -1;
+      for (auto e : {TEXT, VISUALS}) {
+        i++;
+        gtk_notebook_append_page(GTK_NOTEBOOK(notebook),
+                                 i ? m_area : m_textviewscrolled[TEXTVIEW_MAIN],
+                                 createLabel(e));
+      }
+
+      // GtkWidget *tab_label1 = gtk_label_new("Tab 1"); // statistics
+      // gtk_notebook_append_page(GTK_NOTEBOOK(notebook),
+      //                          m_textviewscrolled[TEXTVIEW_MAIN],
+      //                          tab_label1);
+
+      // m_area = gtk_drawing_area_new();
+      // GtkWidget *tab_label2 = gtk_label_new("Tab 2"); // visual data
+      // gtk_notebook_append_page(GTK_NOTEBOOK(notebook), m_area, tab_label2);
+
+      gtk_box_pack_start(GTK_BOX(m_box), notebook, TRUE, TRUE, 0);
+      gtk_widget_show_all(m_box);
+      g_signal_connect(G_OBJECT(m_area), "draw", G_CALLBACK(on_draw), NULL);
+    }
   }
 }
 
@@ -1166,7 +1317,7 @@ StartStopButtonState Frame::getStartStopState() const {
 GtkWidget *Frame::createTextView(ENUM_TEXTVIEW e, ENUM_STRING n) {
   std::string s;
   auto t = m_textview[e] = gtk_text_view_new();
-  auto w = gtk_scrolled_window_new(NULL, NULL);
+  auto w = m_textviewscrolled[e] = gtk_scrolled_window_new(NULL, NULL);
   gtk_container_add(GTK_CONTAINER(w), t);
   gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(t), GTK_WRAP_WORD);
   gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(w), GTK_POLICY_AUTOMATIC,
@@ -1513,7 +1664,7 @@ void Frame::addHelp(ENUM_STRING e) {
   auto w = gtk_label_new("");
   gtk_container_add(GTK_CONTAINER(m_helperUp), w);
   // add(m_helperUp, w, false);
-  //gtk_label_set_justify(GTK_LABEL(w), GTK_JUSTIFY_LEFT);
+  // gtk_label_set_justify(GTK_LABEL(w), GTK_JUSTIFY_LEFT);
   gtk_label_set_justify(GTK_LABEL(w), GTK_JUSTIFY_FILL);
   gtk_label_set_line_wrap(GTK_LABEL(w), TRUE);
   gtk_label_set_line_wrap_mode(GTK_LABEL(w), PANGO_WRAP_WORD_CHAR);

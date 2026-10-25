@@ -33,6 +33,7 @@ using StringString = std::pair<std::string, std::string>;
 
 // Vectors
 using VectorInt = std::vector<int>;
+using VectorDouble = std::vector<double>;
 using VectorVectorInt = std::vector<VectorInt>;
 using VectorBool = std::vector<bool>;
 using VectorStringInt = std::vector<StringInt>;
@@ -131,6 +132,7 @@ public:
   int differentCharacters;
 
   static std::string out;
+  static VectorDouble vd;
   SearchResult(std::string _s, int _length, int _words);
 };
 
@@ -201,3 +203,7 @@ public:
 VString getLocaleWords(const std::string &strUtf8);
 int indexOfOrdered(const std::string &s, const VString &a);
 std::string squareBrackets(int v);
+void cairo_rounded_rectangle(cairo_t *cr, double x, double y, double width,
+                             double height, double radius);
+void hsl_to_rgb(double h, double s, double l, double *r, double *g, double *b);
+void draw_with_hsl_color(cairo_t *cr, double ratio);
