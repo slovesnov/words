@@ -259,3 +259,21 @@ struct Line2 {
     cairo_fill(cr);
   }
 };
+
+struct Graph {
+  Line2 line2;
+  cairo_t *m_cr;
+  Graph() {}
+  void set(cairo_t *cr, double left, double top, double width, double height,
+           double minx, double maxx, double miny, double maxy) {
+    m_cr = cr;
+    cairo_move_to(cr, left, top);
+    cairo_line_to(cr, left, top + height);
+    cairo_line_to(cr, left + width, top + height);
+    cairo_stroke(cr);
+    line2.set(minx, left, maxx, left + width, maxy, top, miny, top + height);
+  }
+  void draw(gdouble x, gdouble y, gdouble radius) {
+    line2.draw(m_cr, x, y, radius);
+  }
+};

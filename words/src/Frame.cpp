@@ -1882,11 +1882,6 @@ void Frame::onDraw(GtkWidget *widget, cairo_t *cr) {
     cairo_set_source_rgb(cr, 0, 0, 0);
 
     graph_height = std::min(height - 2 * margin, width / 2);
-    ty = sy + graph_height;
-    cairo_move_to(cr, margin, margin);
-    cairo_line_to(cr, margin, ty);
-    cairo_line_to(cr, width - margin, ty);
-    cairo_stroke(cr);
 
     // auto lastElement = getWordLengthMap().rbegin();
     min_val = std::numeric_limits<double>::max();
@@ -1899,26 +1894,22 @@ void Frame::onDraw(GtkWidget *widget, cairo_t *cr) {
     }
 
     j = getMaximumWordLength();
+
+    Graph g;
+    g.set(cr, margin, margin, width - 2 * margin, graph_height,1,j, min_val, max_val);
+
     line2.set(1, margin, j, width - margin, min_val, sy + graph_height, max_val,
               sy);
     cyan.set(cr);
     for (auto [length, words] : getWordLengthMap()) {
-      line2.draw(cr, length, words, radius);
-      // // 1=>margin getMaximumWordLength()=>width - margin
-      // center_x = margin + double(length - 1) / (j - 1) * (width - 2 * margin);
-      // // min_val ->ty, max_val -> sy
-      // center_y =
-      //     ty - double(words - min_val) / (max_val - min_val) * graph_height;
-      // cairo_arc(cr, center_x, center_y, radius, 0, 2 * G_PI);
-      // cairo_fill(cr);
+      g.draw( length, words, radius);
+      //line2.draw(cr, length, words, radius);
     }
 
     auto normal = [&y, &v](double x) -> double {
       return y * std::exp(-(x - v[0]) * (x - v[0]) / (2 * v[1])) /
              std::sqrt(2 * G_PI * v[1]);
     };
-    // line2.set(1, margin, j, width - margin, min_val, sy + graph_height, max_val,
-    //           sy);
     pink.set(cr);
     for (i = 1; i <= j; i++) {
       line2.draw(cr, i, normal(i), radius);
