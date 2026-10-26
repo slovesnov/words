@@ -1859,7 +1859,7 @@ void Frame::onDraw(GtkWidget *widget, cairo_t *cr) {
   gint width = gtk_widget_get_allocated_width(widget);
   gint height = gtk_widget_get_allocated_height(widget);
   const int margin = 20;
-  double va, min_val, max_val, ev, disp;
+  double va, min_val, max_val;
   int sy = margin, i, j, x, y, text_width, text_height, graph_height;
   char c;
   std::string s;
@@ -1869,6 +1869,8 @@ void Frame::onDraw(GtkWidget *widget, cairo_t *cr) {
   const gdouble pango_to_pixels = 1.0 / PANGO_SCALE;
   gdouble center_x, center_y, t_width, t_height, radius = 6.0;
   VectorDouble v = SearchResult::vd;
+  Line2 line2;
+  Line line;
 
   cairo_set_source_rgb(cr, 1, 1, 1);
   cairo_paint(cr);
@@ -1908,30 +1910,23 @@ void Frame::onDraw(GtkWidget *widget, cairo_t *cr) {
       cairo_fill(cr);
     }
 
-    //	normal = (x, i) => 100 / Math.sqrt(2 * Math.PI * va[i]) * Math.exp(-((x
-    //- ev[i]) ** 2) / 2 / va[i])
+    auto normal = [&y, &v](double x) -> double {
+      return y * std::exp(-(x - v[0]) * (x - v[0]) / (2 * v[1])) /
+             std::sqrt(2 * G_PI * v[1]);
+    };
+    line2.set(1, margin, j, width - margin, min_val, sy + graph_height, max_val,
+              sy);
     pink.set(cr);
-    ev = v[0];
-    disp = v[1];
-    // pr(ev)
-    Line2 line2(1, margin, j, width - margin, min_val, sy + graph_height,
-               max_val, sy);
     for (i = 1; i <= j; i++) {
-      va = y * std::exp(-(i - ev) * (i - ev) / 2 / disp) /
-           std::sqrt(2 * G_PI * disp);
-      line2.draw(cr, i, va, radius);
-      // cairo_arc(cr, linex.get(i), liney.get(va), radius, 0, 2 * G_PI);
-      // cairo_fill(cr);
+      line2.draw(cr, i, normal(i), radius);
     }
 
+    line.set(0, 1, width - 2 * margin, j);
+    line2.set(0, margin, margin, 2*margin, min_val, sy + graph_height, max_val,
+              sy);
     for (x = 0; x < width - 2 * margin; x++) {
-      // 0 ->1,width - 2*margin->j
-      tx = double(x) * (j - 1) / (width - 2 * margin) + 1;
-      va = y * std::exp(-(tx - ev) * (tx - ev) / 2 / disp) /
-           std::sqrt(2 * G_PI * disp);
-      center_y = ty - double(va - min_val) / (max_val - min_val) * graph_height;
-      cairo_arc(cr, x + margin, center_y, 1, 0, 2 * G_PI);
-      cairo_fill(cr);
+      tx = line.get(x);
+      line2.draw(cr, x, normal(tx), 1);
     }
 
     pango_layout_set_font_description(layout, m_font[FONT_OUT].get());
