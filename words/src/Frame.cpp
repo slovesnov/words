@@ -1910,33 +1910,20 @@ void cairo_set_font_from_pango_desc(cairo_t *cr,
   cairo_set_font_size(cr, size);
 }
 
-double get_gtk3_fractional_scale(GtkWidget* widget) {
-    // 1. Получаем глобальные настройки GTK
-    GtkSettings* settings = gtk_settings_get_default();
-    if (!settings) {
-      pri;
-        return 1.0;
-    }
-
-    gint xft_dpi = 0;
-    // Получаем системный DPI (он хранится умноженным на 1024)
-    g_object_get(settings, "gtk-xft-dpi", &xft_dpi, NULL);
-
-    // 2. Если значение не задано или некорректно, берем стандартные 96 DPI
-    if (xft_dpi <= 0) {
-      pri;
-        return 1.0;
-    }
-
-    double real_dpi = static_cast<double>(xft_dpi) / 1024.0;
-
-    // 3. Высчитываем коэффициент относительно базовых 96 DPI
-    // Например: если real_dpi == 120, то 120 / 96 = 1.25 (масштаб 125%)
-      pri;
-    return real_dpi / 96.0;
-}
-
 void Frame::onDraw(GtkWidget *widget, cairo_t *cr) {
+  PangoLayout* layout = gtk_widget_create_pango_layout(m_textview[TEXTVIEW_MAIN], "125.5");
+
+    // Единственное, что нужно сделать — привязать его к текущему Cairo контексту
+    pango_cairo_update_layout(cr, layout);
+
+    // Рисуем
+    cairo_move_to(cr, 50.0, 50.0);
+    pango_cairo_show_layout(cr, layout);
+
+    // Чистим память (всего одна строка!)
+    g_object_unref(layout);
+
+/*
     PangoLayout* layout = pango_cairo_create_layout(cr);
     
     // 2. ПОЛУЧАЕМ СТИЛЬ ВИДЖЕТА: это вытащит реальный CSS, примененный к интерфейсу
@@ -1969,7 +1956,7 @@ void Frame::onDraw(GtkWidget *widget, cairo_t *cr) {
     // Чистим память
     pango_font_description_free(desc);
     pango_font_description_free(current_theme_font); // Этот указатель тоже нужно освободить
-    g_object_unref(layout);
+    g_object_unref(layout);*/
   }    
 /*
 void Frame::onDraw(GtkWidget *widget, cairo_t *cr) {
