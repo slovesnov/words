@@ -1855,100 +1855,49 @@ void Frame::restoreFocusedState() {
   }
 }
 
-void cairo_set_font_from_pango_desc(cairo_t *cr,
-                                    const PangoFontDescription *desc) {
-  if (!desc)
-    return;
-
-  // 1. Извлекаем семейство шрифта (например, "Arial", "Sans")
-  const char *family = pango_font_description_get_family(desc);
-  if (!family) {
-    family = "Sans"; // Резервный вариант, если семейство не задано
-  }
-
-  // 2. Конвертируем наклон (Slant / Style)
-  cairo_font_slant_t slant = CAIRO_FONT_SLANT_NORMAL;
-  PangoStyle pango_style = pango_font_description_get_style(desc);
-
-  if (pango_style == PANGO_STYLE_ITALIC) {
-    slant = CAIRO_FONT_SLANT_ITALIC;
-  } else if (pango_style == PANGO_STYLE_OBLIQUE) {
-    slant = CAIRO_FONT_SLANT_OBLIQUE;
-  }
-
-  // 3. Конвертируем насыщенность (Weight)
-  cairo_font_weight_t weight = CAIRO_FONT_WEIGHT_NORMAL;
-  PangoWeight pango_weight = pango_font_description_get_weight(desc);
-
-  // В Pango шкала насыщенности от 100 до 1000. Все что >= 700 считается Bold
-  if (pango_weight >= PANGO_WEIGHT_BOLD) {
-    weight = CAIRO_FONT_WEIGHT_BOLD;
-  }
-
-  // Применяем семейство, наклон и жирность в Cairo
-  cairo_select_font_face(cr, family, slant, weight);
-
-  // 4. Расчитываем размер шрифта (Size)
-  double size = 11.0; // Значение по умолчанию
-  gint pango_size = pango_font_description_get_size(desc);
-  //pr(pango_size);
-
-  if (pango_size > 0) {
-    if (pango_font_description_get_size_is_absolute(desc)) {
-      // Если размер задан в абсолютных пикселях (px)
-      size = (double)pango_size / PANGO_SCALE;
-    } else {
-      // Если размер в типографских пунктах (pt), переводим в пиксели.
-      // Стандартное разрешение экрана Pango по умолчанию — 96 DPI.
-      // Формула: пункты * (96 / 72)
-      double points = (double)pango_size / PANGO_SCALE;
-      size = points * (96.0 / 72.0);
-    }
-  }
-
-  // Применяем итоговый размер в пикселях
-  cairo_set_font_size(cr, size);
-}
-
 void Frame::onDraw(GtkWidget *widget, cairo_t *cr) {
   gint width = gtk_widget_get_allocated_width(widget);
   gint height = gtk_widget_get_allocated_height(widget);
-  const int margin = 20;
-  double va, min_val, max_val;
-  int sy = margin, i, j, x, y, text_width, text_height, graph_height;
+  // load font from css settings for textview
+  PangoLayout *layout =
+      gtk_widget_create_pango_layout(m_textview[TEXTVIEW_MAIN], NULL);
+  const gdouble PANGO_TO_PIXELS = 1.0 / PANGO_SCALE;
+  int text_width, text_height;
+  pango_layout_set_text(layout, "Qg", -1);
+  pango_layout_get_size(layout, &text_width, &text_height);
+  const int MARGIN = text_height * PANGO_TO_PIXELS;
+  int sy = MARGIN, i, j, x, y, graph_height, min, max;
   char c;
   std::string s;
-  gdouble tx, ty;
   PangoFontDescription *desc;
-  //load font from css settings for textview
-  PangoLayout *layout = gtk_widget_create_pango_layout(m_textview[TEXTVIEW_MAIN], NULL);
-  const gdouble pango_to_pixels = 1.0 / PANGO_SCALE;
-  gdouble center_x, center_y, t_width, t_height, radius = 6.0;
+  gdouble tx, ty, center_x, center_y, t_width, t_height, radius = 6.0, va,
+                                                         min_val, max_val;
   VectorDouble v = SearchResult::vd;
   Line line;
   cairo_set_source_rgb(cr, 1, 1, 1);
   cairo_paint(cr);
 
-  Color cyan(75, 192, 192), pink(255, 99, 132), black(0, 0, 0);
+  const Color cyan(75, 192, 192), pink(255, 99, 132), black(0, 0, 0);
 
   if (m_menuClick == MENU_WORD_FREQUENCY) {
     black.set(cr);
-    graph_height = std::min(height - 2 * margin, width / 2);
+    graph_height = std::min(height - 2 * MARGIN, width / 2);
+    // pango_cairo_update_layout(cr, layout); // drawxlabel drawylabel
 
-    min_val = std::numeric_limits<double>::max();
-    max_val = 0;
+    min = std::numeric_limits<int>::max();
+    max = 0;
     y = 0;
     for (auto [length, words] : getWordLengthMap()) {
-      min_val = std::min(min_val, double(words));
-      max_val = std::max(max_val, double(words));
+      min = std::min(min, words);
+      max = std::max(max, words);
       y += words;
     }
 
-    j = getMaximumWordLength(); 
+    j = getMaximumWordLength();
 
     Graph g;
-    g.set(cr, margin, margin, width - 2 * margin, graph_height, 1, j, min_val,
-          max_val, margin);
+    g.set(cr, layout, MARGIN, MARGIN, width - 2 * MARGIN, graph_height, 1, j,
+          min, max, MARGIN);
 
     auto normal = [&y, &v](double x) -> double {
       return y * std::exp(-(x - v[0]) * (x - v[0]) / (2 * v[1])) /
@@ -1956,13 +1905,23 @@ void Frame::onDraw(GtkWidget *widget, cairo_t *cr) {
     };
 
     black.set(cr);
-    const int axisy = 6;
-    line.set(0,min_val,axisy - 1,max_val);
-    for (i = 0; i < axisy; i++) {  
-      ty=line.get(i);
-      // ty = min_val + (max_val - min_val) * i / (axisy - 1);
+    //+"," separator
+    pango_layout_set_text(layout, (std::to_string(max) + ",").c_str(), -1);
+    pango_layout_get_size(layout, &text_width, &text_height);
+    tx = text_width * PANGO_TO_PIXELS;
+ 
+    const int axisy = static_cast<int>(std::round(graph_height / tx / 2 + 1));
+    line.set(0, min, axisy - 1, max);
+    for (i = 0; i < axisy; i++) {
+      ty = line.get(i);
       g.drawylabel(ty, intToString(int(ty)));
     }
+
+    pango_layout_set_text(layout,  "00", -1);
+    pango_layout_get_size(layout, &text_width, &text_height);
+    tx = text_width * PANGO_TO_PIXELS;
+    pr(width - 2 * MARGIN,tx);
+ 
 
     for (i = 1; i <= j; i++) {
       if (i % 5 == 1) { // draw labels at first
@@ -1979,8 +1938,8 @@ void Frame::onDraw(GtkWidget *widget, cairo_t *cr) {
     }
 
     pink.set(cr);
-    line.set(0, 1, width - 2 * margin, j);
-    for (x = 0; x < width - 2 * margin; x++) {
+    line.set(0, 1, width - 2 * MARGIN, j);
+    for (x = 0; x < width - 2 * MARGIN; x++) {
       tx = line.get(x);
       g.draw(tx, normal(tx), 1);
     }
@@ -1990,8 +1949,8 @@ void Frame::onDraw(GtkWidget *widget, cairo_t *cr) {
       s = " " + string(e);
       pango_layout_set_text(layout, s.c_str(), -1);
       pango_layout_get_size(layout, &text_width, &text_height);
-      t_width = std::max(t_width, text_width * pango_to_pixels);
-      t_height = std::max(t_height, text_height * pango_to_pixels);
+      t_width = std::max(t_width, text_width * PANGO_TO_PIXELS);
+      t_height = std::max(t_height, text_height * PANGO_TO_PIXELS);
     }
 
     i = -1;
@@ -2003,8 +1962,8 @@ void Frame::onDraw(GtkWidget *widget, cairo_t *cr) {
         cyan.set(cr);
       }
       const int w = 50;
-      x = width - margin - t_width;
-      y = 2 * margin + i * 2 * t_height;
+      x = width - MARGIN - t_width;
+      y = 2 * MARGIN + i * 2 * t_height;
       cairo_rectangle(cr, x - w, y, w, t_height);
       cairo_fill(cr);
 
@@ -2013,7 +1972,7 @@ void Frame::onDraw(GtkWidget *widget, cairo_t *cr) {
       pango_layout_get_size(layout, &text_width, &text_height);
       center_y = y + t_height / 2;
       cairo_set_source_rgb(cr, 0, 0, 0);
-      cairo_move_to(cr, x, center_y - text_height * pango_to_pixels / 2);
+      cairo_move_to(cr, x, center_y - text_height * PANGO_TO_PIXELS / 2);
       pango_cairo_show_layout(cr, layout);
     }
 
@@ -2048,7 +2007,7 @@ void Frame::onDraw(GtkWidget *widget, cairo_t *cr) {
   for (i = 0; i < KEYBOARD_ROWS; i++) {
     auto &rs = settings(SETTINGS_KEYBOARD_ROW1, i);
     for (j = 0; j < int(rs.length()) + (russian && i == 2); j++) {
-      x = margin + (rect_width + row_gap) * j + keyboardrow_shift * i;
+      x = MARGIN + (rect_width + row_gap) * j + keyboardrow_shift * i;
       y = sy + (rect_height + row_gap) * i;
 
       c = j == int(rs.length()) ? '-' : rs[j];
@@ -2069,8 +2028,8 @@ void Frame::onDraw(GtkWidget *widget, cairo_t *cr) {
       pango_layout_set_alignment(layout, PANGO_ALIGN_CENTER);
 
       pango_layout_get_size(layout, &text_width, &text_height);
-      tx = x + (rect_width - text_width * pango_to_pixels) / 2.0;
-      ty = y + (rect_height - text_height * pango_to_pixels) / 2.0;
+      tx = x + (rect_width - text_width * PANGO_TO_PIXELS) / 2.0;
+      ty = y + (rect_height - text_height * PANGO_TO_PIXELS) / 2.0;
 
       cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
       cairo_move_to(cr, tx, ty);
@@ -2081,11 +2040,11 @@ void Frame::onDraw(GtkWidget *widget, cairo_t *cr) {
   pango_layout_set_attributes(layout, NULL);
 
   // margin_radius = k * radius;//space between circles
-  //  a*2*radius+margin_radius*(a-1)+2*radius+2*margin=width
-  //  radius(2*a+k*(a-1))=width-2*margin
+  //  a*2*radius+margin_radius*(a-1)+2*radius+2*MARGIN=width
+  //  radius(2*a+k*(a-1))=width-2*MARGIN
   const double k = .75;
-  radius = (width - 2 * margin) / (2 * a + k * (a - 1));
-  sy += (rect_height + row_gap) * KEYBOARD_ROWS + margin;
+  radius = (width - 2 * MARGIN) / (2 * a + k * (a - 1));
+  sy += (rect_height + row_gap) * KEYBOARD_ROWS + MARGIN;
   graph_height = std::min(height - sy - radius,
                           width / 2.); // sy + graph_height+radius<=height
   ty = sy + graph_height;
@@ -2093,24 +2052,24 @@ void Frame::onDraw(GtkWidget *widget, cairo_t *cr) {
   desc = pango_font_description_copy(m_font[FONT_OUT].get());
   pango_font_description_set_size(desc, radius * PANGO_SCALE);
   pango_layout_set_font_description(layout, desc);
-  cairo_move_to(cr, margin, sy);
-  cairo_line_to(cr, margin, ty);
-  cairo_line_to(cr, width - margin, ty);
+  cairo_move_to(cr, MARGIN, sy);
+  cairo_line_to(cr, MARGIN, ty);
+  cairo_line_to(cr, width - MARGIN, ty);
   cairo_stroke(cr);
 
   // draw y axis text
   cairo_save(cr);
-  cairo_translate(cr, margin, ty);
+  cairo_translate(cr, MARGIN, ty);
   cairo_rotate(cr, -G_PI / 2);
   s = string(LOGARITHM_OF_LETTER_FREQUENCY);
   pango_layout_set_text(layout, s.c_str(), -1);
   pango_layout_get_size(layout, &text_width, &text_height);
-  cairo_move_to(cr, (graph_height - text_width * pango_to_pixels) / 2, 0);
+  cairo_move_to(cr, (graph_height - text_width * PANGO_TO_PIXELS) / 2, 0);
   pango_cairo_show_layout(cr, layout);
   cairo_restore(cr);
 
   for (i = 0; i < a; i++) {
-    center_x = margin + radius + (2 * radius + k * radius) * i;
+    center_x = MARGIN + radius + (2 * radius + k * radius) * i;
     center_y = sy + (std::log(vec[i].second) - std::log(max_val)) /
                         (std::log(min_val) - std::log(max_val)) * graph_height;
     cairo_arc(cr, center_x, center_y, radius, 0, 2 * G_PI);
@@ -2121,8 +2080,8 @@ void Frame::onDraw(GtkWidget *widget, cairo_t *cr) {
     s = localeToUtf8(std::string(1, c));
     pango_layout_set_text(layout, s.c_str(), -1);
     pango_layout_get_size(layout, &text_width, &text_height);
-    t_width = text_width * pango_to_pixels;
-    t_height = text_height * pango_to_pixels;
+    t_width = text_width * PANGO_TO_PIXELS;
+    t_height = text_height * PANGO_TO_PIXELS;
     tx = center_x - t_width / 2;
     ty = center_y - t_height / 2;
     cairo_set_source_rgb(cr, 0, 0, 0);
@@ -2139,7 +2098,7 @@ void Frame::onDraw(GtkWidget *widget, cairo_t *cr) {
     center_y = sy + graph_height * ty;
 
     cairo_move_to(cr, 0, center_y);
-    cairo_line_to(cr, margin, center_y);
+    cairo_line_to(cr, MARGIN, center_y);
     cairo_stroke(cr);
 
     s = std::format("{:.1f}", std::log(min_val) * ty +
@@ -2149,7 +2108,7 @@ void Frame::onDraw(GtkWidget *widget, cairo_t *cr) {
     cairo_rotate(cr, -G_PI / 2);
     pango_layout_set_text(layout, s.c_str(), -1);
     pango_layout_get_size(layout, &text_width, &text_height);
-    cairo_move_to(cr, 0, (margin - text_height * pango_to_pixels) / 2);
+    cairo_move_to(cr, 0, (MARGIN - text_height * PANGO_TO_PIXELS) / 2);
     pango_cairo_show_layout(cr, layout);
     cairo_restore(cr);
   }

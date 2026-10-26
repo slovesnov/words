@@ -14,7 +14,6 @@
 #include <set>
 #include <unordered_map>
 
-
 // Note cann't move this constants to consts.h
 const int LANGUAGES = 2;
 const std::string INVALID_DIFFERENCE = "$";
@@ -245,14 +244,16 @@ struct Line {
 struct Graph {
   Line linex, liney;
   cairo_t *cr;
+  PangoLayout *layout;
   int margin;
   Graph() {}
-  void set(cairo_t *_cr, int left, int top, int width, int height,
-           double minx, double maxx, double miny, double maxy, int _margin,
-           int axisx=0, int axisy=0) {
+  void set(cairo_t *_cr, PangoLayout *_layout, int left, int top, int width,
+           int height, double minx, double maxx, double miny, double maxy,
+           int _margin, int axisx = 0, int axisy = 0) {
     int i;
     double v;
     cr = _cr;
+    layout = _layout;
     margin = _margin;
     linex.set(minx, left, maxx, left + width);
     liney.set(maxy, top, miny, top + height);
@@ -267,8 +268,8 @@ struct Graph {
     cairo_move_to(cr, l, t);
     cairo_line_to(cr, l, b);
     cairo_line_to(cr, r, b);
-    
-    cairo_stroke(cr); 
+
+    cairo_stroke(cr);
 
     for (i = 0; i < axisx; i++) {
       v = minx + (maxx - minx) * i / (axisx - 1);
@@ -280,25 +281,81 @@ struct Graph {
     }
   }
 
-  void draw_text_left_center_v(cairo_t *cr, double x, double y,
-                               const char *text) {
-    cairo_text_extents_t extents;
-    cairo_text_extents(cr, text, &extents);
+  #include <pango/pangocairo.h>
 
-    // X-alignment: Since we want left-aligned, we just account for any
-    // glyph design displacement using extents.x_bearing.
-    double target_x = x - extents.x_bearing;
+// Энумератор для выбора режима горизонтального выравнивания
+enum class HorizontalAlign {
+    Left,
+    Center,
+    Right
+};
 
-    // Y-alignment: To center vertically, we offset the baseline by
-    // exactly half of the text's physical height, taking its bearing into
-    // account.
-    double target_y = y - (extents.y_bearing + extents.height / 2.0);
+void draw_text_v(double x, double y, std::string const &s, HorizontalAlign align) {
+    // 1. Assign the text string to the layout container
+    pango_layout_set_text(layout, s.c_str(), -1);
 
-    // Position and paint
+    // 2. Sync layout dimensions with Cairo context matrix scale changes
+    pango_cairo_update_layout(cr, layout);
+
+    // 3. Retrieve bounding dimensions in raw integer pixels
+    PangoRectangle ink_rect;
+    PangoRectangle logical_rect;
+    pango_layout_get_pixel_extents(layout, &ink_rect, &logical_rect);
+
+    double target_x = x;
+
+    // X-alignment: Вычисляем позицию в зависимости от выбранного режима
+    switch (align) {
+        case HorizontalAlign::Left:
+            // Выравнивание по левому краю с компенсацией отступа глифов
+            target_x = x - ink_rect.x;
+            break;
+
+        case HorizontalAlign::Center:
+            // Выравнивание по центру (по ширине ink_rect для идеальной точности)
+            target_x = x - ink_rect.x - (ink_rect.width / 2.0);
+            break;
+
+        case HorizontalAlign::Right:
+            // Выравнивание по правому краю
+            // Вычитаем ширину и компенсируем внутренний отступ
+            target_x = x - ink_rect.x - ink_rect.width;
+            break;
+    }
+
+    // Y-alignment: Центрирование по вертикали относительно logical_rect
+    double target_y = y - (logical_rect.height / 2.0);
+
+    // 4. Move pen and render through Pango engine
     cairo_move_to(cr, target_x, target_y);
-    cairo_show_text(cr, text);
-  }
+    pango_cairo_show_layout(cr, layout);
+}
+/*
+  void draw_text_left_center_v(double x, double y, const char *text) {
+    // 1. Assign the text string to the layout container
+    pango_layout_set_text(layout, text, -1);
 
+    // 2. Sync layout dimensions with Cairo context matrix scale changes
+    pango_cairo_update_layout(cr, layout);
+
+    // 3. Retrieve bounding dimensions in raw integer pixels
+    PangoRectangle ink_rect;
+    PangoRectangle logical_rect;
+    pango_layout_get_pixel_extents(layout, &ink_rect, &logical_rect);
+
+    // X-alignment: Align left exactly at x, but subtract ink_rect.x
+    // to remove any natural glyph design white space padding.
+    double target_x = x - ink_rect.x;
+
+    // Y-alignment: Since Pango positions from the top-left, we align the
+    // center of the logical box directly over your target 'y' position.
+    double target_y = y - (logical_rect.height / 2.0);
+
+    // 4. Move pen and render through Pango engine
+    cairo_move_to(cr, target_x, target_y);
+    pango_cairo_show_layout(cr, layout);
+  }
+*/
   void drawxlabel(double _x) { // minx...maxx
     double x = snap_to_pixel(linex.get(_x)), y = snap_to_pixel(liney.y2),
            b = snap_to_pixel(y + margin);
@@ -307,7 +364,7 @@ struct Graph {
     cairo_stroke(cr);
 
     std::string s = std::format("{:g}", _x);
-    draw_text_left_center_v(cr, x, y + margin / 2, s.c_str());
+    draw_text_v(x, y + margin / 2, s,HorizontalAlign::Left);
   }
 
   void drawylabel(double _y) { // miny...maxy
@@ -323,7 +380,7 @@ struct Graph {
     cairo_save(cr);
     cairo_translate(cr, x - margin / 2, y);
     cairo_rotate(cr, -G_PI / 2);
-    draw_text_left_center_v(cr, 0, 0, s.c_str());
+    draw_text_v(0, 0, s,HorizontalAlign::Right);
     cairo_restore(cr);
   }
 
