@@ -1855,6 +1855,123 @@ void Frame::restoreFocusedState() {
   }
 }
 
+void cairo_set_font_from_pango_desc(cairo_t *cr,
+                                    const PangoFontDescription *desc) {
+  if (!desc)
+    return;
+
+  // 1. Извлекаем семейство шрифта (например, "Arial", "Sans")
+  const char *family = pango_font_description_get_family(desc);
+  if (!family) {
+    family = "Sans"; // Резервный вариант, если семейство не задано
+  }
+
+  // 2. Конвертируем наклон (Slant / Style)
+  cairo_font_slant_t slant = CAIRO_FONT_SLANT_NORMAL;
+  PangoStyle pango_style = pango_font_description_get_style(desc);
+
+  if (pango_style == PANGO_STYLE_ITALIC) {
+    slant = CAIRO_FONT_SLANT_ITALIC;
+  } else if (pango_style == PANGO_STYLE_OBLIQUE) {
+    slant = CAIRO_FONT_SLANT_OBLIQUE;
+  }
+
+  // 3. Конвертируем насыщенность (Weight)
+  cairo_font_weight_t weight = CAIRO_FONT_WEIGHT_NORMAL;
+  PangoWeight pango_weight = pango_font_description_get_weight(desc);
+
+  // В Pango шкала насыщенности от 100 до 1000. Все что >= 700 считается Bold
+  if (pango_weight >= PANGO_WEIGHT_BOLD) {
+    weight = CAIRO_FONT_WEIGHT_BOLD;
+  }
+
+  // Применяем семейство, наклон и жирность в Cairo
+  cairo_select_font_face(cr, family, slant, weight);
+
+  // 4. Расчитываем размер шрифта (Size)
+  double size = 11.0; // Значение по умолчанию
+  gint pango_size = pango_font_description_get_size(desc);
+  //pr(pango_size);
+
+  if (pango_size > 0) {
+    if (pango_font_description_get_size_is_absolute(desc)) {
+      // Если размер задан в абсолютных пикселях (px)
+      size = (double)pango_size / PANGO_SCALE;
+    } else {
+      // Если размер в типографских пунктах (pt), переводим в пиксели.
+      // Стандартное разрешение экрана Pango по умолчанию — 96 DPI.
+      // Формула: пункты * (96 / 72)
+      double points = (double)pango_size / PANGO_SCALE;
+      size = points * (96.0 / 72.0);
+    }
+  }
+
+  // Применяем итоговый размер в пикселях
+  cairo_set_font_size(cr, size);
+}
+
+double get_gtk3_fractional_scale(GtkWidget* widget) {
+    // 1. Получаем глобальные настройки GTK
+    GtkSettings* settings = gtk_settings_get_default();
+    if (!settings) {
+      pri;
+        return 1.0;
+    }
+
+    gint xft_dpi = 0;
+    // Получаем системный DPI (он хранится умноженным на 1024)
+    g_object_get(settings, "gtk-xft-dpi", &xft_dpi, NULL);
+
+    // 2. Если значение не задано или некорректно, берем стандартные 96 DPI
+    if (xft_dpi <= 0) {
+      pri;
+        return 1.0;
+    }
+
+    double real_dpi = static_cast<double>(xft_dpi) / 1024.0;
+
+    // 3. Высчитываем коэффициент относительно базовых 96 DPI
+    // Например: если real_dpi == 120, то 120 / 96 = 1.25 (масштаб 125%)
+      pri;
+    return real_dpi / 96.0;
+}
+
+void Frame::onDraw(GtkWidget *widget, cairo_t *cr) {
+    PangoLayout* layout = pango_cairo_create_layout(cr);
+    
+    // 2. ПОЛУЧАЕМ СТИЛЬ ВИДЖЕТА: это вытащит реальный CSS, примененный к интерфейсу
+    GtkStyleContext* style_context = gtk_widget_get_style_context(m_textview[TEXTVIEW_MAIN]);
+    
+    // 3. Извлекаем точное описание шрифта, которое сейчас используется в теме оформления
+    PangoFontDescription* current_theme_font = NULL;
+    gtk_style_context_get(style_context, GTK_STATE_FLAG_NORMAL, 
+                          GTK_STYLE_PROPERTY_FONT, &current_theme_font, 
+                          NULL);
+
+    // 4. Модифицируем скопированный шрифт (если вам нужно жестко задать "Monospace 14px")
+    PangoFontDescription* desc = pango_font_description_copy(current_theme_font);
+    //pango_font_description_set_family(desc, "Monospace");
+    
+    // ВАЖНО: используем pango_font_description_set_size БЕЗ абсолютных пикселей,
+    // так как стиль виджета уже настроен на правильное системное отображение!
+    //pango_font_description_set_size(desc, 14.0 * PANGO_SCALE);
+
+    // 5. Применяем и отрисовываем
+    pango_layout_set_font_description(layout, desc);
+    pango_layout_set_text(layout, "dsfdsfdsf", -1);
+  int  width_px, height_px;
+    pango_layout_get_pixel_size(layout, &width_px, &height_px);
+    pr(width_px, height_px);
+    
+    cairo_move_to(cr, 10, 10);
+    pango_cairo_show_layout(cr, layout);
+
+    // Чистим память
+    pango_font_description_free(desc);
+    pango_font_description_free(current_theme_font); // Этот указатель тоже нужно освободить
+    g_object_unref(layout);
+  }    
+/*
 void Frame::onDraw(GtkWidget *widget, cairo_t *cr) {
   gint width = gtk_widget_get_allocated_width(widget);
   gint height = gtk_widget_get_allocated_height(widget);
@@ -1869,17 +1986,44 @@ void Frame::onDraw(GtkWidget *widget, cairo_t *cr) {
   const gdouble pango_to_pixels = 1.0 / PANGO_SCALE;
   gdouble center_x, center_y, t_width, t_height, radius = 6.0;
   VectorDouble v = SearchResult::vd;
-  Line2 line2;
   Line line;
 
   cairo_set_source_rgb(cr, 1, 1, 1);
   cairo_paint(cr);
 
-  Color cyan(75, 192, 192);
-  Color pink(255, 99, 132);
+  Color cyan(75, 192, 192), pink(255, 99, 132), black(0, 0, 0);
 
   if (m_menuClick == MENU_WORD_FREQUENCY) {
-    cairo_set_source_rgb(cr, 0, 0, 0);
+    // auto p = getScaleFactor();
+    // pr(p.first, p.second);
+
+double text_scale = get_gtk3_fractional_scale(widget);
+
+PangoLayout* layout = pango_cairo_create_layout(cr);
+PangoContext* context = pango_layout_get_context(layout);
+
+// Синхронизируем базовый контекст Cairo
+pango_cairo_update_context(cr, context); 
+
+PangoFontDescription* desc = pango_font_description_copy(m_font[FONT_OUT].get());
+
+// 2. Умножаем ваши 14px на вычисленный текстовый коэффициент
+double final_size = 14.0 * text_scale;
+pango_font_description_set_size(desc, final_size * PANGO_SCALE);
+
+pango_layout_set_font_description(layout, desc);
+pango_font_description_free(desc);
+
+    // Monospace 14px
+    //    desc = pango_font_description_copy(m_font[FONT_OUT].get());
+    //  pango_font_description_set_absolute_size(desc, 14.0 * PANGO_SCALE);
+    //  pango_layout_set_font_description(layout, desc);
+    //  pango_font_description_free(desc);
+
+    // cairo_set_font_from_pango_desc(cr, m_font[FONT_OUT].get());
+    // pango_layout_set_font_description(layout, m_font[FONT_OUT].get());
+
+    black.set(cr);
 
     graph_height = std::min(height - 2 * margin, width / 2);
 
@@ -1896,32 +2040,41 @@ void Frame::onDraw(GtkWidget *widget, cairo_t *cr) {
     j = getMaximumWordLength();
 
     Graph g;
-    g.set(cr, margin, margin, width - 2 * margin, graph_height,1,j, min_val, max_val);
-
-    line2.set(1, margin, j, width - margin, min_val, sy + graph_height, max_val,
-              sy);
-    cyan.set(cr);
-    for (auto [length, words] : getWordLengthMap()) {
-      g.draw( length, words, radius);
-      //line2.draw(cr, length, words, radius);
-    }
+    g.set(cr, margin, margin, width - 2 * margin, graph_height, 1, j, min_val,
+          max_val, margin, 0, 0);
 
     auto normal = [&y, &v](double x) -> double {
       return y * std::exp(-(x - v[0]) * (x - v[0]) / (2 * v[1])) /
              std::sqrt(2 * G_PI * v[1]);
     };
-    pink.set(cr);
-    for (i = 1; i <= j; i++) {
-      line2.draw(cr, i, normal(i), radius);
+
+    black.set(cr);
+    const int axisy = 6;
+    for (i = 0; i < axisy; i++) {
+      ty = min_val + (max_val - min_val) * i / (axisy - 1);
+      g.drawylabel(ty, intToString(int(ty)));
     }
 
+    for (i = 1; i <= j; i++) {
+      if (i % 5 == 1) { // draw labels at first
+        black.set(cr);
+        g.drawxlabel(i);
+      }
+      pink.set(cr);
+      g.draw(i, normal(i), radius);
+    }
+
+    cyan.set(cr);
+    for (auto [length, words] : getWordLengthMap()) {
+      g.draw(length, words, radius);
+    }
+
+    pink.set(cr);
     line.set(0, 1, width - 2 * margin, j);
     for (x = 0; x < width - 2 * margin; x++) {
       tx = line.get(x);
-      line2.draw(cr, tx, normal(tx), 1);
+      g.draw(tx, normal(tx), 1);
     }
-
-    pango_layout_set_font_description(layout, m_font[FONT_OUT].get());
 
     t_width = t_height = 0;
     for (auto e : {DATA, NORMAL_DISTRIBUTION_APPROXIMATION}) {
@@ -2094,3 +2247,4 @@ void Frame::onDraw(GtkWidget *widget, cairo_t *cr) {
   pango_font_description_free(desc);
   g_object_unref(layout);
 }
+*/

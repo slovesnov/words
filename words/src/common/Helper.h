@@ -240,40 +240,80 @@ struct Line {
   double get(double x) { return ((y2 - y1) / (x2 - x1)) * (x - x1) + y1; }
 };
 
-struct Line2 {
-  Line linex, liney;
-  Line2() {}
-  Line2(double x11, double y11, double x12, double y12, double x21, double y21,
-        double x22, double y22) {
-    set(x11, y11, x12, y12, x21, y21, x22, y22);
-  }
-
-  void set(double x11, double y11, double x12, double y12, double x21,
-           double y21, double x22, double y22) {
-    linex.set(x11, y11, x12, y12);
-    liney.set(x21, y21, x22, y22);
-  }
-
-  void draw(cairo_t *cr, gdouble x, gdouble y, gdouble radius) {
-    cairo_arc(cr, linex.get(x), liney.get(y), radius, 0, 2 * G_PI);
-    cairo_fill(cr);
-  }
-};
-
 struct Graph {
-  Line2 line2;
-  cairo_t *m_cr;
+  Line linex, liney;
+  cairo_t *cr;
+  int margin;
   Graph() {}
-  void set(cairo_t *cr, double left, double top, double width, double height,
-           double minx, double maxx, double miny, double maxy) {
-    m_cr = cr;
+  void set(cairo_t *_cr, double left, double top, double width, double height,
+           double minx, double maxx, double miny, double maxy, int _margin,
+           int axisx, int axisy) {
+    int i;
+    double v;
+    cr = _cr;
+    margin = _margin;
+    linex.set(minx, left, maxx, left + width);
+    liney.set(maxy, top, miny, top + height);
     cairo_move_to(cr, left, top);
     cairo_line_to(cr, left, top + height);
     cairo_line_to(cr, left + width, top + height);
-    cairo_stroke(cr);
-    line2.set(minx, left, maxx, left + width, maxy, top, miny, top + height);
+    for (i = 0; i < axisx; i++) {
+      v = minx + (maxx - minx) * i / (axisx - 1);
+      drawxlabel(v);
+    }
+    for (i = 0; i < axisy; i++) {
+      v = miny + (maxy - miny) * i / (axisy - 1);
+      drawylabel(v);
+    }
   }
+  void draw_text_left_center_v(cairo_t *cr, double x, double y,
+                               const char *text) {
+    cairo_text_extents_t extents;
+    cairo_text_extents(cr, text, &extents);
+
+    // X-alignment: Since we want left-aligned, we just account for any
+    // glyph design displacement using extents.x_bearing.
+    double target_x = x - extents.x_bearing;
+
+    // Y-alignment: To center vertically, we offset the baseline by
+    // exactly half of the text's physical height, taking its bearing into
+    // account.
+    double target_y = y - (extents.y_bearing + extents.height / 2.0);
+
+    // Position and paint
+    cairo_move_to(cr, target_x, target_y);
+    cairo_show_text(cr, text);
+  }
+
+  void drawxlabel(double _x) { // minx...maxx
+    double x = linex.get(_x), y = liney.y2;
+    cairo_move_to(cr, x, y);
+    cairo_line_to(cr, x, y + margin);
+    cairo_stroke(cr);
+
+    std::string s = std::format("{:g}", _x);
+    draw_text_left_center_v(cr, x, y + margin / 2, s.c_str());
+  }
+
+  void drawylabel(double _y) { // miny...maxy
+    drawylabel(_y, std::format("{:g}", _y));
+  }
+
+  void drawylabel(double _y, std::string const &s) { // miny...maxy
+    double x = linex.y1, y = liney.get(_y);
+    cairo_move_to(cr, x, y);
+    cairo_line_to(cr, x - margin, y);
+    cairo_stroke(cr);
+
+    cairo_save(cr);
+    cairo_translate(cr, x - margin / 2, y);
+    cairo_rotate(cr, -G_PI / 2);
+    draw_text_left_center_v(cr, 0, 0, s.c_str());
+    cairo_restore(cr);
+  }
+
   void draw(gdouble x, gdouble y, gdouble radius) {
-    line2.draw(m_cr, x, y, radius);
+    cairo_arc(cr, linex.get(x), liney.get(y), radius, 0, 2 * G_PI);
+    cairo_fill(cr);
   }
 };
