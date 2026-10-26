@@ -10,8 +10,10 @@
 #define ASLOV_SHORT_LOGGING
 #include "aslov.h"
 #include "enums.h"
+#include <cmath>
 #include <set>
 #include <unordered_map>
+
 
 // Note cann't move this constants to consts.h
 const int LANGUAGES = 2;
@@ -245,18 +247,29 @@ struct Graph {
   cairo_t *cr;
   int margin;
   Graph() {}
-  void set(cairo_t *_cr, double left, double top, double width, double height,
+  void set(cairo_t *_cr, int left, int top, int width, int height,
            double minx, double maxx, double miny, double maxy, int _margin,
-           int axisx, int axisy) {
+           int axisx=0, int axisy=0) {
     int i;
     double v;
     cr = _cr;
     margin = _margin;
     linex.set(minx, left, maxx, left + width);
     liney.set(maxy, top, miny, top + height);
-    cairo_move_to(cr, left, top);
-    cairo_line_to(cr, left, top + height);
-    cairo_line_to(cr, left + width, top + height);
+
+    auto l = snap_to_pixel(left);
+    auto t = snap_to_pixel(top);
+    auto r = l + width;
+    auto b = t + height;
+
+    cairo_set_line_width(cr, 1.0);
+
+    cairo_move_to(cr, l, t);
+    cairo_line_to(cr, l, b);
+    cairo_line_to(cr, r, b);
+    
+    cairo_stroke(cr); 
+
     for (i = 0; i < axisx; i++) {
       v = minx + (maxx - minx) * i / (axisx - 1);
       drawxlabel(v);
@@ -266,6 +279,7 @@ struct Graph {
       drawylabel(v);
     }
   }
+
   void draw_text_left_center_v(cairo_t *cr, double x, double y,
                                const char *text) {
     cairo_text_extents_t extents;
@@ -286,9 +300,10 @@ struct Graph {
   }
 
   void drawxlabel(double _x) { // minx...maxx
-    double x = linex.get(_x), y = liney.y2;
+    double x = snap_to_pixel(linex.get(_x)), y = snap_to_pixel(liney.y2),
+           b = snap_to_pixel(y + margin);
     cairo_move_to(cr, x, y);
-    cairo_line_to(cr, x, y + margin);
+    cairo_line_to(cr, x, b);
     cairo_stroke(cr);
 
     std::string s = std::format("{:g}", _x);
@@ -316,4 +331,6 @@ struct Graph {
     cairo_arc(cr, linex.get(x), liney.get(y), radius, 0, 2 * G_PI);
     cairo_fill(cr);
   }
+
+  static double snap_to_pixel(double val) { return std::floor(val) + 0.5; }
 };

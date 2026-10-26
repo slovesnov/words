@@ -1911,55 +1911,6 @@ void cairo_set_font_from_pango_desc(cairo_t *cr,
 }
 
 void Frame::onDraw(GtkWidget *widget, cairo_t *cr) {
-  PangoLayout* layout = gtk_widget_create_pango_layout(m_textview[TEXTVIEW_MAIN], "125.5");
-
-    // Единственное, что нужно сделать — привязать его к текущему Cairo контексту
-    pango_cairo_update_layout(cr, layout);
-
-    // Рисуем
-    cairo_move_to(cr, 50.0, 50.0);
-    pango_cairo_show_layout(cr, layout);
-
-    // Чистим память (всего одна строка!)
-    g_object_unref(layout);
-
-/*
-    PangoLayout* layout = pango_cairo_create_layout(cr);
-    
-    // 2. ПОЛУЧАЕМ СТИЛЬ ВИДЖЕТА: это вытащит реальный CSS, примененный к интерфейсу
-    GtkStyleContext* style_context = gtk_widget_get_style_context(m_textview[TEXTVIEW_MAIN]);
-    
-    // 3. Извлекаем точное описание шрифта, которое сейчас используется в теме оформления
-    PangoFontDescription* current_theme_font = NULL;
-    gtk_style_context_get(style_context, GTK_STATE_FLAG_NORMAL, 
-                          GTK_STYLE_PROPERTY_FONT, &current_theme_font, 
-                          NULL);
-
-    // 4. Модифицируем скопированный шрифт (если вам нужно жестко задать "Monospace 14px")
-    PangoFontDescription* desc = pango_font_description_copy(current_theme_font);
-    //pango_font_description_set_family(desc, "Monospace");
-    
-    // ВАЖНО: используем pango_font_description_set_size БЕЗ абсолютных пикселей,
-    // так как стиль виджета уже настроен на правильное системное отображение!
-    //pango_font_description_set_size(desc, 14.0 * PANGO_SCALE);
-
-    // 5. Применяем и отрисовываем
-    pango_layout_set_font_description(layout, desc);
-    pango_layout_set_text(layout, "dsfdsfdsf", -1);
-  int  width_px, height_px;
-    pango_layout_get_pixel_size(layout, &width_px, &height_px);
-    pr(width_px, height_px);
-    
-    cairo_move_to(cr, 10, 10);
-    pango_cairo_show_layout(cr, layout);
-
-    // Чистим память
-    pango_font_description_free(desc);
-    pango_font_description_free(current_theme_font); // Этот указатель тоже нужно освободить
-    g_object_unref(layout);*/
-  }    
-/*
-void Frame::onDraw(GtkWidget *widget, cairo_t *cr) {
   gint width = gtk_widget_get_allocated_width(widget);
   gint height = gtk_widget_get_allocated_height(widget);
   const int margin = 20;
@@ -1969,52 +1920,21 @@ void Frame::onDraw(GtkWidget *widget, cairo_t *cr) {
   std::string s;
   gdouble tx, ty;
   PangoFontDescription *desc;
-  PangoLayout *layout = gtk_widget_create_pango_layout(widget, NULL);
+  //load font from css settings for textview
+  PangoLayout *layout = gtk_widget_create_pango_layout(m_textview[TEXTVIEW_MAIN], NULL);
   const gdouble pango_to_pixels = 1.0 / PANGO_SCALE;
   gdouble center_x, center_y, t_width, t_height, radius = 6.0;
   VectorDouble v = SearchResult::vd;
   Line line;
-
   cairo_set_source_rgb(cr, 1, 1, 1);
   cairo_paint(cr);
 
   Color cyan(75, 192, 192), pink(255, 99, 132), black(0, 0, 0);
 
   if (m_menuClick == MENU_WORD_FREQUENCY) {
-    // auto p = getScaleFactor();
-    // pr(p.first, p.second);
-
-double text_scale = get_gtk3_fractional_scale(widget);
-
-PangoLayout* layout = pango_cairo_create_layout(cr);
-PangoContext* context = pango_layout_get_context(layout);
-
-// Синхронизируем базовый контекст Cairo
-pango_cairo_update_context(cr, context); 
-
-PangoFontDescription* desc = pango_font_description_copy(m_font[FONT_OUT].get());
-
-// 2. Умножаем ваши 14px на вычисленный текстовый коэффициент
-double final_size = 14.0 * text_scale;
-pango_font_description_set_size(desc, final_size * PANGO_SCALE);
-
-pango_layout_set_font_description(layout, desc);
-pango_font_description_free(desc);
-
-    // Monospace 14px
-    //    desc = pango_font_description_copy(m_font[FONT_OUT].get());
-    //  pango_font_description_set_absolute_size(desc, 14.0 * PANGO_SCALE);
-    //  pango_layout_set_font_description(layout, desc);
-    //  pango_font_description_free(desc);
-
-    // cairo_set_font_from_pango_desc(cr, m_font[FONT_OUT].get());
-    // pango_layout_set_font_description(layout, m_font[FONT_OUT].get());
-
     black.set(cr);
-
     graph_height = std::min(height - 2 * margin, width / 2);
 
-    // auto lastElement = getWordLengthMap().rbegin();
     min_val = std::numeric_limits<double>::max();
     max_val = 0;
     y = 0;
@@ -2024,11 +1944,11 @@ pango_font_description_free(desc);
       y += words;
     }
 
-    j = getMaximumWordLength();
+    j = getMaximumWordLength(); 
 
     Graph g;
     g.set(cr, margin, margin, width - 2 * margin, graph_height, 1, j, min_val,
-          max_val, margin, 0, 0);
+          max_val, margin);
 
     auto normal = [&y, &v](double x) -> double {
       return y * std::exp(-(x - v[0]) * (x - v[0]) / (2 * v[1])) /
@@ -2037,8 +1957,10 @@ pango_font_description_free(desc);
 
     black.set(cr);
     const int axisy = 6;
-    for (i = 0; i < axisy; i++) {
-      ty = min_val + (max_val - min_val) * i / (axisy - 1);
+    line.set(0,min_val,axisy - 1,max_val);
+    for (i = 0; i < axisy; i++) {  
+      ty=line.get(i);
+      // ty = min_val + (max_val - min_val) * i / (axisy - 1);
       g.drawylabel(ty, intToString(int(ty)));
     }
 
@@ -2234,4 +2156,3 @@ pango_font_description_free(desc);
   pango_font_description_free(desc);
   g_object_unref(layout);
 }
-*/
