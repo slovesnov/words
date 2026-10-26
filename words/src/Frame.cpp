@@ -7,6 +7,7 @@
 
 #include "Frame.h"
 #include "CheckNewVersion.h"
+#include <cmath>
 #include <format>
 #include <magic_enum.hpp>
 
@@ -31,122 +32,7 @@ std::pair<ENUM_MENU, int> MENU_TO_ACCEL_KEY[] = {
 Frame *frame;
 
 gboolean on_draw(GtkWidget *widget, cairo_t *cr, gpointer user_data) {
-  gint width = gtk_widget_get_allocated_width(widget);
-  // gint height = gtk_widget_get_allocated_height(widget);
-
-  cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
-  cairo_paint(cr);
-
-  gdouble rect_width = 50.0;
-  gdouble rect_height = 52.0;
-  gdouble radius = 6.0;
-  gdouble row_gap = 6;
-  gdouble shift = 20;
-  VectorDouble v = SearchResult::vd;
-  bool russian = wordsBase->getDictionaryIndex() == 1;
-
-  PangoLayout *layout = gtk_widget_create_pango_layout(widget, NULL);
-  PangoFontDescription *desc = pango_font_description_from_string("Arial 16");
-  pango_layout_set_font_description(layout, desc);
-  pango_font_description_free(desc);
-
-  double va;
-  int sx = 20, sy = 20, i, j, x, y;
-  char c;
-  std::string s;
-
-  const int a = wordsBase->alphabetSize();
-  IntDouble vec[a];
-  for (i = 0; i < a; i++) {
-    vec[i] = {i, v[i]};
-  }
-  std::sort(vec, vec + a, sortIntDouble);
-
-  auto [min_it, max_it] = std::minmax_element(v.begin(), v.end());
-  double min_val = *min_it;
-  double max_val = *max_it;
-  for (i = 0; i < KEYBOARD_ROWS; i++) {
-    auto &rs = wordsBase->settings(SETTINGS_KEYBOARD_ROW1, i);
-    for (j = 0; j < int(rs.length()) + (russian && i == 2); j++) {
-      x = sx + (rect_width + row_gap) * j + shift * i;
-      y = sy + (rect_height + row_gap) * i;
-
-      c = j == int(rs.length()) ? '-' : rs[j];
-      cairo_rounded_rectangle(cr, x, y, rect_width, rect_height, radius);
-
-      va = v[wordsBase->alphabetIndex(c)];
-      draw_with_hsl_color(cr, va / max_val);
-      cairo_fill_preserve(cr);
-
-      cairo_set_source_rgb(cr, 0.8, 0.8, 0.8);
-      cairo_set_line_width(cr, 2);
-      cairo_stroke(cr);
-
-      std::string letter = localeToUtf8(std::string(1, c));
-      s = std::format("{}<span font_desc='Arial 10'>\n{:.3f}%</span>", letter,
-                      va);
-
-      pango_layout_set_markup(layout, s.c_str(), -1);
-
-      pango_layout_set_alignment(layout, PANGO_ALIGN_CENTER);
-
-      int text_width, text_height;
-      pango_layout_get_size(layout, &text_width, &text_height);
-      gdouble tx = x + (rect_width - ((double)text_width / PANGO_SCALE)) / 2.0;
-      gdouble ty =
-          y + (rect_height - ((double)text_height / PANGO_SCALE)) / 2.0;
-
-      cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
-      cairo_move_to(cr, tx, ty);
-      pango_cairo_show_layout(cr, layout);
-    }
-  }
-
-  pango_layout_set_attributes(layout, NULL);
-  // g_object_unref(layout);
-  // layout = gtk_widget_create_pango_layout(widget, NULL);
-
-  desc = pango_font_description_from_string("Arial Bold 10");
-  pango_layout_set_font_description(layout, desc);
-  pango_font_description_free(desc);
-  const int graph_height = 300;
-  const int cell_width = width / a;
-  sy += (rect_height + row_gap) * KEYBOARD_ROWS + 40;
-  cairo_move_to(cr, sx, sy);
-  cairo_line_to(cr, sx, sy + graph_height);
-  cairo_line_to(cr, width, sy + graph_height);
-  cairo_stroke(cr);
-  radius = 12;
-  for (i = 0; i < a; i++) {
-    gdouble center_x = sx + cell_width * i + radius;
-    // log(min_val) => graph_height, log(max_val) => 0
-    gdouble center_y = sy + (std::log(vec[i].second) - std::log(max_val)) /
-                                (std::log(min_val) - std::log(max_val)) *
-                                graph_height;
-    cairo_arc(cr, center_x, center_y, radius, 0, 2 * G_PI);
-    cairo_set_source_rgb(cr, 1.0, 0.3, 0.3);
-    cairo_fill(cr);
-
-    c = wordsBase->alphabet()[vec[i].first];
-    s = localeToUtf8(std::string(1, c));
-    pango_layout_set_text(layout, s.c_str(), -1);
-
-    int text_width, text_height;
-    pango_layout_get_size(layout, &text_width, &text_height);
-
-    gdouble pango_to_pixels = 1.0 / PANGO_SCALE;
-    gdouble t_width = text_width * pango_to_pixels;
-    gdouble t_height = text_height * pango_to_pixels;
-
-    gdouble tx = center_x - t_width / 2;
-    gdouble ty = center_y - t_height / 2;
-
-    cairo_set_source_rgb(cr, 0, 0, 0);
-    cairo_move_to(cr, tx, ty);
-    pango_cairo_show_layout(cr, layout);
-  }
-  g_object_unref(layout);
-
+  frame->onDraw(widget, cr);
   return FALSE;
 }
 
@@ -614,6 +500,13 @@ void Frame::clickMenu(ENUM_MENU menu) {
     } else {
       m_menuClick = menu;
       b = m_menuClick != MENU_SEARCH;
+      if (m_lastCommandWithTabs) {
+        gtk_container_remove(GTK_CONTAINER(m_notebook),
+                             m_textviewscrolled[TEXTVIEW_MAIN]);
+        gtk_container_remove(GTK_CONTAINER(m_box), m_notebook);
+        add(m_box, m_textviewscrolled[TEXTVIEW_MAIN], true);
+        gtk_widget_show_all(m_box);
+      }
       setHelperPanel(b);
     }
     if (b) {
@@ -1003,32 +896,24 @@ void Frame::endJob() {
     updateTags(0);
     restoreFocusedState();
 
-    if (m_menuClick == MENU_DICTIONARY_STATISTICS) {
+    m_lastCommandWithTabs =
+        oneOf(m_menuClick, MENU_DICTIONARY_STATISTICS, MENU_WORD_FREQUENCY);
+    if (m_lastCommandWithTabs) {
       gtk_container_remove(GTK_CONTAINER(m_box),
                            m_textviewscrolled[TEXTVIEW_MAIN]);
 
-      GtkWidget *notebook = gtk_notebook_new();
-      gtk_notebook_set_tab_pos(GTK_NOTEBOOK(notebook), GTK_POS_TOP);
+      m_notebook = gtk_notebook_new();
+      gtk_notebook_set_tab_pos(GTK_NOTEBOOK(m_notebook), GTK_POS_TOP);
 
       m_area = gtk_drawing_area_new();
       int i = -1;
       for (auto e : {TEXT, VISUALS}) {
         i++;
-        gtk_notebook_append_page(GTK_NOTEBOOK(notebook),
+        gtk_notebook_append_page(GTK_NOTEBOOK(m_notebook),
                                  i ? m_area : m_textviewscrolled[TEXTVIEW_MAIN],
                                  createLabel(e));
       }
-
-      // GtkWidget *tab_label1 = gtk_label_new("Tab 1"); // statistics
-      // gtk_notebook_append_page(GTK_NOTEBOOK(notebook),
-      //                          m_textviewscrolled[TEXTVIEW_MAIN],
-      //                          tab_label1);
-
-      // m_area = gtk_drawing_area_new();
-      // GtkWidget *tab_label2 = gtk_label_new("Tab 2"); // visual data
-      // gtk_notebook_append_page(GTK_NOTEBOOK(notebook), m_area, tab_label2);
-
-      gtk_box_pack_start(GTK_BOX(m_box), notebook, TRUE, TRUE, 0);
+      gtk_box_pack_start(GTK_BOX(m_box), m_notebook, TRUE, TRUE, 0);
       gtk_widget_show_all(m_box);
       g_signal_connect(G_OBJECT(m_area), "draw", G_CALLBACK(on_draw), NULL);
     }
@@ -1968,4 +1853,257 @@ void Frame::restoreFocusedState() {
     gtk_editable_select_region(GTK_EDITABLE(m_focused_widget), m_sel_start,
                                m_sel_end);
   }
+}
+
+void Frame::onDraw(GtkWidget *widget, cairo_t *cr) {
+  gint width = gtk_widget_get_allocated_width(widget);
+  gint height = gtk_widget_get_allocated_height(widget);
+  const int margin = 20;
+  double va, min_val, max_val, ev, disp;
+  int sy = margin, i, j, x, y, text_width, text_height, graph_height;
+  char c;
+  std::string s;
+  gdouble tx, ty;
+  PangoFontDescription *desc;
+  PangoLayout *layout = gtk_widget_create_pango_layout(widget, NULL);
+  const gdouble pango_to_pixels = 1.0 / PANGO_SCALE;
+  gdouble center_x, center_y, t_width, t_height, radius = 6.0;
+  VectorDouble v = SearchResult::vd;
+
+  cairo_set_source_rgb(cr, 1, 1, 1);
+  cairo_paint(cr);
+
+  Color cyan(75, 192, 192);
+  Color pink(255, 99, 132);
+
+  if (m_menuClick == MENU_WORD_FREQUENCY) {
+    cairo_set_source_rgb(cr, 0, 0, 0);
+
+    graph_height = std::min(height - 2 * margin, width / 2);
+    ty = sy + graph_height;
+    cairo_move_to(cr, margin, margin);
+    cairo_line_to(cr, margin, ty);
+    cairo_line_to(cr, width - margin, ty);
+    cairo_stroke(cr);
+
+    // auto lastElement = getWordLengthMap().rbegin();
+    min_val = std::numeric_limits<double>::max();
+    max_val = 0;
+    y = 0;
+    for (auto [length, words] : getWordLengthMap()) {
+      min_val = std::min(min_val, double(words));
+      max_val = std::max(max_val, double(words));
+      y += words;
+    }
+
+    j = getMaximumWordLength();
+    cyan.set(cr);
+    for (auto [length, words] : getWordLengthMap()) {
+      // 1=>margin getMaximumWordLength()=>width - margin
+      center_x = margin + double(length - 1) / (j - 1) * (width - 2 * margin);
+      // min_val ->ty, max_val -> sy
+      center_y =
+          ty - double(words - min_val) / (max_val - min_val) * graph_height;
+      cairo_arc(cr, center_x, center_y, radius, 0, 2 * G_PI);
+      cairo_fill(cr);
+    }
+
+    //	normal = (x, i) => 100 / Math.sqrt(2 * Math.PI * va[i]) * Math.exp(-((x
+    //- ev[i]) ** 2) / 2 / va[i])
+    pink.set(cr);
+    ev = v[0];
+    disp = v[1];
+    // pr(ev)
+    Line2 line2(1, margin, j, width - margin, min_val, sy + graph_height,
+               max_val, sy);
+    for (i = 1; i <= j; i++) {
+      va = y * std::exp(-(i - ev) * (i - ev) / 2 / disp) /
+           std::sqrt(2 * G_PI * disp);
+      line2.draw(cr, i, va, radius);
+      // cairo_arc(cr, linex.get(i), liney.get(va), radius, 0, 2 * G_PI);
+      // cairo_fill(cr);
+    }
+
+    for (x = 0; x < width - 2 * margin; x++) {
+      // 0 ->1,width - 2*margin->j
+      tx = double(x) * (j - 1) / (width - 2 * margin) + 1;
+      va = y * std::exp(-(tx - ev) * (tx - ev) / 2 / disp) /
+           std::sqrt(2 * G_PI * disp);
+      center_y = ty - double(va - min_val) / (max_val - min_val) * graph_height;
+      cairo_arc(cr, x + margin, center_y, 1, 0, 2 * G_PI);
+      cairo_fill(cr);
+    }
+
+    pango_layout_set_font_description(layout, m_font[FONT_OUT].get());
+
+    t_width = t_height = 0;
+    for (auto e : {DATA, NORMAL_DISTRIBUTION_APPROXIMATION}) {
+      s = " " + string(e);
+      pango_layout_set_text(layout, s.c_str(), -1);
+      pango_layout_get_size(layout, &text_width, &text_height);
+      t_width = std::max(t_width, text_width * pango_to_pixels);
+      t_height = std::max(t_height, text_height * pango_to_pixels);
+    }
+
+    i = -1;
+    for (auto e : {DATA, NORMAL_DISTRIBUTION_APPROXIMATION}) {
+      i++;
+      if (i) {
+        pink.set(cr);
+      } else {
+        cyan.set(cr);
+      }
+      const int w = 50;
+      x = width - margin - t_width;
+      y = 2 * margin + i * 2 * t_height;
+      cairo_rectangle(cr, x - w, y, w, t_height);
+      cairo_fill(cr);
+
+      s = " " + string(e);
+      pango_layout_set_text(layout, s.c_str(), -1);
+      pango_layout_get_size(layout, &text_width, &text_height);
+      center_y = y + t_height / 2;
+      cairo_set_source_rgb(cr, 0, 0, 0);
+      cairo_move_to(cr, x, center_y - text_height * pango_to_pixels / 2);
+      pango_cairo_show_layout(cr, layout);
+    }
+
+    g_object_unref(layout);
+
+    return;
+  }
+
+  gdouble rect_width = 50.0;
+  gdouble rect_height = 52.0;
+  gdouble row_gap = 6;
+  gdouble keyboardrow_shift = 20;
+  bool russian = getDictionaryIndex() == 1;
+  const int a = alphabetSize();
+  desc = pango_font_description_copy(m_font[FONT_OUT].get());
+  const char *family_raw =
+      pango_font_description_get_family(m_font[FONT_OUT].get());
+
+  pango_font_description_set_size(desc, 16 * PANGO_SCALE);
+  pango_layout_set_font_description(layout, desc);
+  pango_font_description_free(desc);
+
+  IntDouble vec[a];
+  for (i = 0; i < a; i++) {
+    vec[i] = {i, v[i]};
+  }
+  std::sort(vec, vec + a, sortIntDouble);
+
+  auto [min_it, max_it] = std::minmax_element(v.begin(), v.end());
+  min_val = *min_it;
+  max_val = *max_it;
+  for (i = 0; i < KEYBOARD_ROWS; i++) {
+    auto &rs = settings(SETTINGS_KEYBOARD_ROW1, i);
+    for (j = 0; j < int(rs.length()) + (russian && i == 2); j++) {
+      x = margin + (rect_width + row_gap) * j + keyboardrow_shift * i;
+      y = sy + (rect_height + row_gap) * i;
+
+      c = j == int(rs.length()) ? '-' : rs[j];
+      cairo_rounded_rectangle(cr, x, y, rect_width, rect_height, radius);
+
+      va = v[alphabetIndex(c)];
+      draw_with_hsl_color(cr, va / max_val);
+      cairo_fill_preserve(cr);
+
+      cairo_set_source_rgb(cr, 0.8, 0.8, 0.8);
+      cairo_set_line_width(cr, 2);
+      cairo_stroke(cr);
+
+      s = std::format("{}<span font_desc='{} 10'>\n{:.3f}%</span>",
+                      localeToUtf8(std::string(1, c)), family_raw, va);
+
+      pango_layout_set_markup(layout, s.c_str(), -1);
+      pango_layout_set_alignment(layout, PANGO_ALIGN_CENTER);
+
+      pango_layout_get_size(layout, &text_width, &text_height);
+      tx = x + (rect_width - text_width * pango_to_pixels) / 2.0;
+      ty = y + (rect_height - text_height * pango_to_pixels) / 2.0;
+
+      cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+      cairo_move_to(cr, tx, ty);
+      pango_cairo_show_layout(cr, layout);
+    }
+  }
+
+  pango_layout_set_attributes(layout, NULL);
+
+  // margin_radius = k * radius;//space between circles
+  //  a*2*radius+margin_radius*(a-1)+2*radius+2*margin=width
+  //  radius(2*a+k*(a-1))=width-2*margin
+  const double k = .75;
+  radius = (width - 2 * margin) / (2 * a + k * (a - 1));
+  sy += (rect_height + row_gap) * KEYBOARD_ROWS + margin;
+  graph_height = std::min(height - sy - radius,
+                          width / 2.); // sy + graph_height+radius<=height
+  ty = sy + graph_height;
+
+  desc = pango_font_description_copy(m_font[FONT_OUT].get());
+  pango_font_description_set_size(desc, radius * PANGO_SCALE);
+  pango_layout_set_font_description(layout, desc);
+  cairo_move_to(cr, margin, sy);
+  cairo_line_to(cr, margin, ty);
+  cairo_line_to(cr, width - margin, ty);
+  cairo_stroke(cr);
+
+  // draw y axis text
+  cairo_save(cr);
+  cairo_translate(cr, margin, ty);
+  cairo_rotate(cr, -G_PI / 2);
+  s = string(LOGARITHM_OF_LETTER_FREQUENCY);
+  pango_layout_set_text(layout, s.c_str(), -1);
+  pango_layout_get_size(layout, &text_width, &text_height);
+  cairo_move_to(cr, (graph_height - text_width * pango_to_pixels) / 2, 0);
+  pango_cairo_show_layout(cr, layout);
+  cairo_restore(cr);
+
+  for (i = 0; i < a; i++) {
+    center_x = margin + radius + (2 * radius + k * radius) * i;
+    center_y = sy + (std::log(vec[i].second) - std::log(max_val)) /
+                        (std::log(min_val) - std::log(max_val)) * graph_height;
+    cairo_arc(cr, center_x, center_y, radius, 0, 2 * G_PI);
+    cairo_set_source_rgb(cr, 1.0, 0.3, 0.3);
+    cairo_fill(cr);
+
+    c = alphabet()[vec[i].first];
+    s = localeToUtf8(std::string(1, c));
+    pango_layout_set_text(layout, s.c_str(), -1);
+    pango_layout_get_size(layout, &text_width, &text_height);
+    t_width = text_width * pango_to_pixels;
+    t_height = text_height * pango_to_pixels;
+    tx = center_x - t_width / 2;
+    ty = center_y - t_height / 2;
+    cairo_set_source_rgb(cr, 0, 0, 0);
+    cairo_move_to(cr, tx, ty);
+    pango_cairo_show_layout(cr, layout);
+  }
+
+  cairo_set_source_rgb(cr, 0, 0, 0);
+  // pango_font_description_set_size(desc, radius *.5 * PANGO_SCALE);
+  // pango_layout_set_font_description(layout, desc);
+  const int rows = 5;
+  for (i = 0; i < rows; i++) {
+    ty = double(i) / (rows - 1);
+    center_y = sy + graph_height * ty;
+
+    cairo_move_to(cr, 0, center_y);
+    cairo_line_to(cr, margin, center_y);
+    cairo_stroke(cr);
+
+    s = std::format("{:.1f}", std::log(min_val) * ty +
+                                  std::log(max_val) * (1 - ty) - std::log(100));
+    cairo_save(cr);
+    cairo_translate(cr, 0, center_y);
+    cairo_rotate(cr, -G_PI / 2);
+    pango_layout_set_text(layout, s.c_str(), -1);
+    pango_layout_get_size(layout, &text_width, &text_height);
+    cairo_move_to(cr, 0, (margin - text_height * pango_to_pixels) / 2);
+    pango_cairo_show_layout(cr, layout);
+    cairo_restore(cr);
+  }
+  pango_font_description_free(desc);
+  g_object_unref(layout);
 }

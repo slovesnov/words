@@ -109,7 +109,7 @@ const LookupTable<ENUM_MENU, bool (WordsBase::*)(const std::string &)>
 #include "cgi.h"
 #endif
 
-// #define ONE_THREADgf
+// #define ONE_THREAD
 
 WordsBase *wordsBase;
 
@@ -1557,8 +1557,6 @@ void WordsBase::wordFrequency(int nthread) {
 
   std::sort(v[0].begin(), v[0].end(),
             [](auto &a, auto &b) { return a.second > b.second; });
-  std::sort(v[1].begin(), v[1].end(),
-            [](auto &a, auto &b) { return a.first < b.first; });
 
   size_t w = intToString(v[0][0].second).size(); // max len
   int sz = getDictionary().size();
@@ -1601,6 +1599,7 @@ void WordsBase::wordFrequency(int nthread) {
     SearchResult::out += std::format(
         "\n{} {:.3f}", string(a), i ? (i == 1 ? std::sqrt(disp) : disp) : ev);
   }
+  SearchResult::vd = {ev, disp};
 }
 
 void WordsBase::checkDictionary(int nthread) {

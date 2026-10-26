@@ -20,7 +20,7 @@ const int STACK_TRACE_DEPTH = 5;
 
 using Dictionary = VString;
 template <typename T>
-using PairVectorIterators = std::pair<typename std::vector<T>::const_iterator, 
+using PairVectorIterators = std::pair<typename std::vector<T>::const_iterator,
                                       typename std::vector<T>::const_iterator>;
 using uchar = unsigned char;
 using TwoStringVectors = std::array<VString, 2>;
@@ -207,3 +207,55 @@ void cairo_rounded_rectangle(cairo_t *cr, double x, double y, double width,
                              double height, double radius);
 void hsl_to_rgb(double h, double s, double l, double *r, double *g, double *b);
 void draw_with_hsl_color(cairo_t *cr, double ratio);
+
+struct Color {
+  double r, g, b;
+
+  Color(int r_255, int g_255, int b_255) {
+    r = r_255 / 255.0;
+    g = g_255 / 255.0;
+    b = b_255 / 255.0;
+  }
+
+  Color(double r_val, double g_val, double b_val)
+      : r(r_val), g(g_val), b(b_val) {}
+
+  void set(cairo_t *cr) { cairo_set_source_rgb(cr, r, g, b); }
+};
+
+struct Line {
+  double x1, y1, x2, y2;
+  Line() {}
+  Line(double _x1, double _y1, double _x2, double _y2) {
+    set(_x1, _y1, _x2, _y2);
+  }
+
+  void set(double _x1, double _y1, double _x2, double _y2) {
+    x1 = _x1;
+    y1 = _y1;
+    x2 = _x2;
+    y2 = _y2;
+  }
+
+  double get(double x) { return ((y2 - y1) / (x2 - x1)) * (x - x1) + y1; }
+};
+
+struct Line2 {
+  Line linex, liney;
+  Line2() {}
+  Line2(double x11, double y11, double x12, double y12, double x21, double y21,
+        double x22, double y22) {
+    set(x11, y11, x12, y12, x21, y21, x22, y22);
+  }
+
+  void set(double x11, double y11, double x12, double y12, double x21,
+           double y21, double x22, double y22) {
+    linex.set(x11, y11, x12, y12);
+    liney.set(x21, y21, x22, y22);
+  }
+
+  void draw(cairo_t *cr, gdouble x, gdouble y, gdouble radius) {
+    cairo_arc(cr, linex.get(x), liney.get(y), radius, 0, 2 * G_PI);
+    cairo_fill(cr);
+  }
+};

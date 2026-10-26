@@ -7,6 +7,7 @@
 
 #include "Helper.h"
 #include "WordsBase.h"
+#include <cmath>
 #ifndef NDEBUG
 #include <stacktrace>
 #endif

@@ -34,12 +34,13 @@ class Frame : WordsBase {
   GtkWidget *m_sortlist;
   GtkWidget *m_box;
   GtkWidget *m_area;
+  GtkWidget *m_notebook;
   SafePangoFontDesc m_font[FONT_SIZE];
 
   std::chrono::steady_clock::time_point last_click_time[BUTTON_SIZE]{};
 
   MapMenu m_menuMap;
-  bool m_lockSignals;
+  bool m_lockSignals,m_lastCommandWithTabs=false;
   std::jthread m_thread, m_managerThread;
   CheckNewVersion m_newVersion;
   guint m_debounceTimerId = 0;
@@ -285,4 +286,5 @@ public:
   bool isValid() const;
   void captureFocusedState();
   void restoreFocusedState();
+  void onDraw(GtkWidget *widget, cairo_t *cr);
 };
