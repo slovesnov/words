@@ -221,7 +221,7 @@ struct Color {
   Color(double r_val, double g_val, double b_val)
       : r(r_val), g(g_val), b(b_val) {}
 
-  void set(cairo_t *cr) { cairo_set_source_rgb(cr, r, g, b); }
+  void set(cairo_t *cr) const { cairo_set_source_rgb(cr, r, g, b); }
 };
 
 struct Line {
@@ -247,6 +247,13 @@ struct Graph {
   PangoLayout *layout;
   int margin;
   Graph() {}
+
+  void set(cairo_t *_cr, PangoLayout *_layout, int left, int top, int width,
+           int height, const Line &line, double miny, double maxy, int _margin,
+           int axisx = 0, int axisy = 0) {
+linex=line;
+           }
+
   void set(cairo_t *_cr, PangoLayout *_layout, int left, int top, int width,
            int height, double minx, double maxx, double miny, double maxy,
            int _margin, int axisx = 0, int axisy = 0) {
@@ -281,16 +288,10 @@ struct Graph {
     }
   }
 
-  #include <pango/pangocairo.h>
+  enum class Align { Start, Center, End };
 
-// Энумератор для выбора режима горизонтального выравнивания
-enum class HorizontalAlign {
-    Left,
-    Center,
-    Right
-};
-
-void draw_text_v(double x, double y, std::string const &s, HorizontalAlign align) {
+  void draw_text(double x, double y, std::string const &s, Align h_align,
+                 Align v_align) {
     // 1. Assign the text string to the layout container
     pango_layout_set_text(layout, s.c_str(), -1);
 
@@ -302,85 +303,80 @@ void draw_text_v(double x, double y, std::string const &s, HorizontalAlign align
     PangoRectangle logical_rect;
     pango_layout_get_pixel_extents(layout, &ink_rect, &logical_rect);
 
+    // --- Horizontal Alignment ---
     double target_x = x;
+    switch (h_align) {
+    case Align::Start: // Left edge
+      target_x = x - ink_rect.x;
+      break;
 
-    // X-alignment: Вычисляем позицию в зависимости от выбранного режима
-    switch (align) {
-        case HorizontalAlign::Left:
-            // Выравнивание по левому краю с компенсацией отступа глифов
-            target_x = x - ink_rect.x;
-            break;
+    case Align::Center: // Center along X-axis
+      target_x = x - ink_rect.x - (ink_rect.width / 2.0);
+      break;
 
-        case HorizontalAlign::Center:
-            // Выравнивание по центру (по ширине ink_rect для идеальной точности)
-            target_x = x - ink_rect.x - (ink_rect.width / 2.0);
-            break;
-
-        case HorizontalAlign::Right:
-            // Выравнивание по правому краю
-            // Вычитаем ширину и компенсируем внутренний отступ
-            target_x = x - ink_rect.x - ink_rect.width;
-            break;
+    case Align::End: // Right edge
+      target_x = x - ink_rect.x - ink_rect.width;
+      break;
     }
 
-    // Y-alignment: Центрирование по вертикали относительно logical_rect
-    double target_y = y - (logical_rect.height / 2.0);
+    // --- Vertical Alignment ---
+    double target_y = y;
+    switch (v_align) {
+    case Align::Start: // Top edge
+      target_y = y - ink_rect.y;
+      break;
 
-    // 4. Move pen and render through Pango engine
-    cairo_move_to(cr, target_x, target_y);
-    pango_cairo_show_layout(cr, layout);
-}
-/*
-  void draw_text_left_center_v(double x, double y, const char *text) {
-    // 1. Assign the text string to the layout container
-    pango_layout_set_text(layout, text, -1);
+    case Align::Center: // Center along Y-axis
+      target_y = y - ink_rect.y - (ink_rect.height / 2.0);
+      break;
 
-    // 2. Sync layout dimensions with Cairo context matrix scale changes
-    pango_cairo_update_layout(cr, layout);
+    case Align::End: // Bottom edge
+      target_y = y - ink_rect.y - ink_rect.height;
+      break;
+    }
 
-    // 3. Retrieve bounding dimensions in raw integer pixels
-    PangoRectangle ink_rect;
-    PangoRectangle logical_rect;
-    pango_layout_get_pixel_extents(layout, &ink_rect, &logical_rect);
-
-    // X-alignment: Align left exactly at x, but subtract ink_rect.x
-    // to remove any natural glyph design white space padding.
-    double target_x = x - ink_rect.x;
-
-    // Y-alignment: Since Pango positions from the top-left, we align the
-    // center of the logical box directly over your target 'y' position.
-    double target_y = y - (logical_rect.height / 2.0);
-
-    // 4. Move pen and render through Pango engine
     cairo_move_to(cr, target_x, target_y);
     pango_cairo_show_layout(cr, layout);
   }
-*/
+
   void drawxlabel(double _x) { // minx...maxx
-    double x = snap_to_pixel(linex.get(_x)), y = snap_to_pixel(liney.y2),
-           b = snap_to_pixel(y + margin);
+    double x = snap_to_pixel(linex.get(_x));
+    double y = snap_to_pixel(bottom());
+    double b = snap_to_pixel(y + margin);
     cairo_move_to(cr, x, y);
     cairo_line_to(cr, x, b);
     cairo_stroke(cr);
 
     std::string s = std::format("{:g}", _x);
-    draw_text_v(x, y + margin / 2, s,HorizontalAlign::Left);
+    draw_text(x, y + margin / 2, s, Align::Start, Align::Center);
   }
 
   void drawylabel(double _y) { // miny...maxy
     drawylabel(_y, std::format("{:g}", _y));
   }
 
+  static const int MARGIN = 3;
+
   void drawylabel(double _y, std::string const &s) { // miny...maxy
-    double x = linex.y1, y = liney.get(_y);
+    double x = snap_to_pixel(left());
+    double y = snap_to_pixel(liney.get(_y));
+    double x1 = snap_to_pixel(left() - margin);
     cairo_move_to(cr, x, y);
-    cairo_line_to(cr, x - margin, y);
+    cairo_line_to(cr, x1, y);
     cairo_stroke(cr);
 
     cairo_save(cr);
-    cairo_translate(cr, x - margin / 2, y);
+    cairo_translate(cr, x - margin / 2, y + MARGIN);
     cairo_rotate(cr, -G_PI / 2);
-    draw_text_v(0, 0, s,HorizontalAlign::Right);
+    draw_text(0, 0, s, Align::End, Align::Center);
+    cairo_restore(cr);
+  }
+
+  void axisy(std::string const &s) {
+    cairo_save(cr);
+    cairo_translate(cr, left() + MARGIN, centery());
+    cairo_rotate(cr, -G_PI / 2);
+    draw_text(0, 0, s, Align::Center, Align::Start);
     cairo_restore(cr);
   }
 
@@ -390,4 +386,13 @@ void draw_text_v(double x, double y, std::string const &s, HorizontalAlign align
   }
 
   static double snap_to_pixel(double val) { return std::floor(val) + 0.5; }
+
+  int left() const { return linex.y1; }
+  int right() const { return linex.y2; }
+  int width() const { return right() - left(); }
+  int top() const { return liney.y1; }
+  int bottom() const { return liney.y2; }
+  int height() const { return bottom() - top(); }
+  double centerx() const { return (left() + right()) / 2.; }
+  double centery() const { return (top() + bottom()) / 2.; }
 };

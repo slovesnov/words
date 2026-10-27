@@ -199,3 +199,4 @@ visuals
 logarithm of letter frequency
 data
 normal distribution approximation
+word count
