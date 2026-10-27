@@ -500,13 +500,6 @@ void Frame::clickMenu(ENUM_MENU menu) {
     } else {
       m_menuClick = menu;
       b = m_menuClick != MENU_SEARCH;
-      if (m_lastCommandWithTabs) {
-        gtk_container_remove(GTK_CONTAINER(m_notebook),
-                             m_textviewscrolled[TEXTVIEW_MAIN]);
-        gtk_container_remove(GTK_CONTAINER(m_box), m_notebook);
-        add(m_box, m_textviewscrolled[TEXTVIEW_MAIN], true);
-        gtk_widget_show_all(m_box);
-      }
       setHelperPanel(b);
     }
     if (b) {
@@ -1482,6 +1475,14 @@ void Frame::job(ENUM_JOB_TYPE e) {
   }
 
   if (isValid()) {
+    if (e == JOB_TYPE_FULL && m_lastCommandWithTabs) {
+      gtk_container_remove(GTK_CONTAINER(m_notebook),
+                           m_textviewscrolled[TEXTVIEW_MAIN]);
+      gtk_container_remove(GTK_CONTAINER(m_box), m_notebook);
+      add(m_box, m_textviewscrolled[TEXTVIEW_MAIN], true);
+      gtk_widget_show_all(m_box);
+    }
+
     clear(e);
     if (!prepare()) {
       m_end = clock();
@@ -1856,6 +1857,18 @@ void Frame::restoreFocusedState() {
 }
 
 void Frame::onDraw(GtkWidget *widget, cairo_t *cr) {
+  if (gtk_widget_in_destruction(widget)) {
+    pri;
+    return;
+  }
+
+  GtkAllocation alloc;
+  gtk_widget_get_allocation(widget, &alloc);
+  if (alloc.width <= 0 || alloc.height <= 0) {
+    pri;
+    return;
+  }
+
   gint width = gtk_widget_get_allocated_width(widget);
   gint height = gtk_widget_get_allocated_height(widget);
   // load font from css settings for textview
@@ -1866,12 +1879,13 @@ void Frame::onDraw(GtkWidget *widget, cairo_t *cr) {
   pango_layout_set_text(layout, "Qg", -1);
   pango_layout_get_size(layout, &text_width, &text_height);
   const int MARGIN = text_height * PANGO_TO_PIXELS;
+  const int W = width - 2 * MARGIN;
   int sy = MARGIN, i, j, x, y, graph_height, min, max;
   std::string s, s1;
   gdouble tx, ty, t_width, t_height, radius = 6.0, va, min_val, max_val;
   VectorDouble v = SearchResult::vd;
   Graph g;
-  Line line;
+  Line line, line1;
   const Color cyan(75, 192, 192), pink(255, 99, 132), black(0, 0, 0);
   cairo_set_source_rgb(cr, 1, 1, 1);
   cairo_paint(cr);
@@ -1891,8 +1905,7 @@ void Frame::onDraw(GtkWidget *widget, cairo_t *cr) {
 
     j = getMaximumWordLength();
 
-    g.set(cr, layout, MARGIN, MARGIN, width - 2 * MARGIN, graph_height, 1, j,
-          min, max, MARGIN);
+    g.set(cr, layout, MARGIN, MARGIN, W, graph_height, 1, j, min, max, MARGIN);
     g.axisy(string(WORD_COUNT));
 
     auto normal = [&y, &v](double x) -> double {
@@ -1902,23 +1915,15 @@ void Frame::onDraw(GtkWidget *widget, cairo_t *cr) {
 
     black.set(cr);
     //+"," separator
-    pango_layout_set_text(layout, (std::to_string(max) + ",").c_str(), -1);
-    pango_layout_get_size(layout, &text_width, &text_height);
-    tx = text_width * PANGO_TO_PIXELS;
-
-    const int axisy = static_cast<int>(std::round(graph_height / tx / 2 + 1));
+    s = std::to_string(max) + ",";
+    const int axisy = g.nLabelsY(s);
     line.set(0, min, axisy - 1, max);
     for (i = 0; i < axisy; i++) {
-      ty = line.y(i);
+      ty = line(i);
       g.drawylabel(ty, intToString(int(ty)));
     }
 
-    pango_layout_set_text(layout, "00", -1);
-    pango_layout_get_size(layout, &text_width, &text_height);
-    tx = text_width * PANGO_TO_PIXELS;
-    const int dx =
-        static_cast<int>(std::round(j * tx / (width - 2 * MARGIN) * 4));
-
+    const int dx = g.nLabelsStepX(j, "00");
     for (i = 1; i <= j; i++) {
       if (i % dx == 1) { // draw labels at first
         black.set(cr);
@@ -1934,9 +1939,9 @@ void Frame::onDraw(GtkWidget *widget, cairo_t *cr) {
     }
 
     pink.set(cr);
-    line.set(0, 1, width - 2 * MARGIN, j);
-    for (x = 0; x < width - 2 * MARGIN; x++) {
-      tx = line.y(x);
+    line.set(0, 1, W, j);
+    for (x = 0; x < W; x++) {
+      tx = line(x);
       g.drawPoint(tx, normal(tx), 1);
     }
 
@@ -1952,11 +1957,7 @@ void Frame::onDraw(GtkWidget *widget, cairo_t *cr) {
     i = -1;
     for (auto e : {DATA, NORMAL_DISTRIBUTION_APPROXIMATION}) {
       i++;
-      if (i) {
-        pink.set(cr);
-      } else {
-        cyan.set(cr);
-      }
+      (i ? pink : cyan).set(cr);
       const int w = 50;
       x = width - MARGIN - t_width;
       y = 2 * MARGIN + i * 2 * t_height;
@@ -1980,8 +1981,6 @@ void Frame::onDraw(GtkWidget *widget, cairo_t *cr) {
                 keyboardrow_shift = 20;
   const bool russian = getDictionaryIndex() == 1;
   const int a = alphabetSize();
-  const char *family_raw =
-      pango_font_description_get_family(m_font[FONT_OUT].get());
 
   const int D = 100;
   for (double &val : v) {
@@ -2018,9 +2017,12 @@ void Frame::onDraw(GtkWidget *widget, cairo_t *cr) {
       cairo_set_line_width(cr, 2);
       cairo_stroke(cr);
 
-      s = std::format("{}<span font_desc='{} 10'>\n{:.3f}%</span>",
+      const char *family_raw =
+          pango_font_description_get_family(m_font[FONT_OUT].get());
+      s = std::format("{}\n<span font_desc='{} 10'>{:.3f}%</span>",
                       localeToUtf8(std::string(1, c)), family_raw, va * D);
-
+      // s = std::format("{}\n<small><small>{:.3f}%</small></small>",
+      //                 localeToUtf8(std::string(1, c)), va * D);
       pango_layout_set_markup(layout, s.c_str(), -1);
       pango_layout_get_size(layout, &text_width, &text_height);
       tx = x + (rect_width - text_width * PANGO_TO_PIXELS) / 2;
@@ -2033,45 +2035,60 @@ void Frame::onDraw(GtkWidget *widget, cairo_t *cr) {
 
   pango_layout_set_attributes(layout, NULL);
 
+  VectorDouble vx, vy, vx1, vy1;
+  for (i = 0; i < a; i++) {
+    vx.push_back(i);
+    vy.push_back(std::log(vec[i].second));
+    if (i < a - 2 - russian) {
+      vx1.push_back(i);
+      vy1.push_back(std::log(vec[i].second));
+    }
+  }
+  auto p = leastSquares(vx, vy);
+  auto p1 = leastSquares(vx1, vy1);
+
+  // draw y axis text
+  const double k = .75;
+  radius = W / (2 * a + k * (a - 1));
+
   sy += (rect_height + row_gap) * KEYBOARD_ROWS + MARGIN;
   graph_height = std::min(height - sy - MARGIN,
                           width / 2); // sy + graph_height<=height-margin
+  line.set(radius, 1, W - radius, a);
+  line1.set(radius, std::log(min_val), graph_height - radius,
+            std::log(max_val));
+  g.set(cr, layout, MARGIN, sy, W, graph_height, line, line1, MARGIN);
 
-  // draw y axis text
-  const int w = width - 2 * MARGIN;
-  const double k = .75;
-  radius = w / (2 * a + k * (a - 1));
-
-  line.set(0, radius, a - 1, w - radius);
-  g.set(cr, layout, MARGIN, sy, w, graph_height, line.x(0), line.x(w),
-        std::log(min_val), std::log(max_val), MARGIN);
+  // black.set(cr);
+  line.set(0, g.minx(), W - 1, g.maxx());
+  for (x = 0; x < W; x++) {
+    ty = line(x);
+    g.drawThinPoint(ty, p.first * ty + p.second);
+    g.drawThinPoint(ty, p1.first * ty + p1.second);
+  }
 
   g.axisy(string(LOGARITHM_OF_LETTER_FREQUENCY));
 
+  const int dx = g.nLabelsStepX(a, "00");
   i = 0;
-  // TODO
-  const int dx = 5;
-  // static_cast<int>(std::round(j * tx / (width - 2 * MARGIN) * 4));
   for (auto &p : vec) {
+    i++;
     s1 = std::string(1, alphabet()[p.first]);
     s = localeToUtf8(s1);
     g.drawPoint(i, std::log(p.second), radius, pink, s, black);
 
-    if (i % dx == 0) {
-      g.drawxlabel(i+1);
+    if (i % dx == 1) {
+      g.drawxlabel(i);
     }
-
-    i++;
   }
 
-  // TODO
-  const int axisy =
-      5; // static_cast<int>(std::round(graph_height / tx / 2 + 1));
+  const int axisy = g.nLabelsY("-0.0");
   line.set(0, g.miny(), axisy - 1, g.maxy());
   for (i = 0; i < axisy; i++) {
-    ty = line.y(i);
+    ty = line(i);
     s = std::format("{:.1f}", ty);
     g.drawylabel(ty, s, Align::Start);
   }
+
   g_object_unref(layout);
 }

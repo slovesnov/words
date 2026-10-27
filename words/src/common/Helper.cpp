@@ -368,3 +368,26 @@ void draw_with_hsl_color(cairo_t *cr, double ratio) {
   // Apply color values directly to Cairo state machine context
   cairo_set_source_rgb(cr, r, g, b);
 }
+
+PairDoubleDouble leastSquares(const VectorDouble& x, const VectorDouble& y) {
+    auto n = x.size();
+    
+    double sum_x = 0.0;
+    double sum_y = 0.0;
+    double sum_xy = 0.0;
+    double sum_xx = 0.0;
+
+    for (size_t i = 0; i < x.size(); ++i) {
+        sum_x += x[i];
+        sum_y += y[i];
+        sum_xy += x[i] * y[i];
+        sum_xx += x[i] * x[i];
+    }
+
+    double denominator = n * sum_xx - sum_x * sum_x;
+    
+    double k = (n * sum_xy - sum_x * sum_y) / denominator;
+    double b = (sum_y - k * sum_x) / n;
+
+    return {k, b};
+}

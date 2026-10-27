@@ -239,7 +239,9 @@ struct Line {
   }
 
   double x(double y) const { return ((x2 - x1) / (y2 - y1)) * (y - y1) + x1; }
-  double y(double x) const{ return ((y2 - y1) / (x2 - x1)) * (x - x1) + y1; }
+  double y(double x) const { return ((y2 - y1) / (x2 - x1)) * (x - x1) + y1; }
+
+  double operator()(double x) const { return y(x); }
 };
 
 struct Graph {
@@ -281,6 +283,12 @@ struct Graph {
     //   v = miny + (maxy - miny) * i / (axisy - 1);
     //   drawylabel(v);
     // }
+  }
+
+  void set(cairo_t *_cr, PangoLayout *_layout, int left, int top, int width,
+           int height, Line const &lx, Line const &ly, int _margin) {
+    set(_cr, _layout, left, top, width, height, lx(0), lx(width), ly(0),
+        ly(height), _margin);
   }
 
   void draw_text(double x, double y, std::string const &s, Align h_align,
@@ -333,7 +341,7 @@ struct Graph {
   }
 
   void drawxlabel(double _x) { // minx...maxx
-    double x = snap_to_pixel(linex.y(_x));
+    double x = snap_to_pixel(linex(_x));
     double y = snap_to_pixel(bottom());
     double b = snap_to_pixel(y + margin);
     cairo_move_to(cr, x, y);
@@ -349,23 +357,23 @@ struct Graph {
   }
 
   static const int MARGIN = 3;
+  static constexpr gdouble PANGO_TO_PIXELS = 1.0 / PANGO_SCALE;
 
   void drawylabel(double _y, std::string const &s, Align xalign = Align::End,
                   Align yalign = Align::Center) { // miny...maxy
     double x = snap_to_pixel(left());
-    double y = snap_to_pixel(liney.y(_y));
+    double y = snap_to_pixel(liney(_y));
     double x1 = snap_to_pixel(left() - margin);
     cairo_move_to(cr, x, y);
     cairo_line_to(cr, x1, y);
     cairo_stroke(cr);
 
     cairo_save(cr);
-    int add=0;
-    if(xalign==Align::End){
-      add=MARGIN;
-    }
-    else if(xalign==Align::Start){
-      add=-MARGIN;
+    int add = 0;
+    if (xalign == Align::End) {
+      add = MARGIN;
+    } else if (xalign == Align::Start) {
+      add = -MARGIN;
     }
     cairo_translate(cr, x - margin / 2, y + add);
     cairo_rotate(cr, -G_PI / 2);
@@ -386,22 +394,47 @@ struct Graph {
     pointColor.set(cr);
     drawPoint(x, y, radius);
 
-    const gdouble PANGO_TO_PIXELS = 1.0 / PANGO_SCALE;
     int text_width, text_height;
     pango_layout_set_text(layout, s.c_str(), -1);
     pango_layout_get_size(layout, &text_width, &text_height);
     auto t_width = text_width * PANGO_TO_PIXELS;
     auto t_height = text_height * PANGO_TO_PIXELS;
-    auto tx = linex.y(x) - t_width / 2;
-    auto ty = liney.y(y) - t_height / 2;
+    auto tx = linex(x) - t_width / 2;
+    auto ty = liney(y) - t_height / 2;
     stringColor.set(cr);
     cairo_move_to(cr, tx, ty);
     pango_cairo_show_layout(cr, layout);
   }
 
   void drawPoint(gdouble x, gdouble y, gdouble radius) {
-    cairo_arc(cr, linex.y(x), liney.y(y), radius, 0, 2 * G_PI);
+    cairo_arc(cr, linex(x), liney(y), radius, 0, 2 * G_PI);
     cairo_fill(cr);
+  }
+
+  void drawThinPoint(gdouble _x, gdouble _y, bool clip = true) {
+    double x = snap_to_pixel(linex(_x));
+    double y = snap_to_pixel(liney(_y));
+    if ((clip && x >= left() && x < width() && y >= top() && y < bottom()) ||
+        !clip) {
+      cairo_rectangle(cr, x, y, 1.0, 1.0);
+      cairo_fill(cr);
+    }
+  }
+
+  // fil=.5 then text fill about 50% oh height,add=1 because one label is out of
+  // axis
+  int nLabelsY(std::string const &s, double fill = .5, int add = 1) const {
+    pango_layout_set_text(layout, s.c_str(), -1);
+    int w;
+    pango_layout_get_size(layout, &w, NULL);
+    return std::round(height() / (w * PANGO_TO_PIXELS) * fill + add);
+  }
+
+  int nLabelsStepX(int n, std::string const &s, double fill = .25) const {
+    pango_layout_set_text(layout, s.c_str(), -1);
+    int w;
+    pango_layout_get_size(layout, &w, NULL);
+    return std::round(n * w * PANGO_TO_PIXELS / width() / fill);
   }
 
   static double snap_to_pixel(double val) { return std::floor(val) + 0.5; }
@@ -414,6 +447,10 @@ struct Graph {
   int height() const { return bottom() - top(); }
   double centerx() const { return (left() + right()) / 2.; }
   double centery() const { return (top() + bottom()) / 2.; }
-  double miny()const{return liney.x2;}//invert order
-  double maxy()const{return liney.x1;}//invert order
+  double minx() const { return linex.x1; }
+  double maxx() const { return linex.x2; }
+  double miny() const { return liney.x2; } // invert order
+  double maxy() const { return liney.x1; } // invert order
 };
+
+PairDoubleDouble leastSquares(const VectorDouble &x, const VectorDouble &y);
