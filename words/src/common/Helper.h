@@ -250,14 +250,14 @@ struct Graph {
   Graph() {}
 
   void set(cairo_t *_cr, PangoLayout *_layout, int left, int top, int width,
-           int height, const Line &line, double miny, double maxy,
+           int height, double minx, double maxx, double miny, double maxy,
            int _margin) {
     // int i;
     // double v;
     cr = _cr;
     layout = _layout;
     margin = _margin;
-    linex = line;
+    linex.set(minx, left, maxx, left + width);
     liney.set(maxy, top, miny, top + height);
 
     auto l = snap_to_pixel(left);
@@ -281,13 +281,6 @@ struct Graph {
     //   v = miny + (maxy - miny) * i / (axisy - 1);
     //   drawylabel(v);
     // }
-  }
-
-  void set(cairo_t *_cr, PangoLayout *_layout, int left, int top, int width,
-           int height, double minx, double maxx, double miny, double maxy,
-           int _margin) {
-    Line l(minx, left, maxx, left + width);
-    set(_cr, _layout, left, top, width, height, l, miny, maxy, _margin);
   }
 
   void draw_text(double x, double y, std::string const &s, Align h_align,
@@ -367,7 +360,14 @@ struct Graph {
     cairo_stroke(cr);
 
     cairo_save(cr);
-    cairo_translate(cr, x - margin / 2, y + MARGIN);
+    int add=0;
+    if(xalign==Align::End){
+      add=MARGIN;
+    }
+    else if(xalign==Align::Start){
+      add=-MARGIN;
+    }
+    cairo_translate(cr, x - margin / 2, y + add);
     cairo_rotate(cr, -G_PI / 2);
     draw_text(0, 0, s, xalign, yalign);
     cairo_restore(cr);
@@ -414,4 +414,6 @@ struct Graph {
   int height() const { return bottom() - top(); }
   double centerx() const { return (left() + right()) / 2.; }
   double centery() const { return (top() + bottom()) / 2.; }
+  double miny()const{return liney.x2;}//invert order
+  double maxy()const{return liney.x1;}//invert order
 };

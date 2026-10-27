@@ -1868,8 +1868,7 @@ void Frame::onDraw(GtkWidget *widget, cairo_t *cr) {
   const int MARGIN = text_height * PANGO_TO_PIXELS;
   int sy = MARGIN, i, j, x, y, graph_height, min, max;
   std::string s, s1;
-  gdouble tx, ty, t_width, t_height, radius = 6.0, va, min_val,
-                                               max_val;
+  gdouble tx, ty, t_width, t_height, radius = 6.0, va, min_val, max_val;
   VectorDouble v = SearchResult::vd;
   Graph g;
   Line line;
@@ -1968,7 +1967,8 @@ void Frame::onDraw(GtkWidget *widget, cairo_t *cr) {
       pango_layout_set_text(layout, s.c_str(), -1);
       pango_layout_get_size(layout, &text_width, &text_height);
       black.set(cr);
-      cairo_move_to(cr, x, y + t_height / 2 - text_height * PANGO_TO_PIXELS / 2);
+      cairo_move_to(cr, x,
+                    y + t_height / 2 - text_height * PANGO_TO_PIXELS / 2);
       pango_cairo_show_layout(cr, layout);
     }
 
@@ -1976,9 +1976,9 @@ void Frame::onDraw(GtkWidget *widget, cairo_t *cr) {
     return;
   }
 
-  gdouble rect_width = 50, rect_height = 52, row_gap = 6,
-          keyboardrow_shift = 20;
-  bool russian = getDictionaryIndex() == 1;
+  const gdouble rect_width = 50, rect_height = 52, row_gap = 6,
+                keyboardrow_shift = 20;
+  const bool russian = getDictionaryIndex() == 1;
   const int a = alphabetSize();
   const char *family_raw =
       pango_font_description_get_family(m_font[FONT_OUT].get());
@@ -2041,23 +2041,33 @@ void Frame::onDraw(GtkWidget *widget, cairo_t *cr) {
   const int w = width - 2 * MARGIN;
   const double k = .75;
   radius = w / (2 * a + k * (a - 1));
-  line.set(0, MARGIN + radius, a - 1, MARGIN + w - radius);
-  g.set(cr, layout, MARGIN, sy, w, graph_height, line, std::log(min_val),
-        std::log(max_val), MARGIN);
+
+  line.set(0, radius, a - 1, w - radius);
+  g.set(cr, layout, MARGIN, sy, w, graph_height, line.x(0), line.x(w),
+        std::log(min_val), std::log(max_val), MARGIN);
+
   g.axisy(string(LOGARITHM_OF_LETTER_FREQUENCY));
 
   i = 0;
+  // TODO
+  const int dx = 5;
+  // static_cast<int>(std::round(j * tx / (width - 2 * MARGIN) * 4));
   for (auto &p : vec) {
     s1 = std::string(1, alphabet()[p.first]);
     s = localeToUtf8(s1);
     g.drawPoint(i, std::log(p.second), radius, pink, s, black);
+
+    if (i % dx == 0) {
+      g.drawxlabel(i+1);
+    }
+
     i++;
   }
 
-  black.set(cr);
+  // TODO
   const int axisy =
       5; // static_cast<int>(std::round(graph_height / tx / 2 + 1));
-  line.set(0, std::log(min_val), axisy - 1, std::log(max_val));
+  line.set(0, g.miny(), axisy - 1, g.maxy());
   for (i = 0; i < axisy; i++) {
     ty = line.y(i);
     s = std::format("{:.1f}", ty);
