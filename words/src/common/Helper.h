@@ -238,7 +238,8 @@ struct Line {
     y2 = _y2;
   }
 
-  double get(double x) { return ((y2 - y1) / (x2 - x1)) * (x - x1) + y1; }
+  double x(double y) const { return ((x2 - x1) / (y2 - y1)) * (y - y1) + x1; }
+  double y(double x) const{ return ((y2 - y1) / (x2 - x1)) * (x - x1) + y1; }
 };
 
 struct Graph {
@@ -249,26 +250,20 @@ struct Graph {
   Graph() {}
 
   void set(cairo_t *_cr, PangoLayout *_layout, int left, int top, int width,
-           int height, const Line &line, double miny, double maxy, int _margin,
-           int axisx = 0, int axisy = 0) {
-linex=line;
-           }
-
-  void set(cairo_t *_cr, PangoLayout *_layout, int left, int top, int width,
-           int height, double minx, double maxx, double miny, double maxy,
-           int _margin, int axisx = 0, int axisy = 0) {
-    int i;
-    double v;
+           int height, const Line &line, double miny, double maxy,
+           int _margin) {
+    // int i;
+    // double v;
     cr = _cr;
     layout = _layout;
     margin = _margin;
-    linex.set(minx, left, maxx, left + width);
+    linex = line;
     liney.set(maxy, top, miny, top + height);
 
     auto l = snap_to_pixel(left);
     auto t = snap_to_pixel(top);
-    auto r = l + width;
-    auto b = t + height;
+    auto r = snap_to_pixel(l + width);
+    auto b = snap_to_pixel(t + height);
 
     cairo_set_line_width(cr, 1.0);
 
@@ -278,17 +273,22 @@ linex=line;
 
     cairo_stroke(cr);
 
-    for (i = 0; i < axisx; i++) {
-      v = minx + (maxx - minx) * i / (axisx - 1);
-      drawxlabel(v);
-    }
-    for (i = 0; i < axisy; i++) {
-      v = miny + (maxy - miny) * i / (axisy - 1);
-      drawylabel(v);
-    }
+    // for (i = 0; i < axisx; i++) {
+    //   v = minx + (maxx - minx) * i / (axisx - 1);
+    //   drawxlabel(v);
+    // }
+    // for (i = 0; i < axisy; i++) {
+    //   v = miny + (maxy - miny) * i / (axisy - 1);
+    //   drawylabel(v);
+    // }
   }
 
-  enum class Align { Start, Center, End };
+  void set(cairo_t *_cr, PangoLayout *_layout, int left, int top, int width,
+           int height, double minx, double maxx, double miny, double maxy,
+           int _margin) {
+    Line l(minx, left, maxx, left + width);
+    set(_cr, _layout, left, top, width, height, l, miny, maxy, _margin);
+  }
 
   void draw_text(double x, double y, std::string const &s, Align h_align,
                  Align v_align) {
@@ -340,7 +340,7 @@ linex=line;
   }
 
   void drawxlabel(double _x) { // minx...maxx
-    double x = snap_to_pixel(linex.get(_x));
+    double x = snap_to_pixel(linex.y(_x));
     double y = snap_to_pixel(bottom());
     double b = snap_to_pixel(y + margin);
     cairo_move_to(cr, x, y);
@@ -357,9 +357,10 @@ linex=line;
 
   static const int MARGIN = 3;
 
-  void drawylabel(double _y, std::string const &s) { // miny...maxy
+  void drawylabel(double _y, std::string const &s, Align xalign = Align::End,
+                  Align yalign = Align::Center) { // miny...maxy
     double x = snap_to_pixel(left());
-    double y = snap_to_pixel(liney.get(_y));
+    double y = snap_to_pixel(liney.y(_y));
     double x1 = snap_to_pixel(left() - margin);
     cairo_move_to(cr, x, y);
     cairo_line_to(cr, x1, y);
@@ -368,7 +369,7 @@ linex=line;
     cairo_save(cr);
     cairo_translate(cr, x - margin / 2, y + MARGIN);
     cairo_rotate(cr, -G_PI / 2);
-    draw_text(0, 0, s, Align::End, Align::Center);
+    draw_text(0, 0, s, xalign, yalign);
     cairo_restore(cr);
   }
 
@@ -380,8 +381,26 @@ linex=line;
     cairo_restore(cr);
   }
 
-  void draw(gdouble x, gdouble y, gdouble radius) {
-    cairo_arc(cr, linex.get(x), liney.get(y), radius, 0, 2 * G_PI);
+  void drawPoint(gdouble x, gdouble y, gdouble radius, const Color &pointColor,
+                 std::string const &s, const Color &stringColor) {
+    pointColor.set(cr);
+    drawPoint(x, y, radius);
+
+    const gdouble PANGO_TO_PIXELS = 1.0 / PANGO_SCALE;
+    int text_width, text_height;
+    pango_layout_set_text(layout, s.c_str(), -1);
+    pango_layout_get_size(layout, &text_width, &text_height);
+    auto t_width = text_width * PANGO_TO_PIXELS;
+    auto t_height = text_height * PANGO_TO_PIXELS;
+    auto tx = linex.y(x) - t_width / 2;
+    auto ty = liney.y(y) - t_height / 2;
+    stringColor.set(cr);
+    cairo_move_to(cr, tx, ty);
+    pango_cairo_show_layout(cr, layout);
+  }
+
+  void drawPoint(gdouble x, gdouble y, gdouble radius) {
+    cairo_arc(cr, linex.y(x), liney.y(y), radius, 0, 2 * G_PI);
     cairo_fill(cr);
   }
 

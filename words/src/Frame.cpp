@@ -1867,10 +1867,9 @@ void Frame::onDraw(GtkWidget *widget, cairo_t *cr) {
   pango_layout_get_size(layout, &text_width, &text_height);
   const int MARGIN = text_height * PANGO_TO_PIXELS;
   int sy = MARGIN, i, j, x, y, graph_height, min, max;
-  char c;
   std::string s, s1;
-  gdouble tx, ty, center_x, center_y, t_width, t_height, radius = 6.0, va,
-                                                         min_val, max_val;
+  gdouble tx, ty, t_width, t_height, radius = 6.0, va, min_val,
+                                               max_val;
   VectorDouble v = SearchResult::vd;
   Graph g;
   Line line;
@@ -1911,7 +1910,7 @@ void Frame::onDraw(GtkWidget *widget, cairo_t *cr) {
     const int axisy = static_cast<int>(std::round(graph_height / tx / 2 + 1));
     line.set(0, min, axisy - 1, max);
     for (i = 0; i < axisy; i++) {
-      ty = line.get(i);
+      ty = line.y(i);
       g.drawylabel(ty, intToString(int(ty)));
     }
 
@@ -1927,19 +1926,19 @@ void Frame::onDraw(GtkWidget *widget, cairo_t *cr) {
         g.drawxlabel(i);
       }
       pink.set(cr);
-      g.draw(i, normal(i), radius);
+      g.drawPoint(i, normal(i), radius);
     }
 
     cyan.set(cr);
     for (auto [length, words] : getWordLengthMap()) {
-      g.draw(length, words, radius);
+      g.drawPoint(length, words, radius);
     }
 
     pink.set(cr);
     line.set(0, 1, width - 2 * MARGIN, j);
     for (x = 0; x < width - 2 * MARGIN; x++) {
-      tx = line.get(x);
-      g.draw(tx, normal(tx), 1);
+      tx = line.y(x);
+      g.drawPoint(tx, normal(tx), 1);
     }
 
     t_width = t_height = 0;
@@ -1968,9 +1967,8 @@ void Frame::onDraw(GtkWidget *widget, cairo_t *cr) {
       s = " " + string(e);
       pango_layout_set_text(layout, s.c_str(), -1);
       pango_layout_get_size(layout, &text_width, &text_height);
-      center_y = y + t_height / 2;
       black.set(cr);
-      cairo_move_to(cr, x, center_y - text_height * PANGO_TO_PIXELS / 2);
+      cairo_move_to(cr, x, y + t_height / 2 - text_height * PANGO_TO_PIXELS / 2);
       pango_cairo_show_layout(cr, layout);
     }
 
@@ -1985,6 +1983,10 @@ void Frame::onDraw(GtkWidget *widget, cairo_t *cr) {
   const char *family_raw =
       pango_font_description_get_family(m_font[FONT_OUT].get());
 
+  const int D = 100;
+  for (double &val : v) {
+    val /= D;
+  }
   IntDouble vec[a];
   for (i = 0; i < a; i++) {
     vec[i] = {i, v[i]};
@@ -2017,7 +2019,7 @@ void Frame::onDraw(GtkWidget *widget, cairo_t *cr) {
       cairo_stroke(cr);
 
       s = std::format("{}<span font_desc='{} 10'>\n{:.3f}%</span>",
-                      localeToUtf8(std::string(1, c)), family_raw, va);
+                      localeToUtf8(std::string(1, c)), family_raw, va * D);
 
       pango_layout_set_markup(layout, s.c_str(), -1);
       pango_layout_get_size(layout, &text_width, &text_height);
@@ -2044,49 +2046,22 @@ void Frame::onDraw(GtkWidget *widget, cairo_t *cr) {
         std::log(max_val), MARGIN);
   g.axisy(string(LOGARITHM_OF_LETTER_FREQUENCY));
 
-  for (i = 0; i < a; i++) {
-    center_x = line.get(i); // MARGIN + radius + (2 * radius + k * radius) * i;
-    center_y = g.liney.get(std::log(vec[i].second));
-    // center_y = sy + (std::log(vec[i].second) - std::log(max_val)) /
-    //                     (std::log(min_val) - std::log(max_val)) *
-    //                     graph_height;
-    cairo_arc(cr, center_x, center_y, radius, 0, 2 * G_PI);
-    pink.set(cr);
-    cairo_fill(cr);
-
-    c = alphabet()[vec[i].first];
-    s = localeToUtf8(std::string(1, c));
-    pango_layout_set_text(layout, s.c_str(), -1);
-    pango_layout_get_size(layout, &text_width, &text_height);
-    t_width = text_width * PANGO_TO_PIXELS;
-    t_height = text_height * PANGO_TO_PIXELS;
-    tx = center_x - t_width / 2;
-    ty = center_y - t_height / 2;
-    black.set(cr);
-    cairo_move_to(cr, tx, ty);
-    pango_cairo_show_layout(cr, layout);
+  i = 0;
+  for (auto &p : vec) {
+    s1 = std::string(1, alphabet()[p.first]);
+    s = localeToUtf8(s1);
+    g.drawPoint(i, std::log(p.second), radius, pink, s, black);
+    i++;
   }
 
   black.set(cr);
-  const int rows = 5;
-  for (i = 0; i < rows; i++) {
-    ty = double(i) / (rows - 1);
-    center_y = sy + graph_height * ty;
-
-    cairo_move_to(cr, 0, center_y);
-    cairo_line_to(cr, MARGIN, center_y);
-    cairo_stroke(cr);
-
-    s = std::format("{:.1f}", std::log(min_val) * ty +
-                                  std::log(max_val) * (1 - ty) - std::log(100));
-    cairo_save(cr);
-    cairo_translate(cr, 0, center_y);
-    cairo_rotate(cr, -G_PI / 2);
-    pango_layout_set_text(layout, s.c_str(), -1);
-    pango_layout_get_size(layout, &text_width, &text_height);
-    cairo_move_to(cr, 0, (MARGIN - text_height * PANGO_TO_PIXELS) / 2);
-    pango_cairo_show_layout(cr, layout);
-    cairo_restore(cr);
+  const int axisy =
+      5; // static_cast<int>(std::round(graph_height / tx / 2 + 1));
+  line.set(0, std::log(min_val), axisy - 1, std::log(max_val));
+  for (i = 0; i < axisy; i++) {
+    ty = line.y(i);
+    s = std::format("{:.1f}", ty);
+    g.drawylabel(ty, s, Align::Start);
   }
   g_object_unref(layout);
 }

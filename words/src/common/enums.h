@@ -333,4 +333,6 @@ enum ENUM_LABELBUTTON {
   LABELBUTTON_SIZE
 };
 
+enum class Align { Start, Center, End };
+
 #endif
