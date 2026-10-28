@@ -1,6 +1,7 @@
 5.0.1 ??
 added multithreaded search for the longest chains
 added multithreaded splitting by clusters
+added graphics for dictionary statistics and word lengths
 simplified and accelerated chain search code
 removed multithreading from word length statistics due to lack of necessity
 fixed a crash when pasting text that cannot be transcoded to the local locale
@@ -11,6 +12,7 @@ fixed invalid height for modification of words
 [ru]
 добавился многозадачный поиск длинейших цепочек
 добавилось многозадачное разбиение по кластерам
+добавлена графика для статистики словаря и длины слов
 упрощён и ускорен код поиска цепочек
 убрана многозадачность из статистики длины слов из-за ненадобности
 исправлено если в поле вcтавить текст который нельзя перекодировать в локаль программа падала

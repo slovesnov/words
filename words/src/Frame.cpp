@@ -1557,17 +1557,12 @@ void Frame::addHelp(ENUM_STRING e) {
   // gtk_label_set_max_width_chars(GTK_LABEL(w), 80);
   // gtk_label_set_width_chars(GTK_LABEL(w), 20);
 
-  if (oneOf(m_menuClick, MENU_DICTIONARY_STATISTICS, MENU_WORD_FREQUENCY)) {
-    s = replaceAll(s, "<a>",
-                   std::format("<a href='{},{}#{}'>", HOMEPAGE,
-                               LNG[getLanguageIndex()],
-                               magic_enum::enum_name(m_menuClick)));
-  }
   s = replaceAll(s, BR, "\n");
 
-  gchar *p = g_markup_printf_escaped(s.c_str());
-  gtk_label_set_markup(GTK_LABEL(w), p);
-  g_free(p);
+  gtk_label_set_markup(GTK_LABEL(w), s.c_str());
+  // gchar *p = g_markup_printf_escaped(s.c_str());
+  // gtk_label_set_markup(GTK_LABEL(w), p);
+  // g_free(p);
 }
 
 void Frame::createCheck(ENUM_STRING e, bool set) {

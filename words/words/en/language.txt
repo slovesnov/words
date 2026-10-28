@@ -186,8 +186,8 @@ untitled
 expected value
 standard deviation
 variance
-Dictionary statistics. This <a>page</a> features a chart of logarithmic letter frequency in percent, sorted in descending order of frequency, as well as a visual representation of letter frequency on the keyboard.
-Word length statistics. This <a>page</a> features a chart of word length distribution along with its normal distribution approximation for both Russian and English languages.
+Dictionary statistics. The chart displays the logarithm of letter frequencies sorted in descending order, along with two linear approximations. The first is based on all data; the second excludes the last two letters for English and the last three letters for Russian.
+Word length statistics. The chart shows the data and its normal distribution approximation.
 layer
 total
 b-factor

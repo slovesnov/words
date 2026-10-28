@@ -15,7 +15,7 @@ static_assert(std::size(LANGUAGE) == LANGUAGES);
 static_assert(std::size(LNG) == LANGUAGES);
 // todo on dictionary change need to set another values
 const int NUMBER_OF_WORDS[] = {393'167, 2'415'401};
-const std::string WORDS_VERSION = "5.0.0";
+const std::string WORDS_VERSION = "5.0.1";
 const char MAIL[] = "slovesnov@yandex.ru";
 const std::string URL = "https://slovesnov.rf.gd/";
 const std::string SOURCE_URL = "https://github.com/slovesnov/words";
