@@ -1291,64 +1291,55 @@ void WordsBase::mergeLayers() noexcept {
 }
 
 void WordsBase::mergeLayers2() noexcept {
+  int i, j;
   m_chd.clear();
+  m_chd1.clear();
 
-  // Check if at least one elements's 'opposite' is not empty
-  bool any_non_empty =
+  bool hasNonEmptyOpposite =
       std::any_of(m_chainLayerResult.begin(), m_chainLayerResult.end(),
                   [](const auto &a) { return !a.opposite.empty(); });
 
-  if (any_non_empty) {
-
-    // Temporary storage to accumulate all elements from the chain layer
-    VectorInt all_v, all_opposites;
-
-    // Collect all data chunks across all elements
+  if (hasNonEmptyOpposite) {
     for (const auto &a : m_chainLayerResult) {
       if (!a.opposite.empty()) {
-        all_opposites.insert(all_opposites.end(), a.opposite.begin(),
-                             a.opposite.end());
-        all_v.insert(all_v.end(), a.v.begin(), a.v.end());
+        m_chd.insert(m_chd.end(), a.v.begin(), a.v.end());
+        m_chd1.insert(m_chd1.end(), a.opposite.begin(), a.opposite.end());
       }
     }
+  } else {
+    for (const auto &a : m_chainLayerResult) {
+      m_chd.insert(m_chd.end(), a.v.begin(), a.v.end());
+    }
+  }
 
-    // pr(all_v.size(), all_opposites.size());
+  std::sort(m_chd.begin(), m_chd.end());
+
+  if (hasNonEmptyOpposite) {
+    // pr(m_chd.size(), m_chd1.size());
     // Remove duplicates from the accumulated opposites
-    std::sort(all_opposites.begin(), all_opposites.end());
-    all_opposites.erase(std::unique(all_opposites.begin(), all_opposites.end()),
-                        all_opposites.end());
+    std::sort(m_chd1.begin(), m_chd1.end());
+    m_chd1.erase(std::unique(m_chd1.begin(), m_chd1.end()), m_chd1.end());
 
     // Remove duplicates from the accumulated v elements
-    std::sort(all_v.begin(), all_v.end());
-    all_v.erase(std::unique(all_v.begin(), all_v.end()), all_v.end());
+    m_chd.erase(std::unique(m_chd.begin(), m_chd.end()), m_chd.end());
 
-    m_chainLayerResult[0].v = all_v;
-    m_chainLayerResult[0].opposite = all_opposites;
-    // pr(all_v.size(), all_opposites.size());
-    // pr(std::format("{} {}", all_v, all_opposites)); 
+    for (i = 0; i < 2; i++) {
+      auto &li = m_layerIndex[i];
+      j = li.size() - 1;
+      li[j] = i == m_j ? m_chd : m_chd1;
+    }
+
+    // pr(m_chd.size(), m_chd1.size());
+    //  pr(std::format("{} {}", m_chd, m_chd1));
 
     m_j = -1;
     return;
   }
 
-  // Fallback path: if all 'opposite' containers were completely empty,
-  // simply merge all 'v' elements sequentially into m_chd
-  for (const auto &a : m_chainLayerResult) {
-    m_chd.insert(m_chd.end(), a.v.begin(), a.v.end());
-  }
-
-  // for (const auto &a : m_chainLayerResult) {
-  //   if (!a.opposite.empty()) {
-  //     m_j = -1;
-  //     return;
-  //   }
-  //   m_chd.insert(m_chd.end(), a.v.begin(), a.v.end());
-  // }
-  std::sort(m_chd.begin(), m_chd.end());
-  m_layerIndex[m_j].push_back(m_chd);
   if (m_chd.empty()) {
     m_j = -2; // NO_CHAINS_FOUND
   } else {
+    m_layerIndex[m_j].push_back(std::move(m_chd));
     chainSetPtr();
   }
 }
@@ -1369,11 +1360,7 @@ void WordsBase::findChainPreProseeding() {
   for (auto &a : m_evwords) {
     i++;
     m_layerIndex[i] = {{}};
-    if (m_evwords.size() == 1)
-      chainAddIfFound(nthread, a, m_layerIndex[i][0]);
-    else {
-      chainAddIfFoundIndex(a, m_layerIndex[i][0]);
-    }
+    chainAddIfFoundIndex(a, m_layerIndex[i][0]);
   }
   if (m_evwords.size() == 1) {
     m_barrier = std::make_unique<std::barrier<BarrierCallback>>(
@@ -1425,56 +1412,26 @@ void WordsBase::findChain(int nthread) {
     }
   }
 
-  // prsync(nthread, "end");
-  // return;
-
+  pr(timeElapse(begin));
+  begin = clock();
   /*
-if (nthread > 0) {
-  prsync(nthread);
-  return;
-}
-while (true) {
-  i = -1;
-  for (auto &a : ptr) {
-    i++;
-    a = &m_layerIndex[i][m_layerIndex[i].size() - 1];
-  }
-  j = ptr[1]->size() < ptr[0]->size();
+    VectorInt *ptr[2];
+    i = -1;
+    for (auto &a : ptr) {
+      i++;
+      a = &m_layerIndex[i][m_layerIndex[i].size() - 1];
+    }
+    auto res = relations2(nthread, *ptr[0], *ptr[1]);
+    pr(std::format("{} {}", res[0], res[1]), res[0].size(), res[1].size());
 
-  auto p = chainLayer(nthread, *ptr[j], *ptr[!j]);
-  if (p.second) {
-    break;
-  }
-  prsync(nthread, j ? "right" : "left", m_layerIndex[j].size(),
-         p.first.size());
-  if (p.first.empty()) {
-    SearchResult::out = string(NO_CHAINS_FOUND);
-    return;
-  }
-  std::sort(p.first.begin(), p.first.end());
-  m_layerIndex[j].push_back(p.first);
-}
-*/
-  pr(timeElapse(begin));
-  begin = clock();
+    pr(timeElapse(begin));
+    begin = clock();
 
-  VectorInt *ptr[2];
-  i = -1;
-  for (auto &a : ptr) {
-    i++;
-    a = &m_layerIndex[i][m_layerIndex[i].size() - 1];
-  }
-  auto res = relations2(nthread, *ptr[0], *ptr[1]);
-  pr(std::format("{} {}", res[0], res[1]), res[0].size(), res[1].size());
-
-  pr(timeElapse(begin));
-  begin = clock();
-
-  for (i = 0; i < 2; i++) {
-    auto &li = m_layerIndex[i];
-    j = li.size() - 1;
-    li[j] = res[i];
-  }
+    for (i = 0; i < 2; i++) {
+      auto &li = m_layerIndex[i];
+      j = li.size() - 1;
+      li[j] = res[i];
+    }*/
 
   for (i = 0; i < 2; i++) {
     auto &li = m_layerIndex[i];
