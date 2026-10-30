@@ -603,7 +603,8 @@ bool WordsBase::chainAddIfFound(int nthread, const std::string &s, VectorInt &v,
   return false;
 }
 
-void WordsBase::chainAddIfFound(const std::string &s, VectorInt &v) {
+bool WordsBase::chainAddIfFound(const std::string &s, VectorInt &v,
+                                const VectorInt &otherSideOrdered) {
   const auto &words = m_vvs[0];
   int i = indexOfOrdered(s, words);
   if (i != -1) {
@@ -612,8 +613,12 @@ void WordsBase::chainAddIfFound(const std::string &s, VectorInt &v) {
     if (mask_cell.compare_exchange_strong(expected, 0,
                                           std::memory_order_relaxed)) {
       v.push_back(i);
+      return false;
+    } else if (std::ranges::binary_search(otherSideOrdered, i)) {
+      return true;
     }
   }
+  return false;
 }
 
 std::pair<VectorInt, bool>
@@ -642,6 +647,37 @@ WordsBase::chainLayer(int nthread, const VectorInt &layerIndex,
     total_v.insert(total_v.end(), v.begin(), v.end());
   }
 
+  return {total_v, false};
+}
+
+std::pair<VectorInt, bool>
+WordsBase::chainLayer2(int nthread, const VectorInt &layerIndex,
+                       const VectorInt &otherSideOrdered) {
+  const auto &words = m_vvs[0]; // here 0
+  // prsync(nthread, words.size());
+  VectorInt total_v;
+  auto [it, end] = iterators(nthread, layerIndex);
+  for (; it != end; it++) {
+    VectorInt v;
+    std::string s = words[*it];
+    // prsync(nthread, "#", localeToUtf8(s));
+    for (size_t i = 0; i < s.size(); ++i) {
+      char original_char = s[i];
+      for (const char &c : alphabet()) {
+        if (c != original_char) {
+          s[i] = c;
+
+          if (chainAddIfFound(s, v, otherSideOrdered)) {
+            // prsync(nthread);
+            return {{}, true};
+          }
+        }
+      }
+      s[i] = original_char;
+    }
+    total_v.insert(total_v.end(), v.begin(), v.end());
+  }
+  // prsync(total_v.size());
   return {total_v, false};
 }
 
@@ -1171,6 +1207,37 @@ void WordsBase::mergeLayers() noexcept {
   }
 }
 
+void WordsBase::mergeLayers2() noexcept {
+  m_chd.clear();
+  // int i = -1;
+  for (const auto &a : m_vii) {
+    // i++;
+    // pr(i, a.size());
+    m_chd.insert(m_chd.end(), a.begin(), a.end());
+  }
+  // pr(m_chd.size());
+  //  todo
+  //   if (p.first.empty()) {
+  //     SearchResult::out = string(NO_CHAINS_FOUND);
+  //     return;
+  //   }
+  std::sort(m_chd.begin(), m_chd.end());
+  m_layerIndex[m_j].push_back(m_chd);
+  if (m_chd.empty()) {
+    m_j = -1;
+    pr("exit");
+  } else {
+    VectorInt *ptr[2];
+    int i = -1;
+    for (auto &a : ptr) {
+      i++;
+      a = &m_layerIndex[i][m_layerIndex[i].size() - 1];
+    }
+    pr(m_j ? "right" : "left", m_chd.size());
+    m_j = ptr[1]->size() < ptr[0]->size();
+  }
+}
+
 void WordsBase::findChainPreProseeding() {
   const int nthread = 0;
   fillDictionaryLength(nthread, m_evwords[0].size(), m_evwords);
@@ -1180,13 +1247,16 @@ void WordsBase::findChainPreProseeding() {
     m_layerIndex[i] = {{}};
     chainAddIfFound(nthread, a, m_layerIndex[i][0]);
   }
-  // using only if one word
   if (m_evwords.size() == 1) {
     m_barrier = std::make_unique<std::barrier<BarrierCallback>>(
         m_threads, [this]() noexcept { this->mergeLayers(); });
 
     m_chd = {m_layerIndex[0][0][0]};
     m_i = 1;
+  } else if (m_evwords.size() == 2) {
+    m_j = 0;
+    m_barrier = std::make_unique<std::barrier<BarrierCallback>>(
+        m_threads, [this]() noexcept { this->mergeLayers2(); });
   }
 }
 
@@ -1203,10 +1273,15 @@ void WordsBase::findChain(int nthread) {
   }
 
   if (differenceOnlyOneChar(m_evwords[0], m_evwords[1])) {
-    SearchResult::out = localeToUtf8(m_evwords[0] + " " + m_evwords[1]) +
-                        OPEN_S + string(WORDS_GENITIVE_CASE) + "2)";
+    if (!nthread) {
+      SearchResult::out = localeToUtf8(m_evwords[0] + " " + m_evwords[1]) +
+                          OPEN_S + string(WORDS_GENITIVE_CASE) + "2)";
+    }
     return;
   }
+
+  clock_t begin;
+  begin = clock();
 
   while (true) {
     i = -1;
@@ -1214,19 +1289,54 @@ void WordsBase::findChain(int nthread) {
       i++;
       a = &m_layerIndex[i][m_layerIndex[i].size() - 1];
     }
-    j = ptr[1]->size() < ptr[0]->size();
 
-    auto p = chainLayer(nthread, *ptr[j], *ptr[!j]);
-    if (p.second) {
+    // if (!nthread) {
+    //   prsync(nthread, m_j, ptr[m_j]->size(), ptr[!m_j]->size() );
+    // }
+    m_vii[nthread] = chainLayer2(nthread, *ptr[m_j], *ptr[!m_j]).first;
+    m_barrier->arrive_and_wait();
+    if (m_j == -1) {
       break;
     }
-    if (p.first.empty()) {
-      SearchResult::out = string(NO_CHAINS_FOUND);
-      return;
-    }
-    std::sort(p.first.begin(), p.first.end());
-    m_layerIndex[j].push_back(p.first);
+    // if (p.second) {
+    //   break;
+    // }
+    // prsync(nthread, j ? "right" : "left", m_layerIndex[j].size(),
+    //        p.first.size());
   }
+
+  // prsync(nthread, "end");
+  return;
+
+  /*
+if (nthread > 0) {
+  prsync(nthread);
+  return;
+}
+while (true) {
+  i = -1;
+  for (auto &a : ptr) {
+    i++;
+    a = &m_layerIndex[i][m_layerIndex[i].size() - 1];
+  }
+  j = ptr[1]->size() < ptr[0]->size();
+
+  auto p = chainLayer(nthread, *ptr[j], *ptr[!j]);
+  if (p.second) {
+    break;
+  }
+  prsync(nthread, j ? "right" : "left", m_layerIndex[j].size(),
+         p.first.size());
+  if (p.first.empty()) {
+    SearchResult::out = string(NO_CHAINS_FOUND);
+    return;
+  }
+  std::sort(p.first.begin(), p.first.end());
+  m_layerIndex[j].push_back(p.first);
+}
+*/
+  pr(timeElapse(begin));
+  begin = clock();
 
   i = -1;
   for (auto &a : ptr) {
@@ -1234,6 +1344,9 @@ void WordsBase::findChain(int nthread) {
     a = &m_layerIndex[i][m_layerIndex[i].size() - 1];
   }
   auto res = relations2(nthread, *ptr[0], *ptr[1]);
+
+  pr(timeElapse(begin));
+  begin = clock();
 
   for (i = 0; i < 2; i++) {
     auto &li = m_layerIndex[i];
@@ -1247,6 +1360,10 @@ void WordsBase::findChain(int nthread) {
       li[j - 1] = relations(nthread, li[j - 1], li[j]);
     }
   }
+
+  pr(timeElapse(begin));
+  begin = clock();
+
   m_layerIndex[0].insert(m_layerIndex[0].end(), m_layerIndex[1].rbegin(),
                          m_layerIndex[1].rend());
   s = m_table.createWithTitle(NSTRING, 2, WORDS_NOMINATIVE_CASE);
@@ -1263,6 +1380,9 @@ void WordsBase::findChain(int nthread) {
     s += m_table.string(i, s1);
   }
   SearchResult::out = s;
+
+  pr(timeElapse(begin));
+  begin = clock();
 }
 
 void WordsBase::clusterStatistics(int nthread) {
@@ -2179,10 +2299,7 @@ void WordsBase::run_thread(int nthread) {
 void WordsBase::run(ENUM_JOB_TYPE e) {
   bool userbreak = false;
   // auto begin = clock();
-  int threads = m_menuClick == MENU_WORD_FREQUENCY ||
-                        (m_menuClick == MENU_CHAIN && m_evwords.size() == 2)
-                    ? 1
-                    : m_threads;
+  int threads = m_menuClick == MENU_WORD_FREQUENCY ? 1 : m_threads;
   // pr(magic_enum::enum_name(m_menuClick), threads);
   if (e == JOB_TYPE_FULL) {
     if (auto it = menuPreProseeding.get(m_menuClick)) {
