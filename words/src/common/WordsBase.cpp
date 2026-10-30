@@ -160,6 +160,7 @@ WordsBase::WordsBase() {
   m_chain.resize(m_threads);
   m_vvs.resize(m_threads);
   m_vii.resize(m_threads);
+  m_chainLayerResult.resize(m_threads);
 
   loadLanguages();
 
@@ -669,8 +670,8 @@ bool WordsBase::chainAddIfFound(int nthread, const std::string &s, VectorInt &v,
   return false;
 }
 
-bool WordsBase::chainAddIfFound(const std::string &s, VectorInt &v,
-                                const VectorInt &otherSideOrdered) {
+int WordsBase::chainAddIfFoundIndex(const std::string &s, VectorInt &v,
+                                    const VectorInt &otherSideOrdered) {
   const auto &words = m_vvs[0];
   int i = indexOfOrdered(s, words);
   if (i != -1) {
@@ -679,12 +680,15 @@ bool WordsBase::chainAddIfFound(const std::string &s, VectorInt &v,
     if (mask_cell.compare_exchange_strong(expected, 0,
                                           std::memory_order_relaxed)) {
       v.push_back(i);
-      return false;
-    } else if (std::ranges::binary_search(otherSideOrdered, i)) {
-      return true;
+      return -1;
+    } else {
+      i = indexOfOrdered(i, otherSideOrdered);
+      if (i != -1) {
+        return i;
+      }
     }
   }
-  return false;
+  return -1;
 }
 
 std::pair<VectorInt, bool>
@@ -716,12 +720,13 @@ WordsBase::chainLayer(int nthread, const VectorInt &layerIndex,
   return {total_v, false};
 }
 
-std::pair<VectorInt, bool>
-WordsBase::chainLayer2(int nthread, const VectorInt &layerIndex,
-                       const VectorInt &otherSideOrdered) {
+void WordsBase::chainLayer2(int nthread, const VectorInt &layerIndex,
+                            const VectorInt &otherSideOrdered) {
+  ChainLayerResult &clr = m_chainLayerResult[nthread];
   const auto &words = m_vvs[0]; // here 0
   // prsync(nthread, words.size());
-  VectorInt total_v;
+  clr.v.clear();
+  clr.b = false;
   auto [it, end] = iterators(nthread, layerIndex);
   for (; it != end; it++) {
     VectorInt v;
@@ -732,19 +737,19 @@ WordsBase::chainLayer2(int nthread, const VectorInt &layerIndex,
       for (const char &c : alphabet()) {
         if (c != original_char) {
           s[i] = c;
-
-          if (chainAddIfFound(s, v, otherSideOrdered)) {
+          int j = chainAddIfFoundIndex(s, v, otherSideOrdered);
+          if (j != -1) {
             // prsync(nthread);
-            return {{}, true};
+            clr.b = true;
+            return;
           }
         }
       }
       s[i] = original_char;
     }
-    total_v.insert(total_v.end(), v.begin(), v.end());
+    // total_v.insert(total_v.end(), v.begin(), v.end());
+    clr.v.insert(clr.v.end(), v.begin(), v.end());
   }
-  // prsync(total_v.size());
-  return {total_v, false};
 }
 
 VectorInt WordsBase::chainLayer1(int nthread, const VectorInt &layerIndex) {
@@ -759,7 +764,7 @@ VectorInt WordsBase::chainLayer1(int nthread, const VectorInt &layerIndex) {
       for (const char &c : alphabet()) {
         if (c != original_char) {
           s[i] = c;
-          chainAddIfFound(s, v);
+          chainAddIfFoundIndex(s, v);
         }
       }
       s[i] = original_char;
@@ -1276,10 +1281,15 @@ void WordsBase::mergeLayers() noexcept {
 void WordsBase::mergeLayers2() noexcept {
   m_chd.clear();
   // int i = -1;
-  for (const auto &a : m_vii) {
+  for (const auto &a : m_chainLayerResult) {
+    if (a.b) {
+      m_j = -1;
+      pr("exit");
+      return;
+    }
     // i++;
     // pr(i, a.size());
-    m_chd.insert(m_chd.end(), a.begin(), a.end());
+    m_chd.insert(m_chd.end(), a.v.begin(), a.v.end());
   }
   // pr(m_chd.size());
   //  todo
@@ -1314,7 +1324,7 @@ void WordsBase::findChainPreProseeding() {
     if (m_evwords.size() == 1)
       chainAddIfFound(nthread, a, m_layerIndex[i][0]);
     else {
-      chainAddIfFound(a, m_layerIndex[i][0]);
+      chainAddIfFoundIndex(a, m_layerIndex[i][0]);
     }
   }
   if (m_evwords.size() == 1) {
@@ -1363,9 +1373,12 @@ void WordsBase::findChain(int nthread) {
     // if (!nthread) {
     //   prsync(nthread, m_j, ptr[m_j]->size(), ptr[!m_j]->size() );
     // }
-    m_vii[nthread] = chainLayer2(nthread, *ptr[m_j], *ptr[!m_j]).first;
+    chainLayer2(nthread, *ptr[m_j], *ptr[!m_j]);
     m_barrier->arrive_and_wait();
     if (m_j == -1) {
+      if(nthread){
+        return;
+      }
       break;
     }
     // if (p.second) {
@@ -1376,7 +1389,7 @@ void WordsBase::findChain(int nthread) {
   }
 
   // prsync(nthread, "end");
-  return;
+  //return;
 
   /*
 if (nthread > 0) {

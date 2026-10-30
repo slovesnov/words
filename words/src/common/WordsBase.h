@@ -215,6 +215,7 @@ protected:
   VectorVectorInt m_layerIndex[2], m_vii;
   TableFormat m_table;
   int m_j;
+  VectorChainLayerResult m_chainLayerResult;
 
   std::string getStatusString();
   std::string getTimeString();
@@ -318,12 +319,12 @@ public:
 
   bool chainAddIfFound(int nthread, const std::string &s, VectorInt &v,
                        const VectorInt &otherSideOrdered = {});
-  bool chainAddIfFound(const std::string &s, VectorInt &v,const VectorInt &otherSideOrdered = {});
+  int chainAddIfFoundIndex(const std::string &s, VectorInt &v,const VectorInt &otherSideOrdered = {});
   std::pair<VectorInt, bool> chainLayer(int nthread,
                                         const VectorInt &layerIndex,
                                         const VectorInt &otherSideOrdered = {});
   VectorInt chainLayer1(int nthread, const VectorInt &layerIndex);
-  std::pair<VectorInt, bool> chainLayer2(int nthread, const VectorInt &layerIndex,
+  void chainLayer2(int nthread, const VectorInt &layerIndex,
                                         const VectorInt &otherSideOrdered = {});
   static int differentChars(std::string_view s);
   static bool spanIncluding(std::string_view p, std::string_view pattern) {

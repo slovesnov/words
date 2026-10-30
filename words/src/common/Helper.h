@@ -204,12 +204,10 @@ public:
 VString getLocaleWords(const std::string &strUtf8);
 template <typename T>
 int indexOfOrdered(const T& value, const std::vector<T>& vec) {
-    auto it = std::lower_bound(vec.begin(), vec.end(), value);
-    
+    auto it = std::lower_bound(vec.begin(), vec.end(), value);    
     if (it != vec.end() && *it == value) {
         return static_cast<int>(std::distance(vec.begin(), it));
     }
-    
     return -1;
 }
 std::string squareBrackets(int v);
@@ -450,3 +448,9 @@ struct Graph {
 };
 
 PairDoubleDouble leastSquares(const VectorDouble &x, const VectorDouble &y);
+
+struct ChainLayerResult{
+  VectorInt v;
+  bool b;
+};
+using VectorChainLayerResult=std::vector<ChainLayerResult>;
