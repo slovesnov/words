@@ -495,72 +495,6 @@ void WordsBase::checkDictionaryPostProseeding() {
     SearchResult::out = string(DICTIONARY_CHECK_FINISHED_SUCCESSFULLY);
   }
 }
-/*
-// If bounds are not found in the dictionary, they are added to it.
-// For words added from bounds, m_chainChar is set to 0.
-// For native dictionary words, m_chainChar is set to 1.
-void WordsBase::fillDictionaryLength(int nthread, size_t length,
-                                     const VString &bounds) {
-  auto &words = m_vvs[nthread];
-  words.clear();
-
-  const auto &dict = getDictionary();
-  size_t dict_size = dict.size();
-
-  // Pre-allocate memory once to avoid reallocations during pushing
-  words.reserve(dict_size / 10 + bounds.size());
-
-  size_t bounds_idx = 0;
-  size_t bounds_size = bounds.size();
-
-  // 1. Fast inline sorting for bounds (maximum of 2 elements)
-  const VString *sorted_bounds = &bounds;
-  VString local_bounds;
-  if (bounds_size == 2 && bounds[1] < bounds[0]) {
-    local_bounds = {bounds[1], bounds[0]};
-    sorted_bounds = &local_bounds;
-  }
-
-  // Reset and pre-allocate the chain character mask tracking dictionary sources
-  auto &chainChar = m_chainChar;
-  chainChar.clear();
-  chainChar.reserve(words.capacity());
-
-  // 2. Single-pass linear merge O(N)
-  for (const auto &a : dict) {
-    if (a.size() != length || m_ss.contains(a)) {
-      continue;
-    }
-
-    // Insert bounds elements that come alphabetically before the current
-dictionary word while (bounds_idx < bounds_size && (*sorted_bounds)[bounds_idx]
-< a) { words.push_back((*sorted_bounds)[bounds_idx]); chainChar.push_back(0); //
-New word injected from bounds -> set to 0
-      ++bounds_idx;
-    }
-
-    // If the bounds element matches the dictionary word, skip it to prevent
-duplicates if (bounds_idx < bounds_size && (*sorted_bounds)[bounds_idx] == a) {
-      ++bounds_idx;
-      // Already present; it will be pushed below as a native dictionary word
-(with value 1)
-    }
-
-    words.push_back(a);
-    chainChar.push_back(1); // Native word from the dictionary -> set to 1
-  }
-
-  // 3. Append remaining bounds elements that come alphabetically after all
-dictionary words while (bounds_idx < bounds_size) {
-    words.push_back((*sorted_bounds)[bounds_idx]);
-    chainChar.push_back(0); // New word injected from bounds -> set to 0
-    ++bounds_idx;
-  }
-
-  // 4. Update the execution chain layout using the final exact size
-  m_chain[nthread].assign(words.size(), true);
-}
-*/
 
 // if bounds not found in dictionary then they are added to dictionary
 void WordsBase::fillDictionaryLength(int nthread, size_t length,
@@ -643,8 +577,6 @@ int WordsBase::findLongestChain(int nthread) {
   do {
     if (m_menuClick == MENU_CHAIN) {
       chainLayer2(nthread, m_chd);
-      m_vii[nthread] = m_chainLayerResult[nthread].v;
-      // m_vii[nthread] = chainLayer1(nthread, m_chd);
       m_barrier->arrive_and_wait();
       i = m_chd.size();
     } else {
@@ -731,7 +663,6 @@ void WordsBase::chainLayer2(int nthread, const VectorInt &layerIndex,
   // prsync(nthread, words.size());
   clr.v.clear();
   clr.opposite.clear();
-  // clr.b = false;
   auto [it, end] = iterators(nthread, layerIndex);
   for (; it != end; it++) {
     std::string s = words[*it];
@@ -753,10 +684,8 @@ void WordsBase::chainLayer2(int nthread, const VectorInt &layerIndex,
             j = chainAddIfFoundIndex(s, clr.v, otherSideOrdered);
             if (j != -1) {
               searchOppositeOnly = true;
-              // clr.b = true;
               clr.v = {*it};
               clr.opposite = {otherSideOrdered[j]};
-              // return;
             }
           }
         }
@@ -764,28 +693,6 @@ void WordsBase::chainLayer2(int nthread, const VectorInt &layerIndex,
       s[i] = original_char;
     }
   }
-}
-
-VectorInt WordsBase::chainLayer1(int nthread, const VectorInt &layerIndex) {
-  const auto &words = m_vvs[0]; // here 0
-  VectorInt total_v;
-  auto [it, end] = iterators(nthread, layerIndex);
-  for (; it != end; it++) {
-    VectorInt v;
-    std::string s = words[*it];
-    for (size_t i = 0; i < s.size(); ++i) {
-      char original_char = s[i];
-      for (const char &c : alphabet()) {
-        if (c != original_char) {
-          s[i] = c;
-          chainAddIfFoundIndex(s, v);
-        }
-      }
-      s[i] = original_char;
-    }
-    total_v.insert(total_v.end(), v.begin(), v.end());
-  }
-  return total_v;
 }
 
 int WordsBase::differentChars(std::string_view s) {
@@ -1220,38 +1127,6 @@ void WordsBase::findModification(int nthread) {
   }
 }
 
-std::array<VectorInt, 2> WordsBase::relations2(int nthread, VectorInt const &v1,
-                                               VectorInt const &v2) {
-  auto &words = m_vvs[nthread];
-  VectorBool c[] = {VectorBool(v1.size(), false), VectorBool(v2.size(), false)};
-  int i, j;
-  i = -1;
-  for (auto &a : v1) {
-    i++;
-    j = -1;
-    for (auto &b : v2) {
-      j++;
-      if (differenceOnlyOneChar(words[a], words[b])) {
-        c[0][i] = true;
-        c[1][j] = true;
-      }
-    }
-  }
-
-  std::array<VectorInt, 2> r;
-  for (i = 0; i < 2; i++) {
-    auto &v = r[i];
-    j = -1;
-    for (auto const &a : c[i]) {
-      j++;
-      if (a) {
-        v.push_back(i == 0 ? v1[j] : v2[j]);
-      }
-    }
-  }
-  return r;
-}
-
 VectorInt WordsBase::relations(int nthread, VectorInt const &v1,
                                VectorInt const &v2) {
   auto &words = m_vvs[nthread];
@@ -1269,8 +1144,8 @@ VectorInt WordsBase::relations(int nthread, VectorInt const &v1,
 
 void WordsBase::mergeLayers() noexcept {
   m_chd.clear();
-  for (const auto &a : m_vii) {
-    m_chd.insert(m_chd.end(), a.begin(), a.end());
+  for (const auto &a : m_chainLayerResult) {
+    m_chd.insert(m_chd.end(), a.v.begin(), a.v.end());
   }
 
   auto &words = m_vvs[0];
@@ -1289,6 +1164,12 @@ void WordsBase::mergeLayers() noexcept {
         m_table.string(m_table.m_rows, j, double(j) / m_i, words_str);
     updateProceedingText(s);
     m_i = j;
+
+    s="";
+    for (i = 0; i < j; i++) {
+      s+=words[m_chd[i]]+" ";
+    }
+    printlog("##", j,s);
   }
 }
 
@@ -1370,6 +1251,10 @@ void WordsBase::findChainPreProseeding() {
 
     m_chd = {m_layerIndex[0][0][0]};
     m_i = 1;
+
+    auto &words = m_vvs[nthread];
+    printlog("##start",words[m_chd[i]]);
+
   } else {
     chainSetPtr();
     m_barrier = std::make_unique<std::barrier<BarrierCallback>>(
@@ -1416,24 +1301,6 @@ void WordsBase::findChain(int nthread) {
 
   pr(timeElapse(begin));
   begin = clock();
-  /*
-    VectorInt *ptr[2];
-    i = -1;
-    for (auto &a : ptr) {
-      i++;
-      a = &m_layerIndex[i][m_layerIndex[i].size() - 1];
-    }
-    auto res = relations2(nthread, *ptr[0], *ptr[1]);
-    pr(std::format("{} {}", res[0], res[1]), res[0].size(), res[1].size());
-
-    pr(timeElapse(begin));
-    begin = clock();
-
-    for (i = 0; i < 2; i++) {
-      auto &li = m_layerIndex[i];
-      j = li.size() - 1;
-      li[j] = res[i];
-    }*/
 
   for (i = 0; i < 2; i++) {
     auto &li = m_layerIndex[i];

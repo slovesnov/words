@@ -325,7 +325,6 @@ public:
   std::pair<VectorInt, bool> chainLayer(int nthread,
                                         const VectorInt &layerIndex,
                                         const VectorInt &otherSideOrdered = {});
-  VectorInt chainLayer1(int nthread, const VectorInt &layerIndex);
   void chainLayer2(int nthread, const VectorInt &layerIndex,
                    const VectorInt &otherSideOrdered = {});
   void chainSetPtr();
@@ -368,7 +367,5 @@ public:
   virtual void updateProceedingThread();
   void updateProceedingText(std::string s, bool add = true);
   const MapIntInt &getWordLengthMap() const;
-  std::array<VectorInt, 2> relations2(int nthread, VectorInt const &v1,
-                                      VectorInt const &v2);
   VectorInt relations(int nthread, VectorInt const &v1, VectorInt const &v2);
 };
