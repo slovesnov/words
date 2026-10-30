@@ -642,7 +642,9 @@ int WordsBase::findLongestChain(int nthread) {
   total = 0;
   do {
     if (m_menuClick == MENU_CHAIN) {
-      m_vii[nthread] = chainLayer1(nthread, m_chd);
+      chainLayer2(nthread, m_chd);
+      m_vii[nthread] = m_chainLayerResult[nthread].v;
+      // m_vii[nthread] = chainLayer1(nthread, m_chd);
       m_barrier->arrive_and_wait();
       i = m_chd.size();
     } else {
