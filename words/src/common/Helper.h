@@ -450,7 +450,7 @@ struct Graph {
 PairDoubleDouble leastSquares(const VectorDouble &x, const VectorDouble &y);
 
 struct ChainLayerResult{
-  VectorInt v;
-  bool b;
+  VectorInt v,opposite;
+  //bool b;
 };
 using VectorChainLayerResult=std::vector<ChainLayerResult>;
