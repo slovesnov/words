@@ -216,6 +216,7 @@ protected:
   TableFormat m_table;
   int m_j;
   VectorChainLayerResult m_chainLayerResult;
+  VectorInt *m_chainPtr[2];
 
   std::string getStatusString();
   std::string getTimeString();

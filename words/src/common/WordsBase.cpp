@@ -729,17 +729,14 @@ void WordsBase::chainLayer2(int nthread, const VectorInt &layerIndex,
   clr.b = false;
   auto [it, end] = iterators(nthread, layerIndex);
   for (; it != end; it++) {
-    VectorInt v;
     std::string s = words[*it];
-    // prsync(nthread, "#", localeToUtf8(s));
     for (size_t i = 0; i < s.size(); ++i) {
       char original_char = s[i];
       for (const char &c : alphabet()) {
         if (c != original_char) {
           s[i] = c;
-          int j = chainAddIfFoundIndex(s, v, otherSideOrdered);
+          int j = chainAddIfFoundIndex(s, clr.v, otherSideOrdered);
           if (j != -1) {
-            // prsync(nthread);
             clr.b = true;
             return;
           }
@@ -747,8 +744,6 @@ void WordsBase::chainLayer2(int nthread, const VectorInt &layerIndex,
       }
       s[i] = original_char;
     }
-    // total_v.insert(total_v.end(), v.begin(), v.end());
-    clr.v.insert(clr.v.end(), v.begin(), v.end());
   }
 }
 
@@ -1284,33 +1279,22 @@ void WordsBase::mergeLayers2() noexcept {
   for (const auto &a : m_chainLayerResult) {
     if (a.b) {
       m_j = -1;
-      pr("exit");
       return;
     }
-    // i++;
-    // pr(i, a.size());
     m_chd.insert(m_chd.end(), a.v.begin(), a.v.end());
   }
-  // pr(m_chd.size());
-  //  todo
-  //   if (p.first.empty()) {
-  //     SearchResult::out = string(NO_CHAINS_FOUND);
-  //     return;
-  //   }
   std::sort(m_chd.begin(), m_chd.end());
   m_layerIndex[m_j].push_back(m_chd);
   if (m_chd.empty()) {
-    m_j = -1;
-    pr("exit");
+    m_j = -2; // NO_CHAINS_FOUND
   } else {
-    VectorInt *ptr[2];
     int i = -1;
-    for (auto &a : ptr) {
+    for (auto &a : m_chainPtr) {
       i++;
       a = &m_layerIndex[i][m_layerIndex[i].size() - 1];
     }
-    pr(m_j ? "right" : "left", m_chd.size());
-    m_j = ptr[1]->size() < ptr[0]->size();
+    // pr(m_j ? "right" : "left", m_chd.size());
+    m_j = m_chainPtr[1]->size() < m_chainPtr[0]->size();
   }
 }
 
@@ -1334,6 +1318,11 @@ void WordsBase::findChainPreProseeding() {
     m_chd = {m_layerIndex[0][0][0]};
     m_i = 1;
   } else {
+    int i = -1;
+    for (auto &a : m_chainPtr) {
+      i++;
+      a = &m_layerIndex[i][m_layerIndex[i].size() - 1];
+    }
     m_j = 0;
     m_barrier = std::make_unique<std::barrier<BarrierCallback>>(
         m_threads, [this]() noexcept { this->mergeLayers2(); });
@@ -1342,7 +1331,6 @@ void WordsBase::findChainPreProseeding() {
 
 void WordsBase::findChain(int nthread) {
   int i, j;
-  VectorInt *ptr[2];
   auto &words = m_vvs[nthread];
   std::string s, s1;
 
@@ -1364,32 +1352,22 @@ void WordsBase::findChain(int nthread) {
   begin = clock();
 
   while (true) {
-    i = -1;
-    for (auto &a : ptr) {
-      i++;
-      a = &m_layerIndex[i][m_layerIndex[i].size() - 1];
-    }
-
-    // if (!nthread) {
-    //   prsync(nthread, m_j, ptr[m_j]->size(), ptr[!m_j]->size() );
-    // }
-    chainLayer2(nthread, *ptr[m_j], *ptr[!m_j]);
+    chainLayer2(nthread, *m_chainPtr[m_j], *m_chainPtr[!m_j]);
     m_barrier->arrive_and_wait();
-    if (m_j == -1) {
-      if(nthread){
+    if (m_j < 0) {
+      if (nthread) {
+        return;
+      }
+      if (m_j == -2) {
+        SearchResult::out = string(NO_CHAINS_FOUND);
         return;
       }
       break;
     }
-    // if (p.second) {
-    //   break;
-    // }
-    // prsync(nthread, j ? "right" : "left", m_layerIndex[j].size(),
-    //        p.first.size());
   }
 
   // prsync(nthread, "end");
-  //return;
+  // return;
 
   /*
 if (nthread > 0) {
@@ -1421,6 +1399,7 @@ while (true) {
   pr(timeElapse(begin));
   begin = clock();
 
+  VectorInt *ptr[2];
   i = -1;
   for (auto &a : ptr) {
     i++;
