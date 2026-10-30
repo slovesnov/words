@@ -278,15 +278,6 @@ VString getLocaleWords(const std::string &strUtf8) {
   return result;
 }
 
-int indexOfOrdered(const std::string &s, const VString &a) {
-  auto it = std::lower_bound(a.begin(), a.end(), s);
-  if (it != a.end() && *it == s) {
-    return std::distance(a.begin(), it);
-  } else {
-    return -1;
-  }
-}
-
 std::string squareBrackets(int v) { return std::format("[{}]", v); }
 
 void cairo_rounded_rectangle(cairo_t *cr, double x, double y, double width,

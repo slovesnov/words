@@ -202,7 +202,16 @@ public:
 };
 
 VString getLocaleWords(const std::string &strUtf8);
-int indexOfOrdered(const std::string &s, const VString &a);
+template <typename T>
+int indexOfOrdered(const T& value, const std::vector<T>& vec) {
+    auto it = std::lower_bound(vec.begin(), vec.end(), value);
+    
+    if (it != vec.end() && *it == value) {
+        return static_cast<int>(std::distance(vec.begin(), it));
+    }
+    
+    return -1;
+}
 std::string squareBrackets(int v);
 void cairo_rounded_rectangle(cairo_t *cr, double x, double y, double width,
                              double height, double radius);
@@ -254,8 +263,6 @@ struct Graph {
   void set(cairo_t *_cr, PangoLayout *_layout, int left, int top, int width,
            int height, double minx, double maxx, double miny, double maxy,
            int _margin) {
-    // int i;
-    // double v;
     cr = _cr;
     layout = _layout;
     margin = _margin;
@@ -268,21 +275,10 @@ struct Graph {
     auto b = snap_to_pixel(t + height);
 
     cairo_set_line_width(cr, 1.0);
-
     cairo_move_to(cr, l, t);
     cairo_line_to(cr, l, b);
     cairo_line_to(cr, r, b);
-
     cairo_stroke(cr);
-
-    // for (i = 0; i < axisx; i++) {
-    //   v = minx + (maxx - minx) * i / (axisx - 1);
-    //   drawxlabel(v);
-    // }
-    // for (i = 0; i < axisy; i++) {
-    //   v = miny + (maxy - miny) * i / (axisy - 1);
-    //   drawylabel(v);
-    // }
   }
 
   void set(cairo_t *_cr, PangoLayout *_layout, int left, int top, int width,

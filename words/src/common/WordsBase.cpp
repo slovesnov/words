@@ -494,6 +494,72 @@ void WordsBase::checkDictionaryPostProseeding() {
     SearchResult::out = string(DICTIONARY_CHECK_FINISHED_SUCCESSFULLY);
   }
 }
+/*
+// If bounds are not found in the dictionary, they are added to it.
+// For words added from bounds, m_chainChar is set to 0.
+// For native dictionary words, m_chainChar is set to 1.
+void WordsBase::fillDictionaryLength(int nthread, size_t length,
+                                     const VString &bounds) {
+  auto &words = m_vvs[nthread];
+  words.clear();
+
+  const auto &dict = getDictionary();
+  size_t dict_size = dict.size();
+
+  // Pre-allocate memory once to avoid reallocations during pushing
+  words.reserve(dict_size / 10 + bounds.size());
+
+  size_t bounds_idx = 0;
+  size_t bounds_size = bounds.size();
+
+  // 1. Fast inline sorting for bounds (maximum of 2 elements)
+  const VString *sorted_bounds = &bounds;
+  VString local_bounds;
+  if (bounds_size == 2 && bounds[1] < bounds[0]) {
+    local_bounds = {bounds[1], bounds[0]};
+    sorted_bounds = &local_bounds;
+  }
+
+  // Reset and pre-allocate the chain character mask tracking dictionary sources
+  auto &chainChar = m_chainChar;
+  chainChar.clear();
+  chainChar.reserve(words.capacity());
+
+  // 2. Single-pass linear merge O(N)
+  for (const auto &a : dict) {
+    if (a.size() != length || m_ss.contains(a)) {
+      continue;
+    }
+
+    // Insert bounds elements that come alphabetically before the current
+dictionary word while (bounds_idx < bounds_size && (*sorted_bounds)[bounds_idx]
+< a) { words.push_back((*sorted_bounds)[bounds_idx]); chainChar.push_back(0); //
+New word injected from bounds -> set to 0
+      ++bounds_idx;
+    }
+
+    // If the bounds element matches the dictionary word, skip it to prevent
+duplicates if (bounds_idx < bounds_size && (*sorted_bounds)[bounds_idx] == a) {
+      ++bounds_idx;
+      // Already present; it will be pushed below as a native dictionary word
+(with value 1)
+    }
+
+    words.push_back(a);
+    chainChar.push_back(1); // Native word from the dictionary -> set to 1
+  }
+
+  // 3. Append remaining bounds elements that come alphabetically after all
+dictionary words while (bounds_idx < bounds_size) {
+    words.push_back((*sorted_bounds)[bounds_idx]);
+    chainChar.push_back(0); // New word injected from bounds -> set to 0
+    ++bounds_idx;
+  }
+
+  // 4. Update the execution chain layout using the final exact size
+  m_chain[nthread].assign(words.size(), true);
+}
+*/
 
 // if bounds not found in dictionary then they are added to dictionary
 void WordsBase::fillDictionaryLength(int nthread, size_t length,
@@ -1245,7 +1311,11 @@ void WordsBase::findChainPreProseeding() {
   for (auto &a : m_evwords) {
     i++;
     m_layerIndex[i] = {{}};
-    chainAddIfFound(nthread, a, m_layerIndex[i][0]);
+    if (m_evwords.size() == 1)
+      chainAddIfFound(nthread, a, m_layerIndex[i][0]);
+    else {
+      chainAddIfFound(a, m_layerIndex[i][0]);
+    }
   }
   if (m_evwords.size() == 1) {
     m_barrier = std::make_unique<std::barrier<BarrierCallback>>(
@@ -1253,7 +1323,7 @@ void WordsBase::findChainPreProseeding() {
 
     m_chd = {m_layerIndex[0][0][0]};
     m_i = 1;
-  } else if (m_evwords.size() == 2) {
+  } else {
     m_j = 0;
     m_barrier = std::make_unique<std::barrier<BarrierCallback>>(
         m_threads, [this]() noexcept { this->mergeLayers2(); });
