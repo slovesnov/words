@@ -318,13 +318,10 @@ public:
                             const VString &bounds = {});
   int findLongestChain(int nthread);
 
-  bool chainAddIfFound(int nthread, const std::string &s, VectorInt &v,
-                       const VectorInt &otherSideOrdered = {});
+  void chainAddIfFound(int nthread, const std::string &s, VectorInt &v);
   int chainAddIfFoundIndex(const std::string &s, VectorInt &v,
                            const VectorInt &otherSideOrdered = {});
-  std::pair<VectorInt, bool> chainLayer(int nthread,
-                                        const VectorInt &layerIndex,
-                                        const VectorInt &otherSideOrdered = {});
+  VectorInt chainLayer(int nthread, const VectorInt &layerIndex);
   void chainLayer2(int nthread, const VectorInt &layerIndex,
                    const VectorInt &otherSideOrdered = {});
   void chainSetPtr();
