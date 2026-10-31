@@ -596,7 +596,6 @@ void WordsBase::chainAddIfFound(int nthread, const std::string &s,
     if (m_chain[nthread][i]) {
       m_chain[nthread][i] = false;
       v.push_back(i);
-      return;
     }
   }
 }
@@ -1327,9 +1326,6 @@ void WordsBase::clusterStatistics(int nthread) {
   std::string s;
   while ((i = m_i.fetch_add(1)) < std::ssize(m_iiv)) {
     length = m_iiv[i].first;
-    if (length != 4) { // todo
-      continue;
-    }
     MapIntInt map;
     j = 0;
     fillDictionaryLength(nthread, length);
@@ -1339,22 +1335,6 @@ void WordsBase::clusterStatistics(int nthread) {
       int i = findLongestChain(nthread);
       if (i == -1) { // user break
         return;
-      }
-      if (i > 10) { // todo
-        auto v = m_chain[nthread];
-        // size_t false_count = std::count(v.begin(), v.end(), false);
-        auto &words = m_vvs[nthread];
-        pr(words.size(),v.size());
-        j = -1;
-        FILE *f = fopen("23112.txt", "wb+");
-        for (const auto &a : v) {
-          j++;
-          if (!a) {
-            fprintf(f,"%s\n",words[j].c_str());
-          }
-        }
-        fclose(f);
-        //pr(i, v.size(), false_count);
       }
       map[i + 1]++;
     }
