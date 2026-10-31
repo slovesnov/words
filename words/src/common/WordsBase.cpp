@@ -589,17 +589,6 @@ int WordsBase::findLongestChain(int nthread) {
   return total;
 }
 
-void WordsBase::chainAddIfFound(int nthread, const std::string &s,
-                                VectorInt &v) {
-  int i = indexOfOrdered(s, m_vvs[nthread]);
-  if (i != -1) {
-    if (m_chain[nthread][i]) {
-      m_chain[nthread][i] = false;
-      v.push_back(i);
-    }
-  }
-}
-
 int WordsBase::chainAddIfFoundIndex(const std::string &s, VectorInt &v,
                                     const VectorInt &otherSideOrdered) {
   const auto &words = m_vvs[0];
@@ -622,24 +611,28 @@ int WordsBase::chainAddIfFoundIndex(const std::string &s, VectorInt &v,
 }
 
 VectorInt WordsBase::chainLayer(int nthread, const VectorInt &layerIndex) {
-  VectorInt total_v;
+  VectorInt v;
   const auto &words = m_vvs[nthread];
   for (const auto &li : layerIndex) {
-    VectorInt v;
     std::string s = words[li];
     for (size_t i = 0; i < s.size(); ++i) {
       char original_char = s[i];
       for (const char &c : alphabet()) {
         if (c != original_char) {
           s[i] = c;
-          chainAddIfFound(nthread, s, v);
+          int i = indexOfOrdered(s, m_vvs[nthread]);
+          if (i != -1) {
+            if (m_chain[nthread][i]) {
+              m_chain[nthread][i] = false;
+              v.push_back(i);
+            }
+          }
         }
       }
       s[i] = original_char;
     }
-    total_v.insert(total_v.end(), v.begin(), v.end());
   }
-  return total_v;
+  return v;
 }
 
 void WordsBase::chainLayer2(int nthread, const VectorInt &layerIndex,
@@ -1153,11 +1146,11 @@ void WordsBase::mergeLayers() noexcept {
     updateProceedingText(s);
     m_i = j;
 
-    s = "";
-    for (i = 0; i < j; i++) {
-      s += words[m_chd[i]] + " ";
-    }
-    printlog("##", j, s);
+    // s = "";
+    // for (i = 0; i < j; i++) {
+    //   s += words[m_chd[i]] + " ";
+    // }
+    // printlog("##", j, s);
   }
 }
 
@@ -1240,8 +1233,8 @@ void WordsBase::findChainPreProseeding() {
     m_chd = {m_layerIndex[0][0][0]};
     m_i = 1;
 
-    auto &words = m_vvs[nthread];
-    printlog("start", 1, words[m_chd[i]]);
+    // auto &words = m_vvs[nthread];
+    // printlog("start", 1, words[m_chd[i]]);
 
   } else {
     chainSetPtr();
@@ -1257,7 +1250,55 @@ void WordsBase::findChain(int nthread) {
 
   // auto begin = clock();
   if (m_evwords.size() == 1) {
-    findLongestChain(nthread);
+    if (m_checkValue) {
+      if (nthread) {
+        return; // todo
+      }
+      int cn = 0;
+      auto begin = clock();
+
+      VectorVectorInt adj(words.size());
+
+      // Generate mutations for each word in the dictionary
+      for (i = 0; i < static_cast<int>(words.size()); i++) {
+        std::string s = words[i];
+
+        // Iterate through each character position in the word
+        for (size_t pos = 0; pos < s.size(); ++pos) {
+          char original_char = s[pos];
+
+          // Substitute every possible character from the alphabet
+          for (const char c : alphabet()) {
+            if (c == original_char)
+              continue;
+
+            s[pos] = c; // Mutate the word
+
+            // Instantly lookup the index of the mutated word in O(log N) time
+            j = indexOfOrdered(s, words);
+
+            // If the mutated word exists in the sorted vector
+            if (j != -1) {
+              // Since the graph is undirected, add the edge only when i < j
+              // to avoid duplicating the same connection twice
+              if (i < j) {
+                cn++;
+                adj[i].push_back(j);
+                adj[j].push_back(i);
+              }
+            }
+          }
+          s[pos] = original_char; // Restore the original character back
+        }
+      }
+      pr(words.size(), cn, timeElapse(begin));
+      begin = clock();
+      findAbsoluteLongestPath(adj);
+      pr(timeElapse(begin));
+
+    } else {
+      findLongestChain(nthread);
+    }
     return;
   }
 
@@ -2499,4 +2540,61 @@ void WordsBase::updateProceedingText(std::string s, bool add) {
 
 const MapIntInt &WordsBase::getWordLengthMap() const {
   return m_wordLengthMap[getDictionaryIndex()];
+}
+
+// Main function that looks for the absolute diameter of the graph
+void WordsBase::findAbsoluteLongestPath(const VectorVectorInt &adj) {
+  auto &words = m_vvs[0];
+
+  int V = adj.size();
+
+  // The tracking boolean vector. false means the vertex hasn't been explored in
+  // any component yet
+  VectorBool global_visited(V, false);
+
+  int absolute_max_dist = 0;
+  VectorInt longest_chain;
+
+  for (int i = 0; i < V; ++i) {
+    // If the word has already been processed in a previous connected component,
+    // skip it!
+    if (global_visited[i]) {
+      continue;
+    }
+
+    // Step 1: Find the farthest vertex 'A' from the current vertex 'i'
+    PathResult first_pass = bfsFarthestNode(i, adj, V, global_visited);
+
+    if (first_pass.nodes.empty())
+      continue;
+    int node_A = first_pass.nodes.back();
+
+    // Step 2: Launch BFS from the discovered peripheral point 'A'.
+    // Local vector for the second pass to find the exact diameter of this
+    // subgraph
+    VectorBool local_dummy(V, false);
+    PathResult second_pass = bfsFarthestNode(node_A, adj, V, local_dummy);
+
+    // Step 3: Check if the global record for the chain length is broken
+    if (second_pass.distance > absolute_max_dist) {
+      absolute_max_dist = second_pass.distance;
+      longest_chain = second_pass.nodes;
+    }
+  }
+
+  // Print the longest word chain found in your dictionary
+  std::string result_string = std::format(
+      "max length: {} (words: {})\n", absolute_max_dist, longest_chain.size());
+
+  // 2. Transform word indices into actual words from the dictionary
+  auto word_view = longest_chain |
+                   std::views::transform([&](int idx) { return words[idx]; });
+
+  // 3. Join the words with the " -> " delimiter (requires C++23)
+  // Pure C++23 ranges join style
+  std::string joined_chain =
+      std::views::join_with(word_view, std::string(" -> ")) |
+      std::ranges::to<std::string>();
+  result_string += joined_chain;
+  SearchResult::out = localeToUtf8(result_string);
 }

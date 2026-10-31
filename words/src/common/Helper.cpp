@@ -8,6 +8,8 @@
 #include "Helper.h"
 #include "WordsBase.h"
 #include <cmath>
+#include <cmath>
+#include <queue>
 #ifndef NDEBUG
 #include <stacktrace>
 #endif
@@ -381,4 +383,47 @@ PairDoubleDouble leastSquares(const VectorDouble& x, const VectorDouble& y) {
     double b = (sum_y - k * sum_x) / n;
 
     return {k, b};
+}
+
+PathResult bfsFarthestNode(int start_node, const VectorVectorInt &adj, int V,
+                           VectorBool &component_visited) {
+  VectorInt dist(V, -1);
+  VectorInt parent(V, -1);
+  std::queue<int> q;
+
+  dist[start_node] = 0;
+  component_visited[start_node] = true;
+  q.push(start_node);
+
+  int farthest_node = start_node;
+  int max_dist = 0;
+
+  while (!q.empty()) {
+    int u = q.front();
+    q.pop();
+
+    for (int v : adj[u]) {
+      if (dist[v] == -1) {
+        dist[v] = dist[u] + 1;
+        parent[v] = u;
+        component_visited[v] =
+            true; // mark as visited
+        q.push(v);
+
+        if (dist[v] > max_dist) {
+          max_dist = dist[v];
+          farthest_node = v;
+        }
+      }
+    }
+  }
+
+  // restore path
+  VectorInt path;
+  for (int curr = farthest_node; curr != -1; curr = parent[curr]) {
+    path.push_back(curr);
+  }
+  std::reverse(path.begin(), path.end());
+
+  return {max_dist, path};
 }

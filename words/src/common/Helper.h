@@ -451,6 +451,14 @@ PairDoubleDouble leastSquares(const VectorDouble &x, const VectorDouble &y);
 
 struct ChainLayerResult{
   VectorInt v,opposite;
-  //bool b;
 };
 using VectorChainLayerResult=std::vector<ChainLayerResult>;
+
+struct PathResult {
+  int distance = 0;
+  VectorInt nodes;
+};
+
+PathResult bfsFarthestNode(int start_node, const VectorVectorInt &adj, int V,
+                           VectorBool &component_visited);
+

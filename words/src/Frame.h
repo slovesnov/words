@@ -40,7 +40,7 @@ class Frame : WordsBase {
   std::chrono::steady_clock::time_point last_click_time[BUTTON_SIZE]{};
 
   MapMenu m_menuMap;
-  bool m_lockSignals,m_lastCommandWithTabs=false;
+  bool m_lockSignals, m_lastCommandWithTabs = false;
   std::jthread m_thread, m_managerThread;
   CheckNewVersion m_newVersion;
   guint m_debounceTimerId = 0;
@@ -259,7 +259,7 @@ public:
   void updateTextView(ENUM_TEXTVIEW e, std::string_view markup);
 
   // check functons
-  void createCheck(ENUM_STRING e, bool set);
+  GtkWidget *createCheck(ENUM_STRING e, bool set);
   void checkChanged();
   void updateCheckValue();
 

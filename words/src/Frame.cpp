@@ -648,7 +648,7 @@ void Frame::setHelperPanel(bool ignoreStateBegin) {
     break;
 
   case MENU_MODIFICATION:
-    createCheck(EVERY_MODIFICATION_CHANGES_WORD, TRUE);
+    createCheck(EVERY_MODIFICATION_CHANGES_WORD, true);
     gtk_container_add(GTK_CONTAINER(m_helperUp), m_check);
     break;
 
@@ -656,7 +656,8 @@ void Frame::setHelperPanel(bool ignoreStateBegin) {
     i = -1;
     for (auto a :
          {createLabel(EXCEPTION_WORDS),
-          createTextView(TEXTVIEW_HELPER, SETTINGS_CHAIN_EXCEPTIONS)}) {
+          createTextView(TEXTVIEW_HELPER, SETTINGS_CHAIN_EXCEPTIONS),
+          createCheck(FINDING_THE_LONGEST_CHAIN_IN_A_CLUSTER, false)}) {
       i++;
       if (!i)
         gtk_widget_set_halign(a, GTK_ALIGN_START);
@@ -1565,11 +1566,12 @@ void Frame::addHelp(ENUM_STRING e) {
   // g_free(p);
 }
 
-void Frame::createCheck(ENUM_STRING e, bool set) {
+GtkWidget *Frame::createCheck(ENUM_STRING e, bool set) {
   m_check = gtk_check_button_new_with_label(string(e).c_str());
   gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(m_check), set);
   updateCheckValue();
   g_signal_connect(m_check, "toggled", G_CALLBACK(check_changed), NULL);
+  return m_check;
 }
 
 void Frame::checkChanged() {

@@ -318,7 +318,6 @@ public:
                             const VString &bounds = {});
   int findLongestChain(int nthread);
 
-  void chainAddIfFound(int nthread, const std::string &s, VectorInt &v);
   int chainAddIfFoundIndex(const std::string &s, VectorInt &v,
                            const VectorInt &otherSideOrdered = {});
   VectorInt chainLayer(int nthread, const VectorInt &layerIndex);
@@ -365,4 +364,5 @@ public:
   void updateProceedingText(std::string s, bool add = true);
   const MapIntInt &getWordLengthMap() const;
   VectorInt relations(int nthread, VectorInt const &v1, VectorInt const &v2);
+  void findAbsoluteLongestPath(const VectorVectorInt &adj);
 };
