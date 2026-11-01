@@ -29,6 +29,10 @@ const int KEYBOARD_ROWS = 3;
 const int NUMBER_OF_SORTS =
     SORT_BY_DIFFERENT_NUMBER_OF_CHARACTERS - SORT_BY_ALPHABET + 1;
 
+const int CHAIN_INIT_STAGE = 0;
+const int CHAIN_BEFORE_PRINT_STAGE = 1;
+const int CHAIN_PRINT_STAGE = 2;
+
 #ifdef NOGTK
 // should match with ENUM_POST
 const std::string POST_NAME[] = {

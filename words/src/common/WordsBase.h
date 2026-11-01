@@ -156,7 +156,9 @@ class WordsBase {
   };
 
   std::string m_ev;  // locale m_ev=utf8ToLocale(m_entryValue[ENTRY_TEMPLATE])
+protected:
   VString m_evwords; // locale
+private:  
   VString m_tvwords; // locale
 
 protected:
@@ -214,14 +216,16 @@ protected:
   SetString m_ss;
   VectorVectorInt m_layerIndex[2], m_vii;
   TableFormat m_table;
-  int m_j;
+  int m_j,m_mode;
   VectorChainLayerResult m_chainLayerResult;
   VectorInt *m_chainPtr[2];
+  std::string m_s;
 
   std::string getStatusString();
   std::string getTimeString();
-  void mergeLayers() noexcept;
-  void mergeLayers2() noexcept;
+  void chainMergeLayers() noexcept;
+  void chainMergeLayers2() noexcept;
+  void chainInit(const VString &vs);
 
   int getMaximumWordLength() {
     return m_longestWordLength[getDictionaryIndex()];
@@ -364,5 +368,4 @@ public:
   void updateProceedingText(std::string s, bool add = true);
   const MapIntInt &getWordLengthMap() const;
   VectorInt relations(int nthread, VectorInt const &v1, VectorInt const &v2);
-  void findAbsoluteLongestPath(const VectorVectorInt &adj);
 };

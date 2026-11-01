@@ -1576,6 +1576,10 @@ GtkWidget *Frame::createCheck(ENUM_STRING e, bool set) {
 
 void Frame::checkChanged() {
   updateCheckValue();
+  if (m_menuClick == MENU_CHAIN && m_evwords.size() > 1) {
+    //pr("skip");//job for one word only
+    return;
+  }
   job();
 }
 
