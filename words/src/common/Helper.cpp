@@ -8,8 +8,8 @@
 #include "Helper.h"
 #include "WordsBase.h"
 #include <cmath>
-#include <cmath>
 #include <queue>
+
 #ifndef NDEBUG
 #include <stacktrace>
 #endif
@@ -362,25 +362,30 @@ void draw_with_hsl_color(cairo_t *cr, double ratio) {
   cairo_set_source_rgb(cr, r, g, b);
 }
 
-PairDoubleDouble leastSquares(const VectorDouble& x, const VectorDouble& y) {
-    auto n = x.size();
-    
-    double sum_x = 0.0;
-    double sum_y = 0.0;
-    double sum_xy = 0.0;
-    double sum_xx = 0.0;
+PairDoubleDouble leastSquares(const VectorDouble &x, const VectorDouble &y) {
+  auto n = x.size();
 
-    for (size_t i = 0; i < x.size(); ++i) {
-        sum_x += x[i];
-        sum_y += y[i];
-        sum_xy += x[i] * y[i];
-        sum_xx += x[i] * x[i];
-    }
+  double sum_x = 0.0;
+  double sum_y = 0.0;
+  double sum_xy = 0.0;
+  double sum_xx = 0.0;
 
-    double denominator = n * sum_xx - sum_x * sum_x;
-    
-    double k = (n * sum_xy - sum_x * sum_y) / denominator;
-    double b = (sum_y - k * sum_x) / n;
+  for (size_t i = 0; i < x.size(); ++i) {
+    sum_x += x[i];
+    sum_y += y[i];
+    sum_xy += x[i] * y[i];
+    sum_xx += x[i] * x[i];
+  }
 
-    return {k, b};
+  double denominator = n * sum_xx - sum_x * sum_x;
+
+  double k = (n * sum_xy - sum_x * sum_y) / denominator;
+  double b = (sum_y - k * sum_x) / n;
+
+  return {k, b};
+}
+
+void addMove(VString &v, VString &add) {
+  v.insert(v.end(), std::make_move_iterator(add.begin()),
+           std::make_move_iterator(add.end()));
 }

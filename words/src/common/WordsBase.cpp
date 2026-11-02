@@ -584,7 +584,7 @@ int WordsBase::findLongestChain(int nthread) {
       i = m_vii[nthread].size();
     }
     total += i;
-    RETURN_ON_USER_BREAK_VALUE(-1)
+    RETURN_ON_USER_BREAK_VALUE(USER_BREAK)
   } while (i);
   return total;
 }
@@ -925,10 +925,7 @@ void WordsBase::anagramsPostProseeding() {
   MapAnagram final_anagrams;
   for (auto &local_map : m_anagrams) {
     for (auto &[signature, words] : local_map) {
-      auto &final_words = final_anagrams[signature];
-      final_words.insert(final_words.end(),
-                         std::make_move_iterator(words.begin()),
-                         std::make_move_iterator(words.end()));
+      addMove(final_anagrams[signature],words);
     }
     local_map.clear();
   }
@@ -1264,15 +1261,20 @@ void WordsBase::findChain(int nthread) {
   // auto begin = clock();
   if (m_evwords.size() == 1) {
     if (m_checkValue) {
-      findLongestChain(nthread); // 1st stage
-      // prsync(nthread, localeToUtf8(m_s), m_s.size());
+      i = findLongestChain(nthread); // 1st stage
+      if (i == USER_BREAK || m_token.stop_requested()) {
+        m_barrier->arrive_and_drop();
+        return; 
+      }
       m_barrier->arrive_and_wait();
-      // prsync(nthread, localeToUtf8(m_s), m_s.size());
+      if (m_token.stop_requested()) {
+        return;
+      }
       i = findLongestChain(nthread); // 2nd stage
     } else {
       i = findLongestChain(nthread);
     }
-    if (!nthread) {
+    if (!nthread && !m_token.stop_requested()) {
       std::string s = m_table.string("##", i, "", "");
       updateProceedingText(s);
     }
@@ -1351,7 +1353,7 @@ void WordsBase::clusterStatistics(int nthread) {
       m_chain[nthread][j] = false;
       m_vii[nthread] = {j};
       int i = findLongestChain(nthread);
-      if (i == -1) { // user break
+      if (i == USER_BREAK) {
         return;
       }
       map[i + 1]++;

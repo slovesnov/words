@@ -33,6 +33,8 @@ const int CHAIN_INIT_STAGE = 0;
 const int CHAIN_BEFORE_PRINT_STAGE = 1;
 const int CHAIN_PRINT_STAGE = 2;
 
+const int USER_BREAK = -1;
+
 #ifdef NOGTK
 // should match with ENUM_POST
 const std::string POST_NAME[] = {

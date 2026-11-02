@@ -203,12 +203,12 @@ public:
 
 VString getLocaleWords(const std::string &strUtf8);
 template <typename T>
-int indexOfOrdered(const T& value, const std::vector<T>& vec) {
-    auto it = std::lower_bound(vec.begin(), vec.end(), value);    
-    if (it != vec.end() && *it == value) {
-        return static_cast<int>(std::distance(vec.begin(), it));
-    }
-    return -1;
+int indexOfOrdered(const T &value, const std::vector<T> &vec) {
+  auto it = std::lower_bound(vec.begin(), vec.end(), value);
+  if (it != vec.end() && *it == value) {
+    return static_cast<int>(std::distance(vec.begin(), it));
+  }
+  return -1;
 }
 std::string squareBrackets(int v);
 void cairo_rounded_rectangle(cairo_t *cr, double x, double y, double width,
@@ -449,7 +449,9 @@ struct Graph {
 
 PairDoubleDouble leastSquares(const VectorDouble &x, const VectorDouble &y);
 
-struct ChainLayerResult{
-  VectorInt v,opposite;
+struct ChainLayerResult {
+  VectorInt v, opposite;
 };
-using VectorChainLayerResult=std::vector<ChainLayerResult>;
+using VectorChainLayerResult = std::vector<ChainLayerResult>;
+
+void addMove(VString &v, VString &add);
