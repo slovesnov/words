@@ -40,6 +40,7 @@ class Frame : WordsBase {
   std::chrono::steady_clock::time_point last_click_time[BUTTON_SIZE]{};
 
   MapMenu m_menuMap;
+  ENUM_MENU m_menuClick; // last search option
   bool m_lockSignals, m_lastCommandWithTabs = false;
   std::jthread m_thread, m_managerThread;
   CheckNewVersion m_newVersion;

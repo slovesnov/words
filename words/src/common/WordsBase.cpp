@@ -21,7 +21,6 @@
   }
 #define RETURN_ON_USER_BREAK_VALUE(v)                                          \
   if (m_token.stop_requested()) {                                              \
-    prsync(nthread);                                                           \
     return v;                                                                  \
   }
 #endif
@@ -566,7 +565,8 @@ int WordsBase::findLongestChain(int nthread) {
   int size = words.size();
   int w = std::to_string(size).length();
   w += (w - 1) / 3; // separators
-  if (m_menuClick == MENU_CHAIN && !nthread && m_mode == CHAIN_PRINT_STAGE) {
+  if (m_menuClickBase == MENU_CHAIN && !nthread &&
+      m_mode == CHAIN_PRINT_STAGE) {
     s = m_table.createWithTitle(NSTRING, LAYER, BRANCHING_FACTOR, 2, w, 6,
                                 WORDS_NOMINATIVE_CASE);
     // cann't use in one row
@@ -576,7 +576,7 @@ int WordsBase::findLongestChain(int nthread) {
 
   total = 0;
   do {
-    if (m_menuClick == MENU_CHAIN) {
+    if (m_menuClickBase == MENU_CHAIN) {
       chainLayer2(nthread, m_chd);
       m_barrier->arrive_and_wait();
       i = m_chd.size();
@@ -1324,7 +1324,7 @@ void WordsBase::clusterStatistics(int nthread) {
       m_vii[nthread] = {j};
       int i = findLongestChain(nthread);
       if (i == USER_BREAK) {
-        prsync(nthread) return;
+        return;
       }
       map[i + 1]++;
     }
@@ -1774,13 +1774,13 @@ void WordsBase::twoCharactersDistribution(int nthread) {
     if (e.length() < 2) {
       continue;
     }
-    if (m_menuClick == MENU_TWO_CHARACTERS_DISTRIBUTION) {
+    if (m_menuClickBase == MENU_TWO_CHARACTERS_DISTRIBUTION) {
       for (i = 0; i < int(e.length()) - 1; i++) {
         a[alphabetIndex(e[i])][alphabetIndex(e[i + 1])]++;
         total++;
       }
     } else {
-      i = m_menuClick == MENU_TWO_CHARACTERS_DISTRIBUTION_START
+      i = m_menuClickBase == MENU_TWO_CHARACTERS_DISTRIBUTION_START
               ? 0
               : e.length() - 2;
       a[alphabetIndex(e[i])][alphabetIndex(e[i + 1])]++;
@@ -2053,11 +2053,11 @@ void WordsBase::loadLanguages() {
   }
 }
 
-bool WordsBase::prepare() {
+bool WordsBase::prepare(ENUM_MENU menu) {
   std::string s;
-  // pr(magic_enum::enum_name(m_menuClick));
+  // pr(magic_enum::enum_name(menu));
 
-  if (!MENU_WITH_ENTRY.get(m_menuClick)) {
+  if (!MENU_WITH_ENTRY.get(menu)) {
     return true;
   }
   std::string evUtf8 = utf8Trim(m_entryValue[ENTRY_TEMPLATE]);
@@ -2070,11 +2070,11 @@ bool WordsBase::prepare() {
     return false;
   }
 
-  if (m_menuClick == MENU_REGULAR_EXPRESSIONS) {
+  if (menu == MENU_REGULAR_EXPRESSIONS) {
     return createRegex(ENTRY_TEMPLATE);
   }
 
-  if (m_menuClick == MENU_MODIFICATION) { // finish with MENU_MODIFICATION
+  if (menu == MENU_MODIFICATION) { // finish with MENU_MODIFICATION
     s = m_entryValue[ENTRY_TEMPLATE];
     if (!m_modifications.parse(m_ev)) {
 #ifdef NOGTK
@@ -2087,16 +2087,16 @@ bool WordsBase::prepare() {
 
   // MENU_CHAIN MENU_TEMPLATE MENU_CROSSWORD MENU_CHARACTER_SEQUENCE
   s = alphabet();
-  if (m_menuClick == MENU_CROSSWORD) {
+  if (menu == MENU_CROSSWORD) {
     s += '*';
-  } else if (m_menuClick == MENU_CHAIN) {
+  } else if (menu == MENU_CHAIN) {
     s += ' ';
   }
   if (!spanIncluding(m_ev, s)) {
     return false;
   }
 
-  if (m_menuClick == MENU_TEMPLATE) {
+  if (menu == MENU_TEMPLATE) {
     memset(m_templateHelper, 0, 256);
     const char *p;
     for (p = m_ev.c_str(); *p != 0; p++) {
@@ -2116,7 +2116,7 @@ bool WordsBase::prepare() {
       }
       j++;
     }
-  } else if (m_menuClick == MENU_CHAIN) {
+  } else if (menu == MENU_CHAIN) {
     // evUtf8 trimmed and has only alphabet chars
     m_evwords = getLocaleWords(evUtf8);
     m_tvwords = getLocaleWords(m_textViewValueUtf8);
@@ -2185,9 +2185,9 @@ PairVectorIterators<std::string> WordsBase::iterators(int nthread, int n) {
 void WordsBase::run_thread(int nthread) {
   // auto begin = clock();
   m_thread_result[nthread].clear();
-  if (auto it = COMPLEX_FUNCTION.get(m_menuClick)) {
+  if (auto it = COMPLEX_FUNCTION.get(m_menuClickBase)) {
     (this->*(*it))(nthread);
-  } else if (m_menuClick == MENU_REGULAR_EXPRESSIONS) {
+  } else if (m_menuClickBase == MENU_REGULAR_EXPRESSIONS) {
     UniquePcre2Code r;
     UniquePcre2MatchData m;
     if (!createRegex(ENTRY_TEMPLATE, r, m)) {
@@ -2207,7 +2207,7 @@ void WordsBase::run_thread(int nthread) {
       RETURN_ON_USER_BREAK
     }
 
-  } else if (auto it = SIMPLE_FUNCTION.get(m_menuClick)) {
+  } else if (auto it = SIMPLE_FUNCTION.get(m_menuClickBase)) {
     auto [it2, end] = iterators(nthread);
     for (; it2 != end; it2++) {
       auto &e = *it2;
@@ -2223,10 +2223,10 @@ void WordsBase::run_thread(int nthread) {
 void WordsBase::run(ENUM_JOB_TYPE e) {
   bool userbreak = false;
   // auto begin = clock();
-  int threads = m_menuClick == MENU_WORD_FREQUENCY ? 1 : m_threads;
-  // pr(magic_enum::enum_name(m_menuClick), threads);
+  int threads = m_menuClickBase == MENU_WORD_FREQUENCY ? 1 : m_threads;
+  // pr(magic_enum::enum_name(m_menuClickBase), threads);
   if (e == JOB_TYPE_FULL) {
-    if (auto it = menuPreProseeding.get(m_menuClick)) {
+    if (auto it = menuPreProseeding.get(m_menuClickBase)) {
       (this->*(*it))();
     }
 
@@ -2241,7 +2241,7 @@ void WordsBase::run(ENUM_JOB_TYPE e) {
       }
     }
 
-    if (auto it = menuPostProseeding.get(m_menuClick)) {
+    if (auto it = menuPostProseeding.get(m_menuClickBase)) {
       (this->*(*it))();
     } else if (threads > 1) {
       m_result = m_thread_result | std::views::join |
@@ -2339,7 +2339,7 @@ void WordsBase::cgi() {
     }
     switch (i) {
     case POST_SEARCHTYPE:
-      m_menuClick = COMBO_MENU[j];
+      m_menuClickBase = COMBO_MENU[j];
       break;
 
     case POST_ENTRY:
@@ -2377,7 +2377,7 @@ void WordsBase::cgi() {
     }
   }
 
-  if (!prepare()) {
+  if (!prepare(m_menuClickBase)) {
     printf(" %s", getTimeString().c_str());
     return;
   }

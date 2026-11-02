@@ -174,7 +174,7 @@ protected:
   Dictionary m_dictionary[DICTIONARY_SIZE];
   std::string m_keyboardOneRow[256][2];
   std::string m_keyboardRowDiagonals[256];
-  ENUM_MENU m_menuClick; // last search option
+  ENUM_MENU m_menuClickBase; // last search option
   std::string m_out;
   VectorSearchResult m_result;
   std::vector<VectorSearchResult> m_thread_result;
@@ -231,7 +231,7 @@ protected:
     return m_longestWordLength[getDictionaryIndex()];
   }
 
-  bool prepare();
+  bool prepare(ENUM_MENU menu);
 #ifdef NOGTK
   void setDictionaryIndex(int i);
   // void test();

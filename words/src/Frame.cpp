@@ -498,9 +498,15 @@ void Frame::clickMenu(ENUM_MENU menu) {
       b = m_menuClick != MENU_SEARCH;
       updateLanguage(true); // helper panel update incilde
     } else {
+      b = menu != MENU_SEARCH;
+      pr(b);
+      // if (b) {
+      //   pri;
+      //   job(JOB_TYPE_STOP);
+      //   pri;
+      // }
       pri;
       m_menuClick = menu;
-      b = m_menuClick != MENU_SEARCH;
       pri;
       setHelperPanel(b);
       pri;
@@ -997,7 +1003,7 @@ void Frame::entryChanged(ENUM_ENTRY e) {
   bool b;
   updateEntryValue(e);
   if (e == ENTRY_TEMPLATE) {
-    b = prepare();
+    b = prepare(m_menuClick);
     addRemoveClass(m_entry[e], CERROR, !b);
   } else if (e == ENTRY_FILTER) {
     clearTagMarks();
@@ -1489,7 +1495,7 @@ void Frame::job(ENUM_JOB_TYPE e) {
     }
 
     clear(e);
-    if (!prepare()) {
+    if (!prepare(m_menuClick)) {
       m_end = clock();
       updateStatus(STATE_ERROR);
       return;
@@ -1532,7 +1538,8 @@ void Frame::job(ENUM_JOB_TYPE e) {
 
       if (token.stop_requested())
         return;
-
+      
+      m_menuClickBase = m_menuClick;
       run(e);
 
       if (token.stop_requested())
