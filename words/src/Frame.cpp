@@ -1568,6 +1568,7 @@ void Frame::addHelp(ENUM_STRING e) {
 
 GtkWidget *Frame::createCheck(ENUM_STRING e, bool set) {
   m_check = gtk_check_button_new_with_label(string(e).c_str());
+  gtk_widget_set_can_focus(m_check, FALSE);
   gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(m_check), set);
   updateCheckValue();
   g_signal_connect(m_check, "toggled", G_CALLBACK(check_changed), NULL);
@@ -1577,7 +1578,6 @@ GtkWidget *Frame::createCheck(ENUM_STRING e, bool set) {
 void Frame::checkChanged() {
   updateCheckValue();
   if (m_menuClick == MENU_CHAIN && m_evwords.size() > 1) {
-    //pr("skip");//job for one word only
     return;
   }
   job();

@@ -384,8 +384,3 @@ PairDoubleDouble leastSquares(const VectorDouble &x, const VectorDouble &y) {
 
   return {k, b};
 }
-
-void addMove(VString &v, VString &add) {
-  v.insert(v.end(), std::make_move_iterator(add.begin()),
-           std::make_move_iterator(add.end()));
-}

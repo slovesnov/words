@@ -178,7 +178,7 @@ text files
 all files
 save
 cancel
-You can make this panel narrower or wider; you can also select the font for the output field and control elements in the <i>options</i> menu.
+The width of this panel can be adjusted, and the font for the output field and controls can be selected in the <i>options</i> menu.
 language
 sorting and filtering of results
 filtering of results

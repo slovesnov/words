@@ -925,7 +925,7 @@ void WordsBase::anagramsPostProseeding() {
   MapAnagram final_anagrams;
   for (auto &local_map : m_anagrams) {
     for (auto &[signature, words] : local_map) {
-      addMove(final_anagrams[signature],words);
+      addMove(final_anagrams[signature], words);
     }
     local_map.clear();
   }
@@ -1033,18 +1033,8 @@ void WordsBase::simpleDoubleWordSequencePostProseeding() {
           map[e] = std::move(a);
         } else {
           auto &dest_array = it->second;
-
-          auto &dest_v0 = dest_array[0];
-          auto &src_v0 = a[0];
-          dest_v0.reserve(dest_v0.size() + src_v0.size());
-          dest_v0.insert(dest_v0.end(), std::make_move_iterator(src_v0.begin()),
-                         std::make_move_iterator(src_v0.end()));
-
-          auto &dest_v1 = dest_array[1];
-          auto &src_v1 = a[1];
-          dest_v1.reserve(dest_v1.size() + src_v1.size());
-          dest_v1.insert(dest_v1.end(), std::make_move_iterator(src_v1.begin()),
-                         std::make_move_iterator(src_v1.end()));
+          addMove(dest_array[0], a[0]);
+          addMove(dest_array[1], a[1]);
         }
       }
     }
@@ -1121,22 +1111,15 @@ VectorInt WordsBase::relations(int nthread, VectorInt const &v1,
 }
 
 void WordsBase::chainMergeLayers() noexcept {
-  /*
-  m_chd.clear();
-for (auto &a : m_chainLayerResult) { // Убираем const, чтобы можно было
-перемещать m_chd.insert(m_chd.end(), std::make_move_iterator(a.v.begin()),
-               std::make_move_iterator(a.v.end()));
-}todo*/
   if (m_mode == CHAIN_BEFORE_PRINT_STAGE) {
     m_mode = CHAIN_PRINT_STAGE;
     chainInit({m_s});
-    // pri;
     return;
   }
 
   m_chd.clear();
-  for (const auto &a : m_chainLayerResult) {
-    m_chd.insert(m_chd.end(), a.v.begin(), a.v.end());
+  for (auto &a : m_chainLayerResult) {
+    addMove(m_chd, a.v);
   }
 
   auto &words = m_vvs[0];
@@ -1160,7 +1143,6 @@ for (auto &a : m_chainLayerResult) { // Убираем const, чтобы мож�
     m_s = words[m_chd[0]]; // last word
   } else {
     m_mode = CHAIN_BEFORE_PRINT_STAGE;
-    // pri;
   }
 }
 
@@ -1173,17 +1155,16 @@ void WordsBase::chainMergeLayers2() noexcept {
       std::any_of(m_chainLayerResult.begin(), m_chainLayerResult.end(),
                   [](const auto &a) { return !a.opposite.empty(); });
 
-  // todo
   if (hasNonEmptyOpposite) {
-    for (const auto &a : m_chainLayerResult) {
+    for (auto &a : m_chainLayerResult) {
       if (!a.opposite.empty()) {
-        m_chd.insert(m_chd.end(), a.v.begin(), a.v.end());
-        m_chd1.insert(m_chd1.end(), a.opposite.begin(), a.opposite.end());
+        addMove(m_chd, a.v);
+        addMove(m_chd1, a.opposite);
       }
     }
   } else {
-    for (const auto &a : m_chainLayerResult) {
-      m_chd.insert(m_chd.end(), a.v.begin(), a.v.end());
+    for (auto &a : m_chainLayerResult) {
+      addMove(m_chd, a.v);
     }
   }
 
@@ -1258,13 +1239,12 @@ void WordsBase::findChain(int nthread) {
   auto &words = m_vvs[nthread];
   std::string s, s1;
 
-  // auto begin = clock();
   if (m_evwords.size() == 1) {
     if (m_checkValue) {
       i = findLongestChain(nthread); // 1st stage
       if (i == USER_BREAK || m_token.stop_requested()) {
         m_barrier->arrive_and_drop();
-        return; 
+        return;
       }
       m_barrier->arrive_and_wait();
       if (m_token.stop_requested()) {
@@ -1289,9 +1269,6 @@ void WordsBase::findChain(int nthread) {
     return;
   }
 
-  // clock_t begin;
-  // begin = clock();
-
   while (true) {
     chainLayer2(nthread, *m_chainPtr[m_j], *m_chainPtr[!m_j]);
     m_barrier->arrive_and_wait();
@@ -1307,9 +1284,6 @@ void WordsBase::findChain(int nthread) {
     }
   }
 
-  // pr(timeElapse(begin));
-  // begin = clock();
-
   for (i = 0; i < 2; i++) {
     auto &li = m_layerIndex[i];
     for (j = li.size() - 1; j > 1; j--) {
@@ -1317,9 +1291,7 @@ void WordsBase::findChain(int nthread) {
     }
   }
 
-  // pr(timeElapse(begin));
-  // begin = clock();
-
+  // here rbegin(),rend() so cann't use addMove
   m_layerIndex[0].insert(m_layerIndex[0].end(), m_layerIndex[1].rbegin(),
                          m_layerIndex[1].rend());
   s = m_table.createWithTitle(NSTRING, 2, WORDS_NOMINATIVE_CASE);
@@ -1336,9 +1308,6 @@ void WordsBase::findChain(int nthread) {
     s += m_table.string(i, s1);
   }
   SearchResult::out = s;
-
-  // pr(timeElapse(begin));
-  // begin = clock();
 }
 
 void WordsBase::clusterStatistics(int nthread) {
@@ -1443,9 +1412,7 @@ void WordsBase::findLetterGroupSplit(int nthread) {
         } else {
           auto &v1 = it->second.anagrams;
           auto &v2 = v.anagrams;
-          v1.reserve(v1.size() + v2.size());
-          v1.insert(v1.end(), std::make_move_iterator(v2.begin()),
-                    std::make_move_iterator(v2.end()));
+          addMove(v1, v2);
         }
       }
     }

@@ -454,4 +454,8 @@ struct ChainLayerResult {
 };
 using VectorChainLayerResult = std::vector<ChainLayerResult>;
 
-void addMove(VString &v, VString &add);
+template <typename T> void addMove(std::vector<T> &v, std::vector<T> &add) {
+  v.reserve(v.size() + add.size());
+  v.insert(v.end(), std::make_move_iterator(add.begin()),
+           std::make_move_iterator(add.end()));
+}
