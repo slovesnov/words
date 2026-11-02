@@ -21,6 +21,7 @@
   }
 #define RETURN_ON_USER_BREAK_VALUE(v)                                          \
   if (m_token.stop_requested()) {                                              \
+    prsync(nthread);                                                           \
     return v;                                                                  \
   }
 #endif
@@ -1323,7 +1324,7 @@ void WordsBase::clusterStatistics(int nthread) {
       m_vii[nthread] = {j};
       int i = findLongestChain(nthread);
       if (i == USER_BREAK) {
-        return;
+        prsync(nthread) return;
       }
       map[i + 1]++;
     }

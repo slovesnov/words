@@ -152,7 +152,7 @@ words of dictionary are not in alphabet order
 Search for word modifications of three types.<br><b>Replacements</b> <i>string1&gt;string2</i>. The string <i>ab&gt;cde</i> means replacing all substrings <i>ab</i> with <i>cde</i>, and <i>k&gt;0</i> means replacing all letters <i>k</i> with an empty string.<br><b>Insertions/additions</b> <i>+index,string</i>. The string <i>+0,b</i> adds the letter <i>b</i> before the beginning of the word, <i>+2,we</i> inserts <i>we</i> after the second character, <i>+L,y</i> adds the letter <i>y</i> to the end of the word, and <i>+L-1,s</i> inserts <i>s</i> before the last character.<br><b>Substrings</b> <i>-index,length</i>. The string <i>-0,3</i> keeps the first three letters, and <i>-4,3</i> keeps three letters starting from the fifth one. If the second parameter is not specified, the word is taken until the end. The string <i>-L-5,3</i> keeps three characters starting from the fifth one counting from the end, and <i>-L-5</i> keeps the last 5 letters. Other string examples: <i>-4,L-5</i> <i>-L-4,L-5</i>.
 every modification changes word
 New version is found on the internet. Download it now?
-Search chains of words such as only one character changes for every step. Consider two words <i>woman</i> and <i>chick</i>. There is a chain <i>woman</i> <i>women</i> <i>woven</i> <i>coven</i> <i>coves</i> <i>cores</i> <i>corns</i> <i>coins</i> <i>chins</i> <i>chink</i> <i>chick</i>. Program searches all chains with shortest length. You can specify a list of excluded words that should not appear in the chain. If only one word is specified, the search will look for the maximum length chain.
+Search for word chains where exactly one letter changes at each step. You can specify a list of exception words that should not appear in the chain.<br>If only a single word is provided (e.g., <i>woman</i>) and the <i>search the longest chain in a cluster</i> checkbox is unchecked, the program will find the maximum-length chain starting with the word <i>woman</i>.<br>A cluster is defined as the set of all words that can be linked together in chains. If only a single word is provided (e.g., <i>woman</i>) and the <i>search the longest chain in a cluster</i> checkbox is checked, the program will find the maximum-length chain for the entire cluster to which the word <i>woman</i> belongs.
 No chains found.
 results filter (regular expression)
 found
@@ -200,4 +200,4 @@ logarithm of letter frequency
 data
 normal distribution approximation
 word count
-finding the longest chain in a cluster
+search the longest chain in a cluster

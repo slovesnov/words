@@ -376,7 +376,7 @@ void Frame::clickMenu(ENUM_MENU menu) {
   ENUM_FONT e;
   bool b;
 
-  // pr(magic_enum::enum_name(menu));
+  pr(magic_enum::enum_name(menu));
 
   switch (menu) {
 
@@ -498,11 +498,15 @@ void Frame::clickMenu(ENUM_MENU menu) {
       b = m_menuClick != MENU_SEARCH;
       updateLanguage(true); // helper panel update incilde
     } else {
+      pri;
       m_menuClick = menu;
       b = m_menuClick != MENU_SEARCH;
+      pri;
       setHelperPanel(b);
+      pri;
     }
     if (b) {
+      pri;
       job();
     }
   }
@@ -1470,7 +1474,7 @@ results JOB_TYPE_FILTER - stop calculations if needed, then filter results
 JOB_TYPE_STOP - stop calculations if needed
 */
 void Frame::job(ENUM_JOB_TYPE e) {
-  // prsync(magic_enum::enum_name(m_menuClick), magic_enum::enum_name(e));
+  prsync(magic_enum::enum_name(m_menuClick), magic_enum::enum_name(e));
   if (oneOf(e, JOB_TYPE_SORT_AND_FILTER, JOB_TYPE_FILTER) && m_result.empty()) {
     return;
   }
