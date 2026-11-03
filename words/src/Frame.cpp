@@ -376,7 +376,7 @@ void Frame::clickMenu(ENUM_MENU menu) {
   ENUM_FONT e;
   bool b;
 
-  pr(magic_enum::enum_name(menu));
+  // pr(magic_enum::enum_name(menu));
 
   switch (menu) {
 
@@ -498,21 +498,11 @@ void Frame::clickMenu(ENUM_MENU menu) {
       b = m_menuClick != MENU_SEARCH;
       updateLanguage(true); // helper panel update incilde
     } else {
-      b = menu != MENU_SEARCH;
-      pr(b);
-      // if (b) {
-      //   pri;
-      //   job(JOB_TYPE_STOP);
-      //   pri;
-      // }
-      pri;
       m_menuClick = menu;
-      pri;
+      b = m_menuClick != MENU_SEARCH;
       setHelperPanel(b);
-      pri;
     }
     if (b) {
-      pri;
       job();
     }
   }
@@ -1480,7 +1470,9 @@ results JOB_TYPE_FILTER - stop calculations if needed, then filter results
 JOB_TYPE_STOP - stop calculations if needed
 */
 void Frame::job(ENUM_JOB_TYPE e) {
-  prsync(magic_enum::enum_name(m_menuClick), magic_enum::enum_name(e));
+  // prsync(magic_enum::enum_name(m_menuClick), magic_enum::enum_name(e));
+  auto menu = m_menuClick;
+
   if (oneOf(e, JOB_TYPE_SORT_AND_FILTER, JOB_TYPE_FILTER) && m_result.empty()) {
     return;
   }
@@ -1508,7 +1500,7 @@ void Frame::job(ENUM_JOB_TYPE e) {
     m_managerThread.request_stop();
     m_managerThread.detach();
   }
-  m_managerThread = std::jthread([this, e](std::stop_token manager_token) {
+  m_managerThread = std::jthread([this, e, menu](std::stop_token manager_token) {
     if (e != JOB_TYPE_STOP) {
       int packed = (static_cast<int>(e) << STATE_BITS) |
                    static_cast<int>(STATE_PROCEEDING);
@@ -1533,13 +1525,13 @@ void Frame::job(ENUM_JOB_TYPE e) {
       return;
     }
 
-    m_thread = std::jthread([this, e](std::stop_token token) {
+    m_thread = std::jthread([this, e, menu](std::stop_token token) {
       m_token = token;
 
       if (token.stop_requested())
         return;
-      
-      m_menuClickBase = m_menuClick;
+
+      m_menuClickBase = menu;
       run(e);
 
       if (token.stop_requested())
