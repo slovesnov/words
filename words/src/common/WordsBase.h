@@ -7,25 +7,16 @@
 
 #pragma once
 
-#include "Modification.h"
 #include "consts.h"
+#include "Parameters.h"
 #include <barrier>
 #include <functional>
 #include <latch>
 #include <thread>
 
-#define PCRE2_CODE_UNIT_WIDTH 8
-#define PCRE2_STATIC
-#include <pcre2.h>
-using UniquePcre2Code = UniqueGtkResource<pcre2_code, pcre2_code_free>;
-using UniquePcre2MatchData =
-    UniqueGtkResource<pcre2_match_data, pcre2_match_data_free>;
-
-const char SEPARATOR[] = "SEPARATOR";
-
 class WordsBase;
 extern WordsBase *wordsBase;
-class WordsBase {
+class WordsBase : public Parameters{
   class TableFormat {
   private:
     std::vector<ENUM_STRING> m_en;
@@ -155,43 +146,11 @@ class WordsBase {
     }
   };
 
-  std::string m_ev;  // locale m_ev=utf8ToLocale(m_entryValue[ENTRY_TEMPLATE])
 protected:
-  VString m_evwords; // locale
-private:  
-  VString m_tvwords; // locale
-
-protected:
-  std::string m_entryValue[ENTRY_SIZE]; // utf8
-  bool m_checkValue;
-  int m_comboValue[COMBOBOX_SIZE];
-  int m_radioValue;
-  int m_sortlistValue;
-  std::string m_textViewValueUtf8; // do splitr so need utf8
-  std::array<int, BUTTON_SIZE>
-      m_buttonValue; // use array allow assign all values
-
   Dictionary m_dictionary[DICTIONARY_SIZE];
   std::string m_keyboardOneRow[256][2];
   std::string m_keyboardRowDiagonals[256];
-  ENUM_MENU m_menuClickBase; // last search option
-  std::string m_out;
-  VectorSearchResult m_result;
   std::vector<VectorSearchResult> m_thread_result;
-  int m_longestWordLength[LANGUAGES];
-  clock_t m_begin, m_end;
-  UniquePcre2Code m_regex[2];
-  UniquePcre2MatchData m_match[2];
-  char m_templateHelper[256];
-  std::vector<std::vector<char>> m_template_a;
-  Modification m_modifications;
-  std::array<std::string, STRING_SIZE> m_languageAll[LANGUAGES];   // utf8
-  std::array<std::string, MENU_SIZE> m_menuAll[LANGUAGES];         // utf8
-  std::array<std::string, SETTINGS_SIZE> m_settingsAll[LANGUAGES]; // locale
-  std::string m_addstatus;
-#ifndef NOGTK
-  int m_filteredWordsCount;
-#endif
   // multithread variables
   VectorThreadResult m_tr;
   std::vector<VectorMapStringTwoStringVectors> m_ma;
@@ -202,18 +161,14 @@ protected:
   LetterGroupSplitMap m_eqmap;
   VectorStringInt m_si;
   int m_threads;
-  std::stop_token m_token;
   std::unique_ptr<std::latch> m_latch;
-  std::mutex m_mutex;
   using BarrierCallback = std::move_only_function<void() noexcept>;
   std::unique_ptr<std::barrier<BarrierCallback>> m_barrier;
   std::vector<VectorBool> m_chain;
   std::vector<char> m_chainChar;
-  MapIntInt m_wordLengthMap[LANGUAGES];
   VectorIntInt m_iiv;
   std::atomic<int> m_i;
   VVString m_vvs;
-  SetString m_ss;
   VectorVectorInt m_layerIndex[2], m_vii;
   TableFormat m_table;
   int m_j,m_mode;
@@ -221,17 +176,10 @@ protected:
   VectorInt *m_chainPtr[2];
   std::string m_s;
 
-  std::string getStatusString();
-  std::string getTimeString();
   void chainMergeLayers() noexcept;
   void chainMergeLayers2() noexcept;
   void chainInit(const VString &vs);
 
-  int getMaximumWordLength() {
-    return m_longestWordLength[getDictionaryIndex()];
-  }
-
-  bool prepare(ENUM_MENU menu);
 #ifdef NOGTK
   void setDictionaryIndex(int i);
   // void test();
@@ -240,10 +188,6 @@ protected:
   void showLongestSimpleWordSequence(); // for MAX_WORD_SEQUENCE_LENGTH
   void showLongestDoubleWordSequence(); // for MAX_DOUBLE_WORD_SEQUENCE_LENGTH
 #endif
-
-  static std::string path(int i, std::string s);
-  static VString readFile(int i, std::string s);
-  static VString readFile(std::string path);
 
 #ifdef NOGTK
   static std::string getResourcePath(std::string name);
@@ -329,43 +273,18 @@ public:
                    const VectorInt &otherSideOrdered = {});
   void chainSetPtr();
   static int differentChars(std::string_view s);
-  static bool spanIncluding(std::string_view p, std::string_view pattern) {
-    return p.find_first_not_of(pattern) == std::string_view::npos;
-  }
   static bool differenceOnlyOneChar(std::string const &a, std::string const &b);
-
-  int getLanguageIndex() const { return m_buttonValue[BUTTON_LANGUAGE]; }
-  int getDictionaryIndex() const { return m_buttonValue[BUTTON_DICTIONARY]; }
 
   Dictionary const &getDictionary() const {
     return m_dictionary[getDictionaryIndex()];
   }
 
-  static std::string intToString(int v, char c = ',');
-  std::string intToStringLocaled(int v);
   void sortFilterResults(ENUM_JOB_TYPE e);
 
   void loadLanguages();
 
   static std::string pairsToString(VectorStringString const &v, bool p = 0);
 
-  bool createRegex(ENUM_ENTRY e);
-  bool createRegex(ENUM_ENTRY e, UniquePcre2Code &r, UniquePcre2MatchData &m);
-
-  const std::string &alphabet() const;
-  int alphabetSize() const;
-  int alphabetIndex(char c) const;
-  const std::string &vowelConsonant(bool consonant);
-  bool isAlphabetChar(char c) const;
-  const std::string &string(ENUM_STRING e) const;
-  const std::string &string(ENUM_MENU e) const;
-  const std::string string(ENUM_STRING e, ENUM_STRING e1) const;
-  const std::string &string(int i) const;
-  const std::string &stringUsingDictionary(ENUM_STRING e,
-                                           bool opposite = false) const;
-  const std::string &settings(ENUM_SETTINGS e, int i = 0) const;
-  virtual void updateProceedingThread();
   void updateProceedingText(std::string s, bool add = true);
-  const MapIntInt &getWordLengthMap() const;
   VectorInt relations(int nthread, VectorInt const &v1, VectorInt const &v2);
 };

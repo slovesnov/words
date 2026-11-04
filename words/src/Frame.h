@@ -8,9 +8,11 @@
 #pragma once
 
 #include "CheckNewVersion.h"
-#include "common/WordsBase.h"
+#include "consts.h"
+#include <thread>
+#include "common/Parameters.h"
 
-class Frame : WordsBase {
+class Frame :Parameters {
   static const int COMBOLINE_MARGIN = 3;
 
   GtkWidget *m_widget;
@@ -280,7 +282,7 @@ public:
   void updateSortButton();
   void setRowSensitive(bool sensitive);
 
-  void updateProceedingThread() override;
+  void updateProceedingThread();
   void updateProceeding(const char *text);
   std::string getTextToCopyFromFocus();
 

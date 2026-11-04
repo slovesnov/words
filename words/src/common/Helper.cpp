@@ -384,3 +384,7 @@ PairDoubleDouble leastSquares(const VectorDouble &x, const VectorDouble &y) {
 
   return {k, b};
 }
+
+bool spanIncluding(std::string_view p, std::string_view pattern) {
+  return p.find_first_not_of(pattern) == std::string_view::npos;
+}

@@ -459,3 +459,5 @@ template <typename T> void addMove(std::vector<T> &v, std::vector<T> &add) {
   v.insert(v.end(), std::make_move_iterator(add.begin()),
            std::make_move_iterator(add.end()));
 }
+
+bool spanIncluding(std::string_view p, std::string_view pattern);

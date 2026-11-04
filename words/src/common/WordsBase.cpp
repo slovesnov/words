@@ -6,6 +6,7 @@
  */
 
 #include "WordsBase.h"
+#include "../Frame.h"
 #include <cmath>
 #include <format>
 #include <magic_enum.hpp>
@@ -112,6 +113,7 @@ const LookupTable<ENUM_MENU, bool (WordsBase::*)(const std::string &)>
 // #define ONE_THREAD
 
 WordsBase *wordsBase;
+extern Frame *frame;
 
 WordsBase::WordsBase() {
   int i, j;
@@ -565,7 +567,7 @@ int WordsBase::findLongestChain(int nthread) {
   int size = words.size();
   int w = std::to_string(size).length();
   w += (w - 1) / 3; // separators
-  if (m_menuClickBase == MENU_CHAIN && !nthread &&
+  if (m_menuClick == MENU_CHAIN && !nthread &&
       m_mode == CHAIN_PRINT_STAGE) {
     s = m_table.createWithTitle(NSTRING, LAYER, BRANCHING_FACTOR, 2, w, 6,
                                 WORDS_NOMINATIVE_CASE);
@@ -576,7 +578,7 @@ int WordsBase::findLongestChain(int nthread) {
 
   total = 0;
   do {
-    if (m_menuClickBase == MENU_CHAIN) {
+    if (m_menuClick == MENU_CHAIN) {
       chainLayer2(nthread, m_chd);
       m_barrier->arrive_and_wait();
       i = m_chd.size();
@@ -1774,13 +1776,13 @@ void WordsBase::twoCharactersDistribution(int nthread) {
     if (e.length() < 2) {
       continue;
     }
-    if (m_menuClickBase == MENU_TWO_CHARACTERS_DISTRIBUTION) {
+    if (m_menuClick == MENU_TWO_CHARACTERS_DISTRIBUTION) {
       for (i = 0; i < int(e.length()) - 1; i++) {
         a[alphabetIndex(e[i])][alphabetIndex(e[i + 1])]++;
         total++;
       }
     } else {
-      i = m_menuClickBase == MENU_TWO_CHARACTERS_DISTRIBUTION_START
+      i = m_menuClick == MENU_TWO_CHARACTERS_DISTRIBUTION_START
               ? 0
               : e.length() - 2;
       a[alphabetIndex(e[i])][alphabetIndex(e[i + 1])]++;
@@ -2053,131 +2055,6 @@ void WordsBase::loadLanguages() {
   }
 }
 
-bool WordsBase::prepare(ENUM_MENU menu) {
-  std::string s;
-  // pr(magic_enum::enum_name(menu));
-
-  if (!MENU_WITH_ENTRY.get(menu)) {
-    return true;
-  }
-  std::string evUtf8 = utf8Trim(m_entryValue[ENTRY_TEMPLATE]);
-  auto result = tryUtf8ToLocale(evUtf8);
-  if (!result.has_value()) {
-    return false;
-  }
-  m_ev = *result;
-  if (m_ev.empty()) {
-    return false;
-  }
-
-  if (menu == MENU_REGULAR_EXPRESSIONS) {
-    return createRegex(ENTRY_TEMPLATE);
-  }
-
-  if (menu == MENU_MODIFICATION) { // finish with MENU_MODIFICATION
-    s = m_entryValue[ENTRY_TEMPLATE];
-    if (!m_modifications.parse(m_ev)) {
-#ifdef NOGTK
-      printf(string(CGI_STRING_ERROR_INVALID_MODIFICATION_STRING).c_str());
-#endif
-      return false;
-    }
-    return true;
-  }
-
-  // MENU_CHAIN MENU_TEMPLATE MENU_CROSSWORD MENU_CHARACTER_SEQUENCE
-  s = alphabet();
-  if (menu == MENU_CROSSWORD) {
-    s += '*';
-  } else if (menu == MENU_CHAIN) {
-    s += ' ';
-  }
-  if (!spanIncluding(m_ev, s)) {
-    return false;
-  }
-
-  if (menu == MENU_TEMPLATE) {
-    memset(m_templateHelper, 0, 256);
-    const char *p;
-    for (p = m_ev.c_str(); *p != 0; p++) {
-      m_templateHelper[uchar(*p)]++;
-    }
-
-    size_t i, j;
-    m_template_a = create2dArray<char>(m_ev.length(), 256, 0);
-    j = 0;
-    for (auto &a : m_template_a) {
-      s = m_ev.substr(j);
-      for (i = 0; i < s.length(); i++) {
-        uchar u = s[i];
-        if (!a[u]) {
-          a[u] = i + 1;
-        }
-      }
-      j++;
-    }
-  } else if (menu == MENU_CHAIN) {
-    // evUtf8 trimmed and has only alphabet chars
-    m_evwords = getLocaleWords(evUtf8);
-    m_tvwords = getLocaleWords(m_textViewValueUtf8);
-
-    if (m_evwords.size() != 1 && m_evwords.size() != 2) {
-      return false;
-    }
-
-    if (!getWordLengthMap().contains(
-            m_evwords[0].size())) { // no words such length
-      return false;
-    }
-
-    // filter words
-    m_ss.clear();
-    for (auto &a : m_tvwords) {
-      if (a.size() == m_evwords[0].size()) {
-        m_ss.insert(a);
-      }
-    }
-
-    if (std::any_of(m_evwords.begin(), m_evwords.end(), [this](auto &a) {
-          return m_ss.contains(a);
-        })) { // one of the words in filterd words
-      return false;
-    }
-
-    if (m_evwords.size() == 1) {
-      return true;
-    } else if (m_evwords.size() == 2) {
-      return m_evwords[0] != m_evwords[1] &&
-             m_evwords[0].size() == m_evwords[1].size();
-    }
-  }
-
-  return true;
-}
-
-std::string WordsBase::getStatusString() {
-  std::string s = m_addstatus;
-  if (!s.empty()) {
-    s += ", ";
-  }
-  if (!m_result.empty()) {
-    s = string(LINES) + " " + intToStringLocaled(m_result.size()) + ", ";
-#ifndef NOGTK
-    s += string(WITH_FILTER) + " " + intToStringLocaled(m_filteredWordsCount) +
-         ", ";
-#endif
-  }
-  return s + string(TIME) + " " + getTimeString();
-}
-
-std::string WordsBase::getTimeString() {
-  return std::format(
-      "{:.2f}", double(m_end - m_begin) /
-                    CLOCKS_PER_SEC); // locale independent
-                                     //  return format("%.2lf", double(m_end -
-                                     //  m_begin) / CLOCKS_PER_SEC);
-}
-
 PairVectorIterators<std::string> WordsBase::iterators(int nthread, int n) {
   return iterators(nthread, m_dictionary[n == -1 ? getDictionaryIndex() : n]);
 }
@@ -2185,9 +2062,9 @@ PairVectorIterators<std::string> WordsBase::iterators(int nthread, int n) {
 void WordsBase::run_thread(int nthread) {
   // auto begin = clock();
   m_thread_result[nthread].clear();
-  if (auto it = COMPLEX_FUNCTION.get(m_menuClickBase)) {
+  if (auto it = COMPLEX_FUNCTION.get(m_menuClick)) {
     (this->*(*it))(nthread);
-  } else if (m_menuClickBase == MENU_REGULAR_EXPRESSIONS) {
+  } else if (m_menuClick == MENU_REGULAR_EXPRESSIONS) {
     UniquePcre2Code r;
     UniquePcre2MatchData m;
     if (!createRegex(ENTRY_TEMPLATE, r, m)) {
@@ -2207,7 +2084,7 @@ void WordsBase::run_thread(int nthread) {
       RETURN_ON_USER_BREAK
     }
 
-  } else if (auto it = SIMPLE_FUNCTION.get(m_menuClickBase)) {
+  } else if (auto it = SIMPLE_FUNCTION.get(m_menuClick)) {
     auto [it2, end] = iterators(nthread);
     for (; it2 != end; it2++) {
       auto &e = *it2;
@@ -2223,10 +2100,10 @@ void WordsBase::run_thread(int nthread) {
 void WordsBase::run(ENUM_JOB_TYPE e) {
   bool userbreak = false;
   // auto begin = clock();
-  int threads = m_menuClickBase == MENU_WORD_FREQUENCY ? 1 : m_threads;
-  // pr(magic_enum::enum_name(m_menuClickBase), threads);
+  int threads = m_menuClick == MENU_WORD_FREQUENCY ? 1 : m_threads;
+  // pr(magic_enum::enum_name(m_menuClick), threads);
   if (e == JOB_TYPE_FULL) {
-    if (auto it = menuPreProseeding.get(m_menuClickBase)) {
+    if (auto it = menuPreProseeding.get(m_menuClick)) {
       (this->*(*it))();
     }
 
@@ -2241,7 +2118,7 @@ void WordsBase::run(ENUM_JOB_TYPE e) {
       }
     }
 
-    if (auto it = menuPostProseeding.get(m_menuClickBase)) {
+    if (auto it = menuPostProseeding.get(m_menuClick)) {
       (this->*(*it))();
     } else if (threads > 1) {
       m_result = m_thread_result | std::views::join |
@@ -2289,35 +2166,6 @@ bool WordsBase::testFilterRegex(const std::string &s) {
 
 #endif
 
-std::string WordsBase::intToString(int v, char c) { return toString(v, c); }
-
-std::string WordsBase::intToStringLocaled(int v) {
-  return toString(v, string(SEPARATOR_SYMBOL)[0]);
-}
-
-std::string WordsBase::path(int i, std::string s) {
-  return getResourcePath(LNG[i] + "/" + s + ".txt");
-}
-
-VString WordsBase::readFile(int i, std::string s) {
-  return readFile(path(i, s));
-}
-
-VString WordsBase::readFile(std::string path) {
-  VString lines;
-  std::ifstream file(path);
-  if (file.is_open()) {
-    std::string line;
-    while (std::getline(file, line)) {
-      lines.emplace_back(std::move(line));
-    }
-    file.close();
-  } else {
-    assert(0);
-  }
-  return lines;
-}
-
 #ifdef NOGTK
 std::string WordsBase::getResourcePath(std::string name) {
   return "words/" + name;
@@ -2339,7 +2187,7 @@ void WordsBase::cgi() {
     }
     switch (i) {
     case POST_SEARCHTYPE:
-      m_menuClickBase = COMBO_MENU[j];
+      m_menuClick = COMBO_MENU[j];
       break;
 
     case POST_ENTRY:
@@ -2377,7 +2225,7 @@ void WordsBase::cgi() {
     }
   }
 
-  if (!prepare(m_menuClickBase)) {
+  if (!prepare(m_menuClick)) {
     printf(" %s", getTimeString().c_str());
     return;
   }
@@ -2410,81 +2258,10 @@ std::string WordsBase::pairsToString(VectorStringString const &v, bool p) {
   return sout;
 }
 
-bool WordsBase::createRegex(ENUM_ENTRY e) {
-  assert(int(e) < std::size(m_regex));
-  return createRegex(e, m_regex[e], m_match[e]);
-}
-
-bool WordsBase::createRegex(ENUM_ENTRY e, UniquePcre2Code &r,
-                            UniquePcre2MatchData &m) {
-  int errorcode;
-  PCRE2_SIZE erroroffset;
-  r.reset(pcre2_compile((PCRE2_SPTR)m_entryValue[e].c_str(),
-                        PCRE2_ZERO_TERMINATED, PCRE2_UTF, &errorcode,
-                        &erroroffset, NULL));
-  if (r) {
-    pcre2_jit_compile(r.get(), PCRE2_JIT_COMPLETE);
-    m.reset(pcre2_match_data_create_from_pattern(r.get(), NULL));
-  }
-
-  return r != nullptr;
-}
-
-const std::string &WordsBase::alphabet() const {
-  return settings(SETTINGS_ALPHABET);
-}
-
-int WordsBase::alphabetSize() const { return alphabet().size(); }
-
-int WordsBase::alphabetIndex(char c) const {
-  auto i = alphabet().find(c);
-  return i == std::string::npos ? -1 : i;
-}
-
-const std::string &WordsBase::vowelConsonant(bool consonant) {
-  return settings(consonant ? SETTINGS_CONSONANTS : SETTINGS_VOWELS);
-}
-
-bool WordsBase::isAlphabetChar(char c) const { return alphabetIndex(c) != -1; }
-
-const std::string &WordsBase::string(ENUM_STRING e) const {
-  return m_languageAll[getLanguageIndex()][e];
-}
-
-const std::string WordsBase::string(ENUM_STRING e, ENUM_STRING e1) const {
-  return string(e) + " " + string(e1);
-}
-
-const std::string &WordsBase::string(int i) const {
-  assert(i >= 0 && i < STRING_SIZE);
-  return string(ENUM_STRING(i));
-}
-
-const std::string &WordsBase::string(ENUM_MENU e) const {
-  return m_menuAll[getLanguageIndex()][e];
-}
-
-const std::string &WordsBase::stringUsingDictionary(ENUM_STRING e,
-                                                    bool opposite) const {
-  return m_languageAll[getDictionaryIndex() ^ opposite][e];
-}
-
-const std::string &WordsBase::settings(ENUM_SETTINGS e, int i) const {
-  int n = int(e) + i;
-  assert(n < SETTINGS_SIZE);
-  return m_settingsAll[getDictionaryIndex()][ENUM_SETTINGS(n)];
-}
-
-void WordsBase::updateProceedingThread() {}
-
 void WordsBase::updateProceedingText(std::string s, bool add) {
   {
     std::lock_guard<std::mutex> lock(m_mutex);
     SearchResult::out = (add ? SearchResult::out : "") + s;
   }
-  updateProceedingThread();
-}
-
-const MapIntInt &WordsBase::getWordLengthMap() const {
-  return m_wordLengthMap[getDictionaryIndex()];
+  frame->updateProceedingThread();
 }

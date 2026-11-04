@@ -7,6 +7,7 @@
 
 #include "Frame.h"
 #include "CheckNewVersion.h"
+#include "common/WordsBase.h"
 #include <cmath>
 #include <format>
 #include <magic_enum.hpp>
@@ -142,7 +143,7 @@ void on_row_activated(GtkListBox *list_box, GtkListBoxRow *row,
   frame->rowActivated(row);
 }
 
-Frame::Frame() : WordsBase() {
+Frame::Frame() {
   GtkWidget *w, *w1, *w2;
   GtkWidget *item;
   bool bSubMenu;
@@ -993,7 +994,7 @@ void Frame::entryChanged(ENUM_ENTRY e) {
   bool b;
   updateEntryValue(e);
   if (e == ENTRY_TEMPLATE) {
-    b = prepare(m_menuClick);
+    b = prepare();
     addRemoveClass(m_entry[e], CERROR, !b);
   } else if (e == ENTRY_FILTER) {
     clearTagMarks();
@@ -1487,7 +1488,7 @@ void Frame::job(ENUM_JOB_TYPE e) {
     }
 
     clear(e);
-    if (!prepare(m_menuClick)) {
+    if (!prepare()) {
       m_end = clock();
       updateStatus(STATE_ERROR);
       return;
@@ -1531,8 +1532,8 @@ void Frame::job(ENUM_JOB_TYPE e) {
       if (token.stop_requested())
         return;
 
-      m_menuClickBase = menu;
-      run(e);
+      wordsBase->m_menuClick = menu;
+      wordsBase->run(e);
 
       if (token.stop_requested())
         return;

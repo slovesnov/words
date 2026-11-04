@@ -163,4 +163,6 @@ const int UPDATEONLY_BUTTON = -1;
 const int INVERT_BUTTON = -2;
 constexpr int STATE_BITS = std::bit_width(static_cast<unsigned>(STATE_SIZE));
 constexpr int STATE_MASK = (1 << STATE_BITS) - 1;
+const char SEPARATOR[] = "SEPARATOR";
+
 #endif /*#ifndef NOGTK*/
