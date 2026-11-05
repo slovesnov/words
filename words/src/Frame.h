@@ -50,6 +50,7 @@ class Frame :Parameters {
   GtkWidget *m_focused_widget = nullptr;
   gint m_sel_start = 0;
   gint m_sel_end = 0;
+  std::string m_out;
 
 public:
   gulong m_positionSignalId = 0;

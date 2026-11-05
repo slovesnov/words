@@ -1472,7 +1472,7 @@ JOB_TYPE_STOP - stop calculations if needed
 */
 void Frame::job(ENUM_JOB_TYPE e) {
   // prsync(magic_enum::enum_name(m_menuClick), magic_enum::enum_name(e));
-  auto menu = m_menuClick;
+  Parameters parameters(*this);
 
   if (oneOf(e, JOB_TYPE_SORT_AND_FILTER, JOB_TYPE_FILTER) && m_result.empty()) {
     return;
@@ -1501,7 +1501,7 @@ void Frame::job(ENUM_JOB_TYPE e) {
     m_managerThread.request_stop();
     m_managerThread.detach();
   }
-  m_managerThread = std::jthread([this, e, menu](std::stop_token manager_token) {
+  m_managerThread = std::jthread([this, e, &parameters](std::stop_token manager_token) {
     if (e != JOB_TYPE_STOP) {
       int packed = (static_cast<int>(e) << STATE_BITS) |
                    static_cast<int>(STATE_PROCEEDING);
@@ -1526,13 +1526,13 @@ void Frame::job(ENUM_JOB_TYPE e) {
       return;
     }
 
-    m_thread = std::jthread([this, e, menu](std::stop_token token) {
+    m_thread = std::jthread([this, e, &parameters](std::stop_token token) {
       m_token = token;
 
       if (token.stop_requested())
         return;
 
-      wordsBase->m_menuClick = menu;
+      static_cast<Parameters&>(*wordsBase) = parameters;
       wordsBase->run(e);
 
       if (token.stop_requested())

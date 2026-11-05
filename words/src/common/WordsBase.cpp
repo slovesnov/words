@@ -116,6 +116,7 @@ WordsBase *wordsBase;
 extern Frame *frame;
 
 WordsBase::WordsBase() {
+  pri;
   int i, j;
   wordsBase = this;
   // clock_t begin = clock();
@@ -2163,7 +2164,6 @@ bool WordsBase::testFilterRegex(const std::string &s) {
 
   return rc >= 0;
 }
-
 #endif
 
 #ifdef NOGTK

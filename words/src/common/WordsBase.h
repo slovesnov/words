@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include "consts.h"
 #include "Parameters.h"
+#include "consts.h"
 #include <barrier>
 #include <functional>
 #include <latch>
@@ -16,7 +16,7 @@
 
 class WordsBase;
 extern WordsBase *wordsBase;
-class WordsBase : public Parameters{
+class WordsBase : public Parameters {
   class TableFormat {
   private:
     std::vector<ENUM_STRING> m_en;
@@ -171,7 +171,7 @@ protected:
   VVString m_vvs;
   VectorVectorInt m_layerIndex[2], m_vii;
   TableFormat m_table;
-  int m_j,m_mode;
+  int m_j, m_mode;
   VectorChainLayerResult m_chainLayerResult;
   VectorInt *m_chainPtr[2];
   std::string m_s;

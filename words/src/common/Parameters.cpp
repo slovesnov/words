@@ -14,6 +14,48 @@ std::array<std::string, MENU_SIZE> Parameters::m_menuAll[LANGUAGES]; // utf8
 MapIntInt Parameters::m_wordLengthMap[LANGUAGES];
 int Parameters::m_longestWordLength[LANGUAGES];
 
+Parameters::Parameters(){}
+
+Parameters::Parameters(const Parameters &p){
+  *this=p;
+}
+
+void Parameters::operator=(const Parameters &p) {
+  pr("begin");
+  pr(p.m_tvwords.size());
+  m_tvwords = p.m_tvwords;
+  pri;
+  m_ss = p.m_ss;
+  pri;
+  m_ev = p.m_ev;
+  pri;
+  m_template_a = p.m_template_a;
+  pri;
+  m_templateHelper = p.m_templateHelper;
+  pri;
+
+  m_comboValue = p.m_comboValue;
+  m_sortlistValue = p.m_sortlistValue;
+  m_entryValue = p.m_entryValue; // utf8
+  m_radioValue = p.m_radioValue;
+  m_buttonValue = p.m_buttonValue; // use array allow assign all values
+  m_checkValue = p.m_checkValue;
+  m_evwords = p.m_evwords; // locale
+  m_filteredWordsCount = p.m_filteredWordsCount;
+  pri;
+  m_addstatus = p.m_addstatus;
+  m_menuClick = p.m_menuClick; // last search option
+  m_result = p.m_result;
+  m_textViewValueUtf8 = p.m_textViewValueUtf8; // do splitr so need utf8
+  m_begin = p.m_begin;
+  m_end = p.m_end;
+
+  pri;
+  m_modifications.parse(m_ev);
+  createRegex(ENTRY_FILTER);
+  pr("end");
+}
+
 const std::string &Parameters::string(ENUM_STRING e) const {
   return m_languageAll[getLanguageIndex()][e];
 }
@@ -159,8 +201,8 @@ bool Parameters::prepare() {
     return false;
   }
 
-  if (m_menuClick == MENU_TEMPLATE) {
-    memset(m_templateHelper, 0, 256);
+  if (m_menuClick == MENU_TEMPLATE) {//todo
+    m_templateHelper.fill(0);
     const char *p;
     for (p = m_ev.c_str(); *p != 0; p++) {
       m_templateHelper[uchar(*p)]++;
@@ -181,6 +223,7 @@ bool Parameters::prepare() {
     }
   } else if (m_menuClick == MENU_CHAIN) {
     // evUtf8 trimmed and has only alphabet chars
+    pri;
     m_evwords = getLocaleWords(evUtf8);
     m_tvwords = getLocaleWords(m_textViewValueUtf8);
 

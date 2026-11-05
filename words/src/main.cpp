@@ -5,18 +5,18 @@
  *      Author: alexey slovesnov
  */
 
-#ifdef NOGTK
 #include "common/WordsBase.h"
-#else
+#ifndef NOGTK
 #include "Frame.h"
 #endif
 
 int main(int argc, char **argv) {
 #ifdef NOGTK
-  WordsBase w;
+  WordsBase words;
 #else
   gtk_init(&argc, &argv);
   aslovInit(argv);
+  WordsBase words;
   Frame frame;
   gtk_main();
 #endif
