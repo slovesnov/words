@@ -21,11 +21,8 @@ class WordsBase : public Parameters {
   private:
     std::vector<ENUM_STRING> m_en;
     std::vector<int> m_width;
-
-  public:
     int m_rows;
 
-  private:
     template <typename T> std::string formatCell(const T &arg, size_t i) const {
       using DecayedT = std::decay_t<T>;
 
@@ -75,6 +72,8 @@ class WordsBase : public Parameters {
                 std::initializer_list<int> width) {
       init(en, width);
     }
+
+    int rows() const { return m_rows; }
     void init(std::initializer_list<ENUM_STRING> en,
               std::initializer_list<int> width) {
       m_rows = 0;
@@ -171,7 +170,8 @@ private:
   VVString m_vvs;
   VectorVectorInt m_layerIndex[2], m_vii;
   TableFormat m_table;
-  int m_j, m_mode;
+  int m_j;
+  ENUM_CHAIN_MODE m_chainMode;
   VectorChainLayerResult m_chainLayerResult;
   VectorInt *m_chainPtr[2];
   std::string m_s;
@@ -265,7 +265,7 @@ public:
 
   void twoDictionaries(int nthread, int n);
 
-  void fillDictionaryLength(int nthread, size_t length,
+  int fillDictionaryLength(int nthread, size_t length,
                             const VString &bounds = {});
   int findLongestChain(int nthread);
 

@@ -18,9 +18,9 @@ using UniquePcre2MatchData =
 #include "Modification.h"
 
 class Parameters {
-  // protected:
-public:
-  // Frame+WordsBase
+protected:
+// public:
+  // values
   ENUM_MENU m_menuClick;
   std::array<int, COMBOBOX_SIZE> m_comboValue;
   int m_sortlistValue;
@@ -29,17 +29,15 @@ public:
   std::array<int, BUTTON_SIZE>
       m_buttonValue; // use array allow assign all values
   bool m_checkValue;
-
-  VString m_evwords; // locale
-  int m_filteredWordsCount;
-  std::string m_addstatus;
   std::string m_textViewValueUtf8; // do splitr so need utf8
 
-  static const int REGEX_SIZE = 2;
+  //postcount variable
+  int m_filteredWordsCount;
+  std::string m_addstatus;
+
+  VString m_evwords; // locale
   UniquePcre2Code m_regex[REGEX_SIZE];
   UniquePcre2MatchData m_match[REGEX_SIZE];
-  static_assert(ENTRY_TEMPLATE < REGEX_SIZE);
-  static_assert(ENTRY_FILTER < REGEX_SIZE);
 
   // no Frame
   SetString m_ss;
@@ -79,8 +77,9 @@ public:
   bool isAlphabetChar(char c) const;
 
   Parameters();
-  // Parameters(const Parameters &p);
   void operator=(const Parameters &p);
+  void assignToWordsBase(const Parameters &p);
+  void assignToFrame(const Parameters &p);
 
 protected:
   static std::string path(int i, std::string s);

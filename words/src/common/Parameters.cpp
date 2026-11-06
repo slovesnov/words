@@ -6,7 +6,7 @@
  */
 
 #include "Parameters.h"
-//#include <magic_enum.hpp>
+// #include <magic_enum.hpp>
 
 std::stop_token Parameters::m_token;
 std::array<std::string, SETTINGS_SIZE>
@@ -20,11 +20,8 @@ VectorSearchResult Parameters::m_result;
 
 Parameters::Parameters() {}
 
-//Parameters::Parameters(const Parameters &p) { *this = p; }
-
 void Parameters::operator=(const Parameters &p) {
   // pr(magic_enum::enum_name(p.m_menuClick));
-
   m_menuClick = p.m_menuClick; // last search option
   m_comboValue = p.m_comboValue;
   m_sortlistValue = p.m_sortlistValue;
@@ -32,15 +29,18 @@ void Parameters::operator=(const Parameters &p) {
   m_radioValue = p.m_radioValue;
   m_buttonValue = p.m_buttonValue; // use array allow assign all values
   m_checkValue = p.m_checkValue;
-  m_evwords = p.m_evwords; // locale
+  m_textViewValueUtf8 = p.m_textViewValueUtf8; // do splitr so need utf8
+}
+
+void Parameters::assignToWordsBase(const Parameters &p) {
+  *this = p;
+  prepare();
+  createRegex(ENTRY_FILTER);
+}
+
+void Parameters::assignToFrame(const Parameters &p) {
   m_filteredWordsCount = p.m_filteredWordsCount;
   m_addstatus = p.m_addstatus;
-  m_textViewValueUtf8 = p.m_textViewValueUtf8; // do splitr so need utf8
-
-  createRegex(ENTRY_FILTER);
-  m_ss = p.m_ss;
-  m_ev = p.m_ev;
-  m_modifications.parse(m_ev);
 }
 
 const std::string &Parameters::string(ENUM_STRING e) const {
@@ -190,7 +190,6 @@ bool Parameters::prepare() {
 
   if (m_menuClick == MENU_CHAIN) {
     // evUtf8 trimmed and has only alphabet chars
-    pri;
     m_evwords = getLocaleWords(evUtf8);
     auto words = getLocaleWords(m_textViewValueUtf8);
 

@@ -29,11 +29,8 @@ const int KEYBOARD_ROWS = 3;
 const int NUMBER_OF_SORTS =
     SORT_BY_DIFFERENT_NUMBER_OF_CHARACTERS - SORT_BY_ALPHABET + 1;
 
-const int CHAIN_INIT_STAGE = 0;
-const int CHAIN_BEFORE_PRINT_STAGE = 1;
-const int CHAIN_PRINT_STAGE = 2;
-
 const int USER_BREAK = -1;
+const int ERROR_THIS_WORD_IS_NOT_IN_THE_DICTIONARY_I = -1;
 
 #ifdef NOGTK
 // should match with ENUM_POST

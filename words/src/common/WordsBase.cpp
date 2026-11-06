@@ -524,8 +524,8 @@ void WordsBase::checkDictionaryPostProseeding() {
 }
 
 // if bounds not found in dictionary then they are added to dictionary
-void WordsBase::fillDictionaryLength(int nthread, size_t length,
-                                     const VString &bounds) {
+int WordsBase::fillDictionaryLength(int nthread, size_t length,
+                                    const VString &bounds) {
   auto &words = m_vvs[nthread];
   words.clear();
 
@@ -580,8 +580,9 @@ void WordsBase::fillDictionaryLength(int nthread, size_t length,
   }
 
   // 4. Update the execution chain layout
-  m_chain[nthread].assign(words.size() + added_count, true);
-  m_chainChar.assign(words.size() + added_count, 1);
+  m_chain[nthread].assign(words.size(), true);
+  m_chainChar.assign(words.size(), 1);
+  return added_count;
 }
 
 int WordsBase::findLongestChain(int nthread) {
@@ -592,7 +593,8 @@ int WordsBase::findLongestChain(int nthread) {
   int size = words.size();
   int w = std::to_string(size).length();
   w += (w - 1) / 3; // separators
-  if (m_menuClick == MENU_CHAIN && !nthread && m_mode == CHAIN_PRINT_STAGE) {
+  if (m_menuClick == MENU_CHAIN && !nthread &&
+      m_chainMode == CHAIN_MODE_PRINT_STAGE) {
     s = m_table.createWithTitle(NSTRING, LAYER, BRANCHING_FACTOR, 2, w, 6,
                                 WORDS_NOMINATIVE_CASE);
     // cann't use in one row
@@ -600,7 +602,7 @@ int WordsBase::findLongestChain(int nthread) {
     updateProceedingText(s, false);
   }
 
-  total = 0;
+  total = 1;
   do {
     if (m_menuClick == MENU_CHAIN) {
       chainLayer2(nthread, m_chd);
@@ -1138,8 +1140,12 @@ VectorInt WordsBase::relations(int nthread, VectorInt const &v1,
 }
 
 void WordsBase::chainMergeLayers() noexcept {
-  if (m_mode == CHAIN_BEFORE_PRINT_STAGE) {
-    m_mode = CHAIN_PRINT_STAGE;
+  // pr(magic_enum::enum_name(m_chainMode));
+  if (m_chainMode == CHAIN_MODE_BEFORE_PRINT_STAGE) {
+    m_chainMode = CHAIN_MODE_PRINT_STAGE;
+    if (m_s.empty()) { // chain with one word only
+      m_s = m_evwords[0];
+    }
     chainInit({m_s});
     return;
   }
@@ -1161,15 +1167,15 @@ void WordsBase::chainMergeLayers() noexcept {
     if (j > MAX_WORDS) {
       words_str += "…";
     }
-    if (m_mode == CHAIN_PRINT_STAGE) {
+    if (m_chainMode == CHAIN_MODE_PRINT_STAGE) {
       std::string s =
-          m_table.string(m_table.m_rows, j, double(j) / m_i, words_str);
+          m_table.string(m_table.rows(), j, double(j) / m_i, words_str);
       updateProceedingText(s);
     }
     m_i = j;
     m_s = words[m_chd[0]]; // last word
   } else {
-    m_mode = CHAIN_BEFORE_PRINT_STAGE;
+    m_chainMode = CHAIN_MODE_BEFORE_PRINT_STAGE;
   }
 }
 
@@ -1234,10 +1240,9 @@ void WordsBase::chainSetPtr() {
 }
 
 void WordsBase::findChainPreProseeding() {
-  m_mode = m_evwords.size() == 1 && m_checkValue ? CHAIN_INIT_STAGE
-                                                 : CHAIN_PRINT_STAGE;
+  m_chainMode = m_evwords.size() == 1 && m_checkValue ? CHAIN_MODE_INIT_STAGE
+                                                      : CHAIN_MODE_PRINT_STAGE;
   chainInit(m_evwords);
-  // pr(m_mode, m_chd.size(), m_evwords.size(), m_evwords[0].size());
   m_barrier = std::make_unique<std::barrier<BarrierCallback>>(
       m_threads, [this]() noexcept {
         m_evwords.size() == 1 ? this->chainMergeLayers()
@@ -1246,7 +1251,8 @@ void WordsBase::findChainPreProseeding() {
 }
 
 void WordsBase::chainInit(const VString &vs) {
-  fillDictionaryLength(0, vs[0].size(), vs);
+  m_s = "";
+  int added = fillDictionaryLength(0, vs[0].size(), vs);
   int i = -1;
   for (auto &a : vs) {
     i++;
@@ -1255,7 +1261,8 @@ void WordsBase::chainInit(const VString &vs) {
   }
   if (vs.size() == 1) {
     m_chd = {m_layerIndex[0][0][0]};
-    m_i = 1;
+    m_i =
+        m_checkValue && added ? ERROR_THIS_WORD_IS_NOT_IN_THE_DICTIONARY_I : 1;
   } else {
     chainSetPtr();
   }
@@ -1268,6 +1275,13 @@ void WordsBase::findChain(int nthread) {
 
   if (m_evwords.size() == 1) {
     if (m_checkValue) {
+      if (m_i == ERROR_THIS_WORD_IS_NOT_IN_THE_DICTIONARY_I) {
+        if (!nthread) {
+          SearchResult::out = string(ERROR_THIS_WORD_IS_NOT_IN_THE_DICTIONARY);
+        }
+        return;
+      }
+
       i = findLongestChain(nthread); // 1st stage
       if (i == USER_BREAK || m_token.stop_requested()) {
         m_barrier->arrive_and_drop();
@@ -1282,7 +1296,8 @@ void WordsBase::findChain(int nthread) {
       i = findLongestChain(nthread);
     }
     if (!nthread && !m_token.stop_requested()) {
-      std::string s = m_table.string("##", i, "", "");
+      std::string s = m_table.string(" ∑", i, "", ""); // todo
+      // std::string s = m_table.string("##", i, "", "");
       updateProceedingText(s);
     }
     return;
@@ -1352,7 +1367,7 @@ void WordsBase::clusterStatistics(int nthread) {
       if (i == USER_BREAK) {
         return;
       }
-      map[i + 1]++;
+      map[i]++;
     }
 
     std::string s = "";
@@ -2002,6 +2017,7 @@ void WordsBase::sortFilterResults(ENUM_JOB_TYPE e) {
         SORT_FUNCTION[m_sortlistValue * 2 + m_buttonValue[BUTTON_SORT_ORDER]]);
   }
   // auto te = timeElapse(begin);
+  m_filteredWordsCount = 0;
   for (auto const &e : m_result) {
     s = fastLocaleToUtf8(e.s);
 #ifndef NOGTK
@@ -2122,10 +2138,11 @@ void WordsBase::run_thread(int nthread) {
 }
 
 void WordsBase::run(ENUM_JOB_TYPE e) {
+  m_addstatus = "";
   bool userbreak = false;
   // auto begin = clock();
   int threads = m_menuClick == MENU_WORD_FREQUENCY ? 1 : m_threads;
-  //pr(magic_enum::enum_name(m_menuClick), threads);
+  // pr(magic_enum::enum_name(m_menuClick), threads);
   if (e == JOB_TYPE_FULL) {
     if (auto it = menuPreProseeding.get(m_menuClick)) {
       (this->*(*it))();

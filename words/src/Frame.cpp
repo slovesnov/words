@@ -110,7 +110,8 @@ gboolean update_status(gpointer data) {
 }
 
 gboolean end_job(gpointer data) {
-  frame->endJob();
+  bool readParameters = GPOINTER_TO_INT(data);
+  frame->endJob(readParameters);
   return G_SOURCE_REMOVE;
 }
 
@@ -880,8 +881,12 @@ void Frame::setMenuLabel(ENUM_MENU e, std::string const &text) {
   }
 }
 
-void Frame::endJob() {
-  // prsync("endJob");
+void Frame::endJob(bool readParameters) {
+  // prsync(readParameters);
+  if (readParameters) {
+    m_end = clock();
+    assignToFrame(*wordsBase);
+  }
   if (m_thread.joinable())
     m_thread.join();
 
@@ -1493,7 +1498,7 @@ void Frame::job(ENUM_JOB_TYPE e) {
       return;
     }
     parameters = *this; // after prepare
-    // store current entry, because after thread lose focus and cursor position
+    //  store current entry, because after thread lose focus and cursor position
     captureFocusedState();
   }
 
@@ -1522,7 +1527,7 @@ void Frame::job(ENUM_JOB_TYPE e) {
 
     if (e == JOB_TYPE_STOP) {
       if (isValid())
-        g_idle_add_full(G_PRIORITY_HIGH, end_job, NULL, NULL);
+        g_idle_add_full(G_PRIORITY_HIGH, end_job, GINT_TO_POINTER(false), NULL);
       return;
     }
 
@@ -1532,14 +1537,13 @@ void Frame::job(ENUM_JOB_TYPE e) {
       if (token.stop_requested())
         return;
 
-      static_cast<Parameters &>(*wordsBase) = parameters;
+      wordsBase->assignToWordsBase(parameters);
       wordsBase->run(e);
-      m_end = clock();
 
       if (token.stop_requested())
         return;
 
-      g_idle_add_full(G_PRIORITY_HIGH, end_job, NULL, NULL);
+      g_idle_add_full(G_PRIORITY_HIGH, end_job, GINT_TO_POINTER(true), NULL);
     });
   });
 }

@@ -136,7 +136,7 @@ public:
 
   void destroy();
   void windowDeleteEvent();
-  void endJob();
+  void endJob(bool readParameters);
   bool isSignalsLocked() { return m_lockSignals; }
   void lockSignals() { m_lockSignals = true; }
   void unlockSignals() { m_lockSignals = false; }
