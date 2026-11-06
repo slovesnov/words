@@ -791,7 +791,7 @@ void WordsBase::showLongestAnagram() {
     for (auto &v : vvs) {
       for (auto const &e : v) {
         s = e;
-        std::sort(s.begin(), s.end());
+        std::ranges::sort(s);
         cit = map.find(s);
         if (cit == map.end()) {
           VString v;
@@ -944,7 +944,7 @@ void WordsBase::findAnagram(int nthread) {
       continue;
     }
     std::string signature = *it;
-    std::sort(signature.begin(), signature.end());
+    std::ranges::sort(signature);
     local_map[signature].push_back(*it);
     RETURN_ON_USER_BREAK
   }
@@ -1201,12 +1201,12 @@ void WordsBase::chainMergeLayers2() noexcept {
     }
   }
 
-  std::sort(m_chd.begin(), m_chd.end());
+  std::ranges::sort(m_chd);
 
   if (hasNonEmptyOpposite) {
     // pr(m_chd.size(), m_chd1.size());
     // Remove duplicates from the accumulated opposites
-    std::sort(m_chd1.begin(), m_chd1.end());
+    std::ranges::sort(m_chd1);
     m_chd1.erase(std::unique(m_chd1.begin(), m_chd1.end()), m_chd1.end());
 
     // Remove duplicates from the accumulated v elements
@@ -1384,14 +1384,13 @@ void WordsBase::clusterStatisticsPreProseeding() {
   m_ss.clear(); // used in fillDictionaryLength() so clear
   m_iiv = {getWordLengthMap().begin(), getWordLengthMap().end()};
   m_si.clear();
-  std::sort(m_iiv.begin(), m_iiv.end(),
-            [](auto &a, auto &b) { return a.second > b.second; });
+  std::ranges::sort(m_iiv,
+                    [](auto &a, auto &b) { return a.second > b.second; });
   m_i.store(0);
 }
 
 void WordsBase::clusterStatisticsPostProseeding() {
-  std::sort(m_si.begin(), m_si.end(),
-            [](auto &a, auto &b) { return a.second < b.second; });
+  std::ranges::sort(m_si, [](auto &a, auto &b) { return a.second < b.second; });
   int i = -1;
   std::string s;
   for (auto &p : m_si) {
@@ -1640,8 +1639,7 @@ void WordsBase::wordFrequency(int nthread) {
     a = {getWordLengthMap().begin(), getWordLengthMap().end()};
   }
 
-  std::sort(v[0].begin(), v[0].end(),
-            [](auto &a, auto &b) { return a.second > b.second; });
+  std::ranges::sort(v[0], [](auto &a, auto &b) { return a.second > b.second; });
 
   size_t w = intToString(v[0][0].second).size(); // max len
   int sz = getDictionary().size();
@@ -1850,7 +1848,7 @@ void WordsBase::twoCharactersDistributionPostProseeding() {
       }
     }
   }
-  std::sort(v.begin(), v.end(), sortStringInt);
+  std::ranges::sort(v, sortStringInt);
 
   if (v.empty())
     return;
@@ -2012,8 +2010,8 @@ void WordsBase::sortFilterResults(ENUM_JOB_TYPE e) {
   // auto begin = clock();
   if (e != JOB_TYPE_FILTER) {
     // mtsort slowdown
-    std::sort(
-        m_result.begin(), m_result.end(),
+    std::ranges::sort(
+        m_result,
         SORT_FUNCTION[m_sortlistValue * 2 + m_buttonValue[BUTTON_SORT_ORDER]]);
   }
   // auto te = timeElapse(begin);
