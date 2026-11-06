@@ -6,6 +6,9 @@
  */
 
 #include "Parameters.h"
+//#include <magic_enum.hpp>
+
+std::stop_token Parameters::m_token;
 std::array<std::string, SETTINGS_SIZE>
     Parameters::m_settingsAll[LANGUAGES]; // locale
 std::array<std::string, STRING_SIZE>
@@ -13,47 +16,31 @@ std::array<std::string, STRING_SIZE>
 std::array<std::string, MENU_SIZE> Parameters::m_menuAll[LANGUAGES]; // utf8
 MapIntInt Parameters::m_wordLengthMap[LANGUAGES];
 int Parameters::m_longestWordLength[LANGUAGES];
+VectorSearchResult Parameters::m_result;
 
-Parameters::Parameters(){}
+Parameters::Parameters() {}
 
-Parameters::Parameters(const Parameters &p){
-  *this=p;
-}
+//Parameters::Parameters(const Parameters &p) { *this = p; }
 
 void Parameters::operator=(const Parameters &p) {
-  pr("begin");
-  pr(p.m_tvwords.size());
-  m_tvwords = p.m_tvwords;
-  pri;
-  m_ss = p.m_ss;
-  pri;
-  m_ev = p.m_ev;
-  pri;
-  m_template_a = p.m_template_a;
-  pri;
-  m_templateHelper = p.m_templateHelper;
-  pri;
+  // pr(magic_enum::enum_name(p.m_menuClick));
 
+  m_menuClick = p.m_menuClick; // last search option
   m_comboValue = p.m_comboValue;
   m_sortlistValue = p.m_sortlistValue;
-  m_entryValue = p.m_entryValue; // utf8
+  m_entryValueUtf8 = p.m_entryValueUtf8; // utf8
   m_radioValue = p.m_radioValue;
   m_buttonValue = p.m_buttonValue; // use array allow assign all values
   m_checkValue = p.m_checkValue;
   m_evwords = p.m_evwords; // locale
   m_filteredWordsCount = p.m_filteredWordsCount;
-  pri;
   m_addstatus = p.m_addstatus;
-  m_menuClick = p.m_menuClick; // last search option
-  m_result = p.m_result;
   m_textViewValueUtf8 = p.m_textViewValueUtf8; // do splitr so need utf8
-  m_begin = p.m_begin;
-  m_end = p.m_end;
 
-  pri;
-  m_modifications.parse(m_ev);
   createRegex(ENTRY_FILTER);
-  pr("end");
+  m_ss = p.m_ss;
+  m_ev = p.m_ev;
+  m_modifications.parse(m_ev);
 }
 
 const std::string &Parameters::string(ENUM_STRING e) const {
@@ -147,7 +134,7 @@ bool Parameters::createRegex(ENUM_ENTRY e, UniquePcre2Code &r,
                              UniquePcre2MatchData &m) {
   int errorcode;
   PCRE2_SIZE erroroffset;
-  r.reset(pcre2_compile((PCRE2_SPTR)m_entryValue[e].c_str(),
+  r.reset(pcre2_compile((PCRE2_SPTR)m_entryValueUtf8[e].c_str(),
                         PCRE2_ZERO_TERMINATED, PCRE2_UTF, &errorcode,
                         &erroroffset, NULL));
   if (r) {
@@ -165,7 +152,7 @@ bool Parameters::prepare() {
   if (!MENU_WITH_ENTRY.get(m_menuClick)) {
     return true;
   }
-  std::string evUtf8 = utf8Trim(m_entryValue[ENTRY_TEMPLATE]);
+  std::string evUtf8 = utf8Trim(m_entryValueUtf8[ENTRY_TEMPLATE]);
   auto result = tryUtf8ToLocale(evUtf8);
   if (!result.has_value()) {
     return false;
@@ -180,7 +167,7 @@ bool Parameters::prepare() {
   }
 
   if (m_menuClick == MENU_MODIFICATION) { // finish with MENU_MODIFICATION
-    s = m_entryValue[ENTRY_TEMPLATE];
+    s = m_entryValueUtf8[ENTRY_TEMPLATE];
     if (!m_modifications.parse(m_ev)) {
 #ifdef NOGTK
       printf(string(CGI_STRING_ERROR_INVALID_MODIFICATION_STRING).c_str());
@@ -201,31 +188,11 @@ bool Parameters::prepare() {
     return false;
   }
 
-  if (m_menuClick == MENU_TEMPLATE) {//todo
-    m_templateHelper.fill(0);
-    const char *p;
-    for (p = m_ev.c_str(); *p != 0; p++) {
-      m_templateHelper[uchar(*p)]++;
-    }
-
-    size_t i, j;
-    m_template_a = create2dArray<char>(m_ev.length(), 256, 0);
-    j = 0;
-    for (auto &a : m_template_a) {
-      s = m_ev.substr(j);
-      for (i = 0; i < s.length(); i++) {
-        uchar u = s[i];
-        if (!a[u]) {
-          a[u] = i + 1;
-        }
-      }
-      j++;
-    }
-  } else if (m_menuClick == MENU_CHAIN) {
+  if (m_menuClick == MENU_CHAIN) {
     // evUtf8 trimmed and has only alphabet chars
     pri;
     m_evwords = getLocaleWords(evUtf8);
-    m_tvwords = getLocaleWords(m_textViewValueUtf8);
+    auto words = getLocaleWords(m_textViewValueUtf8);
 
     if (m_evwords.size() != 1 && m_evwords.size() != 2) {
       return false;
@@ -238,7 +205,7 @@ bool Parameters::prepare() {
 
     // filter words
     m_ss.clear();
-    for (auto &a : m_tvwords) {
+    for (auto &a : words) {
       if (a.size() == m_evwords[0].size()) {
         m_ss.insert(a);
       }
@@ -259,27 +226,4 @@ bool Parameters::prepare() {
   }
 
   return true;
-}
-
-std::string Parameters::getStatusString() {
-  std::string s = m_addstatus;
-  if (!s.empty()) {
-    s += ", ";
-  }
-  if (!m_result.empty()) {
-    s = string(LINES) + " " + intToStringLocaled(m_result.size()) + ", ";
-#ifndef NOGTK
-    s += string(WITH_FILTER) + " " + intToStringLocaled(m_filteredWordsCount) +
-         ", ";
-#endif
-  }
-  return s + string(TIME) + " " + getTimeString();
-}
-
-std::string Parameters::getTimeString() {
-  return std::format(
-      "{:.2f}", double(m_end - m_begin) /
-                    CLOCKS_PER_SEC); // locale independent
-                                     //  return format("%.2lf", double(m_end -
-                                     //  m_begin) / CLOCKS_PER_SEC);
 }

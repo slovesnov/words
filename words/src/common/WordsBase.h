@@ -146,7 +146,7 @@ class WordsBase : public Parameters {
     }
   };
 
-protected:
+private:
   Dictionary m_dictionary[DICTIONARY_SIZE];
   std::string m_keyboardOneRow[256][2];
   std::string m_keyboardRowDiagonals[256];
@@ -175,6 +175,8 @@ protected:
   VectorChainLayerResult m_chainLayerResult;
   VectorInt *m_chainPtr[2];
   std::string m_s;
+  std::vector<std::vector<char>> m_template_a;
+  char m_templateHelper[256];
 
   void chainMergeLayers() noexcept;
   void chainMergeLayers2() noexcept;
@@ -245,6 +247,7 @@ public:
   void twoCharactersDistribution(int nthread);
   void findWordsSplit(int nthread);
 
+  void checkTemplatePreProseeding();
   void findChainPreProseeding();
   void clusterStatisticsPreProseeding();
   void findLetterGroupSplitPreProseeding();

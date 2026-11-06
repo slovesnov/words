@@ -18,40 +18,38 @@ using UniquePcre2MatchData =
 #include "Modification.h"
 
 class Parameters {
-private:
-  // only parameters
-  VString m_tvwords; // locale
-protected:
-
-  // no Frame
-  SetString m_ss;
-  std::string m_ev; // locale m_ev=utf8ToLocale(m_entryValue[ENTRY_TEMPLATE])
-  std::vector<std::vector<char>> m_template_a;
-  std::array<char, 256> m_templateHelper;
-
+  // protected:
+public:
   // Frame+WordsBase
+  ENUM_MENU m_menuClick;
   std::array<int, COMBOBOX_SIZE> m_comboValue;
   int m_sortlistValue;
-  std::array<std::string, ENTRY_SIZE> m_entryValue; // utf8
+  std::array<std::string, ENTRY_SIZE> m_entryValueUtf8; // utf8
   int m_radioValue;
   std::array<int, BUTTON_SIZE>
       m_buttonValue; // use array allow assign all values
   bool m_checkValue;
+
   VString m_evwords; // locale
   int m_filteredWordsCount;
   std::string m_addstatus;
-  ENUM_MENU m_menuClick; // last search option
-  VectorSearchResult m_result;
   std::string m_textViewValueUtf8; // do splitr so need utf8
-  clock_t m_begin, m_end;
 
-  Modification m_modifications;// no Frame
-  UniquePcre2Code m_regex[2];
-  UniquePcre2MatchData m_match[2];
+  static const int REGEX_SIZE = 2;
+  UniquePcre2Code m_regex[REGEX_SIZE];
+  UniquePcre2MatchData m_match[REGEX_SIZE];
+  static_assert(ENTRY_TEMPLATE < REGEX_SIZE);
+  static_assert(ENTRY_FILTER < REGEX_SIZE);
 
-  // separated
-  std::mutex m_mutex;
-  std::stop_token m_token; // not need copy?
+  // no Frame
+  SetString m_ss;
+  std::string
+      m_ev; // locale m_ev=utf8ToLocale(m_entryValueUtf8[ENTRY_TEMPLATE])
+  Modification m_modifications;
+
+  std::mutex m_mutex; // separated
+  static std::stop_token m_token;
+  static VectorSearchResult m_result;
 
   static std::array<std::string, SETTINGS_SIZE>
       m_settingsAll[LANGUAGES]; // locale
@@ -81,7 +79,7 @@ public:
   bool isAlphabetChar(char c) const;
 
   Parameters();
-  Parameters(const Parameters &p);
+  // Parameters(const Parameters &p);
   void operator=(const Parameters &p);
 
 protected:
@@ -98,7 +96,4 @@ protected:
   bool createRegex(ENUM_ENTRY e, UniquePcre2Code &r, UniquePcre2MatchData &m);
 
   bool prepare();
-  std::string getStatusString();
-  std::string getTimeString();
-
 };

@@ -6,7 +6,7 @@ chain searching has been simplified, accelerated, and made multi-threaded
 removed multithreading from word length statistics due to lack of necessity
 fixed a crash when pasting text that cannot be transcoded to the local locale
 fixed Ctrl+A and Ctrl+C combinations did not always work correctly
-fixed search option change bug during calculation; decoupled variable into separate classes
+fixed search option change bug during calculation; decoupled variables into separate classes
 fixed cursor restoration after calculation if it was in the TextView
 fixed invalid height for modification of words
 
@@ -18,7 +18,7 @@ fixed invalid height for modification of words
 убрана многозадачность из статистики длины слов из-за ненадобности
 исправлено если в поле вcтавить текст который нельзя перекодировать в локаль программа падала
 исправлено комбинации ctrl+a и ctrl+c не всегда корректно работали
-исправлен баг с изменением опции поиска во время расчёта (переменная разнесена по разным классам)
+исправлен баг с изменением опции поиска во время расчёта (переменные разнесены по разным классам)
 исправлено восстановление курсора после расчета если он был в textview
 исправлена неправильная высота для поиска модификаций
 

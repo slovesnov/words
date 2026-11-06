@@ -8,11 +8,11 @@
 #pragma once
 
 #include "CheckNewVersion.h"
+#include "common/Parameters.h"
 #include "consts.h"
 #include <thread>
-#include "common/Parameters.h"
 
-class Frame :Parameters {
+class Frame : Parameters {
   static const int COMBOLINE_MARGIN = 3;
 
   GtkWidget *m_widget;
@@ -42,7 +42,6 @@ class Frame :Parameters {
   std::chrono::steady_clock::time_point last_click_time[BUTTON_SIZE]{};
 
   MapMenu m_menuMap;
-  ENUM_MENU m_menuClick; // last search option
   bool m_lockSignals, m_lastCommandWithTabs = false;
   std::jthread m_thread, m_managerThread;
   CheckNewVersion m_newVersion;
@@ -51,6 +50,7 @@ class Frame :Parameters {
   gint m_sel_start = 0;
   gint m_sel_end = 0;
   std::string m_out;
+  clock_t m_begin, m_end;
 
 public:
   gulong m_positionSignalId = 0;
@@ -58,6 +58,7 @@ public:
   GtkWidget *m_panedWidget = nullptr;
   bool m_maximized;
   int m_x, m_y, m_width, m_height;
+  Parameters parameters;
 
 private:
   ENUM_STATE m_state;
@@ -291,4 +292,6 @@ public:
   void captureFocusedState();
   void restoreFocusedState();
   void onDraw(GtkWidget *widget, cairo_t *cr);
+  std::string getTimeString();
+  std::string getStatusString();
 };

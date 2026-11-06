@@ -724,7 +724,7 @@ void Frame::updateDictionary(bool change) {
     std::string s = stringUsingDictionary(*it, true);
     s = normalizeString(e, s);
     // if user didn't change value of entry we can set it by default
-    if (s == m_entryValue[e]) {
+    if (s == m_entryValueUtf8[e]) {
       s = stringUsingDictionary(*it);
       gtk_entry_set_text(GTK_ENTRY(m_entry[e]), s.c_str());
     }
@@ -1021,7 +1021,7 @@ void Frame::clearTagMarks() {
 // n - number of active tag
 void Frame::updateTags(int n) {
   GtkTextBuffer *buffer = tvBuffer();
-  std::string s = m_entryValue[ENTRY_SEARCH];
+  std::string s = m_entryValueUtf8[ENTRY_SEARCH];
 
   int old_tag_index = m_tagIndex;
   m_tagIndex = n;
@@ -1288,7 +1288,7 @@ GtkWidget *Frame::createEntry(ENUM_ENTRY e, ENUM_STRING n) {
 
 void Frame::updateEntryValue(ENUM_ENTRY e) {
   std::string s = gtk_entry_get_text(GTK_ENTRY(m_entry[e]));
-  m_entryValue[e] = normalizeString(e, s);
+  m_entryValueUtf8[e] = normalizeString(e, s);
 }
 
 std::string Frame::normalizeString(ENUM_ENTRY e, std::string const &q) {
@@ -1472,7 +1472,6 @@ JOB_TYPE_STOP - stop calculations if needed
 */
 void Frame::job(ENUM_JOB_TYPE e) {
   // prsync(magic_enum::enum_name(m_menuClick), magic_enum::enum_name(e));
-  Parameters parameters(*this);
 
   if (oneOf(e, JOB_TYPE_SORT_AND_FILTER, JOB_TYPE_FILTER) && m_result.empty()) {
     return;
@@ -1493,6 +1492,7 @@ void Frame::job(ENUM_JOB_TYPE e) {
       updateStatus(STATE_ERROR);
       return;
     }
+    parameters = *this; // after prepare
     // store current entry, because after thread lose focus and cursor position
     captureFocusedState();
   }
@@ -1501,7 +1501,7 @@ void Frame::job(ENUM_JOB_TYPE e) {
     m_managerThread.request_stop();
     m_managerThread.detach();
   }
-  m_managerThread = std::jthread([this, e, &parameters](std::stop_token manager_token) {
+  m_managerThread = std::jthread([this, e](std::stop_token manager_token) {
     if (e != JOB_TYPE_STOP) {
       int packed = (static_cast<int>(e) << STATE_BITS) |
                    static_cast<int>(STATE_PROCEEDING);
@@ -1526,14 +1526,15 @@ void Frame::job(ENUM_JOB_TYPE e) {
       return;
     }
 
-    m_thread = std::jthread([this, e, &parameters](std::stop_token token) {
+    m_thread = std::jthread([this, e](std::stop_token token) {
       m_token = token;
 
       if (token.stop_requested())
         return;
 
-      static_cast<Parameters&>(*wordsBase) = parameters;
+      static_cast<Parameters &>(*wordsBase) = parameters;
       wordsBase->run(e);
+      m_end = clock();
 
       if (token.stop_requested())
         return;
@@ -1863,14 +1864,12 @@ void Frame::restoreFocusedState() {
 
 void Frame::onDraw(GtkWidget *widget, cairo_t *cr) {
   if (gtk_widget_in_destruction(widget)) {
-    pri;
     return;
   }
 
   GtkAllocation alloc;
   gtk_widget_get_allocation(widget, &alloc);
   if (alloc.width <= 0 || alloc.height <= 0) {
-    pri;
     return;
   }
 
@@ -2096,4 +2095,23 @@ void Frame::onDraw(GtkWidget *widget, cairo_t *cr) {
   }
 
   g_object_unref(layout);
+}
+
+std::string Frame::getTimeString() {
+  return std::format("{:.2f}", double(m_end - m_begin) / CLOCKS_PER_SEC);
+}
+
+std::string Frame::getStatusString() {
+  std::string s = m_addstatus;
+  if (!s.empty()) {
+    s += ", ";
+  }
+  if (!m_result.empty()) {
+    s = string(LINES) + " " + intToStringLocaled(m_result.size()) + ", ";
+#ifndef NOGTK
+    s += string(WITH_FILTER) + " " + intToStringLocaled(m_filteredWordsCount) +
+         ", ";
+#endif
+  }
+  return s + string(TIME) + " " + getTimeString();
 }
