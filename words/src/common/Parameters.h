@@ -18,8 +18,17 @@ using UniquePcre2MatchData =
 #include "Modification.h"
 
 class Parameters {
+public:
+  Parameters();
+  void operator=(const Parameters &p);
+  void assignToWordsBase(const Parameters &p);
+  void assignToFrame(const Parameters &p);
+
+  // public for modification class
+  const std::string &vowelConsonant(bool consonant);
+  bool isAlphabetChar(char c) const;
+
 protected:
-// public:
   // values
   ENUM_MENU m_menuClick;
   std::array<int, COMBOBOX_SIZE> m_comboValue;
@@ -31,7 +40,7 @@ protected:
   bool m_checkValue;
   std::string m_textViewValueUtf8; // do splitr so need utf8
 
-  //postcount variable
+  // postcount variable
   int m_filteredWordsCount;
   std::string m_addstatus;
 
@@ -71,17 +80,6 @@ protected:
   int alphabetSize() const;
   int alphabetIndex(char c) const;
 
-public:
-  // public for modification class
-  const std::string &vowelConsonant(bool consonant);
-  bool isAlphabetChar(char c) const;
-
-  Parameters();
-  void operator=(const Parameters &p);
-  void assignToWordsBase(const Parameters &p);
-  void assignToFrame(const Parameters &p);
-
-protected:
   static std::string path(int i, std::string s);
   static VString readFile(int i, std::string s);
   static VString readFile(std::string path);
