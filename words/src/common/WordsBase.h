@@ -236,6 +236,7 @@ public:
   void findModification(int nthread);
   void findChain(int nthread);
   void clusterSizeStatistics(int nthread);
+  void clusterDiameterStatistics(int nthread);
   void findLetterGroupSplit(int nthread);
   void keyboardWords(int nthread);
   void dictionaryStatistics(int nthread);
@@ -246,14 +247,14 @@ public:
 
   void checkTemplatePreProseeding();
   void findChainPreProseeding();
-  void clusterSizeStatisticsPreProseeding();
+  void clusterStatisticsPreProseeding();
   void findLetterGroupSplitPreProseeding();
   void checkKeyboardWordSimplePreProseeding();
   void checkKeyboardWordComplexPreProseeding();
   void checkDictionaryPreProseeding();
 
   void anagramsPostProseeding();
-  void clusterSizeStatisticsPostProseeding();
+  void clusterStatisticsPostProseeding();
   void findLetterGroupSplitPostProseeding();
   void simpleDoubleWordSequencePostProseeding();
   void dictionaryStatisticsPostProseeding();

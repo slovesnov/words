@@ -67,7 +67,9 @@ const LookupTable<ENUM_MENU, void (WordsBase::*)()> menuPreProseeding = {
     {MENU_CHAIN, &WordsBase::findChainPreProseeding},
     {MENU_TEMPLATE, &WordsBase::checkTemplatePreProseeding},
     {MENU_CLUSTER_SIZE_STATISTICS,
-     &WordsBase::clusterSizeStatisticsPreProseeding},
+     &WordsBase::clusterStatisticsPreProseeding},
+    {MENU_CLUSTER_DIAMETER_STATISTICS,
+     &WordsBase::clusterStatisticsPreProseeding},
     {MENU_LETTER_GROUP_SPLIT, &WordsBase::findLetterGroupSplitPreProseeding},
     {MENU_KEYBOARD_WORD_SIMPLE,
      &WordsBase::checkKeyboardWordSimplePreProseeding},
@@ -78,7 +80,9 @@ const LookupTable<ENUM_MENU, void (WordsBase::*)()> menuPreProseeding = {
 const LookupTable<ENUM_MENU, void (WordsBase::*)()> menuPostProseeding = {
     {MENU_ANAGRAM, &WordsBase::anagramsPostProseeding},
     {MENU_CLUSTER_SIZE_STATISTICS,
-     &WordsBase::clusterSizeStatisticsPostProseeding},
+     &WordsBase::clusterStatisticsPostProseeding},
+    {MENU_CLUSTER_DIAMETER_STATISTICS,
+     &WordsBase::clusterStatisticsPostProseeding},
     {MENU_LETTER_GROUP_SPLIT, &WordsBase::findLetterGroupSplitPostProseeding},
     {MENU_SIMPLE_WORD_SEQUENCE,
      &WordsBase::simpleDoubleWordSequencePostProseeding},
@@ -1381,16 +1385,23 @@ void WordsBase::clusterSizeStatistics(int nthread) {
   }
 }
 
-void WordsBase::clusterSizeStatisticsPreProseeding() {
+void WordsBase::clusterDiameterStatistics(int nthread){
+
+}
+
+void WordsBase::clusterStatisticsPreProseeding() {
   m_ss.clear(); // used in fillDictionaryLength() so clear
   m_iiv = {getWordLengthMap().begin(), getWordLengthMap().end()};
   m_si.clear();
   std::ranges::sort(m_iiv,
-                    [](auto &a, auto &b) { return a.second > b.second; });
+                    [](auto &a, auto &b) { return a.second < b.second; });
+  //todo
+  // std::ranges::sort(m_iiv,
+  //                   [](auto &a, auto &b) { return a.second > b.second; });
   m_i.store(0);
 }
 
-void WordsBase::clusterSizeStatisticsPostProseeding() {
+void WordsBase::clusterStatisticsPostProseeding() {
   std::ranges::sort(m_si, [](auto &a, auto &b) { return a.second < b.second; });
   int i = -1;
   std::string s;
