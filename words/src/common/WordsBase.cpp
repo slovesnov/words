@@ -37,8 +37,8 @@ const LookupTable<ENUM_MENU, void (WordsBase::*)(int)> COMPLEX_FUNCTION = {
     {MENU_MODIFICATION, &WordsBase::findModification}, // break implemented
     {MENU_CHAIN, &WordsBase::findChain}, // if one word break implemented, if
                                          // two words not need
-    {MENU_CLUSTER_STATISTICS,
-     &WordsBase::clusterStatistics},                // break implemented
+    {MENU_CLUSTER_SIZE_STATISTICS,
+     &WordsBase::clusterSizeStatistics},            // break implemented
     {MENU_WORDS_SPLIT, &WordsBase::findWordsSplit}, // break implemented
     {MENU_LETTER_GROUP_SPLIT,
      &WordsBase::findLetterGroupSplit}, // break implemented
@@ -66,7 +66,8 @@ const LookupTable<ENUM_MENU, void (WordsBase::*)(int)> COMPLEX_FUNCTION = {
 const LookupTable<ENUM_MENU, void (WordsBase::*)()> menuPreProseeding = {
     {MENU_CHAIN, &WordsBase::findChainPreProseeding},
     {MENU_TEMPLATE, &WordsBase::checkTemplatePreProseeding},
-    {MENU_CLUSTER_STATISTICS, &WordsBase::clusterStatisticsPreProseeding},
+    {MENU_CLUSTER_SIZE_STATISTICS,
+     &WordsBase::clusterSizeStatisticsPreProseeding},
     {MENU_LETTER_GROUP_SPLIT, &WordsBase::findLetterGroupSplitPreProseeding},
     {MENU_KEYBOARD_WORD_SIMPLE,
      &WordsBase::checkKeyboardWordSimplePreProseeding},
@@ -76,7 +77,8 @@ const LookupTable<ENUM_MENU, void (WordsBase::*)()> menuPreProseeding = {
 
 const LookupTable<ENUM_MENU, void (WordsBase::*)()> menuPostProseeding = {
     {MENU_ANAGRAM, &WordsBase::anagramsPostProseeding},
-    {MENU_CLUSTER_STATISTICS, &WordsBase::clusterStatisticsPostProseeding},
+    {MENU_CLUSTER_SIZE_STATISTICS,
+     &WordsBase::clusterSizeStatisticsPostProseeding},
     {MENU_LETTER_GROUP_SPLIT, &WordsBase::findLetterGroupSplitPostProseeding},
     {MENU_SIMPLE_WORD_SEQUENCE,
      &WordsBase::simpleDoubleWordSequencePostProseeding},
@@ -1184,9 +1186,8 @@ void WordsBase::chainMergeLayers2() noexcept {
   m_chd.clear();
   m_chd1.clear();
 
-  bool hasNonEmptyOpposite =
-      std::any_of(m_chainLayerResult.begin(), m_chainLayerResult.end(),
-                  [](const auto &a) { return !a.opposite.empty(); });
+  bool hasNonEmptyOpposite = std::ranges::any_of(
+      m_chainLayerResult, [](const auto &a) { return !a.opposite.empty(); });
 
   if (hasNonEmptyOpposite) {
     for (auto &a : m_chainLayerResult) {
@@ -1296,7 +1297,7 @@ void WordsBase::findChain(int nthread) {
       i = findLongestChain(nthread);
     }
     if (!nthread && !m_token.stop_requested()) {
-      std::string s = m_table.string(" ∑", i, "", ""); // todo
+      std::string s = m_table.string(" ∑", i, "", "");
       // std::string s = m_table.string("##", i, "", "");
       updateProceedingText(s);
     }
@@ -1352,7 +1353,7 @@ void WordsBase::findChain(int nthread) {
   SearchResult::out = s;
 }
 
-void WordsBase::clusterStatistics(int nthread) {
+void WordsBase::clusterSizeStatistics(int nthread) {
   int i, j, length;
   std::string s;
   while ((i = m_i.fetch_add(1)) < std::ssize(m_iiv)) {
@@ -1380,7 +1381,7 @@ void WordsBase::clusterStatistics(int nthread) {
   }
 }
 
-void WordsBase::clusterStatisticsPreProseeding() {
+void WordsBase::clusterSizeStatisticsPreProseeding() {
   m_ss.clear(); // used in fillDictionaryLength() so clear
   m_iiv = {getWordLengthMap().begin(), getWordLengthMap().end()};
   m_si.clear();
@@ -1389,7 +1390,7 @@ void WordsBase::clusterStatisticsPreProseeding() {
   m_i.store(0);
 }
 
-void WordsBase::clusterStatisticsPostProseeding() {
+void WordsBase::clusterSizeStatisticsPostProseeding() {
   std::ranges::sort(m_si, [](auto &a, auto &b) { return a.second < b.second; });
   int i = -1;
   std::string s;

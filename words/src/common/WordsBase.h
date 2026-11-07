@@ -235,7 +235,7 @@ public:
   void findWordSequenceFull(int nthread);
   void findModification(int nthread);
   void findChain(int nthread);
-  void clusterStatistics(int nthread);
+  void clusterSizeStatistics(int nthread);
   void findLetterGroupSplit(int nthread);
   void twoDictionariesStrict(int nthread) { twoDictionaries(nthread, 0); }
   void twoDictionariesSimple(int nthread) { twoDictionaries(nthread, 1); }
@@ -249,14 +249,14 @@ public:
 
   void checkTemplatePreProseeding();
   void findChainPreProseeding();
-  void clusterStatisticsPreProseeding();
+  void clusterSizeStatisticsPreProseeding();
   void findLetterGroupSplitPreProseeding();
   void checkKeyboardWordSimplePreProseeding();
   void checkKeyboardWordComplexPreProseeding();
   void checkDictionaryPreProseeding();
 
   void anagramsPostProseeding();
-  void clusterStatisticsPostProseeding();
+  void clusterSizeStatisticsPostProseeding();
   void findLetterGroupSplitPostProseeding();
   void simpleDoubleWordSequencePostProseeding();
   void dictionaryStatisticsPostProseeding();

@@ -9,7 +9,8 @@ modifications of words
 characters sequence
 SEPARATOR
 chains of words
-cluster statistics
+cluster size statistics
+cluster diameter statistics
 SEPARATOR
 words split
 letter group split
@@ -193,7 +194,8 @@ total
 b-factor
 N
 words
-Words of the same length can be divided into clusters. Words belong to the same cluster if they can be connected by a chain (see <i>search chains of words</i>). Statistics for all lengths are displayed as a <i>[length]</i> and set of pairs <i>word_count: set_count</i>.
+Words of the same length can be divided into clusters. Words belong to the same cluster if they can be connected by a chain; see <i>search chains of words</i>. Statistics for all word lengths are displayed as <i>[word length]</i> followed by a set of pairs: <i>cluster size: number of clusters</i>.
+Words of the same length can be divided into clusters. Words belong to the same cluster if they can be connected by a chain; see <i>search chains of words</i>. The cluster diameter is defined as the maximum chain length. Statistics for all word lengths are displayed as <i>[word length]</i>, followed by sets of <i>{cluster diameter}</i> and a set of pairs: <i>cluster size: number of clusters</i>.
 text
 visuals
 logarithm of letter frequency

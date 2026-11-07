@@ -210,7 +210,7 @@ bool Parameters::prepare() {
       }
     }
 
-    if (std::any_of(m_evwords.begin(), m_evwords.end(), [this](auto &a) {
+    if (std::ranges::any_of(m_evwords, [this](auto &a) {
           return m_ss.contains(a);
         })) { // one of the words in filterd words
       return false;

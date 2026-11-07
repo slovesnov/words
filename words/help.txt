@@ -1,6 +1,7 @@
 5.0.1 ??
-added multithreaded search for the longest chains
-added multithreaded splitting by clusters
+added search for the longest chains
+added cluster length statistics
+added cluster diameter statistics
 added graphics for dictionary statistics and word lengths
 chain searching has been simplified, accelerated, and made multi-threaded
 removed multithreading from word length statistics due to lack of necessity
@@ -11,8 +12,9 @@ fixed cursor restoration after calculation if it was in the TextView
 fixed invalid height for modification of words
 
 [ru]
-добавился многозадачный поиск длинейших цепочек
-добавилось многозадачное разбиение по кластерам
+добавился поиск длинейших цепочек
+добавилось статистика длины кластеров
+добавилось статистика диаметров кластеров
 добавлена графика для статистики словаря и длины слов
 поиск цепочек упрощён, ускорен и стал многозадачным
 убрана многозадачность из статистики длины слов из-за ненадобности
