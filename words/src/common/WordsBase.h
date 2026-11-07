@@ -237,9 +237,6 @@ public:
   void findChain(int nthread);
   void clusterSizeStatistics(int nthread);
   void findLetterGroupSplit(int nthread);
-  void twoDictionariesStrict(int nthread) { twoDictionaries(nthread, 0); }
-  void twoDictionariesSimple(int nthread) { twoDictionaries(nthread, 1); }
-  void twoDictionariesTranslit(int nthread) { twoDictionaries(nthread, 2); }
   void keyboardWords(int nthread);
   void dictionaryStatistics(int nthread);
   void wordFrequency(int nthread);
@@ -263,7 +260,7 @@ public:
   void checkDictionaryPostProseeding();
   void twoCharactersDistributionPostProseeding();
 
-  void twoDictionaries(int nthread, int n);
+  void twoDictionaries(int nthread);
 
   int fillDictionaryLength(int nthread, size_t length,
                             const VString &bounds = {});

@@ -43,11 +43,11 @@ const LookupTable<ENUM_MENU, void (WordsBase::*)(int)> COMPLEX_FUNCTION = {
     {MENU_LETTER_GROUP_SPLIT,
      &WordsBase::findLetterGroupSplit}, // break implemented
     {MENU_TWO_DICTIONARIES_STRICT,
-     &WordsBase::twoDictionariesStrict}, // break implemented
+     &WordsBase::twoDictionaries}, // break implemented
     {MENU_TWO_DICTIONARIES_SIMPLE,
-     &WordsBase::twoDictionariesSimple}, // break implemented
+     &WordsBase::twoDictionaries}, // break implemented
     {MENU_TWO_DICTIONARIES_TRANSLIT,
-     &WordsBase::twoDictionariesTranslit}, // break implemented
+     &WordsBase::twoDictionaries}, // break implemented
     {MENU_TWO_DICTIONARIES_KEYBOARD_WORD,
      &WordsBase::keyboardWords}, // not implemented
     {MENU_DICTIONARY_STATISTICS,
@@ -1505,11 +1505,14 @@ void WordsBase::findLetterGroupSplitPostProseeding() {
   }
 }
 
-void WordsBase::twoDictionaries(int nthread, int nn) {
+void WordsBase::twoDictionaries(int nthread) {
   VVString to;
   int i, j, m, l, len, n, fromIndex = -1;
   std::string s, alphabetFrom;
   VString v, d;
+  int nn =
+      indexOf(m_menuClick, MENU_TWO_DICTIONARIES_STRICT,
+              MENU_TWO_DICTIONARIES_SIMPLE, MENU_TWO_DICTIONARIES_TRANSLIT);
   const int di = getDictionaryIndex();
   d = readFile(getResourcePath(LNG2TXT));
   for (auto &s : d) {
