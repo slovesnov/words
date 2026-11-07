@@ -38,15 +38,14 @@ const LookupTable<ENUM_MENU, void (WordsBase::*)(int)> COMPLEX_FUNCTION = {
     {MENU_CHAIN, &WordsBase::findChain}, // if one word break implemented, if
                                          // two words not need
     {MENU_CLUSTER_SIZE_STATISTICS,
-     &WordsBase::clusterSizeStatistics},            // break implemented
+     &WordsBase::clusterSizeStatistics}, // break implemented
+    {MENU_CLUSTER_DIAMETER_STATISTICS,
+     &WordsBase::clusterDiameterStatistics},        // break implemented
     {MENU_WORDS_SPLIT, &WordsBase::findWordsSplit}, // break implemented
     {MENU_LETTER_GROUP_SPLIT,
      &WordsBase::findLetterGroupSplit}, // break implemented
-    {MENU_TWO_DICTIONARIES_STRICT,
-     &WordsBase::twoDictionaries}, // break implemented
-    {MENU_TWO_DICTIONARIES_SIMPLE,
-     &WordsBase::twoDictionaries}, // break implemented
-    {MENU_TWO_DICTIONARIES_TRANSLIT,
+    {{MENU_TWO_DICTIONARIES_STRICT, MENU_TWO_DICTIONARIES_SIMPLE,
+      MENU_TWO_DICTIONARIES_TRANSLIT},
      &WordsBase::twoDictionaries}, // break implemented
     {MENU_TWO_DICTIONARIES_KEYBOARD_WORD,
      &WordsBase::keyboardWords}, // not implemented
@@ -66,9 +65,7 @@ const LookupTable<ENUM_MENU, void (WordsBase::*)(int)> COMPLEX_FUNCTION = {
 const LookupTable<ENUM_MENU, void (WordsBase::*)()> menuPreProseeding = {
     {MENU_CHAIN, &WordsBase::findChainPreProseeding},
     {MENU_TEMPLATE, &WordsBase::checkTemplatePreProseeding},
-    {MENU_CLUSTER_SIZE_STATISTICS,
-     &WordsBase::clusterStatisticsPreProseeding},
-    {MENU_CLUSTER_DIAMETER_STATISTICS,
+    {{MENU_CLUSTER_SIZE_STATISTICS, MENU_CLUSTER_DIAMETER_STATISTICS},
      &WordsBase::clusterStatisticsPreProseeding},
     {MENU_LETTER_GROUP_SPLIT, &WordsBase::findLetterGroupSplitPreProseeding},
     {MENU_KEYBOARD_WORD_SIMPLE,
@@ -79,9 +76,7 @@ const LookupTable<ENUM_MENU, void (WordsBase::*)()> menuPreProseeding = {
 
 const LookupTable<ENUM_MENU, void (WordsBase::*)()> menuPostProseeding = {
     {MENU_ANAGRAM, &WordsBase::anagramsPostProseeding},
-    {MENU_CLUSTER_SIZE_STATISTICS,
-     &WordsBase::clusterStatisticsPostProseeding},
-    {MENU_CLUSTER_DIAMETER_STATISTICS,
+    {{MENU_CLUSTER_SIZE_STATISTICS, MENU_CLUSTER_DIAMETER_STATISTICS},
      &WordsBase::clusterStatisticsPostProseeding},
     {MENU_LETTER_GROUP_SPLIT, &WordsBase::findLetterGroupSplitPostProseeding},
     {MENU_SIMPLE_WORD_SEQUENCE,
@@ -593,7 +588,7 @@ int WordsBase::fillDictionaryLength(int nthread, size_t length,
 
 int WordsBase::findLongestChain(int nthread) {
   auto &words = m_vvs[nthread];
-  int i, total;
+  int i, total = 1;
   std::string s, words_str;
   VString v;
   int size = words.size();
@@ -608,7 +603,6 @@ int WordsBase::findLongestChain(int nthread) {
     updateProceedingText(s, false);
   }
 
-  total = 1;
   do {
     if (m_menuClick == MENU_CHAIN) {
       chainLayer2(nthread, m_chd);
@@ -622,6 +616,42 @@ int WordsBase::findLongestChain(int nthread) {
     RETURN_ON_USER_BREAK_VALUE(USER_BREAK)
   } while (i);
   return total;
+}
+
+IntInt WordsBase::getClasterSizeDiameter(int nthread) {
+  int i, total = 1, diameter = 1;
+  VectorInt vi = m_vii[nthread];
+
+  do {
+    m_vii[nthread] = chainLayer(nthread, m_vii[nthread]);
+    vi.reserve(vi.size() + m_vii[nthread].size());
+    vi.insert(vi.end(), m_vii[nthread].begin(), m_vii[nthread].end());
+    i = m_vii[nthread].size();
+    total += i;
+    RETURN_ON_USER_BREAK_VALUE(std::make_pair(USER_BREAK, USER_BREAK))
+  } while (i);
+
+  if (total != int(vi.size())) { // todo
+    pri;
+    exit(1);
+  }
+
+  int j = vi.back();
+  for (auto j : vi) {
+    m_chain[nthread][j] = true;
+  }
+
+  m_chain[nthread][j] = false;
+  m_vii[nthread] = {j};
+
+  do {
+    m_vii[nthread] = chainLayer(nthread, m_vii[nthread]);
+    diameter++;
+    i = m_vii[nthread].size();
+    RETURN_ON_USER_BREAK_VALUE(std::make_pair(USER_BREAK, USER_BREAK))
+  } while (i);
+
+  return {total, diameter};
 }
 
 int WordsBase::chainAddIfFoundIndex(const std::string &s, VectorInt &v,
@@ -1385,8 +1415,33 @@ void WordsBase::clusterSizeStatistics(int nthread) {
   }
 }
 
-void WordsBase::clusterDiameterStatistics(int nthread){
+void WordsBase::clusterDiameterStatistics(int nthread) {
+  // prsync(nthread);
+  int i, j, length;
+  std::string s;
+  while ((i = m_i.fetch_add(1)) < std::ssize(m_iiv)) {
+    length = m_iiv[i].first;
+    MapIntInt map;
+    j = 0;
+    fillDictionaryLength(nthread, length);
+    while ((j = indexOf(true, m_chain[nthread], j)) != -1) {
+      m_chain[nthread][j] = false;
+      m_vii[nthread] = {j};
+      IntInt p = getClasterSizeDiameter(nthread);
+      if (p.first == USER_BREAK) {
+        return;
+      }
+      map[p.first]++;
+    }
 
+    std::string s = "";
+    for (const auto &[words, count] : map) {
+      s += std::format(" {}:{}", intToString(words), intToString(count));
+    }
+    m_si.push_back({s, length});
+    s = squareBrackets(length) + s + "\n";
+    updateProceedingText(s);
+  }
 }
 
 void WordsBase::clusterStatisticsPreProseeding() {
@@ -1395,9 +1450,9 @@ void WordsBase::clusterStatisticsPreProseeding() {
   m_si.clear();
   std::ranges::sort(m_iiv,
                     [](auto &a, auto &b) { return a.second < b.second; });
-  //todo
-  // std::ranges::sort(m_iiv,
-  //                   [](auto &a, auto &b) { return a.second > b.second; });
+  // todo
+  //  std::ranges::sort(m_iiv,
+  //                    [](auto &a, auto &b) { return a.second > b.second; });
   m_i.store(0);
 }
 
@@ -2172,14 +2227,16 @@ void WordsBase::run(ENUM_JOB_TYPE e) {
       }
     }
 
-    if (auto it = menuPostProseeding.get(m_menuClick)) {
-      (this->*(*it))();
-    } else if (threads > 1) {
-      m_result = m_thread_result | std::views::join |
-                 std::ranges::to<VectorSearchResult>();
-    }
-
     userbreak = m_token.stop_requested();
+    if (!userbreak) {
+      if (auto it = menuPostProseeding.get(m_menuClick)) {
+        (this->*(*it))();
+      } else if (threads > 1) {
+        m_result = m_thread_result | std::views::join |
+                   std::ranges::to<VectorSearchResult>();
+      }
+      userbreak = m_token.stop_requested();
+    }
   }
 
   if (!userbreak) {

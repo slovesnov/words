@@ -266,6 +266,7 @@ public:
   int fillDictionaryLength(int nthread, size_t length,
                             const VString &bounds = {});
   int findLongestChain(int nthread);
+  IntInt getClasterSizeDiameter(int nthread);
 
   int chainAddIfFoundIndex(const std::string &s, VectorInt &v,
                            const VectorInt &otherSideOrdered = {});

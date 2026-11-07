@@ -73,47 +73,73 @@ struct StartStopButtonState {
   bool imageStart, enable;
 };
 
-template <typename KeyT, typename ValueT> class LookupTable {
+template <typename KeyT, typename ValueT> 
+class LookupTable {
+public:
+    // Helper structure to enable flexible initialization patterns
+    struct InitRow {
+        std::vector<KeyT> keys;
+        ValueT value;
+
+        // Constructor 1: Handles single key mappings like {Key, Value}
+        InitRow(KeyT key, ValueT val) 
+            : keys{std::move(key)}, value(std::move(val)) {}
+
+        // Constructor 2: Handles multiple keys mapped to one value like {{Key1, Key2}, Value}
+        InitRow(std::initializer_list<KeyT> key_list, ValueT val) 
+            : keys(key_list), value(std::move(val)) {}
+    };
+
 private:
-  std::unordered_map<KeyT, ValueT> m;
+    std::unordered_map<KeyT, ValueT> m;
 
 public:
-  LookupTable(std::initializer_list<std::pair<KeyT, ValueT>> init_list)
-      : m(init_list.begin(), init_list.end()) {}
-
-  bool has(const KeyT &key) const { return m.find(key) != m.end(); }
-
-  std::optional<ValueT> get(const KeyT &key) const {
-    auto it = m.find(key);
-    if (it != m.end()) {
-      return it->second;
+    // Main constructor that flattens rows of single or multiple keys into the map
+    LookupTable(std::initializer_list<InitRow> init_list) {
+        for (const auto& row : init_list) {
+            for (const auto& key : row.keys) {
+                m[key] = row.value;
+            }
+        }
     }
-    return std::nullopt;
-  }
 
-  int size() const { return m.size(); }
+    // Checks if the key exists in the table
+    bool has(const KeyT &key) const { return m.find(key) != m.end(); }
 
-  int indexOf(const KeyT &key) const {
-    int index = 0;
-    for (const auto &[k, v] : m) {
-      if (k == key) {
-        return index;
-      }
-      index++;
+    // Retrieves the value by key, returning std::nullopt if not found
+    std::optional<ValueT> get(const KeyT &key) const {
+        if (auto it = m.find(key); it != m.end()) {
+            return it->second;
+        }
+        return std::nullopt;
     }
-    return -1;
-  }
 
-  std::optional<std::pair<ValueT, int>> getWithIndex(const KeyT &key) const {
-    int index = 0;
-    for (const auto &a : m) {
-      if (a.first == key) {
-        return std::pair<ValueT, int>{a.second, index};
-      }
-      index++;
+    // Returns the total number of unique keys mapped
+    int size() const { return m.size(); }
+
+    // Returns the internal iteration index of a key, or -1 if not found
+    // Warning: order is unstable due to std::unordered_map hashing
+    int indexOf(const KeyT &key) const {
+        int index = 0;
+        for (const auto &[k, v] : m) {
+            if (k == key) return index;
+            index++;
+        }
+        return -1;
     }
-    return std::nullopt;
-  }
+
+    // Retrieves both the value and its internal iteration index by key
+    // Warning: order is unstable due to std::unordered_map hashing
+    std::optional<std::pair<ValueT, int>> getWithIndex(const KeyT &key) const {
+        int index = 0;
+        for (const auto &a : m) {
+            if (a.first == key) {
+                return std::pair<ValueT, int>{a.second, index};
+            }
+            index++;
+        }
+        return std::nullopt;
+    }
 };
 
 // max depends on language
