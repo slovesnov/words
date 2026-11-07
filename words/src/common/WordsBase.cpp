@@ -1426,16 +1426,7 @@ void WordsBase::clusterDiameterStatistics(int nthread) {
       if (p.first == USER_BREAK) {
         return;
       }
-      map[p.second][p.first]++; // todo
-      // auto it = map.find(p.second);
-      // if (it == map.end()) {
-      //   MapIntInt m;
-      //   m[p.first]++;
-      //   map[p.second] = m;
-      // } else {
-      //   MapIntInt &m = it->second;
-      //   m[p.first]++;
-      // }
+      map[p.second][p.first]++;
     }
 
     std::string s = "";
