@@ -619,7 +619,7 @@ int WordsBase::findLongestChain(int nthread) {
 }
 
 IntInt WordsBase::getClasterSizeDiameter(int nthread) {
-  int i, total = 1, diameter = 1;
+  int i, diameter = 0;
   VectorInt vi = m_vii[nthread];
 
   do {
@@ -627,15 +627,10 @@ IntInt WordsBase::getClasterSizeDiameter(int nthread) {
     vi.reserve(vi.size() + m_vii[nthread].size());
     vi.insert(vi.end(), m_vii[nthread].begin(), m_vii[nthread].end());
     i = m_vii[nthread].size();
-    total += i;
     RETURN_ON_USER_BREAK_VALUE(std::make_pair(USER_BREAK, USER_BREAK))
   } while (i);
 
-  if (total != int(vi.size())) { // todo
-    pri;
-    exit(1);
-  }
-
+  int total = int(vi.size());
   int j = vi.back();
   for (auto j : vi) {
     m_chain[nthread][j] = true;
@@ -1421,7 +1416,7 @@ void WordsBase::clusterDiameterStatistics(int nthread) {
   std::string s;
   while ((i = m_i.fetch_add(1)) < std::ssize(m_iiv)) {
     length = m_iiv[i].first;
-    MapIntInt map;
+    std::map<int, MapIntInt> map;
     j = 0;
     fillDictionaryLength(nthread, length);
     while ((j = indexOf(true, m_chain[nthread], j)) != -1) {
@@ -1431,12 +1426,24 @@ void WordsBase::clusterDiameterStatistics(int nthread) {
       if (p.first == USER_BREAK) {
         return;
       }
-      map[p.first]++;
+      map[p.second][p.first]++; // todo
+      // auto it = map.find(p.second);
+      // if (it == map.end()) {
+      //   MapIntInt m;
+      //   m[p.first]++;
+      //   map[p.second] = m;
+      // } else {
+      //   MapIntInt &m = it->second;
+      //   m[p.first]++;
+      // }
     }
 
     std::string s = "";
-    for (const auto &[words, count] : map) {
-      s += std::format(" {}:{}", intToString(words), intToString(count));
+    for (const auto &[diameter, m] : map) {
+      s += std::format(" {{{}}}", intToString(diameter));
+      for (const auto &[words, count] : m) {
+        s += std::format(" {}:{}", intToString(words), intToString(count));
+      }
     }
     m_si.push_back({s, length});
     s = squareBrackets(length) + s + "\n";
@@ -1448,11 +1455,10 @@ void WordsBase::clusterStatisticsPreProseeding() {
   m_ss.clear(); // used in fillDictionaryLength() so clear
   m_iiv = {getWordLengthMap().begin(), getWordLengthMap().end()};
   m_si.clear();
+  // std::ranges::sort(m_iiv,
+  //                   [](auto &a, auto &b) { return a.second < b.second; });
   std::ranges::sort(m_iiv,
-                    [](auto &a, auto &b) { return a.second < b.second; });
-  // todo
-  //  std::ranges::sort(m_iiv,
-  //                    [](auto &a, auto &b) { return a.second > b.second; });
+                    [](auto &a, auto &b) { return a.second > b.second; });
   m_i.store(0);
 }
 

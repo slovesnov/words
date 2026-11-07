@@ -1740,6 +1740,26 @@ void Frame::updateProceedingThread() {
 
 void Frame::updateProceeding(const char *text) {
   updateTextView(TEXTVIEW_MAIN, text);
+
+  auto text_view=m_textview[TEXTVIEW_MAIN];
+  // scroll down to the end
+  //  1. Get the text buffer and an iterator pointing to the very end of the
+  //  text
+  GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(text_view));
+  GtkTextIter end_iter;
+  gtk_text_buffer_get_end_iter(buffer, &end_iter);
+
+  // 2. Create an anonymous temporary mark at the end iterator position
+  GtkTextMark *end_mark =
+      gtk_text_buffer_create_mark(buffer, NULL, &end_iter, FALSE);
+
+  // 3. Scroll the TextView to the created mark (yalign = 1.0 means bottom
+  // alignment)
+  gtk_text_view_scroll_to_mark(GTK_TEXT_VIEW(text_view), end_mark, 0.0, FALSE,
+                               0.0, 1.0);
+
+  // 4. Delete the temporary mark to prevent memory clutter
+  gtk_text_buffer_delete_mark(buffer, end_mark);
 }
 
 std::string Frame::getTextToCopyFromFocus() {
