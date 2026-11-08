@@ -10,11 +10,10 @@
 #include "ModificationItem.h"
 #include <vector>
 
-typedef std::vector<ModificationItem> ModificationItemVector;
-typedef ModificationItemVector::const_iterator ModificationItemVectorCI;
+using VectorModificationItem = std::vector<ModificationItem>;
 
 class Modification {
-	ModificationItemVector vr;
+	VectorModificationItem vr;
 public:
 	bool parse(const std::string &s);
 	std::string apply(const std::string &s, bool everyOperationChangesWord =
