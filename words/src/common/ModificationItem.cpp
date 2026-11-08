@@ -6,31 +6,7 @@
  */
 
 #include "ModificationItem.h"
-#include "WordsBase.h"
-#include <cstdlib>
-
-
-/* replace
- * a>bc replace all occurrences of "a" to "bc"
- * d>0  replace all occurrences of "b" to empty string
- *
- * insert/append index,string (like remove command index goes first)
- * +0,b append "b" to beginning of string (insert before symbol with index 0)
- * +1,da append "da" after 1st symbol of string (insert before symbol with index
- * 1) +L-1,bb append "bb" before last symbol of string "xyz" -> "xybbz" +L,bd
- * append "bd" to the end string (insert before symbol with index l = after
- * symbol with index L-1)
- *
- * substring index,length like std::substr function in c++
- * index=0..L-1. If index+length>s.length() then return all string from index
- * -0,3 first three symbols "abcde"->"abc"
- * -1,3 three symbols from positions 1 "abcde"->"bcd"
- * -l-3 last three symbols
- * -2 all symbols from 2nd position "abcde" -> "cde"
- * -L-3,2 maximum two symbols from length-3 position "abcde" -> "cd" same with
- * -2,2 for string length=5 -4,L-3 maximum length-3 symbols from fourth position
- * "abcde" -> "e"
- */
+#include "Parameters.h"
 
 #ifdef NDEBUG
 #define RET return false;
@@ -46,9 +22,10 @@ void ModificationItem::skipSpaces(const char *&p) {
   }
 }
 
-bool ModificationItem::readAlphabetString(std::string &s, const char *&p) {
+bool ModificationItem::readAlphabetString(std::string &s, const char *&p,
+                                          Parameters *parameters) {
   s = "";
-  while (wordsBase->isAlphabetChar(*p)) {
+  while (parameters->isAlphabetChar(*p)) {
     s += *p++;
   }
   return !s.empty();
@@ -138,7 +115,7 @@ bool ModificationItem::parseLI(const char *&p, int i, char operation) {
   return true;
 }
 
-bool ModificationItem::parse(const char *&p) {
+bool ModificationItem::parse(const char *&p, Parameters *parameters) {
   type = MODIFICATION_TYPE_SIZE;
   if (*p == '+') {
     p++;
@@ -153,7 +130,7 @@ bool ModificationItem::parse(const char *&p) {
     }
 
     skipSpaces(p);
-    if (!readAlphabetString(from, p)) {
+    if (!readAlphabetString(from, p, parameters)) {
       RET
     }
 
@@ -198,7 +175,7 @@ bool ModificationItem::parse(const char *&p) {
     type = MODIFICATION_TYPE_SUBSTRING;
     return true;
   } else {
-    if (!readAlphabetString(from, p)) {
+    if (!readAlphabetString(from, p, parameters)) {
       RET
     }
     skipSpaces(p);
@@ -207,7 +184,7 @@ bool ModificationItem::parse(const char *&p) {
     }
 
     skipSpaces(p);
-    if (!readAlphabetString(to, p)) {
+    if (!readAlphabetString(to, p, parameters)) {
       // no alphabet symbols found, parse "b>0"
       if (*p++ == '0') {
         to = "";

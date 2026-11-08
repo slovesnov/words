@@ -18,7 +18,7 @@ MapIntInt Parameters::m_wordLengthMap[LANGUAGES];
 int Parameters::m_longestWordLength[LANGUAGES];
 VectorSearchResult Parameters::m_result;
 
-Parameters::Parameters() {}
+Parameters::Parameters() : m_modifications(this) {}
 
 void Parameters::operator=(const Parameters &p) {
   // pr(magic_enum::enum_name(p.m_menuClick));

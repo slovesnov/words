@@ -8,7 +8,7 @@
 #include "Modification.h"
 
 bool Modification::parse(const std::string &s) {
-  ModificationItem ri;
+  ModificationItem mi;
   const char *p = s.c_str(); // string already in lowercase
 
   // clear previous parsing
@@ -20,22 +20,22 @@ bool Modification::parse(const std::string &s) {
       return !vr.empty();
     }
 
-    if (!ri.parse(p)) {
+    if (!mi.parse(p, m_parent)) {
 #ifndef NDEBUG
       vr.clear(); // vr.size()==0 means error in info() function
-      // ri.info();
+                  // mi.info();
 #endif
       return false;
     }
 
-    vr.push_back(ri);
+    vr.push_back(mi);
   }
 }
 
 std::string Modification::apply(const std::string &s,
                                 bool everyOperationChangesWord) {
-  std::string r = s,q;
-  for (const auto&a : vr) {
+  std::string r = s, q;
+  for (const auto &a : vr) {
     if (everyOperationChangesWord) {
       q = r;
     }
@@ -54,7 +54,7 @@ std::string Modification::apply(const std::string &s,
 std::string Modification::applyStepByStep(const std::string &s) {
   std::string q = s;
   std::string r = s;
-  for (const auto&a : vr) {
+  for (const auto &a : vr) {
     r = a.apply(r);
     q += " " + r;
     if (r.empty()) {
@@ -72,7 +72,7 @@ void Modification::info() {
     return;
   }
   printf("ok sz=%d{\n", int(vr.size())); // 32 & 64bit
-  for (const auto&a : vr) {
+  for (const auto &a : vr) {
     a.info();
   }
   printf("}\n");
