@@ -562,7 +562,7 @@ public:
     int i = -1;
     for (auto a : en) {
       i++;
-      m_width[i] = std::max(m_width[i], utf8Length(string(a)));
+      m_width[i] = std::max(m_width[i], utf8Length(::string(a)));
     }
   }
 

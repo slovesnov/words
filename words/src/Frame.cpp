@@ -61,6 +61,7 @@ gboolean label_clicked(GtkWidget *label, const gchar *uri, gpointer) {
 void check_changed(GtkWidget *check, gpointer) { frame->checkChanged(); }
 
 void spin_changed(GtkSpinButton *spin_button, ENUM_SPIN e) {
+  //pr(magic_enum::enum_name(e));
   frame->spinChanged(e);
 }
 
@@ -100,8 +101,11 @@ gboolean on_key_press(GtkWidget *widget, GdkEventKey *event,
   }
   return FALSE;
 }
-gboolean on_debounce_timeout(gpointer data) {
-  frame->debounceTimeout(ENUM_ENTRY(GPOINTER_TO_INT(data)));
+
+gboolean on_debounce_timeout(gpointer user_data) {
+  ENUM_ENTRY e = ENUM_ENTRY(GPOINTER_TO_INT(user_data));
+  //pr(magic_enum::enum_name(e));
+  frame->debounceTimeout(e);
   return G_SOURCE_REMOVE;
 }
 
@@ -557,7 +561,7 @@ void Frame::aboutDialog() {
       gtk_label_set_markup(GTK_LABEL(label), markup);
       g_free(markup);
       g_signal_connect(label, "activate-link", G_CALLBACK(label_clicked),
-                       gpointer(NULL));
+                       NULL);
     } else {
       if (id == PROGRAM) {
         s = getProgramVersionString();
@@ -794,7 +798,7 @@ void Frame::refillCombo(ENUM_COMBOBOX e, const VString &v, int active) {
 GtkWidget *Frame::createTextCombo(ENUM_COMBOBOX e, VString v, int active) {
   GtkWidget *w = m_combo[e] = gtk_combo_box_text_new();
   refillCombo(e, v, active);
-  g_signal_connect(w, "changed", G_CALLBACK(combo_changed), gpointer(e));
+  g_signal_connect(w, "changed", G_CALLBACK(combo_changed), GINT_TO_POINTER(e));
   return w;
 }
 
@@ -971,8 +975,7 @@ void Frame::setDebounceTimer(ENUM_ENTRY e) {
   if (m_debounceTimerId) {
     g_source_remove(m_debounceTimerId);
   }
-  m_debounceTimerId =
-      g_timeout_add(TIMER, on_debounce_timeout, GINT_TO_POINTER(e));
+  m_debounceTimerId = g_timeout_add(TIMER, on_debounce_timeout, GINT_TO_POINTER(e));
 }
 
 void Frame::debounceTimeout(ENUM_ENTRY e) {
@@ -993,8 +996,8 @@ void Frame::debounceTimeout(ENUM_ENTRY e) {
     }
     break;
 
-  default:
-    assert(0);
+  case CLUSTER_SPIN_CHANGED:
+    pr(m_spinValue[SPIN0]);
   }
 }
 
@@ -1237,9 +1240,7 @@ void Frame::textviewChanged(ENUM_TEXTVIEW e) {
   if (e == TEXTVIEW_HELPER) {
     updateTextviewValue(e);
     if (!isSignalsLocked()) {
-      // proceed same as template entry changed
-      // focus and selected stored using gtk_window_get_focus so it's ok
-      setDebounceTimer(ENTRY_TEMPLATE);
+      setDebounceTimer(TEXTVIEW_CHANGED);
     }
   }
 }
@@ -1616,7 +1617,7 @@ GtkWidget *Frame::createSpin(ENUM_SPIN e, const SpinData &spinData) {
   gtk_spin_button_set_update_policy(GTK_SPIN_BUTTON(m_spin[e]),
                                     GTK_UPDATE_ALWAYS);
   g_signal_connect(m_spin[e], "value-changed", G_CALLBACK(spin_changed),
-                   gpointer(e));
+                   GINT_TO_POINTER(e));
   g_signal_connect(m_spin[e], "changed",
                    G_CALLBACK(+[](GtkEditable *editable, gpointer user_data) {
                      gtk_spin_button_update(GTK_SPIN_BUTTON(editable));
@@ -1626,12 +1627,10 @@ GtkWidget *Frame::createSpin(ENUM_SPIN e, const SpinData &spinData) {
 }
 
 void Frame::spinChanged(ENUM_SPIN e) {
-  // Get the value as a floating-point number
-  double vd = gtk_spin_button_get_value(GTK_SPIN_BUTTON(m_spin[e]));
-  // Or get the value as an integer
-  int v = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(m_spin[e]));
-  pr(v, vd, int(e));
-
+  // double vd = gtk_spin_button_get_value(GTK_SPIN_BUTTON(m_spin[e]));
+  // int v = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(m_spin[e]));
+  // pr(v, vd, int(e));
+  setDebounceTimer(CLUSTER_SPIN_CHANGED);
   updateSpinValue(e);
 }
 
@@ -1878,6 +1877,7 @@ void Frame::captureFocusedState() {
   // Check the widget type to correctly retrieve its cursor/selection
   // coordinates
   if (GTK_IS_TEXT_VIEW(m_focused_widget)) {
+    pr("textview");
     GtkTextBuffer *buffer =
         gtk_text_view_get_buffer(GTK_TEXT_VIEW(m_focused_widget));
     GtkTextIter start, end;
@@ -1892,6 +1892,7 @@ void Frame::captureFocusedState() {
       m_sel_start = m_sel_end = gtk_text_iter_get_offset(&start);
     }
   } else if (GTK_IS_ENTRY(m_focused_widget)) {
+    pr("entry");
     if (!gtk_editable_get_selection_bounds(GTK_EDITABLE(m_focused_widget),
                                            &m_sel_start, &m_sel_end)) {
       // If nothing is selected, start and end offsets are equal to the cursor
@@ -1900,6 +1901,7 @@ void Frame::captureFocusedState() {
           gtk_editable_get_position(GTK_EDITABLE(m_focused_widget));
     }
   } else {
+    pr("other");
     // Reset the pointer if the focused element is a button or other non-text
     // widget
     m_focused_widget = nullptr;
