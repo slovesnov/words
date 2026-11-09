@@ -90,6 +90,13 @@ const std::string &Parameters::vowelConsonant(bool consonant) {
 
 bool Parameters::isAlphabetChar(char c) const { return alphabetIndex(c) != -1; }
 
+int Parameters::indexOfCluster() const {
+  return indexOf(m_menuClick, MENU_CLUSTER_SIZE_STATISTICS,
+                 MENU_CLUSTER_DIAMETER_STATISTICS);
+}
+
+bool Parameters::oneOfCluster() const { return indexOfCluster() != -1; }
+
 std::string Parameters::path(int i, std::string s) {
   return getResourcePath(LNG[i] + "/" + s + ".txt");
 }

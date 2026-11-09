@@ -28,9 +28,12 @@ public:
   const std::string &vowelConsonant(bool consonant);
   bool isAlphabetChar(char c) const;
 
+  int indexOfCluster()const;
+  bool oneOfCluster()const;
+
+protected:
   // values
   ENUM_MENU m_menuClick;
-protected:
   std::array<int, COMBOBOX_SIZE> m_comboValue;
   int m_sortlistValue;
   std::array<std::string, ENTRY_SIZE> m_entryValueUtf8; // utf8

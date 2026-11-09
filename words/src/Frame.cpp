@@ -134,11 +134,6 @@ gboolean update_proceeding(gpointer data) {
   return G_SOURCE_REMOVE;
 }
 
-gboolean update_proceeding1(gpointer data) {
-  frame->updateProceeding();
-  return G_SOURCE_REMOVE;
-}
-
 gboolean on_label_clicked(GtkWidget *widget, GdkEventButton *event,
                           gpointer user_data) {
   if (oneOf(event->type, GDK_BUTTON_PRESS, GDK_2BUTTON_PRESS) &&
@@ -999,7 +994,7 @@ void Frame::debounceTimeout(ENUM_ENTRY e) {
     break;
 
   case SPIN_CHANGED:
-    updateProceedingThread1();
+    updateProceedingThread();
   }
 }
 
@@ -1395,8 +1390,8 @@ std::string Frame::getCssFromPango(ENUM_FONT e) {
     font-style: {};
     font-weight: {};
 }})",
-      e == FONT_OUT ? "textview" : "label,combobox,entry", family_name, size,
-      font_style, font_weight);
+      e == FONT_OUT ? "textview" : "label, combobox, entry, spinbutton",
+      family_name, size, font_style, font_weight);
 }
 
 void Frame::updateFont(ENUM_FONT e) { loadCSS(getCssFromPango(e)); }
@@ -1616,8 +1611,11 @@ GtkWidget *Frame::createSpin(ENUM_SPIN e, const SpinData &spinData) {
 
   // Create the input field: (adjustment, climb_rate, digits)
   m_spin[e] = gtk_spin_button_new(adjustment, spinData.climb_rate, 0);
+  gtk_orientable_set_orientation(GTK_ORIENTABLE(m_spin[e]),
+                                 GTK_ORIENTATION_VERTICAL);
   gtk_spin_button_set_update_policy(GTK_SPIN_BUTTON(m_spin[e]),
                                     GTK_UPDATE_ALWAYS);
+  // gtk_widget_set_size_request(m_spin[e], -1, 36);todo
   g_signal_connect(m_spin[e], "value-changed", G_CALLBACK(spin_changed),
                    GINT_TO_POINTER(e));
   g_signal_connect(m_spin[e], "changed",
@@ -1771,25 +1769,23 @@ void Frame::setRowSensitive(bool sensitive) {
 }
 
 void Frame::updateProceedingThread() {
+  bool b = wordsBase->oneOfCluster();
   std::string string_snapshot;
-  {
+  if (!b) {
     std::lock_guard<std::mutex> lock(m_mutex);
     string_snapshot = SearchResult::out;
   }
-  gchar *text_for_gtk = g_strdup(string_snapshot.c_str());
+  gchar *text_for_gtk = b ? NULL : g_strdup(string_snapshot.c_str());
   g_idle_add_full(G_PRIORITY_HIGH, update_proceeding, text_for_gtk,
-                  (GDestroyNotify)g_free);
-}
-
-void Frame::updateProceedingThread1() {
-  g_idle_add_full(G_PRIORITY_HIGH, update_proceeding1, NULL, NULL);
+                  b ? NULL : (GDestroyNotify)g_free);
 }
 
 void Frame::updateProceeding(const char *text) {
   std::string s, s1;
-  bool scrollDown = text != NULL;
-  if (!text) {
-    if (wordsBase->m_menuClick == MENU_CLUSTER_SIZE_STATISTICS) {
+  int i = wordsBase->indexOfCluster();
+  bool scrollDown = i == -1;
+  if (i != -1) {
+    if (i == 0) {
       decltype(SearchResult::mapIMII) map;
       {
         std::lock_guard<std::mutex> lock(m_mutex);
@@ -1925,7 +1921,7 @@ void Frame::captureFocusedState() {
   // Check the widget type to correctly retrieve its cursor/selection
   // coordinates
   if (GTK_IS_TEXT_VIEW(m_focused_widget)) {
-    pr("textview");
+    // pr("textview");
     GtkTextBuffer *buffer =
         gtk_text_view_get_buffer(GTK_TEXT_VIEW(m_focused_widget));
     GtkTextIter start, end;
@@ -1940,7 +1936,7 @@ void Frame::captureFocusedState() {
       m_sel_start = m_sel_end = gtk_text_iter_get_offset(&start);
     }
   } else if (GTK_IS_ENTRY(m_focused_widget)) {
-    pr("entry");
+    // pr("entry");
     if (!gtk_editable_get_selection_bounds(GTK_EDITABLE(m_focused_widget),
                                            &m_sel_start, &m_sel_end)) {
       // If nothing is selected, start and end offsets are equal to the cursor
@@ -1949,7 +1945,7 @@ void Frame::captureFocusedState() {
           gtk_editable_get_position(GTK_EDITABLE(m_focused_widget));
     }
   } else {
-    pr("other");
+    // pr("other");
     // Reset the pointer if the focused element is a button or other non-text
     // widget
     m_focused_widget = nullptr;

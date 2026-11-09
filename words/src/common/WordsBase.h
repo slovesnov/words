@@ -134,7 +134,7 @@ public:
   void twoDictionaries(int nthread);
 
   int fillDictionaryLength(int nthread, size_t length,
-                            const VString &bounds = {});
+                           const VString &bounds = {});
   int findLongestChain(int nthread);
   IntInt getClasterSizeDiameter(int nthread);
 
@@ -156,7 +156,6 @@ public:
 
   static std::string pairsToString(VectorStringString const &v, bool p = 0);
 
-  void updateProceedingText();
-  void updateProceedingText(std::string s, bool add = true);
+  void updateProceedingText(std::string s = "", bool add = true);
   VectorInt relations(int nthread, VectorInt const &v1, VectorInt const &v2);
 };

@@ -298,8 +298,7 @@ public:
   void setRowSensitive(bool sensitive);
 
   void updateProceedingThread();
-  void updateProceedingThread1();
-  void updateProceeding(const char *text=NULL);
+  void updateProceeding(const char *text = NULL);
   std::string getTextToCopyFromFocus();
 
   bool isValid() const;

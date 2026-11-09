@@ -2332,10 +2332,8 @@ std::string WordsBase::pairsToString(VectorStringString const &v, bool p) {
   return sout;
 }
 
-void WordsBase::updateProceedingText() { frame->updateProceedingThread1(); }
-
 void WordsBase::updateProceedingText(std::string s, bool add) {
-  {
+  if(!s.empty()){
     std::lock_guard<std::mutex> lock(m_mutex);
     SearchResult::out = (add ? SearchResult::out : "") + s;
   }
