@@ -91,7 +91,7 @@ private:
   void addComboLineToHelper(int from, int to, int active, std::string s1,
                             std::string s2, std::string s3, bool any = false);
   void addComboToHelper(ENUM_STRING from, ENUM_STRING to, int active,
-                        ENUM_COMBOBOX comboboxId = COMBOBOX_HELPER0);
+                        ENUM_COMBOBOX comboboxId = COMBOBOX0);
 
   void updateTags(int n);
 

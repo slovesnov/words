@@ -680,7 +680,7 @@ void Frame::setHelperPanel(bool ignoreStateBegin) {
 
   case MENU_CHARACTER_SEQUENCE:
     addComboToHelper(SEARCH_IN_ANY_PLACE_OF_WORD, SEARCH_IN_END_OF_WORD, 0,
-                     COMBOBOX_HELPER2);
+                     COMBOBOX2);
     addComboLineToHelper(NUMBER_OF_MATCHES, 1, 10, 0, STRING_SIZE, true);
     break;
 
@@ -688,27 +688,27 @@ void Frame::setHelperPanel(bool ignoreStateBegin) {
     m_charactersLabel = createLabel("");
     w = createBox(GTK_ORIENTATION_HORIZONTAL, COMBOLINE_MARGIN,
                   string(LENGTH, OF_WORD), true,
-                  createTextCombo(COMBOBOX_HELPER0, 6, 20, 7 - 6), true,
+                  createTextCombo(COMBOBOX0, 6, 20, 7 - 6), true,
                   m_charactersLabel, true);
     gtk_container_add(GTK_CONTAINER(m_helperUp), w);
     break;
 
   case MENU_CONSONANT_VOWEL_SEQUENCE:
     w = createBox(GTK_ORIENTATION_HORIZONTAL, COMBOLINE_MARGIN,
-                  createTextCombo(COMBOBOX_HELPER0, SEARCH_IN_ANY_PLACE_OF_WORD,
+                  createTextCombo(COMBOBOX0, SEARCH_IN_ANY_PLACE_OF_WORD,
                                   SEARCH_IN_END_OF_WORD, 0),
                   true,
 
-                  createTextCombo(COMBOBOX_HELPER1, 3, 10, 0), true,
-                  createTextCombo(COMBOBOX_HELPER2, VOWELS, CONSONANTS, 0),
+                  createTextCombo(COMBOBOX1, 3, 10, 0), true,
+                  createTextCombo(COMBOBOX2, VOWELS, CONSONANTS, 0),
                   true);
     gtk_container_add(GTK_CONTAINER(m_helperUp), w);
     break;
 
   case MENU_DENSITY:
     w = createBox(GTK_ORIENTATION_HORIZONTAL, COMBOLINE_MARGIN, MAXIMUM, true,
-                  createTextCombo(COMBOBOX_HELPER0, 0, 25, 25), true, "%", true,
-                  createTextCombo(COMBOBOX_HELPER1, VOWELS, CONSONANTS, 0),
+                  createTextCombo(COMBOBOX0, 0, 25, 25), true, "%", true,
+                  createTextCombo(COMBOBOX1, VOWELS, CONSONANTS, 0),
                   true, CHARACTERS, true);
     gtk_container_add(GTK_CONTAINER(m_helperUp), w);
     break;
@@ -743,7 +743,7 @@ void Frame::updateDictionary(bool change) {
   }
 
   if (auto it = FROM_TO_COMBO.get(m_menuClick)) {
-    for (auto a : {COMBOBOX_HELPER0, COMBOBOX_HELPER1}) {
+    for (auto a : {COMBOBOX0, COMBOBOX1}) {
       refillCombo(a, it->min, it->max[getDictionaryIndex()] /*, it->active*/);
     }
   }
@@ -827,7 +827,7 @@ void Frame::addComboLineToHelper(int from, int to, int active, std::string s1,
       updateRadioValue();
     }
     add(w,
-        createTextCombo(ENUM_COMBOBOX(COMBOBOX_HELPER0 + i), from, to, active));
+        createTextCombo(ENUM_COMBOBOX(COMBOBOX0 + i), from, to, active));
   }
   if (!s3.empty()) {
     m_charactersLabel = createLabel(s3);
@@ -838,7 +838,7 @@ void Frame::addComboLineToHelper(int from, int to, int active, std::string s1,
 }
 
 void Frame::addComboToHelper(ENUM_STRING from, ENUM_STRING to, int active,
-                             ENUM_COMBOBOX comboboxId /*=COMBOBOX_HELPER0*/) {
+                             ENUM_COMBOBOX comboboxId /*=COMBOBOX0*/) {
   gtk_container_add(GTK_CONTAINER(m_helperUp),
                     createTextCombo(comboboxId, from, to, active));
 }
@@ -849,7 +849,7 @@ void Frame::comboChanged(ENUM_COMBOBOX e) {
   bool regexOrCharSequence =
       oneOf(m_menuClick, MENU_REGULAR_EXPRESSIONS, MENU_CHARACTER_SEQUENCE);
 
-  if (m_menuClick == MENU_CHARACTER_SEQUENCE && e == COMBOBOX_HELPER2) {
+  if (m_menuClick == MENU_CHARACTER_SEQUENCE && e == COMBOBOX2) {
     // visible is "any place of word"
     gtk_widget_set_visible(m_comboline, getComboIndex(e) == 0);
   }
@@ -858,11 +858,11 @@ void Frame::comboChanged(ENUM_COMBOBOX e) {
     updateCharactersLabel();
   }
 
-  if ((e == COMBOBOX_HELPER0 || e == COMBOBOX_HELPER1) &&
+  if ((e == COMBOBOX0 || e == COMBOBOX1) &&
       (regexOrCharSequence || FROM_TO_COMBO.has(m_menuClick))) {
-    if (getComboIndex(COMBOBOX_HELPER0) > getComboIndex(COMBOBOX_HELPER1)) {
+    if (getComboIndex(COMBOBOX0) > getComboIndex(COMBOBOX1)) {
       lockSignals();
-      setComboIndex(e == COMBOBOX_HELPER0 ? COMBOBOX_HELPER1 : COMBOBOX_HELPER0,
+      setComboIndex(e == COMBOBOX0 ? COMBOBOX1 : COMBOBOX0,
                     getComboIndex(e));
       unlockSignals();
     }
@@ -871,7 +871,7 @@ void Frame::comboChanged(ENUM_COMBOBOX e) {
   if (m_menuClick == MENU_REGULAR_EXPRESSIONS) {
     skip = m_radioValue == 0;
   } else if (m_menuClick == MENU_CHARACTER_SEQUENCE) {
-    skip = e != COMBOBOX_HELPER2 && m_radioValue == 0;
+    skip = e != COMBOBOX2 && m_radioValue == 0;
   }
 
   if (!skip) {
@@ -1337,10 +1337,10 @@ void Frame::updateCharactersLabel() {
 ENUM_COMBOBOX Frame::getLastCombobox() {
   // use only for MENU_WORDS_SPLIT..., to update characterslabel
   if (m_menuClick == MENU_WORDS_SPLIT)
-    return COMBOBOX_HELPER0;
+    return COMBOBOX0;
   if (oneOf(m_menuClick, MENU_ANAGRAM, MENU_SIMPLE_WORD_SEQUENCE,
             MENU_DOUBLE_WORD_SEQUENCE))
-    return COMBOBOX_HELPER1;
+    return COMBOBOX1;
   return COMBOBOX_SIZE;
 }
 

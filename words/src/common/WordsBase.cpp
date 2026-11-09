@@ -219,8 +219,8 @@ bool WordsBase::checkKeyboardWordComplex(const std::string &s) {
 
 bool WordsBase::checkPangram(const std::string &s) {
   int i = differentChars(s);
-  return i >= m_comboValue[COMBOBOX_HELPER0] &&
-         i <= m_comboValue[COMBOBOX_HELPER1];
+  return i >= m_comboValue[COMBOBOX0] &&
+         i <= m_comboValue[COMBOBOX1];
 }
 
 void WordsBase::checkTemplatePreProseeding() {
@@ -249,7 +249,7 @@ void WordsBase::checkTemplatePreProseeding() {
 
 bool WordsBase::checkTemplate(const std::string &s) {
   const char *p = s.c_str();
-  int param = m_comboValue[COMBOBOX_HELPER0];
+  int param = m_comboValue[COMBOBOX0];
   if (param == 0) {
     if (s.length() < m_ev.length()) {
       return false;
@@ -294,10 +294,10 @@ bool WordsBase::checkTemplate(const std::string &s) {
 }
 
 bool WordsBase::checkCharacterSequence(const std::string &s) {
-  auto j = m_comboValue[COMBOBOX_HELPER2];
+  auto j = m_comboValue[COMBOBOX2];
   if (j == 0) {
-    auto min = m_comboValue[COMBOBOX_HELPER0];
-    auto max = m_comboValue[COMBOBOX_HELPER1];
+    auto min = m_comboValue[COMBOBOX0];
+    auto max = m_comboValue[COMBOBOX1];
     j = 0;
     std::string::size_type pos = 0;
     while ((pos = s.find(m_ev, pos)) != std::string::npos) {
@@ -336,9 +336,9 @@ bool WordsBase::checkCrossword(const std::string &s) {
 }
 
 bool WordsBase::checkConsonantVowelSequence(const std::string &s) {
-  const int searchType = m_comboValue[COMBOBOX_HELPER0];
-  const int n = m_comboValue[COMBOBOX_HELPER1];
-  const char *q = vowelConsonant(m_comboValue[COMBOBOX_HELPER2]).c_str();
+  const int searchType = m_comboValue[COMBOBOX0];
+  const int n = m_comboValue[COMBOBOX1];
+  const char *q = vowelConsonant(m_comboValue[COMBOBOX2]).c_str();
   int i, j;
   const int l = s.length();
   if (l < n) {
@@ -375,8 +375,8 @@ bool WordsBase::checkConsonantVowelSequence(const std::string &s) {
 
 bool WordsBase::checkDensity(const std::string &s) {
   int i, p;
-  const char *q = vowelConsonant(m_comboValue[COMBOBOX_HELPER1]).c_str();
-  const int percentage = m_comboValue[COMBOBOX_HELPER0];
+  const char *q = vowelConsonant(m_comboValue[COMBOBOX1]).c_str();
+  const int percentage = m_comboValue[COMBOBOX0];
   for (p = i = 0; i < int(s.length()); i++) {
     if (strchr(q, s[i]) != NULL) {
       p++;
@@ -406,7 +406,7 @@ bool WordsBase::checkRegularExpression(const std::string &s, pcre2_code *re,
 
   int i = 0;
   size_t start_pos = 0;
-  const int max = m_comboValue[COMBOBOX_HELPER1];
+  const int max = m_comboValue[COMBOBOX1];
   const size_t string_len = s.length();
 
   while (start_pos <= string_len && i <= max) {
@@ -430,7 +430,7 @@ bool WordsBase::checkRegularExpression(const std::string &s, pcre2_code *re,
     }
   }
 
-  return i >= m_comboValue[COMBOBOX_HELPER0] && i <= max;
+  return i >= m_comboValue[COMBOBOX0] && i <= max;
 }
 
 void WordsBase::checkKeyboardWordSimplePreProseeding() {
@@ -954,8 +954,8 @@ void WordsBase::showLongestDoubleWordSequence() {
 #endif
 
 void WordsBase::findAnagram(int nthread) {
-  const int min = m_comboValue[COMBOBOX_HELPER0];
-  const int max = m_comboValue[COMBOBOX_HELPER1];
+  const int min = m_comboValue[COMBOBOX0];
+  const int max = m_comboValue[COMBOBOX1];
   auto [it, end] = iterators(nthread);
   auto &local_map = m_anagrams[nthread];
   local_map.clear();
@@ -989,8 +989,8 @@ void WordsBase::anagramsPostProseeding() {
 }
 
 void WordsBase::findSimpleWordSequence(int nthread) {
-  const int min = m_comboValue[COMBOBOX_HELPER0];
-  const int max = m_comboValue[COMBOBOX_HELPER1];
+  const int min = m_comboValue[COMBOBOX0];
+  const int max = m_comboValue[COMBOBOX1];
   int i = min - 1, j;
   std::string s;
   auto &v = m_ma[nthread];
@@ -1020,8 +1020,8 @@ void WordsBase::findSimpleWordSequence(int nthread) {
 }
 
 void WordsBase::findDoubleWordSequence(int nthread) {
-  const int min = m_comboValue[COMBOBOX_HELPER0];
-  const int max = m_comboValue[COMBOBOX_HELPER1];
+  const int min = m_comboValue[COMBOBOX0];
+  const int max = m_comboValue[COMBOBOX1];
   int i = min - 1, j;
   std::string q, s, t;
   auto &v = m_ma[nthread];
@@ -1070,8 +1070,8 @@ void WordsBase::findDoubleWordSequence(int nthread) {
 }
 
 void WordsBase::simpleDoubleWordSequencePostProseeding() {
-  const int min = m_comboValue[COMBOBOX_HELPER0];
-  const int max = m_comboValue[COMBOBOX_HELPER1];
+  const int min = m_comboValue[COMBOBOX0];
+  const int max = m_comboValue[COMBOBOX1];
   int n;
   for (n = 0; n <= max - min; n++) {
     auto &map = m_ma[0][n];
@@ -1088,7 +1088,7 @@ void WordsBase::simpleDoubleWordSequencePostProseeding() {
       }
     }
 
-    const size_t len = m_comboValue[COMBOBOX_HELPER0];
+    const size_t len = m_comboValue[COMBOBOX0];
     m_result.reserve(m_result.size() + map.size() / 2);
     for (auto &[_, v] : map) {
       const auto &v0 = v[0];
@@ -1829,7 +1829,7 @@ void WordsBase::findWordsSplit(int nthread) {
   m_thread_result[nthread].clear();
   for (; it != end; it++) {
     auto const &e = *it;
-    if (int(e.size()) != m_comboValue[COMBOBOX_HELPER0]) {
+    if (int(e.size()) != m_comboValue[COMBOBOX0]) {
       continue;
     }
     t = "";
@@ -2317,7 +2317,7 @@ void WordsBase::cgi() {
     case POST_COMBO0:
     case POST_COMBO1:
     case POST_COMBO2:
-      m_comboValue[COMBOBOX_HELPER0 + i - POST_COMBO0] = j;
+      m_comboValue[COMBOBOX0 + i - POST_COMBO0] = j;
       break;
 
     case POST_CHECK:
