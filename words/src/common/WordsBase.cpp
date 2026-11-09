@@ -76,10 +76,6 @@ const LookupTable<ENUM_MENU, void (WordsBase::*)()> menuPreProseeding = {
 
 const LookupTable<ENUM_MENU, void (WordsBase::*)()> menuPostProseeding = {
     {MENU_ANAGRAM, &WordsBase::anagramsPostProseeding},
-    {MENU_CLUSTER_DIAMETER_STATISTICS
-     // {MENU_CLUSTER_SIZE_STATISTICS, MENU_CLUSTER_DIAMETER_STATISTICS}//todo
-     ,
-     &WordsBase::clusterStatisticsPostProseeding},
     {MENU_LETTER_GROUP_SPLIT, &WordsBase::findLetterGroupSplitPostProseeding},
     {MENU_SIMPLE_WORD_SEQUENCE,
      &WordsBase::simpleDoubleWordSequencePostProseeding},
@@ -1394,15 +1390,6 @@ void WordsBase::clusterSizeStatistics(int nthread) {
       SearchResult::mapIMII[length] = std::move(map);
     }
     updateProceedingText();
-
-    //todo
-    // std::string s = "";
-    // for (const auto &[words, count] : map) {
-    //   s += std::format(" {}:{}", intToString(words), intToString(count));
-    // }
-    // m_si.push_back({s, length});
-    // s = squareBrackets(length) + s + "\n";
-    // updateProceedingText(s);
   }
 }
 
@@ -1425,24 +1412,18 @@ void WordsBase::clusterDiameterStatistics(int nthread) {
       map[p.second][p.first]++;
     }
 
-    std::string s = "";
-    for (const auto &[diameter, m] : map) {
-      s += std::format(" {{{}}}", intToString(diameter));
-      for (const auto &[words, count] : m) {
-        s += std::format(" {}:{}", intToString(words), intToString(count));
-      }
+    {
+      std::lock_guard<std::mutex> lock(m_mutex);
+      SearchResult::mapIMIMII[length] = std::move(map);
     }
-    m_si.push_back({s, length});
-    s = squareBrackets(length) + s + "\n";
-    updateProceedingText(s);
+    updateProceedingText();
   }
 }
 
 void WordsBase::clusterStatisticsPreProseeding() {
   m_ss.clear(); // used in fillDictionaryLength() so clear
   m_iiv = {getWordLengthMap().begin(), getWordLengthMap().end()};
-  m_si.clear();
-  const bool finalRelease = 0;
+  const bool finalRelease = 0;//todo
   if (finalRelease) {
     std::ranges::sort(m_iiv,
                       [](auto &a, auto &b) { return a.second > b.second; });
@@ -1451,17 +1432,6 @@ void WordsBase::clusterStatisticsPreProseeding() {
                       [](auto &a, auto &b) { return a.second < b.second; });
   }
   m_i.store(0);
-}
-
-void WordsBase::clusterStatisticsPostProseeding() {
-  std::ranges::sort(m_si, [](auto &a, auto &b) { return a.second < b.second; });
-  int i = -1;
-  std::string s;
-  for (auto &p : m_si) {
-    i++;
-    s += (i ? "\n" : "") + squareBrackets(p.second) + p.first;
-  }
-  updateProceedingText(s, false);
 }
 
 void WordsBase::findLetterGroupSplitPreProseeding() {

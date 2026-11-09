@@ -47,6 +47,7 @@ using VVString = std::vector<VString>;
 // Maps
 using MapIntInt = std::map<int, int>;
 using MapIntMapIntInt = std::map<int, MapIntInt>;
+using MapIntMapIntMapIntInt = std::map<int, MapIntMapIntInt>;
 using MapStringStringVector = std::map<std::string, VString>;
 using MapStringStringVectorI = MapStringStringVector::iterator;
 using MapStringInt = std::map<std::string, int>;
@@ -168,6 +169,7 @@ public:
   static std::string out;
   static VectorDouble vd;
   static MapIntMapIntInt mapIMII;
+  static MapIntMapIntMapIntInt mapIMIMII;
   SearchResult(std::string _s, int _length, int _words);
 };
 
@@ -625,3 +627,5 @@ public:
         std::make_index_sequence<N>{});            // Indices from N to 2N-1
   }
 };
+
+std::string clusterString(const MapIntInt &m, int minsize = 0);

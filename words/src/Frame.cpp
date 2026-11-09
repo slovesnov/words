@@ -700,16 +700,15 @@ void Frame::setHelperPanel(bool ignoreStateBegin) {
                   true,
 
                   createTextCombo(COMBOBOX1, 3, 10, 0), true,
-                  createTextCombo(COMBOBOX2, VOWELS, CONSONANTS, 0),
-                  true);
+                  createTextCombo(COMBOBOX2, VOWELS, CONSONANTS, 0), true);
     gtk_container_add(GTK_CONTAINER(m_helperUp), w);
     break;
 
   case MENU_DENSITY:
     w = createBox(GTK_ORIENTATION_HORIZONTAL, COMBOLINE_MARGIN, MAXIMUM, true,
                   createTextCombo(COMBOBOX0, 0, 25, 25), true, "%", true,
-                  createTextCombo(COMBOBOX1, VOWELS, CONSONANTS, 0),
-                  true, CHARACTERS, true);
+                  createTextCombo(COMBOBOX1, VOWELS, CONSONANTS, 0), true,
+                  CHARACTERS, true);
     gtk_container_add(GTK_CONTAINER(m_helperUp), w);
     break;
   default:;
@@ -826,8 +825,7 @@ void Frame::addComboLineToHelper(int from, int to, int active, std::string s1,
       }
       updateRadioValue();
     }
-    add(w,
-        createTextCombo(ENUM_COMBOBOX(COMBOBOX0 + i), from, to, active));
+    add(w, createTextCombo(ENUM_COMBOBOX(COMBOBOX0 + i), from, to, active));
   }
   if (!s3.empty()) {
     m_charactersLabel = createLabel(s3);
@@ -862,8 +860,7 @@ void Frame::comboChanged(ENUM_COMBOBOX e) {
       (regexOrCharSequence || FROM_TO_COMBO.has(m_menuClick))) {
     if (getComboIndex(COMBOBOX0) > getComboIndex(COMBOBOX1)) {
       lockSignals();
-      setComboIndex(e == COMBOBOX0 ? COMBOBOX1 : COMBOBOX0,
-                    getComboIndex(e));
+      setComboIndex(e == COMBOBOX0 ? COMBOBOX1 : COMBOBOX0, getComboIndex(e));
       unlockSignals();
     }
   }
@@ -1792,23 +1789,41 @@ void Frame::updateProceeding(const char *text) {
   std::string s, s1;
   bool scrollDown = text != NULL;
   if (!text) {
-    MapIntMapIntInt map;
-    {
-      std::lock_guard<std::mutex> lock(m_mutex);
-      map = SearchResult::mapIMII;
-    }
-    for (const auto &[length, m] : map) {
-      s1 = "";
-      for (const auto &[size, count] : m) {
-        if (size >= m_spinValue[SPIN0]) { // value from Frame
-          s1 += std::format(" {}:{}", intToString(size), intToString(count));
+    if (wordsBase->m_menuClick == MENU_CLUSTER_SIZE_STATISTICS) {
+      decltype(SearchResult::mapIMII) map;
+      {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        map = SearchResult::mapIMII;
+      }
+      for (const auto &[length, m] : map) {
+        s1 = clusterString(m, m_spinValue[SPIN0]);
+        if (!s1.empty()) {
+          if (!s.empty()) {
+            s += "\n";
+          }
+          s += squareBrackets(length) + s1;
         }
       }
-      if (!s1.empty()) {
-        if (!s.empty()) {
-          s += "\n";
+    } else {
+      decltype(SearchResult::mapIMIMII) map;
+      {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        map = SearchResult::mapIMIMII;
+      }
+      for (const auto &[length, m1] : map) {
+        s1 = "";
+        for (const auto &[diameter, m] : m1) {
+          if (diameter >= m_spinValue[SPIN0]) { // value from Frame
+            s1 += std::format(" {{{}}}", intToString(diameter)) +
+                  clusterString(m);
+          }
         }
-        s += squareBrackets(length) + s1;
+        if (!s1.empty()) {
+          if (!s.empty()) {
+            s += "\n";
+          }
+          s += squareBrackets(length) + s1;
+        }
       }
     }
     text = s.c_str();

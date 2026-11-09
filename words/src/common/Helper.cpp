@@ -97,6 +97,7 @@ VectorVectorInt &sum(VectorThreadResult &v) {
 std::string SearchResult::out;
 VectorDouble SearchResult::vd;
 MapIntMapIntInt SearchResult::mapIMII;
+MapIntMapIntMapIntInt SearchResult::mapIMIMII;
 
 SearchResult::SearchResult(std::string _s, int _length, int _words) {
   unsigned i, l;
@@ -403,8 +404,16 @@ int differentChars(std::string_view s) {
   return c;
 }
 
-std::string string(ENUM_STRING e){
-  return wordsBase->string(e);
-}
+std::string string(ENUM_STRING e) { return wordsBase->string(e); }
 
 std::string intToString(int v, char c) { return toString(v, c); }
+
+std::string clusterString(const MapIntInt &m, int minsize) {
+  std::string s;
+  for (const auto &[size, count] : m) {
+    if (size >= minsize) {
+      s += std::format(" {}:{}", intToString(size), intToString(count));
+    }
+  }
+  return s;
+}
