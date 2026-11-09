@@ -22,7 +22,7 @@ Parameters::Parameters() : m_modifications(this) {}
 
 void Parameters::operator=(const Parameters &p) {
   // pr(magic_enum::enum_name(p.m_menuClick));
-  m_menuClick = p.m_menuClick; // last search option
+  m_menuClick = p.m_menuClick;
   m_comboValue = p.m_comboValue;
   m_sortlistValue = p.m_sortlistValue;
   m_entryValueUtf8 = p.m_entryValueUtf8; // utf8
@@ -30,6 +30,7 @@ void Parameters::operator=(const Parameters &p) {
   m_buttonValue = p.m_buttonValue; // use array allow assign all values
   m_checkValue = p.m_checkValue;
   m_textViewValueUtf8 = p.m_textViewValueUtf8; // do splitr so need utf8
+  m_spinValue = p.m_spinValue;
 }
 
 void Parameters::assignToWordsBase(const Parameters &p) {

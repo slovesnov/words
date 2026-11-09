@@ -60,6 +60,10 @@ gboolean label_clicked(GtkWidget *label, const gchar *uri, gpointer) {
 
 void check_changed(GtkWidget *check, gpointer) { frame->checkChanged(); }
 
+void spin_changed(GtkSpinButton *spin_button, ENUM_SPIN e) {
+  frame->spinChanged(e);
+}
+
 void radio_changed(GtkWidget *radio, gpointer) {
   // on change radid, got 2 signals. One radio became active, another not active
   if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio))) {
@@ -224,20 +228,15 @@ Frame::Frame() {
   gtk_widget_set_margin_start(m_statusMessage, TEXT_VIEW_MARGIN);
 
   w = gtk_box_new(GTK_ORIENTATION_VERTICAL, 3);
-  auto createRow = [&](auto &&...args) {
-    GtkWidget *row = createBox(GTK_ORIENTATION_HORIZONTAL, margin,
-                               std::forward<decltype(args)>(args)...);
-    gtk_container_add(GTK_CONTAINER(w), row);
-  };
-  createRow(m_button[BUTTON_STARTSTOP], false,
-            m_labelButtonBox[LABELBUTTON_DICTIONRY], false,
-            m_button[BUTTON_DICTIONARY], false,
-            m_labelButtonBox[LABELBUTTON_LANGUAGE], false,
-            m_button[BUTTON_LANGUAGE], false);
-  createRow(m_sortbutton, true, m_button[BUTTON_SORT_ORDER], false);
-  createRow(m_entry[ENTRY_SEARCH], true, m_button[BUTTON_NEXT], false,
-            m_button[BUTTON_PREVIOUS], false, m_searchTagLabel, false);
-  createRow(m_entry[ENTRY_FILTER], true, m_button[BUTTON_FOUND], false);
+  addRow(w, margin, m_button[BUTTON_STARTSTOP], false,
+         m_labelButtonBox[LABELBUTTON_DICTIONRY], false,
+         m_button[BUTTON_DICTIONARY], false,
+         m_labelButtonBox[LABELBUTTON_LANGUAGE], false,
+         m_button[BUTTON_LANGUAGE], false);
+  addRow(w, margin, m_sortbutton, true, m_button[BUTTON_SORT_ORDER], false);
+  addRow(w, margin, m_entry[ENTRY_SEARCH], true, m_button[BUTTON_NEXT], false,
+         m_button[BUTTON_PREVIOUS], false, m_searchTagLabel, false);
+  addRow(w, margin, m_entry[ENTRY_FILTER], true, m_button[BUTTON_FOUND], false);
 
   m_panedWidget = w1 = gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
   // left part
@@ -637,6 +636,10 @@ void Frame::setHelperPanel(bool ignoreStateBegin) {
   if (auto it = FROM_TO_COMBO.get(m_menuClick)) {
     addComboLineToHelper(string(it->s1, it->s2), it->min,
                          it->max[getDictionaryIndex()], it->active, it->send);
+  }
+
+  if (auto it = MENU_SPIN_DATA.get(m_menuClick)) {
+    addSpin(*it);
   }
 
   switch (m_menuClick) {
@@ -1575,6 +1578,11 @@ void Frame::addHelp(ENUM_STRING e) {
   // g_free(p);
 }
 
+void Frame::addSpin(const SpinData &spinData) {
+  addRow(m_helperUp, 0, createLabel(spinData.e), true,
+         createSpin(SPIN0, spinData), true);
+}
+
 GtkWidget *Frame::createCheck(ENUM_STRING e, bool set) {
   m_check = gtk_check_button_new_with_label(string(e).c_str());
   gtk_widget_set_can_focus(m_check, FALSE);
@@ -1594,6 +1602,42 @@ void Frame::checkChanged() {
 
 void Frame::updateCheckValue() {
   m_checkValue = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(m_check));
+}
+
+GtkWidget *Frame::createSpin(ENUM_SPIN e, const SpinData &spinData) {
+  // Configure the numeric range: (initial, minimum, maximum, step_increment,
+  // page_increment, page_size=0) not used
+  GtkAdjustment *adjustment =
+      gtk_adjustment_new(spinData.initial, spinData.minimum, spinData.maximum,
+                         spinData.step_increment, spinData.page_increment, 0.0);
+
+  // Create the input field: (adjustment, climb_rate, digits)
+  m_spin[e] = gtk_spin_button_new(adjustment, spinData.climb_rate, 0);
+  gtk_spin_button_set_update_policy(GTK_SPIN_BUTTON(m_spin[e]),
+                                    GTK_UPDATE_ALWAYS);
+  g_signal_connect(m_spin[e], "value-changed", G_CALLBACK(spin_changed),
+                   gpointer(e));
+  g_signal_connect(m_spin[e], "changed",
+                   G_CALLBACK(+[](GtkEditable *editable, gpointer user_data) {
+                     gtk_spin_button_update(GTK_SPIN_BUTTON(editable));
+                   }),
+                   NULL);
+  return m_spin[e];
+}
+
+void Frame::spinChanged(ENUM_SPIN e) {
+  // Get the value as a floating-point number
+  double vd = gtk_spin_button_get_value(GTK_SPIN_BUTTON(m_spin[e]));
+  // Or get the value as an integer
+  int v = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(m_spin[e]));
+  pr(v, vd, int(e));
+
+  updateSpinValue(e);
+}
+
+void Frame::updateSpinValue(ENUM_SPIN e) {
+  int v = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(m_spin[e]));
+  m_spinValue[e] = v;
 }
 
 void Frame::radioChanged() {
@@ -1741,7 +1785,7 @@ void Frame::updateProceedingThread() {
 void Frame::updateProceeding(const char *text) {
   updateTextView(TEXTVIEW_MAIN, text);
 
-  auto text_view=m_textview[TEXTVIEW_MAIN];
+  auto text_view = m_textview[TEXTVIEW_MAIN];
   // scroll down to the end
   //  1. Get the text buffer and an iterator pointing to the very end of the
   //  text

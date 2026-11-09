@@ -158,6 +158,13 @@ const LookupTable<ENUM_MENU, ComboData> FROM_TO_COMBO = {
                                           LENGTH, OF_SEQUENCE, CHARACTERS)},
     {MENU_DOUBLE_WORD_SEQUENCE, ComboData(2, MAX_DOUBLE_WORD_SEQUENCE_LENGTH, 2,
                                           LENGTH, OF_SEQUENCE, CHARACTERS)}};
+
+const LookupTable<ENUM_MENU, SpinData> MENU_SPIN_DATA = {
+    {{MENU_CLUSTER_SIZE_STATISTICS,
+      SpinData(MINIMUM_CLUSTER_SIZE, 0, 0, 10'000, 1, 5, 1)},
+     {MENU_CLUSTER_DIAMETER_STATISTICS,
+      SpinData(MINIMUM_CLUSTER_DIAMETER, 0, 0, 10'000, 1, 5, 1)}}};
+
 const int UPDATEONLY_BUTTON = -1;
 const int INVERT_BUTTON = -2;
 constexpr int STATE_BITS = std::bit_width(static_cast<unsigned>(STATE_SIZE));

@@ -204,3 +204,5 @@ normal distribution approximation
 word count
 search the longest chain in a cluster
 Error. This word is not in the dictionary.
+minimum cluster size
+minimum cluster diameter

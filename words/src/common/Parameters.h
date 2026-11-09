@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include "consts.h"
 #include "Modification.h"
+#include "consts.h"
 #include <stop_token>
 #define PCRE2_CODE_UNIT_WIDTH 8
 #define PCRE2_STATIC
@@ -35,10 +35,10 @@ protected:
   int m_sortlistValue;
   std::array<std::string, ENTRY_SIZE> m_entryValueUtf8; // utf8
   int m_radioValue;
-  std::array<int, BUTTON_SIZE>
-      m_buttonValue; // use array allow assign all values
+  std::array<int, BUTTON_SIZE> m_buttonValue;
   bool m_checkValue;
   std::string m_textViewValueUtf8; // do splitr so need utf8
+  std::array<int, SPIN_SIZE> m_spinValue;
 
   // postcount variable
   int m_filteredWordsCount;

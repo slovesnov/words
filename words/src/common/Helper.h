@@ -151,6 +151,11 @@ struct ComboData {
   ENUM_STRING s1, s2, send;
 };
 
+struct SpinData {
+  ENUM_STRING e;
+  double initial, minimum, maximum, step_increment, page_increment, climb_rate;
+};
+
 class SearchResult {
 public:
   std::string s;

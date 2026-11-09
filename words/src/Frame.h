@@ -37,6 +37,7 @@ class Frame : Parameters {
   GtkWidget *m_box;
   GtkWidget *m_area;
   GtkWidget *m_notebook;
+  GtkWidget *m_spin[SPIN_SIZE];
   SafePangoFontDesc m_font[FONT_SIZE];
 
   std::chrono::steady_clock::time_point last_click_time[BUTTON_SIZE]{};
@@ -129,6 +130,12 @@ private:
     static_assert(sizeof...(T) % 2 == 0);
     GtkWidget *w = gtk_box_new(o, margin);
     return add(w, std::forward<T>(p)...);
+  }
+
+  void addRow(GtkWidget *container, int margin, auto &&...args) {
+    GtkWidget *row = createBox(GTK_ORIENTATION_HORIZONTAL, margin,
+                               std::forward<decltype(args)>(args)...);
+    gtk_container_add(GTK_CONTAINER(container), row);
   }
 
 public:
@@ -253,6 +260,7 @@ public:
         ...);
   }
   void addHelp(ENUM_STRING e);
+  void addSpin(const SpinData &spinData);
   void labelClicked(GtkWidget *box);
 
   // textview functions
@@ -267,6 +275,11 @@ public:
   GtkWidget *createCheck(ENUM_STRING e, bool set);
   void checkChanged();
   void updateCheckValue();
+
+  // spin functons
+  GtkWidget *createSpin(ENUM_SPIN e, const SpinData &spinData);
+  void spinChanged(ENUM_SPIN e);
+  void updateSpinValue(ENUM_SPIN e);
 
   // radio functions
   void radioChanged();
