@@ -8,7 +8,9 @@
 #include "Parameters.h"
 // #include <magic_enum.hpp>
 
+std::mutex Parameters::m_mutex;
 std::stop_token Parameters::m_token;
+VectorSearchResult Parameters::m_result;
 std::array<std::string, SETTINGS_SIZE>
     Parameters::m_settingsAll[LANGUAGES]; // locale
 std::array<std::string, STRING_SIZE>
@@ -16,7 +18,6 @@ std::array<std::string, STRING_SIZE>
 std::array<std::string, MENU_SIZE> Parameters::m_menuAll[LANGUAGES]; // utf8
 MapIntInt Parameters::m_wordLengthMap[LANGUAGES];
 int Parameters::m_longestWordLength[LANGUAGES];
-VectorSearchResult Parameters::m_result;
 
 Parameters::Parameters() : m_modifications(this) {}
 

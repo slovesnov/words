@@ -96,6 +96,7 @@ VectorVectorInt &sum(VectorThreadResult &v) {
 
 std::string SearchResult::out;
 VectorDouble SearchResult::vd;
+MapIntMapIntInt SearchResult::mapIMII;
 
 SearchResult::SearchResult(std::string _s, int _length, int _words) {
   unsigned i, l;

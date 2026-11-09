@@ -46,6 +46,7 @@ using VVString = std::vector<VString>;
 
 // Maps
 using MapIntInt = std::map<int, int>;
+using MapIntMapIntInt = std::map<int, MapIntInt>;
 using MapStringStringVector = std::map<std::string, VString>;
 using MapStringStringVectorI = MapStringStringVector::iterator;
 using MapStringInt = std::map<std::string, int>;
@@ -166,6 +167,7 @@ public:
 
   static std::string out;
   static VectorDouble vd;
+  static MapIntMapIntInt mapIMII;
   SearchResult(std::string _s, int _length, int _words);
 };
 

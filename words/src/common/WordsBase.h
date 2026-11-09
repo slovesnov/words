@@ -157,6 +157,7 @@ public:
 
   static std::string pairsToString(VectorStringString const &v, bool p = 0);
 
+  void updateProceedingText();
   void updateProceedingText(std::string s, bool add = true);
   VectorInt relations(int nthread, VectorInt const &v1, VectorInt const &v2);
 };

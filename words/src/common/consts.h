@@ -170,7 +170,7 @@ const int INVERT_BUTTON = -2;
 constexpr int STATE_BITS = std::bit_width(static_cast<unsigned>(STATE_SIZE));
 constexpr int STATE_MASK = (1 << STATE_BITS) - 1;
 const char SEPARATOR[] = "SEPARATOR";
-const ENUM_ENTRY CLUSTER_SPIN_CHANGED = ENTRY_SIZE;
+const ENUM_ENTRY SPIN_CHANGED = ENTRY_SIZE;
 const ENUM_ENTRY TEXTVIEW_CHANGED = ENTRY_TEMPLATE;
 
 #endif /*#ifndef NOGTK*/

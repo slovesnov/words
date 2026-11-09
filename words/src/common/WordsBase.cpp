@@ -76,7 +76,9 @@ const LookupTable<ENUM_MENU, void (WordsBase::*)()> menuPreProseeding = {
 
 const LookupTable<ENUM_MENU, void (WordsBase::*)()> menuPostProseeding = {
     {MENU_ANAGRAM, &WordsBase::anagramsPostProseeding},
-    {{MENU_CLUSTER_SIZE_STATISTICS, MENU_CLUSTER_DIAMETER_STATISTICS},
+    {MENU_CLUSTER_DIAMETER_STATISTICS
+     // {MENU_CLUSTER_SIZE_STATISTICS, MENU_CLUSTER_DIAMETER_STATISTICS}//todo
+     ,
      &WordsBase::clusterStatisticsPostProseeding},
     {MENU_LETTER_GROUP_SPLIT, &WordsBase::findLetterGroupSplitPostProseeding},
     {MENU_SIMPLE_WORD_SEQUENCE,
@@ -1387,13 +1389,20 @@ void WordsBase::clusterSizeStatistics(int nthread) {
       map[i]++;
     }
 
-    std::string s = "";
-    for (const auto &[words, count] : map) {
-      s += std::format(" {}:{}", intToString(words), intToString(count));
+    {
+      std::lock_guard<std::mutex> lock(m_mutex);
+      SearchResult::mapIMII[length] = std::move(map);
     }
-    m_si.push_back({s, length});
-    s = squareBrackets(length) + s + "\n";
-    updateProceedingText(s);
+    updateProceedingText();
+
+    //todo
+    // std::string s = "";
+    // for (const auto &[words, count] : map) {
+    //   s += std::format(" {}:{}", intToString(words), intToString(count));
+    // }
+    // m_si.push_back({s, length});
+    // s = squareBrackets(length) + s + "\n";
+    // updateProceedingText(s);
   }
 }
 
@@ -1403,7 +1412,7 @@ void WordsBase::clusterDiameterStatistics(int nthread) {
   std::string s;
   while ((i = m_i.fetch_add(1)) < std::ssize(m_iiv)) {
     length = m_iiv[i].first;
-    std::map<int, MapIntInt> map;
+    MapIntMapIntInt map;
     j = 0;
     fillDictionaryLength(nthread, length);
     while ((j = indexOf(true, m_chain[nthread], j)) != -1) {
@@ -1433,10 +1442,14 @@ void WordsBase::clusterStatisticsPreProseeding() {
   m_ss.clear(); // used in fillDictionaryLength() so clear
   m_iiv = {getWordLengthMap().begin(), getWordLengthMap().end()};
   m_si.clear();
-  // std::ranges::sort(m_iiv,
-  //                   [](auto &a, auto &b) { return a.second < b.second; });
-  std::ranges::sort(m_iiv,
-                    [](auto &a, auto &b) { return a.second > b.second; });
+  const bool finalRelease = 0;
+  if (finalRelease) {
+    std::ranges::sort(m_iiv,
+                      [](auto &a, auto &b) { return a.second > b.second; });
+  } else {
+    std::ranges::sort(m_iiv,
+                      [](auto &a, auto &b) { return a.second < b.second; });
+  }
   m_i.store(0);
 }
 
@@ -2348,6 +2361,8 @@ std::string WordsBase::pairsToString(VectorStringString const &v, bool p) {
   sout += "\n";
   return sout;
 }
+
+void WordsBase::updateProceedingText() { frame->updateProceedingThread1(); }
 
 void WordsBase::updateProceedingText(std::string s, bool add) {
   {

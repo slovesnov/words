@@ -54,7 +54,7 @@ protected:
       m_ev; // locale m_ev=utf8ToLocale(m_entryValueUtf8[ENTRY_TEMPLATE])
   Modification m_modifications;
 
-  std::mutex m_mutex; // separated
+  static std::mutex m_mutex;
   static std::stop_token m_token;
   static VectorSearchResult m_result;
 

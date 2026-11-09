@@ -61,7 +61,7 @@ gboolean label_clicked(GtkWidget *label, const gchar *uri, gpointer) {
 void check_changed(GtkWidget *check, gpointer) { frame->checkChanged(); }
 
 void spin_changed(GtkSpinButton *spin_button, ENUM_SPIN e) {
-  //pr(magic_enum::enum_name(e));
+  // pr(magic_enum::enum_name(e));
   frame->spinChanged(e);
 }
 
@@ -104,7 +104,7 @@ gboolean on_key_press(GtkWidget *widget, GdkEventKey *event,
 
 gboolean on_debounce_timeout(gpointer user_data) {
   ENUM_ENTRY e = ENUM_ENTRY(GPOINTER_TO_INT(user_data));
-  //pr(magic_enum::enum_name(e));
+  // pr(magic_enum::enum_name(e));
   frame->debounceTimeout(e);
   return G_SOURCE_REMOVE;
 }
@@ -131,6 +131,11 @@ gboolean new_version_message(gpointer) {
 gboolean update_proceeding(gpointer data) {
   gchar *text_to_display = static_cast<gchar *>(data);
   frame->updateProceeding(text_to_display);
+  return G_SOURCE_REMOVE;
+}
+
+gboolean update_proceeding1(gpointer data) {
+  frame->updateProceeding();
   return G_SOURCE_REMOVE;
 }
 
@@ -560,8 +565,7 @@ void Frame::aboutDialog() {
                                   string(id).c_str(), s.c_str(), s.c_str());
       gtk_label_set_markup(GTK_LABEL(label), markup);
       g_free(markup);
-      g_signal_connect(label, "activate-link", G_CALLBACK(label_clicked),
-                       NULL);
+      g_signal_connect(label, "activate-link", G_CALLBACK(label_clicked), NULL);
     } else {
       if (id == PROGRAM) {
         s = getProgramVersionString();
@@ -975,7 +979,8 @@ void Frame::setDebounceTimer(ENUM_ENTRY e) {
   if (m_debounceTimerId) {
     g_source_remove(m_debounceTimerId);
   }
-  m_debounceTimerId = g_timeout_add(TIMER, on_debounce_timeout, GINT_TO_POINTER(e));
+  m_debounceTimerId =
+      g_timeout_add(TIMER, on_debounce_timeout, GINT_TO_POINTER(e));
 }
 
 void Frame::debounceTimeout(ENUM_ENTRY e) {
@@ -996,8 +1001,8 @@ void Frame::debounceTimeout(ENUM_ENTRY e) {
     }
     break;
 
-  case CLUSTER_SPIN_CHANGED:
-    pr(m_spinValue[SPIN0]);
+  case SPIN_CHANGED:
+    updateProceedingThread1();
   }
 }
 
@@ -1627,14 +1632,12 @@ GtkWidget *Frame::createSpin(ENUM_SPIN e, const SpinData &spinData) {
 }
 
 void Frame::spinChanged(ENUM_SPIN e) {
-  // double vd = gtk_spin_button_get_value(GTK_SPIN_BUTTON(m_spin[e]));
-  // int v = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(m_spin[e]));
-  // pr(v, vd, int(e));
-  setDebounceTimer(CLUSTER_SPIN_CHANGED);
+  setDebounceTimer(SPIN_CHANGED);
   updateSpinValue(e);
 }
 
 void Frame::updateSpinValue(ENUM_SPIN e) {
+  // double vd = gtk_spin_button_get_value(GTK_SPIN_BUTTON(m_spin[e]));
   int v = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(m_spin[e]));
   m_spinValue[e] = v;
 }
@@ -1781,11 +1784,38 @@ void Frame::updateProceedingThread() {
                   (GDestroyNotify)g_free);
 }
 
+void Frame::updateProceedingThread1() {
+  g_idle_add_full(G_PRIORITY_HIGH, update_proceeding1, NULL, NULL);
+}
+
 void Frame::updateProceeding(const char *text) {
+  std::string s, s1;
+  if (!text) {
+    MapIntMapIntInt map;
+    {
+      std::lock_guard<std::mutex> lock(m_mutex);
+      map = SearchResult::mapIMII;
+    }
+    for (const auto &[length, m] : map) {
+      s1 = "";
+      for (const auto &[size, count] : m) {
+        if (size >= m_spinValue[SPIN0]) { // value from Frame
+          s1 += std::format(" {}:{}", intToString(size), intToString(count));
+        }
+      }
+      if (!s1.empty()) {
+        if (!s.empty()) {
+          s += "\n";
+        }
+        s += squareBrackets(length) + s1;
+      }
+    }
+    text = s.c_str();
+  }
   updateTextView(TEXTVIEW_MAIN, text);
 
+  /*scroll down to the end
   auto text_view = m_textview[TEXTVIEW_MAIN];
-  // scroll down to the end
   //  1. Get the text buffer and an iterator pointing to the very end of the
   //  text
   GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(text_view));
@@ -1803,6 +1833,7 @@ void Frame::updateProceeding(const char *text) {
 
   // 4. Delete the temporary mark to prevent memory clutter
   gtk_text_buffer_delete_mark(buffer, end_mark);
+  */
 }
 
 std::string Frame::getTextToCopyFromFocus() {
