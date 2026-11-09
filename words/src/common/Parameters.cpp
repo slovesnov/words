@@ -115,8 +115,6 @@ const MapIntInt &Parameters::getWordLengthMap() const {
   return m_wordLengthMap[getDictionaryIndex()];
 }
 
-std::string Parameters::intToString(int v, char c) { return toString(v, c); }
-
 std::string Parameters::intToStringLocaled(int v) {
   return toString(v, string(SEPARATOR_SYMBOL)[0]);
 }

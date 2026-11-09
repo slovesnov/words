@@ -104,7 +104,7 @@ SearchResult::SearchResult(std::string _s, int _length, int _words) {
   s = _s;
   length = _length;
   words = _words;
-  differentCharacters = WordsBase::differentChars(s);
+  differentCharacters = differentChars(s);
   for (i = 0; i < VOWELS_CONSONANTS_SIZE; i++) {
     percent[i] = 0;
     p[i] = wordsBase->vowelConsonant(i == VOWELS_CONSONANTS_CONSONANTS).c_str();
@@ -388,3 +388,22 @@ PairDoubleDouble leastSquares(const VectorDouble &x, const VectorDouble &y) {
 bool spanIncluding(std::string_view p, std::string_view pattern) {
   return p.find_first_not_of(pattern) == std::string_view::npos;
 }
+
+int differentChars(std::string_view s) {
+  bool seen[256] = {false};
+  int c = 0;
+  for (const char ch : s) {
+    const uchar b = uchar(ch);
+    if (!seen[b]) {
+      seen[b] = true;
+      c++;
+    }
+  }
+  return c;
+}
+
+std::string string(ENUM_STRING e){
+  return wordsBase->string(e);
+}
+
+std::string intToString(int v, char c) { return toString(v, c); }

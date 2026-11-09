@@ -8,6 +8,7 @@
 #pragma once
 
 #include "consts.h"
+#include "Modification.h"
 #include <stop_token>
 #define PCRE2_CODE_UNIT_WIDTH 8
 #define PCRE2_STATIC
@@ -15,7 +16,6 @@
 using UniquePcre2Code = UniqueGtkResource<pcre2_code, pcre2_code_free>;
 using UniquePcre2MatchData =
     UniqueGtkResource<pcre2_match_data, pcre2_match_data_free>;
-#include "Modification.h"
 
 class Parameters {
 public:
@@ -68,7 +68,10 @@ protected:
   int getLanguageIndex() const { return m_buttonValue[BUTTON_LANGUAGE]; }
   int getDictionaryIndex() const { return m_buttonValue[BUTTON_DICTIONARY]; }
 
+public:
   const std::string &string(ENUM_STRING e) const;
+
+protected:
   const std::string &string(ENUM_MENU e) const;
   const std::string string(ENUM_STRING e, ENUM_STRING e1) const;
   const std::string &string(int i) const;
@@ -85,7 +88,6 @@ protected:
   static VString readFile(std::string path);
   const MapIntInt &getWordLengthMap() const;
 
-  static std::string intToString(int v, char c = ',');
   std::string intToStringLocaled(int v);
 
   int getMaximumWordLength();

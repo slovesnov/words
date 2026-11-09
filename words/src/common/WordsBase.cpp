@@ -736,19 +736,6 @@ void WordsBase::chainLayer2(int nthread, const VectorInt &layerIndex,
   }
 }
 
-int WordsBase::differentChars(std::string_view s) {
-  bool seen[256] = {false};
-  int c = 0;
-  for (const char ch : s) {
-    const uchar b = uchar(ch);
-    if (!seen[b]) {
-      seen[b] = true;
-      c++;
-    }
-  }
-  return c;
-}
-
 std::string readBinaryFileToString(const std::string &filename) {
   std::ifstream file(filename, std::ios::binary | std::ios::ate);
   std::string s;

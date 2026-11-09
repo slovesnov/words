@@ -73,73 +73,74 @@ struct StartStopButtonState {
   bool imageStart, enable;
 };
 
-template <typename KeyT, typename ValueT> 
-class LookupTable {
+template <typename KeyT, typename ValueT> class LookupTable {
 public:
-    // Helper structure to enable flexible initialization patterns
-    struct InitRow {
-        std::vector<KeyT> keys;
-        ValueT value;
+  // Helper structure to enable flexible initialization patterns
+  struct InitRow {
+    std::vector<KeyT> keys;
+    ValueT value;
 
-        // Constructor 1: Handles single key mappings like {Key, Value}
-        InitRow(KeyT key, ValueT val) 
-            : keys{std::move(key)}, value(std::move(val)) {}
+    // Constructor 1: Handles single key mappings like {Key, Value}
+    InitRow(KeyT key, ValueT val)
+        : keys{std::move(key)}, value(std::move(val)) {}
 
-        // Constructor 2: Handles multiple keys mapped to one value like {{Key1, Key2}, Value}
-        InitRow(std::initializer_list<KeyT> key_list, ValueT val) 
-            : keys(key_list), value(std::move(val)) {}
-    };
+    // Constructor 2: Handles multiple keys mapped to one value like {{Key1,
+    // Key2}, Value}
+    InitRow(std::initializer_list<KeyT> key_list, ValueT val)
+        : keys(key_list), value(std::move(val)) {}
+  };
 
 private:
-    std::unordered_map<KeyT, ValueT> m;
+  std::unordered_map<KeyT, ValueT> m;
 
 public:
-    // Main constructor that flattens rows of single or multiple keys into the map
-    LookupTable(std::initializer_list<InitRow> init_list) {
-        for (const auto& row : init_list) {
-            for (const auto& key : row.keys) {
-                m[key] = row.value;
-            }
-        }
+  // Main constructor that flattens rows of single or multiple keys into the map
+  LookupTable(std::initializer_list<InitRow> init_list) {
+    for (const auto &row : init_list) {
+      for (const auto &key : row.keys) {
+        m[key] = row.value;
+      }
     }
+  }
 
-    // Checks if the key exists in the table
-    bool has(const KeyT &key) const { return m.find(key) != m.end(); }
+  // Checks if the key exists in the table
+  bool has(const KeyT &key) const { return m.find(key) != m.end(); }
 
-    // Retrieves the value by key, returning std::nullopt if not found
-    std::optional<ValueT> get(const KeyT &key) const {
-        if (auto it = m.find(key); it != m.end()) {
-            return it->second;
-        }
-        return std::nullopt;
+  // Retrieves the value by key, returning std::nullopt if not found
+  std::optional<ValueT> get(const KeyT &key) const {
+    if (auto it = m.find(key); it != m.end()) {
+      return it->second;
     }
+    return std::nullopt;
+  }
 
-    // Returns the total number of unique keys mapped
-    int size() const { return m.size(); }
+  // Returns the total number of unique keys mapped
+  int size() const { return m.size(); }
 
-    // Returns the internal iteration index of a key, or -1 if not found
-    // Warning: order is unstable due to std::unordered_map hashing
-    int indexOf(const KeyT &key) const {
-        int index = 0;
-        for (const auto &[k, v] : m) {
-            if (k == key) return index;
-            index++;
-        }
-        return -1;
+  // Returns the internal iteration index of a key, or -1 if not found
+  // Warning: order is unstable due to std::unordered_map hashing
+  int indexOf(const KeyT &key) const {
+    int index = 0;
+    for (const auto &[k, v] : m) {
+      if (k == key)
+        return index;
+      index++;
     }
+    return -1;
+  }
 
-    // Retrieves both the value and its internal iteration index by key
-    // Warning: order is unstable due to std::unordered_map hashing
-    std::optional<std::pair<ValueT, int>> getWithIndex(const KeyT &key) const {
-        int index = 0;
-        for (const auto &a : m) {
-            if (a.first == key) {
-                return std::pair<ValueT, int>{a.second, index};
-            }
-            index++;
-        }
-        return std::nullopt;
+  // Retrieves both the value and its internal iteration index by key
+  // Warning: order is unstable due to std::unordered_map hashing
+  std::optional<std::pair<ValueT, int>> getWithIndex(const KeyT &key) const {
+    int index = 0;
+    for (const auto &a : m) {
+      if (a.first == key) {
+        return std::pair<ValueT, int>{a.second, index};
+      }
+      index++;
     }
+    return std::nullopt;
+  }
 };
 
 // max depends on language
@@ -487,3 +488,133 @@ template <typename T> void addMove(std::vector<T> &v, std::vector<T> &add) {
 }
 
 bool spanIncluding(std::string_view p, std::string_view pattern);
+int differentChars(std::string_view s);
+std::string string(ENUM_STRING e);
+std::string intToString(int v, char c = ',');
+
+class TableFormat {
+private:
+  std::vector<ENUM_STRING> m_en;
+  std::vector<int> m_width;
+  int m_rows;
+
+  template <typename T> std::string formatCell(const T &arg, size_t i) const {
+    using DecayedT = std::decay_t<T>;
+
+    // 1. If it's an ENUM_STRING, convert it to std::string using wordsBase
+    if constexpr (std::is_same_v<DecayedT, ENUM_STRING>) {
+      std::string word_str = ::string(arg);
+      return formatCell(word_str,
+                        i); // Recursively format the converted string
+    }
+    // 2. Standard formatting logic for all other types
+    else {
+      // If it's the last (+1) argument, print WITHOUT alignment
+      if (i == m_width.size()) {
+        return std::format("{}", arg);
+      }
+
+      if constexpr (std::is_floating_point_v<DecayedT>) {
+        // For double/float: right-align, width m_width[i], 2 decimal places
+        return std::format("{:>{}.2f}", arg, m_width[i]);
+      } else if constexpr (std::is_convertible_v<T, std::string_view>) {
+        return std::format("{:>{}}", arg, m_width[i]);
+      } else {
+        return std::format("{:>{}}", intToString(arg), m_width[i]);
+      }
+    }
+  }
+
+  // Helper function performing pack expansion using compile-time indices
+  template <typename Tuple, size_t... EnIndices, size_t... WidthIndices>
+  std::string createWithTitleImpl(Tuple &&t, std::index_sequence<EnIndices...>,
+                                  std::index_sequence<WidthIndices...>) {
+    constexpr size_t N = sizeof...(EnIndices);
+    // 1. Call init() by extracting the first N elements and the next N
+    // elements from the tuple We add N to WidthIndices to shift into the
+    // second half of the tuple
+    init({static_cast<ENUM_STRING>(std::get<EnIndices>(t))...},
+         {static_cast<int>(std::get<WidthIndices + N>(t))...});
+
+    // 2. Call string() with the very last element (index 2N)
+    return string(std::get<2 * N>(t));
+  }
+
+public:
+  TableFormat() {}
+  TableFormat(std::initializer_list<ENUM_STRING> en,
+              std::initializer_list<int> width) {
+    init(en, width);
+  }
+
+  int rows() const { return m_rows; }
+  void init(std::initializer_list<ENUM_STRING> en,
+            std::initializer_list<int> width) {
+    m_rows = 0;
+    m_en = en;
+    m_width = width;
+    assert(en.size() == width.size());
+    int i = -1;
+    for (auto a : en) {
+      i++;
+      m_width[i] = std::max(m_width[i], utf8Length(string(a)));
+    }
+  }
+
+  template <typename... Args> std::string string(Args... args) {
+    const size_t args_count = sizeof...(args);
+    size_t i = 0;
+    m_rows++;
+    if constexpr (args_count == 1) {
+      using FirstArgT =
+          std::decay_t<std::tuple_element_t<0, std::tuple<Args...>>>;
+      if constexpr (std::is_same_v<FirstArgT, ENUM_STRING>) {
+        ENUM_STRING en = [args...](auto first, auto...) {
+          return first;
+        }(args...);
+
+        std::string s;
+        for (; i <= std::size(m_en); ++i) {
+          s += (i ? " " : "");
+          s += formatCell(i == std::size(m_en) ? en : m_en[i], i);
+        }
+#ifdef NOGTK
+        return s;
+#else
+        return "<b>" + s + "</b>";
+#endif
+      }
+    }
+    assert(args_count == m_width.size() || args_count == m_width.size() + 1);
+
+    std::string s = "\n";
+
+    (
+        [&](const auto &arg) {
+          s += (i ? " " : "");
+          s += formatCell(arg, i);
+          i++;
+        }(args),
+        ...);
+    return s;
+  }
+
+  // New function: accepts an odd number of arguments (2n + 1)
+  template <typename... Args> std::string createWithTitle(Args... args) {
+    // Compile-time check ensuring the number of arguments is odd and at least
+    // 1
+    static_assert(sizeof...(Args) % 2 != 0,
+                  "Argument count must be odd (2n + 1)");
+
+    constexpr size_t N = (sizeof...(Args) - 1) / 2;
+
+    // Pack all arguments into a tuple for convenient slicing without copying
+    auto args_tuple = std::forward_as_tuple(args...);
+
+    // Call the private helper function, passing index sequences for packet
+    // splitting
+    return createWithTitleImpl(
+        args_tuple, std::make_index_sequence<N>{}, // Indices from 0 to N-1
+        std::make_index_sequence<N>{});            // Indices from N to 2N-1
+  }
+};
