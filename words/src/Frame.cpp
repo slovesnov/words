@@ -648,6 +648,11 @@ void Frame::setHelperPanel(bool ignoreStateBegin) {
     break;
 
   case MENU_REGULAR_EXPRESSIONS:
+  case MENU_CHARACTER_SEQUENCE:
+    if (m_menuClick == MENU_CHARACTER_SEQUENCE) {
+      addComboToHelper(SEARCH_IN_ANY_PLACE_OF_WORD, SEARCH_IN_END_OF_WORD, 0,
+                       COMBOBOX0);
+    }
     addComboLineToHelper(NUMBER_OF_MATCHES, 1, 10, 0, STRING_SIZE, true);
     break;
 
@@ -667,12 +672,6 @@ void Frame::setHelperPanel(bool ignoreStateBegin) {
         gtk_widget_set_halign(a, GTK_ALIGN_START);
       gtk_container_add(GTK_CONTAINER(m_helperUp), a);
     }
-    break;
-
-  case MENU_CHARACTER_SEQUENCE:
-    addComboToHelper(SEARCH_IN_ANY_PLACE_OF_WORD, SEARCH_IN_END_OF_WORD, 0,
-                     COMBOBOX0);
-    addComboLineToHelper(NUMBER_OF_MATCHES, 1, 10, 0, STRING_SIZE, true);
     break;
 
   case MENU_WORDS_SPLIT:
@@ -816,10 +815,12 @@ void Frame::addComboLineToHelper(int from, int to, int active, std::string s1,
       }
       updateRadioValue();
     }
+    // add(w, createSpin(ENUM_SPIN(SPIN0 + i), SpinData(from, to, active)));
     if (any) {
       add(w, createSpin(ENUM_SPIN(SPIN0 + i), SpinData(from, to, active)));
     } else {
-      add(w, createTextCombo(ENUM_COMBOBOX(COMBOBOX0 + i), from, to, active));
+      add(w, createTextCombo(ENUM_COMBOBOX(COMBOBOX0 + i), from, to,
+      active));
     }
   }
   if (!s3.empty()) {
@@ -1627,7 +1628,7 @@ GtkWidget *Frame::createSpin(ENUM_SPIN e, const SpinData &spinData) {
   return m_spin[e];
 }
 
-int Frame::getSpinValue(ENUM_SPIN e) {
+int Frame::getSpin(ENUM_SPIN e) {
   // double vd = gtk_spin_button_get_value(GTK_SPIN_BUTTON(m_spin[e]));
   return gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(m_spin[e]));
 }
@@ -1637,21 +1638,21 @@ void Frame::spinChanged(ENUM_SPIN e) {
   bool b =
       oneOf(m_menuClick, MENU_REGULAR_EXPRESSIONS, MENU_CHARACTER_SEQUENCE);
   // pr(!b, m_radioValue);
-    setDebounceTimer(e);//setSelectedRadioIndex so always setDebounceTimer
+  setDebounceTimer(e); // setRadio so always setDebounceTimer
   // if (!b || m_radioValue) {//todo
   //   setDebounceTimer(e);
   // }
   if (b) {
-    int v0 = getSpinValue(SPIN0);
-    int v1 = getSpinValue(SPIN1);
-    int v = getSpinValue(e);
+    int v0 = getSpin(SPIN0);
+    int v1 = getSpin(SPIN1);
+    int v = getSpin(e);
     auto o = e == SPIN0 ? SPIN1 : SPIN0;
     if (v0 > v1) {
       gtk_spin_button_set_value(GTK_SPIN_BUTTON(m_spin[o]), v);
     }
     if (m_menuClick == MENU_CHARACTER_SEQUENCE) {
       lockSignals();
-      setSelectedRadioIndex(1);
+      setRadio(1);
       unlockSignals();
     }
   }
@@ -1659,19 +1660,19 @@ void Frame::spinChanged(ENUM_SPIN e) {
 }
 
 void Frame::updateSpinValue(ENUM_SPIN e) {
-  //pr(magic_enum::enum_name(e), getSpinValue(e));
-  m_spinValue[e] = getSpinValue(e);
+  // pr(magic_enum::enum_name(e), getSpin(e));
+  m_spinValue[e] = getSpin(e);
 }
 
 void Frame::radioChanged() {
-  //pri;
+  // pri;
   updateRadioValue();
   job();
 }
 
-void Frame::updateRadioValue() { m_radioValue = getSelectedRadioIndex(); }
+void Frame::updateRadioValue() { m_radioValue = getRadio(); }
 
-int Frame::getSelectedRadioIndex() {
+int Frame::getRadio() {
   GSList *group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(m_radio));
   int total_buttons = g_slist_length(group);
   int reverse_index = 0;
@@ -1685,7 +1686,7 @@ int Frame::getSelectedRadioIndex() {
   return -1; // Fallback if none are selected
 }
 
-void Frame::setSelectedRadioIndex(int index) {
+void Frame::setRadio(int index) {
   GSList *group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(m_radio));
   int total_buttons = g_slist_length(group);
   int reverse_index = 0;

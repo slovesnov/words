@@ -289,15 +289,15 @@ public:
 
   // spin functons
   GtkWidget *createSpin(ENUM_SPIN e, const SpinData &spinData);
-  int getSpinValue(ENUM_SPIN e);
+  int getSpin(ENUM_SPIN e);
   void spinChanged(ENUM_SPIN e);
   void updateSpinValue(ENUM_SPIN e);
 
   // radio functions
   void radioChanged();
   void updateRadioValue();
-  int getSelectedRadioIndex();
-  void setSelectedRadioIndex(int index);
+  int getRadio();
+  void setRadio(int index);
 
   // button functions
   void clickButton(ENUM_BUTTON e);
