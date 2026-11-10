@@ -215,8 +215,7 @@ bool WordsBase::checkKeyboardWordComplex(const std::string &s) {
 
 bool WordsBase::checkPangram(const std::string &s) {
   int i = differentChars(s);
-  return i >= m_comboValue[COMBOBOX0] &&
-         i <= m_comboValue[COMBOBOX1];
+  return i >= m_comboValue[COMBOBOX0] && i <= m_comboValue[COMBOBOX1];
 }
 
 void WordsBase::checkTemplatePreProseeding() {
@@ -290,10 +289,10 @@ bool WordsBase::checkTemplate(const std::string &s) {
 }
 
 bool WordsBase::checkCharacterSequence(const std::string &s) {
-  auto j = m_comboValue[COMBOBOX2];
+  auto j = get(COMBOBOX0);
   if (j == 0) {
-    auto min = m_comboValue[COMBOBOX0];
-    auto max = m_comboValue[COMBOBOX1];
+    auto min = get(SPIN0);
+    auto max = get(SPIN1);
     j = 0;
     std::string::size_type pos = 0;
     while ((pos = s.find(m_ev, pos)) != std::string::npos) {
@@ -306,15 +305,11 @@ bool WordsBase::checkCharacterSequence(const std::string &s) {
       }
       pos += m_ev.length();
     }
-    return j >= min;
+    return m_radioValue && j >= min;
   } else if (j == 1) {
-    return s.compare(0, m_ev.length(), m_ev) == 0;
+    return s.starts_with(m_ev);
   } else {
-    unsigned i = s.length();
-    if (i < m_ev.length()) {
-      return false;
-    }
-    return s.compare(i - m_ev.length(), m_ev.length(), m_ev) == 0;
+    return s.ends_with(m_ev);
   }
 }
 
@@ -402,7 +397,7 @@ bool WordsBase::checkRegularExpression(const std::string &s, pcre2_code *re,
 
   int i = 0;
   size_t start_pos = 0;
-  const int max = m_comboValue[COMBOBOX1];
+  const int max = get(SPIN1);
   const size_t string_len = s.length();
 
   while (start_pos <= string_len && i <= max) {
@@ -414,6 +409,9 @@ bool WordsBase::checkRegularExpression(const std::string &s, pcre2_code *re,
     }
 
     i++;
+    if (i > max) {
+      return false;
+    }
 
     PCRE2_SIZE *ovector = pcre2_get_ovector_pointer(match_data);
     size_t start_match = ovector[0];
@@ -426,7 +424,7 @@ bool WordsBase::checkRegularExpression(const std::string &s, pcre2_code *re,
     }
   }
 
-  return i >= m_comboValue[COMBOBOX0] && i <= max;
+  return i >= get(SPIN0);
 }
 
 void WordsBase::checkKeyboardWordSimplePreProseeding() {
@@ -1423,7 +1421,7 @@ void WordsBase::clusterDiameterStatistics(int nthread) {
 void WordsBase::clusterStatisticsPreProseeding() {
   m_ss.clear(); // used in fillDictionaryLength() so clear
   m_iiv = {getWordLengthMap().begin(), getWordLengthMap().end()};
-  const bool finalRelease = 0;//todo
+  const bool finalRelease = 0; // todo
   if (finalRelease) {
     std::ranges::sort(m_iiv,
                       [](auto &a, auto &b) { return a.second > b.second; });
@@ -2173,6 +2171,7 @@ void WordsBase::run_thread(int nthread) {
 }
 
 void WordsBase::run(ENUM_JOB_TYPE e) {
+  // pr(get(SPIN0), get(SPIN1));
   m_addstatus = "";
   bool userbreak = false;
   // auto begin = clock();
@@ -2333,7 +2332,7 @@ std::string WordsBase::pairsToString(VectorStringString const &v, bool p) {
 }
 
 void WordsBase::updateProceedingText(std::string s, bool add) {
-  if(!s.empty()){
+  if (!s.empty()) {
     std::lock_guard<std::mutex> lock(m_mutex);
     SearchResult::out = (add ? SearchResult::out : "") + s;
   }

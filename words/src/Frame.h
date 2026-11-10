@@ -278,6 +278,7 @@ public:
 
   // spin functons
   GtkWidget *createSpin(ENUM_SPIN e, const SpinData &spinData);
+  int getSpinValue(ENUM_SPIN e);
   void spinChanged(ENUM_SPIN e);
   void updateSpinValue(ENUM_SPIN e);
 

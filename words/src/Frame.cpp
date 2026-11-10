@@ -675,7 +675,7 @@ void Frame::setHelperPanel(bool ignoreStateBegin) {
 
   case MENU_CHARACTER_SEQUENCE:
     addComboToHelper(SEARCH_IN_ANY_PLACE_OF_WORD, SEARCH_IN_END_OF_WORD, 0,
-                     COMBOBOX2);
+                     COMBOBOX0);
     addComboLineToHelper(NUMBER_OF_MATCHES, 1, 10, 0, STRING_SIZE, true);
     break;
 
@@ -820,7 +820,11 @@ void Frame::addComboLineToHelper(int from, int to, int active, std::string s1,
       }
       updateRadioValue();
     }
-    add(w, createTextCombo(ENUM_COMBOBOX(COMBOBOX0 + i), from, to, active));
+    if (any) {
+      add(w, createSpin(ENUM_SPIN(SPIN0 + i), SpinData(from, to, active)));
+    } else {
+      add(w, createTextCombo(ENUM_COMBOBOX(COMBOBOX0 + i), from, to, active));
+    }
   }
   if (!s3.empty()) {
     m_charactersLabel = createLabel(s3);
@@ -839,8 +843,6 @@ void Frame::addComboToHelper(ENUM_STRING from, ENUM_STRING to, int active,
 void Frame::comboChanged(ENUM_COMBOBOX e) {
   assert(e != COMBOBOX_SIZE);
   updateComboValue(e);
-  bool regexOrCharSequence =
-      oneOf(m_menuClick, MENU_REGULAR_EXPRESSIONS, MENU_CHARACTER_SEQUENCE);
 
   if (m_menuClick == MENU_CHARACTER_SEQUENCE && e == COMBOBOX2) {
     // visible is "any place of word"
@@ -851,8 +853,7 @@ void Frame::comboChanged(ENUM_COMBOBOX e) {
     updateCharactersLabel();
   }
 
-  if ((e == COMBOBOX0 || e == COMBOBOX1) &&
-      (regexOrCharSequence || FROM_TO_COMBO.has(m_menuClick))) {
+  if ((e == COMBOBOX0 || e == COMBOBOX1) && FROM_TO_COMBO.has(m_menuClick)) {
     if (getComboIndex(COMBOBOX0) > getComboIndex(COMBOBOX1)) {
       lockSignals();
       setComboIndex(e == COMBOBOX0 ? COMBOBOX1 : COMBOBOX0, getComboIndex(e));
@@ -863,7 +864,7 @@ void Frame::comboChanged(ENUM_COMBOBOX e) {
   if (m_menuClick == MENU_REGULAR_EXPRESSIONS) {
     skip = m_radioValue == 0;
   } else if (m_menuClick == MENU_CHARACTER_SEQUENCE) {
-    skip = e != COMBOBOX2 && m_radioValue == 0;
+    skip = e != COMBOBOX0 && m_radioValue == 0;
   }
 
   if (!skip) {
@@ -994,7 +995,12 @@ void Frame::debounceTimeout(ENUM_ENTRY e) {
     break;
 
   case SPIN_CHANGED:
-    updateProceedingThread();
+    if (oneOf(m_menuClick, MENU_CLUSTER_SIZE_STATISTICS,
+              MENU_CLUSTER_DIAMETER_STATISTICS)) {
+      updateProceedingThread();
+    } else {
+      job();
+    }
   }
 }
 
@@ -1611,8 +1617,8 @@ GtkWidget *Frame::createSpin(ENUM_SPIN e, const SpinData &spinData) {
 
   // Create the input field: (adjustment, climb_rate, digits)
   m_spin[e] = gtk_spin_button_new(adjustment, spinData.climb_rate, 0);
-  gtk_orientable_set_orientation(GTK_ORIENTABLE(m_spin[e]),
-                                 GTK_ORIENTATION_VERTICAL);
+  // gtk_orientable_set_orientation(GTK_ORIENTABLE(m_spin[e]),
+  //                                GTK_ORIENTATION_VERTICAL);
   gtk_spin_button_set_update_policy(GTK_SPIN_BUTTON(m_spin[e]),
                                     GTK_UPDATE_ALWAYS);
   // gtk_widget_set_size_request(m_spin[e], -1, 36);todo
@@ -1626,16 +1632,32 @@ GtkWidget *Frame::createSpin(ENUM_SPIN e, const SpinData &spinData) {
   return m_spin[e];
 }
 
+int Frame::getSpinValue(ENUM_SPIN e) {
+  // double vd = gtk_spin_button_get_value(GTK_SPIN_BUTTON(m_spin[e]));
+  return gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(m_spin[e]));
+}
+
 void Frame::spinChanged(ENUM_SPIN e) {
-  setDebounceTimer(SPIN_CHANGED);
+  // pr(magic_enum::enum_name(e));
+  bool b =
+      oneOf(m_menuClick, MENU_REGULAR_EXPRESSIONS, MENU_CHARACTER_SEQUENCE);
+  pr(b, m_radioValue);
+  if (!b || m_radioValue) {
+    setDebounceTimer(SPIN_CHANGED);
+  }
+  if (b) {
+    int v0 = getSpinValue(SPIN0);
+    int v1 = getSpinValue(SPIN1);
+    int v = getSpinValue(e);
+    auto o = e == SPIN0 ? SPIN1 : SPIN0;
+    if (v0 > v1) {
+      gtk_spin_button_set_value(GTK_SPIN_BUTTON(m_spin[o]), v);
+    }
+  }
   updateSpinValue(e);
 }
 
-void Frame::updateSpinValue(ENUM_SPIN e) {
-  // double vd = gtk_spin_button_get_value(GTK_SPIN_BUTTON(m_spin[e]));
-  int v = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(m_spin[e]));
-  m_spinValue[e] = v;
-}
+void Frame::updateSpinValue(ENUM_SPIN e) { m_spinValue[e] = getSpinValue(e); }
 
 void Frame::radioChanged() {
   updateRadioValue();

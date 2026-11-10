@@ -98,4 +98,6 @@ protected:
   bool createRegex(ENUM_ENTRY e, UniquePcre2Code &r, UniquePcre2MatchData &m);
 
   bool prepare();
+  int get(ENUM_COMBOBOX e);
+  int get(ENUM_SPIN e);
 };

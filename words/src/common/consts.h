@@ -161,9 +161,9 @@ const LookupTable<ENUM_MENU, ComboData> FROM_TO_COMBO = {
 
 const LookupTable<ENUM_MENU, SpinData> MENU_SPIN_DATA = {
     {{MENU_CLUSTER_SIZE_STATISTICS,
-      SpinData(MINIMUM_CLUSTER_SIZE, 0, 0, 10'000, 1, 5, 1)},
+      SpinData(MINIMUM_CLUSTER_SIZE, 1, 1, 10'000, 1, 5, 1)},
      {MENU_CLUSTER_DIAMETER_STATISTICS,
-      SpinData(MINIMUM_CLUSTER_DIAMETER, 0, 0, 10'000, 1, 5, 1)}}};
+      SpinData(MINIMUM_CLUSTER_DIAMETER, 1, 1, 10'000, 1, 5, 1)}}};
 
 const int UPDATEONLY_BUTTON = -1;
 const int INVERT_BUTTON = -2;

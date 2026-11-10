@@ -156,6 +156,26 @@ struct ComboData {
 struct SpinData {
   ENUM_STRING e;
   double initial, minimum, maximum, step_increment, page_increment, climb_rate;
+  SpinData(){}
+  SpinData(ENUM_STRING _e, double _initial, double _minimum, double _maximum,
+           double _step_increment, double _page_increment, double _climb_rate) {
+    init(_e, _initial, _minimum, _maximum, _step_increment, _page_increment,
+         _climb_rate);
+  }
+  SpinData(int from, int to, int active) {
+    init(STRING_SIZE, active, from, to, 1, 1, std::floor(std::sqrt(to - from)));
+  }
+  void init(ENUM_STRING _e, double _initial, double _minimum, double _maximum,
+            double _step_increment, double _page_increment,
+            double _climb_rate) {
+    e = _e;
+    initial = _initial;
+    minimum = _minimum;
+    maximum = _maximum;
+    step_increment = _step_increment;
+    page_increment = _page_increment;
+    climb_rate = _climb_rate;
+  }
 };
 
 class SearchResult {

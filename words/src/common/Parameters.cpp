@@ -233,3 +233,7 @@ bool Parameters::prepare() {
 
   return true;
 }
+
+int Parameters::get(ENUM_COMBOBOX e) { return m_comboValue[e]; }
+
+int Parameters::get(ENUM_SPIN e) { return m_spinValue[e]; }
