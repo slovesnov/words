@@ -418,6 +418,6 @@ std::string clusterString(const MapIntInt &m, int minsize) {
   return s;
 }
 
-gpointer pack(ENUM_ENTRY e) { return pack(e, PACKTYPE_ENTRY); }
-gpointer pack(ENUM_TEXTVIEW e) { return pack(e, PACKTYPE_TEXTVIEW); }
-gpointer pack(ENUM_SPIN e) { return pack(e, PACKTYPE_SPIN); }
+gpointer pack(ENUM_ENTRY e) { return pack(PACKTYPE_ENTRY, e); }
+gpointer pack(ENUM_TEXTVIEW e) { return pack(PACKTYPE_TEXTVIEW, e); }
+gpointer pack(ENUM_SPIN e) { return pack(PACKTYPE_SPIN, e); }

@@ -2171,7 +2171,8 @@ void WordsBase::run_thread(int nthread) {
 }
 
 void WordsBase::run(ENUM_JOB_TYPE e) {
-  // pr(get(SPIN0), get(SPIN1));
+  pr(get(SPIN0), get(SPIN1), m_radioValue, get(COMBOBOX0), localeToUtf8(m_ev),
+     m_ev.size());
   m_addstatus = "";
   bool userbreak = false;
   // auto begin = clock();

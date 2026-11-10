@@ -15,7 +15,6 @@
 const char markTag[] = "mark";
 const char activeTag[] = "active";
 const char CERROR[] = "cerror";
-const int TIMER = 500; // milliseconds
 const int TIMER_BUTTON = 1000;
 const int MIN_LEFT_PANEL_WIDTH = 300;
 const int MIN_RIGHT_PANEL_WIDTH = 300;
@@ -966,19 +965,12 @@ void Frame::newVersionMessage() {
   }
 }
 
-void Frame::setDebounceTimer(gpointer data) {
-  if (m_debounceTimerId) {
-    g_source_remove(m_debounceTimerId);
-  }
-  m_debounceTimerId = g_timeout_add(TIMER, on_debounce_timeout, data);
-}
-
 void Frame::debounceTimeout(gpointer data) {
   m_debounceTimerId = 0;
-  auto p = unpack<int, ENUM_PACKTYPE>(data);
-  pr(magic_enum::enum_name(p.second));
-  if (p.second == PACKTYPE_ENTRY) {
-    ENUM_ENTRY e=ENUM_ENTRY(p.first);
+  auto p = unpack<ENUM_PACKTYPE, int>(data);
+  pr(magic_enum::enum_name(p.first));
+  if (p.first == PACKTYPE_ENTRY) {
+    ENUM_ENTRY e = ENUM_ENTRY(p.second);
     switch (e) {
     case ENTRY_TEMPLATE:
       job();
@@ -997,7 +989,7 @@ void Frame::debounceTimeout(gpointer data) {
     default:
       assert(0);
     }
-  } else if (p.second == PACKTYPE_TEXTVIEW) {
+  } else if (p.first == PACKTYPE_TEXTVIEW) {
     job();
   } else {
     if (oneOf(m_menuClick, MENU_CLUSTER_SIZE_STATISTICS,
@@ -1024,7 +1016,7 @@ void Frame::entryChanged(ENUM_ENTRY e) {
   }
 
   if (!isSignalsLocked()) {
-    setDebounceTimer(pack(e));
+    setDebounceTimer(e);
   }
 }
 
@@ -1248,7 +1240,7 @@ void Frame::textviewChanged(ENUM_TEXTVIEW e) {
   if (e == TEXTVIEW_HELPER) {
     updateTextviewValue(e);
     if (!isSignalsLocked()) {
-      setDebounceTimer(pack(e));
+      setDebounceTimer(e);
     }
   }
 }
@@ -1646,9 +1638,10 @@ void Frame::spinChanged(ENUM_SPIN e) {
   // pr(magic_enum::enum_name(e));
   bool b =
       oneOf(m_menuClick, MENU_REGULAR_EXPRESSIONS, MENU_CHARACTER_SEQUENCE);
-  pr(b, m_radioValue);
+  pr(!b, m_radioValue);
   if (!b || m_radioValue) {
-    setDebounceTimer(pack(e));
+    pri;
+    setDebounceTimer(e);
   }
   if (b) {
     int v0 = getSpinValue(SPIN0);
@@ -1662,7 +1655,10 @@ void Frame::spinChanged(ENUM_SPIN e) {
   updateSpinValue(e);
 }
 
-void Frame::updateSpinValue(ENUM_SPIN e) { m_spinValue[e] = getSpinValue(e); }
+void Frame::updateSpinValue(ENUM_SPIN e) {
+  pr(magic_enum::enum_name(e), getSpinValue(e));
+  m_spinValue[e] = getSpinValue(e);
+}
 
 void Frame::radioChanged() {
   updateRadioValue();

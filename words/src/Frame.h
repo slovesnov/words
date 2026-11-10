@@ -12,8 +12,11 @@
 #include "consts.h"
 #include <thread>
 
+gboolean on_debounce_timeout(gpointer data);
+
 class Frame : Parameters {
   static const int COMBOLINE_MARGIN = 3;
+  static const int TIMER = 500; // milliseconds
 
   GtkWidget *m_widget;
   GtkWidget *m_menu;
@@ -204,7 +207,17 @@ public:
   void entryChanged(ENUM_ENTRY e);
   void updateEntryValue(ENUM_ENTRY e);
   std::string normalizeString(ENUM_ENTRY e, std::string const &q);
-  void setDebounceTimer(gpointer data);
+
+  template<typename T>
+  void setDebounceTimer(T t) {
+    if (m_debounceTimerId) {
+      g_source_remove(m_debounceTimerId);
+    }
+    pri;
+    pack(t);
+    m_debounceTimerId = g_timeout_add(TIMER, on_debounce_timeout, pack(t));
+  }
+
   void debounceTimeout(gpointer data);
   template <typename T> void setPlaceholder(ENUM_ENTRY e, T t) {
     gtk_entry_set_placeholder_text(GTK_ENTRY(m_entry[e]), string(t).c_str());

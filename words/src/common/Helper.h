@@ -660,6 +660,7 @@ template <typename A, typename B> std::pair<A, B> unpack(gpointer data) {
 
 template <typename A, typename B> gpointer pack(A a, B b) {
   int packed = (static_cast<int>(b) << PACK_BITS) | static_cast<int>(a);
+  pr(int(a),int(b),packed)
   return GINT_TO_POINTER(packed);
 }
 
