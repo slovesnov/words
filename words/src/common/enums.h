@@ -292,8 +292,6 @@ enum ENUM_PACKTYPE {
 
   PACKTYPE_SIZE
 };
-const int PACK_BITS = 3;
-static_assert(PACKTYPE_SIZE <= (1 << PACK_BITS));
 
 enum ENUM_STATE {
   STATE_BEGIN,
@@ -304,7 +302,6 @@ enum ENUM_STATE {
 
   STATE_SIZE
 };
-static_assert(STATE_SIZE <= (1 << PACK_BITS));
 
 #ifdef NOGTK
 enum ENUM_POST {

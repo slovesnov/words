@@ -650,6 +650,9 @@ public:
 
 std::string clusterString(const MapIntInt &m, int minsize = 0);
 
+constexpr int PACK_BITS =
+    std::bit_width(static_cast<unsigned>(std::max(int(PACKTYPE_SIZE), int(STATE_SIZE)) - 1));
+    
 // A - low, B - high
 template <typename A, typename B> std::pair<A, B> unpack(gpointer data) {
   int packed = GPOINTER_TO_INT(data);
@@ -660,7 +663,7 @@ template <typename A, typename B> std::pair<A, B> unpack(gpointer data) {
 
 template <typename A, typename B> gpointer pack(A a, B b) {
   int packed = (static_cast<int>(b) << PACK_BITS) | static_cast<int>(a);
-  pr(int(a),int(b),packed)
+  // pr(int(a),int(b),packed)
   return GINT_TO_POINTER(packed);
 }
 

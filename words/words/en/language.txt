@@ -194,8 +194,8 @@ total
 b-factor
 N
 words
-Words of the same length can be divided into clusters. Words belong to the same cluster if they can be connected by a chain; see <i>search chains of words</i>. Statistics for all word lengths are displayed as <i>[word length]</i> followed by a set of pairs: <i>cluster size: number of clusters</i>.
-Words of the same length can be divided into clusters. Words belong to the same cluster if they can be connected by a chain; see <i>search chains of words</i>. The cluster diameter is defined as the maximum chain length. Statistics for all word lengths are displayed as <i>[word length]</i>, followed by sets of <i>{cluster diameter}</i> and a set of pairs: <i>cluster size: number of clusters</i>.
+Words of the same length can be divided into clusters. Words belong to the same cluster if they can be connected by a chain; see <i>search chains of words</i>. Statistics for all word lengths are displayed as <i>[word length]</i> followed by a set of pairs: <i>cluster size: number of clusters</i>. All numbers are formatted with a comma as the thousands separator.
+Words of the same length can be divided into clusters. Words belong to the same cluster if they can be connected by a chain; see <i>search chains of words</i>. The cluster diameter is defined as the maximum chain length. Statistics for all word lengths are displayed as <i>[word length]</i>, followed by sets of <i>{cluster diameter}</i> and a set of pairs: <i>cluster size: number of clusters</i>. All numbers are formatted with a comma as the thousands separator.
 text
 visuals
 logarithm of letter frequency

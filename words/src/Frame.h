@@ -213,8 +213,6 @@ public:
     if (m_debounceTimerId) {
       g_source_remove(m_debounceTimerId);
     }
-    pri;
-    pack(t);
     m_debounceTimerId = g_timeout_add(TIMER, on_debounce_timeout, pack(t));
   }
 
@@ -299,6 +297,7 @@ public:
   void radioChanged();
   void updateRadioValue();
   int getSelectedRadioIndex();
+  void setSelectedRadioIndex(int index);
 
   // button functions
   void clickButton(ENUM_BUTTON e);

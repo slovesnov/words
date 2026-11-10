@@ -65,8 +65,9 @@ void spin_changed(GtkSpinButton *spin_button, ENUM_SPIN e) {
 }
 
 void radio_changed(GtkWidget *radio, gpointer) {
-  // on change radid, got 2 signals. One radio became active, another not active
-  if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio))) {
+  // on change radio, got 2 signals. One radio became active, another not active
+  if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(radio)) &&
+      !frame->isSignalsLocked()) {
     frame->radioChanged();
   }
 }
@@ -107,10 +108,8 @@ gboolean on_debounce_timeout(gpointer data) {
 }
 
 gboolean update_status(gpointer data) {
-  int packed = GPOINTER_TO_INT(data);
-  ENUM_STATE state = static_cast<ENUM_STATE>(packed & STATE_MASK);
-  ENUM_JOB_TYPE job = static_cast<ENUM_JOB_TYPE>(packed >> STATE_BITS);
-  frame->updateStatus(state, job);
+  auto p = unpack<ENUM_STATE, ENUM_JOB_TYPE>(data);
+  frame->updateStatus(p.first, p.second);
   return G_SOURCE_REMOVE;
 }
 
@@ -841,7 +840,7 @@ void Frame::comboChanged(ENUM_COMBOBOX e) {
   assert(e != COMBOBOX_SIZE);
   updateComboValue(e);
 
-  if (m_menuClick == MENU_CHARACTER_SEQUENCE && e == COMBOBOX2) {
+  if (m_menuClick == MENU_CHARACTER_SEQUENCE && e == COMBOBOX0) {
     // visible is "any place of word"
     gtk_widget_set_visible(m_comboline, getComboIndex(e) == 0);
   }
@@ -968,7 +967,7 @@ void Frame::newVersionMessage() {
 void Frame::debounceTimeout(gpointer data) {
   m_debounceTimerId = 0;
   auto p = unpack<ENUM_PACKTYPE, int>(data);
-  pr(magic_enum::enum_name(p.first));
+  // pr(magic_enum::enum_name(p.first));
   if (p.first == PACKTYPE_ENTRY) {
     ENUM_ENTRY e = ENUM_ENTRY(p.second);
     switch (e) {
@@ -1512,9 +1511,7 @@ void Frame::job(ENUM_JOB_TYPE e) {
   }
   m_managerThread = std::jthread([this, e](std::stop_token manager_token) {
     if (e != JOB_TYPE_STOP) {
-      int packed = (static_cast<int>(e) << STATE_BITS) |
-                   static_cast<int>(STATE_PROCEEDING);
-      g_idle_add_full(G_PRIORITY_HIGH, update_status, GINT_TO_POINTER(packed),
+      g_idle_add_full(G_PRIORITY_HIGH, update_status, pack(STATE_PROCEEDING, e),
                       NULL);
     }
     if (m_thread.joinable()) {
@@ -1626,6 +1623,7 @@ GtkWidget *Frame::createSpin(ENUM_SPIN e, const SpinData &spinData) {
                      gtk_spin_button_update(GTK_SPIN_BUTTON(editable));
                    }),
                    NULL);
+  updateSpinValue(e);
   return m_spin[e];
 }
 
@@ -1638,11 +1636,11 @@ void Frame::spinChanged(ENUM_SPIN e) {
   // pr(magic_enum::enum_name(e));
   bool b =
       oneOf(m_menuClick, MENU_REGULAR_EXPRESSIONS, MENU_CHARACTER_SEQUENCE);
-  pr(!b, m_radioValue);
-  if (!b || m_radioValue) {
-    pri;
-    setDebounceTimer(e);
-  }
+  // pr(!b, m_radioValue);
+    setDebounceTimer(e);//setSelectedRadioIndex so always setDebounceTimer
+  // if (!b || m_radioValue) {//todo
+  //   setDebounceTimer(e);
+  // }
   if (b) {
     int v0 = getSpinValue(SPIN0);
     int v1 = getSpinValue(SPIN1);
@@ -1651,16 +1649,22 @@ void Frame::spinChanged(ENUM_SPIN e) {
     if (v0 > v1) {
       gtk_spin_button_set_value(GTK_SPIN_BUTTON(m_spin[o]), v);
     }
+    if (m_menuClick == MENU_CHARACTER_SEQUENCE) {
+      lockSignals();
+      setSelectedRadioIndex(1);
+      unlockSignals();
+    }
   }
   updateSpinValue(e);
 }
 
 void Frame::updateSpinValue(ENUM_SPIN e) {
-  pr(magic_enum::enum_name(e), getSpinValue(e));
+  //pr(magic_enum::enum_name(e), getSpinValue(e));
   m_spinValue[e] = getSpinValue(e);
 }
 
 void Frame::radioChanged() {
+  //pri;
   updateRadioValue();
   job();
 }
@@ -1679,6 +1683,20 @@ int Frame::getSelectedRadioIndex() {
     reverse_index++;
   }
   return -1; // Fallback if none are selected
+}
+
+void Frame::setSelectedRadioIndex(int index) {
+  GSList *group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(m_radio));
+  int total_buttons = g_slist_length(group);
+  int reverse_index = 0;
+  for (GSList *l = group; l != NULL; l = l->next) {
+    if (((total_buttons - 1) - reverse_index) == index) {
+      gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(l->data), TRUE);
+      updateRadioValue();
+      return;
+    }
+    reverse_index++;
+  }
 }
 
 void Frame::clickButton(ENUM_BUTTON e) {
