@@ -102,10 +102,8 @@ gboolean on_key_press(GtkWidget *widget, GdkEventKey *event,
   return FALSE;
 }
 
-gboolean on_debounce_timeout(gpointer user_data) {
-  ENUM_ENTRY e = ENUM_ENTRY(GPOINTER_TO_INT(user_data));
-  // pr(magic_enum::enum_name(e));
-  frame->debounceTimeout(e);
+gboolean on_debounce_timeout(gpointer data) {
+  frame->debounceTimeout(data);
   return G_SOURCE_REMOVE;
 }
 
@@ -968,33 +966,40 @@ void Frame::newVersionMessage() {
   }
 }
 
-void Frame::setDebounceTimer(ENUM_ENTRY e) {
+void Frame::setDebounceTimer(gpointer data) {
   if (m_debounceTimerId) {
     g_source_remove(m_debounceTimerId);
   }
-  m_debounceTimerId =
-      g_timeout_add(TIMER, on_debounce_timeout, GINT_TO_POINTER(e));
+  m_debounceTimerId = g_timeout_add(TIMER, on_debounce_timeout, data);
 }
 
-void Frame::debounceTimeout(ENUM_ENTRY e) {
+void Frame::debounceTimeout(gpointer data) {
   m_debounceTimerId = 0;
+  auto p = unpack<int, ENUM_PACKTYPE>(data);
+  pr(magic_enum::enum_name(p.second));
+  if (p.second == PACKTYPE_ENTRY) {
+    ENUM_ENTRY e=ENUM_ENTRY(p.first);
+    switch (e) {
+    case ENTRY_TEMPLATE:
+      job();
+      break;
 
-  switch (e) {
-  case ENTRY_TEMPLATE:
-    job();
-    break;
+    case ENTRY_SEARCH:
+      updateTags(0);
+      break;
 
-  case ENTRY_SEARCH:
-    updateTags(0);
-    break;
+    case ENTRY_FILTER:
+      if (m_regex[ENTRY_FILTER]) {
+        job(JOB_TYPE_FILTER);
+      }
+      break;
 
-  case ENTRY_FILTER:
-    if (m_regex[ENTRY_FILTER]) {
-      job(JOB_TYPE_FILTER);
+    default:
+      assert(0);
     }
-    break;
-
-  case SPIN_CHANGED:
+  } else if (p.second == PACKTYPE_TEXTVIEW) {
+    job();
+  } else {
     if (oneOf(m_menuClick, MENU_CLUSTER_SIZE_STATISTICS,
               MENU_CLUSTER_DIAMETER_STATISTICS)) {
       updateProceedingThread();
@@ -1019,7 +1024,7 @@ void Frame::entryChanged(ENUM_ENTRY e) {
   }
 
   if (!isSignalsLocked()) {
-    setDebounceTimer(e);
+    setDebounceTimer(pack(e));
   }
 }
 
@@ -1243,7 +1248,7 @@ void Frame::textviewChanged(ENUM_TEXTVIEW e) {
   if (e == TEXTVIEW_HELPER) {
     updateTextviewValue(e);
     if (!isSignalsLocked()) {
-      setDebounceTimer(TEXTVIEW_CHANGED);
+      setDebounceTimer(pack(e));
     }
   }
 }
@@ -1643,7 +1648,7 @@ void Frame::spinChanged(ENUM_SPIN e) {
       oneOf(m_menuClick, MENU_REGULAR_EXPRESSIONS, MENU_CHARACTER_SEQUENCE);
   pr(b, m_radioValue);
   if (!b || m_radioValue) {
-    setDebounceTimer(SPIN_CHANGED);
+    setDebounceTimer(pack(e));
   }
   if (b) {
     int v0 = getSpinValue(SPIN0);

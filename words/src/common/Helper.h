@@ -156,7 +156,7 @@ struct ComboData {
 struct SpinData {
   ENUM_STRING e;
   double initial, minimum, maximum, step_increment, page_increment, climb_rate;
-  SpinData(){}
+  SpinData() {}
   SpinData(ENUM_STRING _e, double _initial, double _minimum, double _maximum,
            double _step_increment, double _page_increment, double _climb_rate) {
     init(_e, _initial, _minimum, _maximum, _step_increment, _page_increment,
@@ -649,3 +649,20 @@ public:
 };
 
 std::string clusterString(const MapIntInt &m, int minsize = 0);
+
+// A - low, B - high
+template <typename A, typename B> std::pair<A, B> unpack(gpointer data) {
+  int packed = GPOINTER_TO_INT(data);
+  A a = static_cast<A>(packed & ((1 << PACK_BITS) - 1));
+  B b = static_cast<B>(packed >> PACK_BITS);
+  return {a, b};
+}
+
+template <typename A, typename B> gpointer pack(A a, B b) {
+  int packed = (static_cast<int>(b) << PACK_BITS) | static_cast<int>(a);
+  return GINT_TO_POINTER(packed);
+}
+
+gpointer pack(ENUM_ENTRY e);
+gpointer pack(ENUM_TEXTVIEW e);
+gpointer pack(ENUM_SPIN e);

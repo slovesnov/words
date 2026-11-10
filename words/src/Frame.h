@@ -204,8 +204,8 @@ public:
   void entryChanged(ENUM_ENTRY e);
   void updateEntryValue(ENUM_ENTRY e);
   std::string normalizeString(ENUM_ENTRY e, std::string const &q);
-  void setDebounceTimer(ENUM_ENTRY e);
-  void debounceTimeout(ENUM_ENTRY e);
+  void setDebounceTimer(gpointer data);
+  void debounceTimeout(gpointer data);
   template <typename T> void setPlaceholder(ENUM_ENTRY e, T t) {
     gtk_entry_set_placeholder_text(GTK_ENTRY(m_entry[e]), string(t).c_str());
   }
