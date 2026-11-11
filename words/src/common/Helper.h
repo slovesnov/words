@@ -164,7 +164,6 @@ public:
   std::array<double, LANGUAGES> maximum;
   SpinData() {}
 
-  // todo
   SpinData(int _initial, int _minimum,
            const std::array<double, LANGUAGES> &_maximum, ENUM_STRING _e,
            ENUM_STRING _e1, ENUM_STRING _e2) {
@@ -175,6 +174,14 @@ public:
          std::floor(std::sqrt(_maximum[0] - _minimum)));
   }
 
+  SpinData(double _initial, double _minimum, double _maximum,
+           double _step_increment = 1, double _page_increment = 1,
+           double _climb_rate = 1) {
+    e1 = e2 = STRING_SIZE;
+    maximum.fill(_maximum);
+    init(STRING_SIZE, _initial, _minimum, _step_increment, _page_increment, _climb_rate);
+  }
+
   SpinData(ENUM_STRING _e, double _initial, double _minimum, double _maximum,
            double _step_increment = 1, double _page_increment = 1,
            double _climb_rate = 1) {
@@ -183,11 +190,11 @@ public:
     init(_e, _initial, _minimum, _step_increment, _page_increment, _climb_rate);
   }
 
-  SpinData(ENUM_STRING _e, ENUM_STRING _e1, double _initial, double _minimum,
+  SpinData(ENUM_STRING _e, ENUM_STRING _e1, ENUM_STRING _e2, double _initial, double _minimum,
            double _maximum, double _step_increment = 1,
            double _page_increment = 1, double _climb_rate = 1) {
     e1 = _e1;
-    e2 = STRING_SIZE;
+    e2 = _e2;
     maximum.fill(_maximum);
     init(_e, _initial, _minimum, _step_increment, _page_increment, _climb_rate);
   }

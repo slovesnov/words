@@ -943,8 +943,8 @@ void WordsBase::showLongestDoubleWordSequence() {
 #endif
 
 void WordsBase::findAnagram(int nthread) {
-      const int min = get(SPIN0);
-    const int max = get(SPIN1);
+  const int min = get(SPIN0);
+  const int max = get(SPIN1);
   auto [it, end] = iterators(nthread);
   auto &local_map = m_anagrams[nthread];
   local_map.clear();
@@ -978,8 +978,8 @@ void WordsBase::anagramsPostProseeding() {
 }
 
 void WordsBase::findSimpleWordSequence(int nthread) {
-    const int min = get(SPIN0);
-    const int max = get(SPIN1);
+  const int min = get(SPIN0);
+  const int max = get(SPIN1);
   int i = min - 1, j;
   std::string s;
   auto &v = m_ma[nthread];
@@ -1009,8 +1009,8 @@ void WordsBase::findSimpleWordSequence(int nthread) {
 }
 
 void WordsBase::findDoubleWordSequence(int nthread) {
-    const int min = get(SPIN0);
-    const int max = get(SPIN1);
+  const int min = get(SPIN0);
+  const int max = get(SPIN1);
   int i = min - 1, j;
   std::string q, s, t;
   auto &v = m_ma[nthread];
@@ -1059,8 +1059,8 @@ void WordsBase::findDoubleWordSequence(int nthread) {
 }
 
 void WordsBase::simpleDoubleWordSequencePostProseeding() {
-    const int min = get(SPIN0);
-    const int max = get(SPIN1);
+  const int min = get(SPIN0);
+  const int max = get(SPIN1);
   int n;
   for (n = 0; n <= max - min; n++) {
     auto &map = m_ma[0][n];
@@ -1792,7 +1792,7 @@ void WordsBase::findWordsSplit(int nthread) {
   m_thread_result[nthread].clear();
   for (; it != end; it++) {
     auto const &e = *it;
-    if (int(e.size()) != m_comboValue[COMBOBOX0]) {
+    if (int(e.size()) != get(SPIN0)) {
       continue;
     }
     t = "";
@@ -1823,7 +1823,6 @@ void WordsBase::findWordsSplit(int nthread) {
       }
     }
     if (words) {
-      // m_result.push_back(SearchResult(t, e.length(), words));
       m_thread_result[nthread].push_back(SearchResult(t, e.length(), words));
     }
     RETURN_ON_USER_BREAK

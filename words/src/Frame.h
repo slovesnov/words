@@ -15,7 +15,7 @@
 gboolean on_debounce_timeout(gpointer data);
 
 class Frame : Parameters {
-  static const int COMBOLINE_MARGIN = 3;
+  static constexpr int COMBOLINE_MARGIN = 3;
   static const int TIMER = 500; // milliseconds
 
   GtkWidget *m_widget;
@@ -119,13 +119,9 @@ private:
     return add(w, std::forward<T>(p)...);
   }
 
-  void addRow(GtkWidget *container, int margin, auto &&...args) {
-    GtkWidget *row = createBox(GTK_ORIENTATION_HORIZONTAL, margin,
-                               std::forward<decltype(args)>(args)...);
-    gtk_container_add(GTK_CONTAINER(container), row);
-  }
-
+  void addRow(GtkWidget *container, int margin, auto &&...args);
   void addUp(GtkWidget *w);
+  void addUp(auto &&...args);
 
 public:
   Frame();
@@ -185,7 +181,6 @@ public:
     return createTextCombo(e, fromTo(from, to), active);
   }
   void comboChanged(ENUM_COMBOBOX e);
-  ENUM_COMBOBOX getLastCombobox();
   // end combobox finctions
 
   // entry functions
@@ -277,6 +272,7 @@ public:
   int getSpin(ENUM_SPIN e);
   void spinChanged(ENUM_SPIN e);
   void updateSpinValue(ENUM_SPIN e);
+  ENUM_SPIN getLastSpin();
 
   // radio functions
   void radioChanged();
