@@ -627,14 +627,17 @@ void Frame::setHelperPanel(bool ignoreStateBegin) {
   }
 
   if (auto it = MENU_WITH_ENTRY.get(m_menuClick)) {
-    w = createBox(GTK_ORIENTATION_HORIZONTAL, 3, MENU_SEARCH, false,
-                  createEntry(ENTRY_TEMPLATE, *it), true);
-    gtk_container_add(GTK_CONTAINER(m_helperUp), w);
+    addUp(createBox(GTK_ORIENTATION_HORIZONTAL, 3, MENU_SEARCH, false,
+                    createEntry(ENTRY_TEMPLATE, *it), true));
+  }
+
+  if (m_menuClick == MENU_CHARACTER_SEQUENCE) { // before MINMAX_SPIN
+    addComboToHelper(SEARCH_IN_ANY_PLACE_OF_WORD, SEARCH_IN_END_OF_WORD, 0,
+                     COMBOBOX0);
   }
 
   if (auto it = MINMAX_SPIN.get(m_menuClick)) {
-    addComboLineToHelper(string(it->s1, it->s2), it->min,
-                         it->max[getDictionaryIndex()], it->active, it->send);
+    addComboLineToHelper(*it);
   }
 
   if (auto it = MENU_SPIN_DATA.get(m_menuClick)) {
@@ -647,18 +650,9 @@ void Frame::setHelperPanel(bool ignoreStateBegin) {
     addComboToHelper(TEMPLATE1, TEMPLATE3, 0);
     break;
 
-  case MENU_REGULAR_EXPRESSIONS:
-  case MENU_CHARACTER_SEQUENCE:
-    if (m_menuClick == MENU_CHARACTER_SEQUENCE) {
-      addComboToHelper(SEARCH_IN_ANY_PLACE_OF_WORD, SEARCH_IN_END_OF_WORD, 0,
-                       COMBOBOX0);
-    }
-    addComboLineToHelper(NUMBER_OF_MATCHES, 1, 10, 0, STRING_SIZE, true);
-    break;
-
   case MENU_MODIFICATION:
     createCheck(EVERY_MODIFICATION_CHANGES_WORD, true);
-    gtk_container_add(GTK_CONTAINER(m_helperUp), m_check);
+    addUp(m_check);
     break;
 
   case MENU_CHAIN:
@@ -670,18 +664,18 @@ void Frame::setHelperPanel(bool ignoreStateBegin) {
       i++;
       if (!i)
         gtk_widget_set_halign(a, GTK_ALIGN_START);
-      gtk_container_add(GTK_CONTAINER(m_helperUp), a);
+      addUp(a);
     }
     break;
 
-  case MENU_WORDS_SPLIT:
-    m_charactersLabel = createLabel("");
-    w = createBox(GTK_ORIENTATION_HORIZONTAL, COMBOLINE_MARGIN,
-                  string(LENGTH, OF_WORD), true,
-                  createTextCombo(COMBOBOX0, 6, 20, 7 - 6), true,
-                  m_charactersLabel, true);
-    gtk_container_add(GTK_CONTAINER(m_helperUp), w);
-    break;
+    // case MENU_WORDS_SPLIT:
+    //   m_charactersLabel = createLabel("");
+    //   w = createBox(GTK_ORIENTATION_HORIZONTAL, COMBOLINE_MARGIN,
+    //                 string(LENGTH, OF_WORD), true,
+    //                 createTextCombo(COMBOBOX0, 6, 20, 7 - 6), true,
+    //                 m_charactersLabel, true);
+    //   addUp(w);
+    //   break;
 
   case MENU_CONSONANT_VOWEL_SEQUENCE:
     w = createBox(GTK_ORIENTATION_HORIZONTAL, COMBOLINE_MARGIN,
@@ -691,7 +685,7 @@ void Frame::setHelperPanel(bool ignoreStateBegin) {
 
                   createTextCombo(COMBOBOX1, 3, 10, 0), true,
                   createTextCombo(COMBOBOX2, VOWELS, CONSONANTS, 0), true);
-    gtk_container_add(GTK_CONTAINER(m_helperUp), w);
+    addUp(w);
     break;
 
   case MENU_DENSITY:
@@ -699,7 +693,7 @@ void Frame::setHelperPanel(bool ignoreStateBegin) {
                   createTextCombo(COMBOBOX0, 0, 25, 25), true, "%", true,
                   createTextCombo(COMBOBOX1, VOWELS, CONSONANTS, 0), true,
                   CHARACTERS, true);
-    gtk_container_add(GTK_CONTAINER(m_helperUp), w);
+    addUp(w);
     break;
   default:;
   }
@@ -734,10 +728,12 @@ void Frame::updateDictionary(bool change) {
   if (auto it = MINMAX_SPIN.get(m_menuClick)) {
     for (auto e : {SPIN0, SPIN1}) {
       auto v = getSpin(e);
-      pr(it->max[getDictionaryIndex()])
-      gtk_spin_button_set_range(GTK_SPIN_BUTTON(m_spin[e]), it->min, it->max[getDictionaryIndex()]);
+      pr(it->maximum[getDictionaryIndex()]);
+      // todo+-
+      gtk_spin_button_set_range(GTK_SPIN_BUTTON(m_spin[e]), it->minimum,
+                                it->maximum[getDictionaryIndex()]);
       auto v1 = getSpin(e);
-      if(v1!=v){
+      if (v1 != v) {
         pri;
         updateSpinValue(e);
       }
@@ -802,12 +798,16 @@ GtkWidget *Frame::createTextCombo(ENUM_COMBOBOX e, VString v, int active) {
   return w;
 }
 
-void Frame::addComboLineToHelper(int from, int to, int active, std::string s1,
-                                 std::string s2, std::string s3, bool any) {
+void Frame::addComboLineToHelper(const SpinData &spinData) {
   int i, j;
+  const bool any = spinData.e == NUMBER_OF_MATCHES;
+  // pr(any, magic_enum::enum_name(spinData.e1),
+  //    magic_enum::enum_name(spinData.e2));
   GtkWidget *w = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, COMBOLINE_MARGIN), *r;
-  for (i = 0; i < 2; i++) {
-    add(w, i == 0 ? s1 + (any ? "" : " " + string(FROM)) : s2);
+  for (i = 0; i < (oneOfMenu(MENU_WORDS_SPLIT) ? 1 : 2) ; i++) {
+    add(w, i == 0 ? string(spinData.e) +
+                        (any ? "" : " " + string(spinData.e1, FROM))
+                  : string(TO));
     if (!i && any) {
       for (j = 0; j < 2; j++) {
         if (j == 0) {
@@ -822,26 +822,20 @@ void Frame::addComboLineToHelper(int from, int to, int active, std::string s1,
       }
       updateRadioValue();
     }
-    add(w, createSpin(ENUM_SPIN(SPIN0 + i), SpinData(from, to, active + from)));
-    // if (any) {
-    //   add(w, createSpin(ENUM_SPIN(SPIN0 + i), SpinData(from, to, active)));
-    // } else {
-    //   add(w, createTextCombo(ENUM_COMBOBOX(COMBOBOX0 + i), from, to,
-    //   active));
-    // }
+    add(w, createSpin(ENUM_SPIN(SPIN0 + i), spinData));
   }
-  if (!s3.empty()) {
-    m_charactersLabel = createLabel(s3);
+
+  if (spinData.e2 != STRING_SIZE || oneOfMenu(MENU_WORDS_SPLIT)) {
+    m_charactersLabel = createLabel(spinData.e2);
     add(w, m_charactersLabel);
   }
-  gtk_container_add(GTK_CONTAINER(m_helperUp), w);
+  addUp(w);
   m_comboline = w;
 }
 
 void Frame::addComboToHelper(ENUM_STRING from, ENUM_STRING to, int active,
                              ENUM_COMBOBOX comboboxId /*=COMBOBOX0*/) {
-  gtk_container_add(GTK_CONTAINER(m_helperUp),
-                    createTextCombo(comboboxId, from, to, active));
+  addUp(createTextCombo(comboboxId, from, to, active));
 }
 
 void Frame::comboChanged(ENUM_COMBOBOX e) {
@@ -857,16 +851,7 @@ void Frame::comboChanged(ENUM_COMBOBOX e) {
     updateCharactersLabel();
   }
 
-  bool skip = false;
-  if (m_menuClick == MENU_REGULAR_EXPRESSIONS) {
-    skip = m_radioValue == 0;
-  } else if (m_menuClick == MENU_CHARACTER_SEQUENCE) {
-    skip = e != COMBOBOX0 && m_radioValue == 0;
-  }
-
-  if (!skip) {
-    job();
-  }
+  job();
 }
 
 void Frame::setMenuLabel(ENUM_MENU e, std::string const &text) {
@@ -898,7 +883,7 @@ void Frame::endJob(bool readParameters) {
     restoreFocusedState();
 
     m_lastCommandWithTabs =
-        oneOf(m_menuClick, MENU_DICTIONARY_STATISTICS, MENU_WORD_FREQUENCY);
+        oneOfMenu(MENU_DICTIONARY_STATISTICS, MENU_WORD_FREQUENCY);
     if (m_lastCommandWithTabs) {
       gtk_container_remove(GTK_CONTAINER(m_box),
                            m_textviewscrolled[TEXTVIEW_MAIN]);
@@ -992,8 +977,8 @@ void Frame::debounceTimeout(gpointer data) {
   } else if (p.first == PACKTYPE_TEXTVIEW) {
     job();
   } else {
-    if (oneOf(m_menuClick, MENU_CLUSTER_SIZE_STATISTICS,
-              MENU_CLUSTER_DIAMETER_STATISTICS)) {
+    if (oneOfMenu(MENU_CLUSTER_SIZE_STATISTICS,
+                  MENU_CLUSTER_DIAMETER_STATISTICS)) {
       updateProceedingThread();
     } else {
       job();
@@ -1156,8 +1141,7 @@ void Frame::updateStatus(ENUM_STATE state, ENUM_JOB_TYPE jobType) {
   case STATE_PROCEEDING:
     switch (jobType) {
     case JOB_TYPE_FULL:
-      m_out = oneOf(m_menuClick, MENU_WAITING) ? string(WAITING)
-                                               : string(MENU_SEARCH);
+      m_out = oneOfMenu(MENU_WAITING) ? string(WAITING) : string(MENU_SEARCH);
       break;
     case JOB_TYPE_SORT_AND_FILTER:
       m_out = string(SORTING_AND_FILTERING_OF_RESULTS);
@@ -1333,8 +1317,8 @@ ENUM_COMBOBOX Frame::getLastCombobox() {
   // use only for MENU_WORDS_SPLIT..., to update characterslabel
   if (m_menuClick == MENU_WORDS_SPLIT)
     return COMBOBOX0;
-  if (oneOf(m_menuClick, MENU_ANAGRAM, MENU_SIMPLE_WORD_SEQUENCE,
-            MENU_DOUBLE_WORD_SEQUENCE))
+  if (oneOfMenu(MENU_ANAGRAM, MENU_SIMPLE_WORD_SEQUENCE,
+                MENU_DOUBLE_WORD_SEQUENCE))
     return COMBOBOX1;
   return COMBOBOX_SIZE;
 }
@@ -1560,7 +1544,7 @@ void Frame::addHelp(ENUM_STRING e) {
   // printlog(s,q)
 
   auto w = gtk_label_new("");
-  gtk_container_add(GTK_CONTAINER(m_helperUp), w);
+  addUp(w);
   // add(m_helperUp, w, false);
   // gtk_label_set_justify(GTK_LABEL(w), GTK_JUSTIFY_LEFT);
   gtk_label_set_justify(GTK_LABEL(w), GTK_JUSTIFY_FILL);
@@ -1607,7 +1591,8 @@ GtkWidget *Frame::createSpin(ENUM_SPIN e, const SpinData &spinData) {
   // Configure the numeric range: (initial, minimum, maximum, step_increment,
   // page_increment, page_size=0) not used
   GtkAdjustment *adjustment =
-      gtk_adjustment_new(spinData.initial, spinData.minimum, spinData.maximum,
+      gtk_adjustment_new(spinData.initial, spinData.minimum,
+                         spinData.maximum[getDictionaryIndex()],
                          spinData.step_increment, spinData.page_increment, 0.0);
 
   // Create the input field: (adjustment, climb_rate, digits)
@@ -1635,11 +1620,9 @@ int Frame::getSpin(ENUM_SPIN e) {
 
 void Frame::spinChanged(ENUM_SPIN e) {
   // pr(magic_enum::enum_name(e));
-  bool b =
-      oneOf(m_menuClick, MENU_REGULAR_EXPRESSIONS, MENU_CHARACTER_SEQUENCE);
   // pr(!b, m_radioValue);
   setDebounceTimer(e);
-  if (b || MINMAX_SPIN.has(m_menuClick) ) {
+  if (MINMAX_SPIN.has(m_menuClick)) {
     int v0 = getSpin(SPIN0);
     int v1 = getSpin(SPIN1);
     int v = getSpin(e);
@@ -2267,4 +2250,8 @@ std::string Frame::getStatusString() {
 #endif
   }
   return s + string(TIME) + " " + getTimeString();
+}
+
+void Frame::addUp(GtkWidget *w) {
+  gtk_container_add(GTK_CONTAINER(m_helperUp), w);
 }

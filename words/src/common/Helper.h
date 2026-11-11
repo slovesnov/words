@@ -145,36 +145,51 @@ public:
   }
 };
 
-// max depends on language
-struct ComboData {
-  int min;
-  std::array<int, LANGUAGES> max;
-  int active;
-  ENUM_STRING s1, s2, send;
-};
-
-struct SpinData {
-  ENUM_STRING e;
-  double initial, minimum, maximum, step_increment, page_increment, climb_rate;
-  SpinData() {}
-  SpinData(ENUM_STRING _e, double _initial, double _minimum, double _maximum,
-           double _step_increment, double _page_increment, double _climb_rate) {
-    init(_e, _initial, _minimum, _maximum, _step_increment, _page_increment,
-         _climb_rate);
-  }
-  SpinData(int from, int to, int active) {
-    init(STRING_SIZE, active, from, to, 1, 1, std::floor(std::sqrt(to - from)));
-  }
-  void init(ENUM_STRING _e, double _initial, double _minimum, double _maximum,
+class SpinData {
+  void init(ENUM_STRING _e, double _initial, double _minimum,
             double _step_increment, double _page_increment,
             double _climb_rate) {
     e = _e;
     initial = _initial;
     minimum = _minimum;
-    maximum = _maximum;
     step_increment = _step_increment;
     page_increment = _page_increment;
     climb_rate = _climb_rate;
+  }
+
+public:
+  ENUM_STRING e, e1, e2;
+  double initial, minimum, step_increment, page_increment, climb_rate;
+  // maximum depends on language sometimes
+  std::array<double, LANGUAGES> maximum;
+  SpinData() {}
+
+  // todo
+  SpinData(int _initial, int _minimum,
+           const std::array<double, LANGUAGES> &_maximum, ENUM_STRING _e,
+           ENUM_STRING _e1, ENUM_STRING _e2) {
+    e1 = _e1;
+    e2 = _e2;
+    maximum = _maximum;
+    init(_e, _initial, _minimum, 1, 1,
+         std::floor(std::sqrt(_maximum[0] - _minimum)));
+  }
+
+  SpinData(ENUM_STRING _e, double _initial, double _minimum, double _maximum,
+           double _step_increment = 1, double _page_increment = 1,
+           double _climb_rate = 1) {
+    e1 = e2 = STRING_SIZE;
+    maximum.fill(_maximum);
+    init(_e, _initial, _minimum, _step_increment, _page_increment, _climb_rate);
+  }
+
+  SpinData(ENUM_STRING _e, ENUM_STRING _e1, double _initial, double _minimum,
+           double _maximum, double _step_increment = 1,
+           double _page_increment = 1, double _climb_rate = 1) {
+    e1 = _e1;
+    e2 = STRING_SIZE;
+    maximum.fill(_maximum);
+    init(_e, _initial, _minimum, _step_increment, _page_increment, _climb_rate);
   }
 };
 
@@ -650,9 +665,9 @@ public:
 
 std::string clusterString(const MapIntInt &m, int minsize = 0);
 
-constexpr int PACK_BITS =
-    std::bit_width(static_cast<unsigned>(std::max(int(PACKTYPE_SIZE), int(STATE_SIZE)) - 1));
-    
+constexpr int PACK_BITS = std::bit_width(
+    static_cast<unsigned>(std::max(int(PACKTYPE_SIZE), int(STATE_SIZE)) - 1));
+
 // A - low, B - high
 template <typename A, typename B> std::pair<A, B> unpack(gpointer data) {
   int packed = GPOINTER_TO_INT(data);

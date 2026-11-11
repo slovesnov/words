@@ -28,8 +28,8 @@ public:
   const std::string &vowelConsonant(bool consonant);
   bool isAlphabetChar(char c) const;
 
-  int indexOfCluster()const;
-  bool oneOfCluster()const;
+  int indexOfCluster() const;
+  bool oneOfCluster() const;
 
 protected:
   // values
@@ -100,4 +100,8 @@ protected:
   bool prepare();
   int get(ENUM_COMBOBOX e);
   int get(ENUM_SPIN e);
+
+  template <typename... Args> bool oneOfMenu(Args &&...args) {
+    return oneOf(m_menuClick, std::forward<Args>(args)...);
+  }
 };

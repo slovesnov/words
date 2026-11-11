@@ -143,21 +143,26 @@ const LookupTable<ENUM_MENU, ENUM_STRING> MENU_WITH_ENTRY = {
   showLongestSimpleWordSequence();
   showLongestDoubleWordSequence();
   onchange dictionary size need to recount
-*/
-const std::array<int, LANGUAGES> MAX_ANAGRAM_LENGTH = {22, 31};
-const std::array<int, LANGUAGES> MAX_PANGRAM_LENGTH = {16, 21};
-const std::array<int, LANGUAGES> MAX_SIMPLE_WORD_SEQUENCE_LENGTH = {25, 30};
-const std::array<int, LANGUAGES> MAX_DOUBLE_WORD_SEQUENCE_LENGTH = {7, 14};
 
-const LookupTable<ENUM_MENU, ComboData> MINMAX_SPIN = {
+  NOTE type is double
+*/
+const std::array<double, LANGUAGES> MAX_ANAGRAM_LENGTH = {22, 31};
+const std::array<double, LANGUAGES> MAX_PANGRAM_LENGTH = {16, 21};
+const std::array<double, LANGUAGES> MAX_SIMPLE_WORD_SEQUENCE_LENGTH = {25, 30};
+const std::array<double, LANGUAGES> MAX_DOUBLE_WORD_SEQUENCE_LENGTH = {7, 14};
+
+const LookupTable<ENUM_MENU, SpinData> MINMAX_SPIN = {
     {MENU_ANAGRAM,
-     ComboData(2, MAX_ANAGRAM_LENGTH, 6, LENGTH, OF_WORD, CHARACTERS)},
-    {MENU_PANGRAM, ComboData(10, MAX_PANGRAM_LENGTH, 5, MINIMUM,
-                             DIFFERENT_CHARACTERS, STRING_SIZE)},
-    {MENU_SIMPLE_WORD_SEQUENCE, ComboData(8, MAX_SIMPLE_WORD_SEQUENCE_LENGTH, 0,
-                                          LENGTH, OF_SEQUENCE, CHARACTERS)},
-    {MENU_DOUBLE_WORD_SEQUENCE, ComboData(2, MAX_DOUBLE_WORD_SEQUENCE_LENGTH, 2,
-                                          LENGTH, OF_SEQUENCE, CHARACTERS)}};
+     SpinData(8, 2, MAX_ANAGRAM_LENGTH, LENGTH, OF_WORD, CHARACTERS)},
+    {MENU_PANGRAM, SpinData(15, 10, MAX_PANGRAM_LENGTH, MINIMUM,
+                            DIFFERENT_CHARACTERS, STRING_SIZE)},
+    {{MENU_CHARACTER_SEQUENCE, MENU_REGULAR_EXPRESSIONS},
+     SpinData(NUMBER_OF_MATCHES, 1, 1, 10)},
+    {MENU_WORDS_SPLIT, SpinData(LENGTH, OF_WORD, 7, 6, 20)},
+    {MENU_SIMPLE_WORD_SEQUENCE, SpinData(8, 8, MAX_SIMPLE_WORD_SEQUENCE_LENGTH,
+                                         LENGTH, OF_SEQUENCE, CHARACTERS)},
+    {MENU_DOUBLE_WORD_SEQUENCE, SpinData(4, 2, MAX_DOUBLE_WORD_SEQUENCE_LENGTH,
+                                         LENGTH, OF_SEQUENCE, CHARACTERS)}};
 
 const LookupTable<ENUM_MENU, SpinData> MENU_SPIN_DATA = {
     {{MENU_CLUSTER_SIZE_STATISTICS,

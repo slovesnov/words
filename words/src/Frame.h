@@ -77,25 +77,9 @@ private:
 
   void aboutDialog();
   void setHelperPanel(bool ignoreStateBegin);
-
-  template <typename T>
-  void addComboLineToHelper(T &&id, int from, int to, int active,
-                            ENUM_STRING eid, bool any = false) {
-    std::string s_id;
-    if constexpr (std::is_same_v<std::decay_t<T>, std::string>) {
-      s_id = std::forward<T>(id);
-    } else {
-      s_id = string(std::forward<T>(id));
-    }
-    std::string s_eid = eid == STRING_SIZE ? "" : string(eid);
-    addComboLineToHelper(from, to, active, s_id, this->string(TO), s_eid, any);
-  }
-
-  void addComboLineToHelper(int from, int to, int active, std::string s1,
-                            std::string s2, std::string s3, bool any = false);
+  void addComboLineToHelper(const SpinData &spinData);
   void addComboToHelper(ENUM_STRING from, ENUM_STRING to, int active,
                         ENUM_COMBOBOX comboboxId = COMBOBOX0);
-
   void updateTags(int n);
 
   template <typename T> GtkWidget *createLabel(T &&e) {
@@ -140,6 +124,8 @@ private:
                                std::forward<decltype(args)>(args)...);
     gtk_container_add(GTK_CONTAINER(container), row);
   }
+
+  void addUp(GtkWidget *w);
 
 public:
   Frame();
@@ -208,8 +194,7 @@ public:
   void updateEntryValue(ENUM_ENTRY e);
   std::string normalizeString(ENUM_ENTRY e, std::string const &q);
 
-  template<typename T>
-  void setDebounceTimer(T t) {
+  template <typename T> void setDebounceTimer(T t) {
     if (m_debounceTimerId) {
       g_source_remove(m_debounceTimerId);
     }
