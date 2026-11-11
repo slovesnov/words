@@ -626,8 +626,8 @@ void Frame::setHelperPanel(bool ignoreStateBegin) {
   }
 
   if (auto it = MENU_WITH_ENTRY.get(m_menuClick)) {
-    addUp(MENU_SEARCH, false,
-          createEntry(ENTRY_TEMPLATE, *it), true);
+    addUp(MENU_SEARCH, false, createEntry(ENTRY_TEMPLATE, *it), true);
+    gtk_widget_set_margin_start(m_entry[ENTRY_TEMPLATE], COMBOLINE_MARGIN);
   }
 
   if (m_menuClick == MENU_CHARACTER_SEQUENCE) { // before MENU_SPIN
