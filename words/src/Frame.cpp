@@ -632,7 +632,7 @@ void Frame::setHelperPanel(bool ignoreStateBegin) {
     gtk_container_add(GTK_CONTAINER(m_helperUp), w);
   }
 
-  if (auto it = FROM_TO_COMBO.get(m_menuClick)) {
+  if (auto it = MINMAX_SPIN.get(m_menuClick)) {
     addComboLineToHelper(string(it->s1, it->s2), it->min,
                          it->max[getDictionaryIndex()], it->active, it->send);
   }
@@ -731,9 +731,16 @@ void Frame::updateDictionary(bool change) {
     }
   }
 
-  if (auto it = FROM_TO_COMBO.get(m_menuClick)) {
-    for (auto a : {COMBOBOX0, COMBOBOX1}) {
-      refillCombo(a, it->min, it->max[getDictionaryIndex()] /*, it->active*/);
+  if (auto it = MINMAX_SPIN.get(m_menuClick)) {
+    for (auto e : {SPIN0, SPIN1}) {
+      auto v = getSpin(e);
+      pr(it->max[getDictionaryIndex()])
+      gtk_spin_button_set_range(GTK_SPIN_BUTTON(m_spin[e]), it->min, it->max[getDictionaryIndex()]);
+      auto v1 = getSpin(e);
+      if(v1!=v){
+        pri;
+        updateSpinValue(e);
+      }
     }
   }
   unlockSignals();
@@ -815,13 +822,13 @@ void Frame::addComboLineToHelper(int from, int to, int active, std::string s1,
       }
       updateRadioValue();
     }
-    // add(w, createSpin(ENUM_SPIN(SPIN0 + i), SpinData(from, to, active)));
-    if (any) {
-      add(w, createSpin(ENUM_SPIN(SPIN0 + i), SpinData(from, to, active)));
-    } else {
-      add(w, createTextCombo(ENUM_COMBOBOX(COMBOBOX0 + i), from, to,
-      active));
-    }
+    add(w, createSpin(ENUM_SPIN(SPIN0 + i), SpinData(from, to, active + from)));
+    // if (any) {
+    //   add(w, createSpin(ENUM_SPIN(SPIN0 + i), SpinData(from, to, active)));
+    // } else {
+    //   add(w, createTextCombo(ENUM_COMBOBOX(COMBOBOX0 + i), from, to,
+    //   active));
+    // }
   }
   if (!s3.empty()) {
     m_charactersLabel = createLabel(s3);
@@ -850,13 +857,6 @@ void Frame::comboChanged(ENUM_COMBOBOX e) {
     updateCharactersLabel();
   }
 
-  if ((e == COMBOBOX0 || e == COMBOBOX1) && FROM_TO_COMBO.has(m_menuClick)) {
-    if (getComboIndex(COMBOBOX0) > getComboIndex(COMBOBOX1)) {
-      lockSignals();
-      setComboIndex(e == COMBOBOX0 ? COMBOBOX1 : COMBOBOX0, getComboIndex(e));
-      unlockSignals();
-    }
-  }
   bool skip = false;
   if (m_menuClick == MENU_REGULAR_EXPRESSIONS) {
     skip = m_radioValue == 0;
@@ -1638,11 +1638,8 @@ void Frame::spinChanged(ENUM_SPIN e) {
   bool b =
       oneOf(m_menuClick, MENU_REGULAR_EXPRESSIONS, MENU_CHARACTER_SEQUENCE);
   // pr(!b, m_radioValue);
-  setDebounceTimer(e); // setRadio so always setDebounceTimer
-  // if (!b || m_radioValue) {//todo
-  //   setDebounceTimer(e);
-  // }
-  if (b) {
+  setDebounceTimer(e);
+  if (b || MINMAX_SPIN.has(m_menuClick) ) {
     int v0 = getSpin(SPIN0);
     int v1 = getSpin(SPIN1);
     int v = getSpin(e);

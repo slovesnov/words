@@ -149,7 +149,7 @@ const std::array<int, LANGUAGES> MAX_PANGRAM_LENGTH = {16, 21};
 const std::array<int, LANGUAGES> MAX_SIMPLE_WORD_SEQUENCE_LENGTH = {25, 30};
 const std::array<int, LANGUAGES> MAX_DOUBLE_WORD_SEQUENCE_LENGTH = {7, 14};
 
-const LookupTable<ENUM_MENU, ComboData> FROM_TO_COMBO = {
+const LookupTable<ENUM_MENU, ComboData> MINMAX_SPIN = {
     {MENU_ANAGRAM,
      ComboData(2, MAX_ANAGRAM_LENGTH, 6, LENGTH, OF_WORD, CHARACTERS)},
     {MENU_PANGRAM, ComboData(10, MAX_PANGRAM_LENGTH, 5, MINIMUM,

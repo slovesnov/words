@@ -210,7 +210,7 @@ bool WordsBase::checkKeyboardWordComplex(const std::string &s) {
 
 bool WordsBase::checkPangram(const std::string &s) {
   int i = differentChars(s);
-  return i >= m_comboValue[COMBOBOX0] && i <= m_comboValue[COMBOBOX1];
+  return i >= get(SPIN0) && i <= get(SPIN1);
 }
 
 void WordsBase::checkTemplatePreProseeding() {
@@ -286,8 +286,8 @@ bool WordsBase::checkTemplate(const std::string &s) {
 bool WordsBase::checkCharacterSequence(const std::string &s) {
   auto j = get(COMBOBOX0);
   if (j == 0) {
-    auto min = get(SPIN0);
-    auto max = get(SPIN1);
+    const int min = get(SPIN0);
+    const int max = get(SPIN1);
     j = 0;
     std::string::size_type pos = 0;
     while ((pos = s.find(m_ev, pos)) != std::string::npos) {
@@ -943,8 +943,8 @@ void WordsBase::showLongestDoubleWordSequence() {
 #endif
 
 void WordsBase::findAnagram(int nthread) {
-  const int min = m_comboValue[COMBOBOX0];
-  const int max = m_comboValue[COMBOBOX1];
+      const int min = get(SPIN0);
+    const int max = get(SPIN1);
   auto [it, end] = iterators(nthread);
   auto &local_map = m_anagrams[nthread];
   local_map.clear();
@@ -978,8 +978,8 @@ void WordsBase::anagramsPostProseeding() {
 }
 
 void WordsBase::findSimpleWordSequence(int nthread) {
-  const int min = m_comboValue[COMBOBOX0];
-  const int max = m_comboValue[COMBOBOX1];
+    const int min = get(SPIN0);
+    const int max = get(SPIN1);
   int i = min - 1, j;
   std::string s;
   auto &v = m_ma[nthread];
@@ -1009,8 +1009,8 @@ void WordsBase::findSimpleWordSequence(int nthread) {
 }
 
 void WordsBase::findDoubleWordSequence(int nthread) {
-  const int min = m_comboValue[COMBOBOX0];
-  const int max = m_comboValue[COMBOBOX1];
+    const int min = get(SPIN0);
+    const int max = get(SPIN1);
   int i = min - 1, j;
   std::string q, s, t;
   auto &v = m_ma[nthread];
@@ -1059,8 +1059,8 @@ void WordsBase::findDoubleWordSequence(int nthread) {
 }
 
 void WordsBase::simpleDoubleWordSequencePostProseeding() {
-  const int min = m_comboValue[COMBOBOX0];
-  const int max = m_comboValue[COMBOBOX1];
+    const int min = get(SPIN0);
+    const int max = get(SPIN1);
   int n;
   for (n = 0; n <= max - min; n++) {
     auto &map = m_ma[0][n];
@@ -1077,7 +1077,7 @@ void WordsBase::simpleDoubleWordSequencePostProseeding() {
       }
     }
 
-    const size_t len = m_comboValue[COMBOBOX0];
+    const size_t len = min;
     m_result.reserve(m_result.size() + map.size() / 2);
     for (auto &[_, v] : map) {
       const auto &v0 = v[0];
