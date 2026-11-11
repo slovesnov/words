@@ -234,6 +234,8 @@ bool Parameters::prepare() {
   return true;
 }
 
-int Parameters::get(ENUM_COMBOBOX e) { return m_comboValue[e]; }
+int Parameters::get(ENUM_BUTTON e) const { return m_buttonValue[e]; }
 
-int Parameters::get(ENUM_SPIN e) { return m_spinValue[e]; }
+int Parameters::get(ENUM_COMBOBOX e) const { return m_comboValue[e]; }
+
+double Parameters::get(ENUM_SPIN e) const { return m_spinValue[e]; }

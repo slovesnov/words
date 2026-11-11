@@ -239,7 +239,7 @@ void WordsBase::checkTemplatePreProseeding() {
 
 bool WordsBase::checkTemplate(const std::string &s) {
   const char *p = s.c_str();
-  int param = m_comboValue[COMBOBOX0];
+  int param = get(COMBOBOX0);
   if (param == 0) {
     if (s.length() < m_ev.length()) {
       return false;
@@ -322,9 +322,9 @@ bool WordsBase::checkCrossword(const std::string &s) {
 }
 
 bool WordsBase::checkConsonantVowelSequence(const std::string &s) {
-  const int searchType = m_comboValue[COMBOBOX0];
-  const int n = m_comboValue[COMBOBOX1];
-  const char *q = vowelConsonant(m_comboValue[COMBOBOX2]).c_str();
+  const int searchType = get(COMBOBOX0);
+  const int n = get(SPIN0);
+  const char *q = vowelConsonant(get(COMBOBOX1)).c_str();
   int i, j;
   const int l = s.length();
   if (l < n) {
@@ -361,8 +361,8 @@ bool WordsBase::checkConsonantVowelSequence(const std::string &s) {
 
 bool WordsBase::checkDensity(const std::string &s) {
   int i, p;
-  const char *q = vowelConsonant(m_comboValue[COMBOBOX1]).c_str();
-  const int percentage = m_comboValue[COMBOBOX0];
+  const char *q = vowelConsonant(get(COMBOBOX0)).c_str();
+  const int percentage = get(SPIN0);
   for (p = i = 0; i < int(s.length()); i++) {
     if (strchr(q, s[i]) != NULL) {
       p++;
@@ -745,7 +745,7 @@ std::string readBinaryFileToString(const std::string &filename) {
 #ifdef NOGTK
 void WordsBase::setDictionaryIndex(int i) {
   assert(i >= 0 && i < LANGUAGES);
-  m_buttonValue[BUTTON_DICTIONARY] = i;
+  get(BUTTON_DICTIONARY) = i;
 }
 void outMax(std::string f, std::array<int, 2> r) {
   std::string s;
@@ -755,7 +755,7 @@ void outMax(std::string f, std::array<int, 2> r) {
     s += std::toupper(c);
   }
   std::cout << std::format(
-      "const std::array<int,LANGUAGES> MAX{}_LENGTH={{{},{}}}\n", s, r[0],
+      "const std::array<double,LANGUAGES> MAX{}_LENGTH={{{},{}}}\n", s, r[0],
       r[1]);
 }
 
@@ -2030,7 +2030,7 @@ void WordsBase::sortFilterResults(ENUM_JOB_TYPE e) {
   std::string s;
 
 #ifndef NOGTK
-  bool find = !m_buttonValue[BUTTON_FOUND];
+  bool find = !get(BUTTON_FOUND);
 #endif
   if (m_result.empty()) {
     return;
@@ -2041,7 +2041,7 @@ void WordsBase::sortFilterResults(ENUM_JOB_TYPE e) {
     // mtsort slowdown
     std::ranges::sort(
         m_result,
-        SORT_FUNCTION[m_sortlistValue * 2 + m_buttonValue[BUTTON_SORT_ORDER]]);
+        SORT_FUNCTION[m_sortlistValue * 2 + get(BUTTON_SORT_ORDER)]);
   }
   // auto te = timeElapse(begin);
   m_filteredWordsCount = 0;

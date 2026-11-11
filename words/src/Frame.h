@@ -78,8 +78,6 @@ private:
   void aboutDialog();
   void setHelperPanel(bool ignoreStateBegin);
   void addComboLineToHelper(const SpinData &spinData);
-  void addComboToHelper(ENUM_STRING from, ENUM_STRING to, int active,
-                        ENUM_COMBOBOX comboboxId = COMBOBOX0);
   void updateTags(int n);
 
   template <typename T> GtkWidget *createLabel(T &&e) {
@@ -269,7 +267,7 @@ public:
 
   // spin functons
   GtkWidget *createSpin(ENUM_SPIN e, const SpinData &spinData);
-  int getSpin(ENUM_SPIN e);
+  double getSpin(ENUM_SPIN e);
   void spinChanged(ENUM_SPIN e);
   void updateSpinValue(ENUM_SPIN e);
   ENUM_SPIN getLastSpin();

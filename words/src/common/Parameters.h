@@ -41,7 +41,7 @@ protected:
   std::array<int, BUTTON_SIZE> m_buttonValue;
   bool m_checkValue;
   std::string m_textViewValueUtf8; // do splitr so need utf8
-  std::array<int, SPIN_SIZE> m_spinValue;
+  std::array<double, SPIN_SIZE> m_spinValue;
 
   // postcount variable
   int m_filteredWordsCount;
@@ -68,8 +68,8 @@ protected:
   static MapIntInt m_wordLengthMap[LANGUAGES];
   static int m_longestWordLength[LANGUAGES];
 
-  int getLanguageIndex() const { return m_buttonValue[BUTTON_LANGUAGE]; }
-  int getDictionaryIndex() const { return m_buttonValue[BUTTON_DICTIONARY]; }
+  int getLanguageIndex() const { return get(BUTTON_LANGUAGE); }
+  int getDictionaryIndex() const { return get(BUTTON_DICTIONARY); }
 
 public:
   const std::string &string(ENUM_STRING e) const;
@@ -98,8 +98,9 @@ protected:
   bool createRegex(ENUM_ENTRY e, UniquePcre2Code &r, UniquePcre2MatchData &m);
 
   bool prepare();
-  int get(ENUM_COMBOBOX e);
-  int get(ENUM_SPIN e);
+  int get(ENUM_BUTTON e) const;
+  int get(ENUM_COMBOBOX e) const;
+  double get(ENUM_SPIN e) const;
 
   template <typename... Args> bool oneOfMenu(Args &&...args) {
     return oneOf(m_menuClick, std::forward<Args>(args)...);

@@ -147,56 +147,57 @@ public:
 
 class SpinData {
   void init(ENUM_STRING _e, double _initial, double _minimum,
-            double _step_increment, double _page_increment,
-            double _climb_rate) {
+            double _step_increment, double _page_increment, double _climb_rate,
+            int _digits) {
     e = _e;
     initial = _initial;
     minimum = _minimum;
     step_increment = _step_increment;
     page_increment = _page_increment;
     climb_rate = _climb_rate;
+    digits = _digits;
   }
 
 public:
-  ENUM_STRING e, e1, e2;
+  ENUM_STRING e, e1;
+  int digits;
   double initial, minimum, step_increment, page_increment, climb_rate;
   // maximum depends on language sometimes
   std::array<double, LANGUAGES> maximum;
   SpinData() {}
 
-  SpinData(int _initial, int _minimum,
-           const std::array<double, LANGUAGES> &_maximum, ENUM_STRING _e,
-           ENUM_STRING _e1, ENUM_STRING _e2) {
-    e1 = _e1;
-    e2 = _e2;
-    maximum = _maximum;
-    init(_e, _initial, _minimum, 1, 1,
-         std::floor(std::sqrt(_maximum[0] - _minimum)));
-  }
-
-  SpinData(double _initial, double _minimum, double _maximum,
+  template <typename T, typename = std::enable_if_t<std::is_arithmetic_v<T>>>
+  SpinData(T _initial, double _minimum, double _maximum,
            double _step_increment = 1, double _page_increment = 1,
-           double _climb_rate = 1) {
-    e1 = e2 = STRING_SIZE;
-    maximum.fill(_maximum);
-    init(STRING_SIZE, _initial, _minimum, _step_increment, _page_increment, _climb_rate);
-  }
+           double _climb_rate = 1, int _digits = 0)
+      : SpinData(STRING_SIZE, static_cast<double>(_initial), _minimum, _maximum,
+                 _step_increment, _page_increment, _climb_rate, _digits) {}
 
   SpinData(ENUM_STRING _e, double _initial, double _minimum, double _maximum,
            double _step_increment = 1, double _page_increment = 1,
-           double _climb_rate = 1) {
-    e1 = e2 = STRING_SIZE;
+           double _climb_rate = 1, int _digits = 0) {
+    e1 = STRING_SIZE;
     maximum.fill(_maximum);
-    init(_e, _initial, _minimum, _step_increment, _page_increment, _climb_rate);
+    init(_e, _initial, _minimum, _step_increment, _page_increment, _climb_rate,
+         _digits);
   }
 
-  SpinData(ENUM_STRING _e, ENUM_STRING _e1, ENUM_STRING _e2, double _initial, double _minimum,
+  SpinData(ENUM_STRING _e, ENUM_STRING _e1, double _initial, double _minimum,
            double _maximum, double _step_increment = 1,
-           double _page_increment = 1, double _climb_rate = 1) {
+           double _page_increment = 1, double _climb_rate = 1,
+           int _digits = 0) {
     e1 = _e1;
-    e2 = _e2;
     maximum.fill(_maximum);
-    init(_e, _initial, _minimum, _step_increment, _page_increment, _climb_rate);
+    init(_e, _initial, _minimum, _step_increment, _page_increment, _climb_rate,
+         _digits);
+  }
+
+  SpinData(ENUM_STRING _e, ENUM_STRING _e1, int _initial, int _minimum,
+           const std::array<double, LANGUAGES> &_maximum) {
+    e1 = _e1;
+    maximum = _maximum;
+    init(_e, _initial, _minimum, 1, 1,
+         std::floor(std::sqrt(_maximum[0] - _minimum)), 0);
   }
 };
 
