@@ -643,7 +643,7 @@ void Frame::setHelperPanel(bool ignoreStateBegin) {
 
   switch (m_menuClick) {
 
-  case MENU_TEMPLATE:
+  case MENU_PATTERN:
     addComboToHelper(TEMPLATE1, TEMPLATE3, 0);
     break;
 

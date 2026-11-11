@@ -184,7 +184,7 @@ bool Parameters::prepare() {
     return true;
   }
 
-  // MENU_CHAIN MENU_TEMPLATE MENU_CROSSWORD MENU_CHARACTER_SEQUENCE
+  // MENU_CHAIN MENU_PATTERN MENU_CROSSWORD MENU_CHARACTER_SEQUENCE
   s = alphabet();
   if (m_menuClick == MENU_CROSSWORD) {
     s += '*';

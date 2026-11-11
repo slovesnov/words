@@ -64,7 +64,7 @@ const LookupTable<ENUM_MENU, void (WordsBase::*)(int)> COMPLEX_FUNCTION = {
 
 const LookupTable<ENUM_MENU, void (WordsBase::*)()> menuPreProseeding = {
     {MENU_CHAIN, &WordsBase::findChainPreProseeding},
-    {MENU_TEMPLATE, &WordsBase::checkTemplatePreProseeding},
+    {MENU_PATTERN, &WordsBase::checkTemplatePreProseeding},
     {{MENU_CLUSTER_SIZE_STATISTICS, MENU_CLUSTER_DIAMETER_STATISTICS},
      &WordsBase::clusterStatisticsPreProseeding},
     {MENU_LETTER_GROUP_SPLIT, &WordsBase::findLetterGroupSplitPreProseeding},
@@ -77,25 +77,20 @@ const LookupTable<ENUM_MENU, void (WordsBase::*)()> menuPreProseeding = {
 const LookupTable<ENUM_MENU, void (WordsBase::*)()> menuPostProseeding = {
     {MENU_ANAGRAM, &WordsBase::anagramsPostProseeding},
     {MENU_LETTER_GROUP_SPLIT, &WordsBase::findLetterGroupSplitPostProseeding},
-    {MENU_SIMPLE_WORD_SEQUENCE,
-     &WordsBase::simpleDoubleWordSequencePostProseeding},
-    {MENU_DOUBLE_WORD_SEQUENCE,
+    {{MENU_SIMPLE_WORD_SEQUENCE, MENU_DOUBLE_WORD_SEQUENCE},
      &WordsBase::simpleDoubleWordSequencePostProseeding},
     {MENU_DICTIONARY_STATISTICS,
      &WordsBase::dictionaryStatisticsPostProseeding},
     {MENU_CHECK_DICTIONARY, &WordsBase::checkDictionaryPostProseeding},
-    {MENU_TWO_CHARACTERS_DISTRIBUTION,
-     &WordsBase::twoCharactersDistributionPostProseeding},
-    {MENU_TWO_CHARACTERS_DISTRIBUTION_START,
-     &WordsBase::twoCharactersDistributionPostProseeding},
-    {MENU_TWO_CHARACTERS_DISTRIBUTION_END,
+    {{MENU_TWO_CHARACTERS_DISTRIBUTION, MENU_TWO_CHARACTERS_DISTRIBUTION_START,
+      MENU_TWO_CHARACTERS_DISTRIBUTION_END},
      &WordsBase::twoCharactersDistributionPostProseeding}};
 
 // regular expression special proceeding
 const LookupTable<ENUM_MENU, bool (WordsBase::*)(const std::string &)>
     SIMPLE_FUNCTION = {
         {MENU_PANGRAM, &WordsBase::checkPangram},
-        {MENU_TEMPLATE, &WordsBase::checkTemplate},
+        {MENU_PATTERN, &WordsBase::checkTemplate},
         {MENU_PALINDROME, &WordsBase::checkPalindrome},
         {MENU_CROSSWORD, &WordsBase::checkCrossword},
         {MENU_CHARACTER_SEQUENCE, &WordsBase::checkCharacterSequence},
@@ -2171,7 +2166,7 @@ void WordsBase::run_thread(int nthread) {
 }
 
 void WordsBase::run(ENUM_JOB_TYPE e) {
-  //pr(get(SPIN0), get(SPIN1), m_radioValue, get(COMBOBOX0));
+  // pr(get(SPIN0), get(SPIN1), m_radioValue, get(COMBOBOX0));
   m_addstatus = "";
   bool userbreak = false;
   // auto begin = clock();

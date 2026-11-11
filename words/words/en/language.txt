@@ -1,12 +1,13 @@
 search{
 anagrams
 pangrams
-pattern
 palindromes
-words for crossword
-regular expressions
 modifications of words
+SEPARATOR
+pattern
+words for crossword
 characters sequence
+regular expressions
 SEPARATOR
 chains of words
 cluster size statistics
