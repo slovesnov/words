@@ -626,8 +626,8 @@ void Frame::setHelperPanel(bool ignoreStateBegin) {
   }
 
   if (auto it = MENU_WITH_ENTRY.get(m_menuClick)) {
-    addUp(MENU_SEARCH, false, createEntry(ENTRY_TEMPLATE, *it), true);
-    gtk_widget_set_margin_start(m_entry[ENTRY_TEMPLATE], COMBOLINE_MARGIN);
+    addUp(COMBOLINE_MARGIN, MENU_SEARCH, false,
+          createEntry(ENTRY_TEMPLATE, *it), true);
   }
 
   if (m_menuClick == MENU_CHARACTER_SEQUENCE) { // before MENU_SPIN
@@ -668,7 +668,7 @@ void Frame::setHelperPanel(bool ignoreStateBegin) {
     break;
 
   case MENU_CONSONANT_VOWEL_SEQUENCE:
-    addUp(GTK_ORIENTATION_HORIZONTAL, COMBOLINE_MARGIN,
+    addUp(COMBOLINE_MARGIN,
           createTextCombo(COMBOBOX0, SEARCH_IN_ANY_PLACE_OF_WORD,
                           SEARCH_IN_END_OF_WORD, 0),
           true, createSpin(SPIN0, SpinData(3, 3, 10)), true,
@@ -676,16 +676,16 @@ void Frame::setHelperPanel(bool ignoreStateBegin) {
     break;
 
   case MENU_DENSITY:
-    addUp(GTK_ORIENTATION_HORIZONTAL, COMBOLINE_MARGIN, MAXIMUM, true,
+    addUp(COMBOLINE_MARGIN, MAXIMUM, true,
           createSpin(SPIN0, SpinData(25, 0, 25, .1, 1, 1, 1)), true, "%", true,
           createTextCombo(COMBOBOX0, VOWELS, CONSONANTS, 0), true, CHARACTERS,
           true);
     break;
+
   default:;
   }
 
-  if (m_charactersLabel) {
-    updateCharactersLabel();
+  if (m_charactersLabel) {updateCharactersLabel();
   }
 
   gtk_widget_show_all(m_helperUp);
@@ -2247,6 +2247,10 @@ void Frame::addUp(GtkWidget *w) {
   gtk_container_add(GTK_CONTAINER(m_helperUp), w);
 }
 
+void Frame::addUp(int margin, auto &&...args) {
+  addRow(m_helperUp, margin, std::forward<decltype(args)>(args)...);
+}
+
 void Frame::addUp(auto &&...args) {
-  addRow(m_helperUp, 0, std::forward<decltype(args)>(args)...);
+  addUp(0, std::forward<decltype(args)>(args)...);
 }

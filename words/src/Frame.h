@@ -119,6 +119,7 @@ private:
 
   void addRow(GtkWidget *container, int margin, auto &&...args);
   void addUp(GtkWidget *w);
+  void addUp(int margin, auto &&...args);
   void addUp(auto &&...args);
 
 public:
