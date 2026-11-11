@@ -626,7 +626,7 @@ void Frame::setHelperPanel(bool ignoreStateBegin) {
   }
 
   if (auto it = MENU_WITH_ENTRY.get(m_menuClick)) {
-    addUp(GTK_ORIENTATION_HORIZONTAL, COMBOLINE_MARGIN, MENU_SEARCH, true,
+    addUp(MENU_SEARCH, false,
           createEntry(ENTRY_TEMPLATE, *it), true);
   }
 

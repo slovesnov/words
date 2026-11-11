@@ -146,59 +146,62 @@ public:
 };
 
 class SpinData {
-  void init(ENUM_STRING _e, double _initial, double _minimum,
-            double _step_increment, double _page_increment, double _climb_rate,
-            int _digits) {
-    e = _e;
-    initial = _initial;
-    minimum = _minimum;
-    step_increment = _step_increment;
-    page_increment = _page_increment;
-    climb_rate = _climb_rate;
-    digits = _digits;
+  // Base constructor with full member initialization
+  SpinData(ENUM_STRING _e, ENUM_STRING _e1, double _initial, double _minimum,
+           const std::array<double, LANGUAGES> &_maximum,
+           double _step_increment, double _page_increment,
+           double _climb_rate, int _digits)
+      : e(_e), e1(_e1), digits(_digits), initial(_initial), minimum(_minimum),
+        step_increment(_step_increment), page_increment(_page_increment),
+        climb_rate(_climb_rate), maximum(_maximum) {}
+
+  // Helper to create a std::array filled with a single value
+  static std::array<double, LANGUAGES> make_max_array(double val) {
+    std::array<double, LANGUAGES> arr;
+    arr.fill(val);
+    return arr;
   }
 
 public:
   ENUM_STRING e, e1;
   int digits;
   double initial, minimum, step_increment, page_increment, climb_rate;
-  // maximum depends on language sometimes
+  // Maximum depends on language sometimes
   std::array<double, LANGUAGES> maximum;
-  SpinData() {}
 
+  SpinData() = default;
+
+  // Constructor without ENUM_STRING (constrained to arithmetic types to prevent enum conversion)
   template <typename T, typename = std::enable_if_t<std::is_arithmetic_v<T>>>
   SpinData(T _initial, double _minimum, double _maximum,
            double _step_increment = 1, double _page_increment = 1,
            double _climb_rate = 1, int _digits = 0)
-      : SpinData(STRING_SIZE, static_cast<double>(_initial), _minimum, _maximum,
-                 _step_increment, _page_increment, _climb_rate, _digits) {}
+      : SpinData(STRING_SIZE, STRING_SIZE, static_cast<double>(_initial),
+                 _minimum, make_max_array(_maximum), _step_increment,
+                 _page_increment, _climb_rate, _digits) {}
 
-  SpinData(ENUM_STRING _e, double _initial, double _minimum, double _maximum,
+  // Constructor with one ENUM_STRING (constrained to arithmetic types to avoid overload ambiguity)
+  template <typename T, typename = std::enable_if_t<std::is_arithmetic_v<T>>>
+  SpinData(ENUM_STRING _e, T _initial, double _minimum, double _maximum,
            double _step_increment = 1, double _page_increment = 1,
-           double _climb_rate = 1, int _digits = 0) {
-    e1 = STRING_SIZE;
-    maximum.fill(_maximum);
-    init(_e, _initial, _minimum, _step_increment, _page_increment, _climb_rate,
-         _digits);
-  }
+           double _climb_rate = 1, int _digits = 0)
+      : SpinData(_e, STRING_SIZE, static_cast<double>(_initial), _minimum,
+                 make_max_array(_maximum), _step_increment, _page_increment,
+                 _climb_rate, _digits) {}
 
+  // Constructor with two ENUM_STRING arguments and a scalar maximum
   SpinData(ENUM_STRING _e, ENUM_STRING _e1, double _initial, double _minimum,
            double _maximum, double _step_increment = 1,
            double _page_increment = 1, double _climb_rate = 1,
-           int _digits = 0) {
-    e1 = _e1;
-    maximum.fill(_maximum);
-    init(_e, _initial, _minimum, _step_increment, _page_increment, _climb_rate,
-         _digits);
-  }
+           int _digits = 0)
+      : SpinData(_e, _e1, _initial, _minimum, make_max_array(_maximum),
+                 _step_increment, _page_increment, _climb_rate, _digits) {}
 
+  // Constructor with two ENUM_STRING arguments and a per-language maximum array
   SpinData(ENUM_STRING _e, ENUM_STRING _e1, int _initial, int _minimum,
-           const std::array<double, LANGUAGES> &_maximum) {
-    e1 = _e1;
-    maximum = _maximum;
-    init(_e, _initial, _minimum, 1, 1,
-         std::floor(std::sqrt(_maximum[0] - _minimum)), 0);
-  }
+           const std::array<double, LANGUAGES> &_maximum)
+      : SpinData(_e, _e1, _initial, _minimum, _maximum, 1, 1,
+                 std::floor(std::sqrt(_maximum[0] - _minimum)), 0) {}
 };
 
 class SearchResult {
