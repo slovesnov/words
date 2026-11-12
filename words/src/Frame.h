@@ -259,7 +259,7 @@ public:
   GtkWidget *createTextView(ENUM_TEXTVIEW e, ENUM_STRING n = STRING_SIZE);
   void textviewChanged(ENUM_TEXTVIEW e);
   void updateTextviewValue(ENUM_TEXTVIEW e);
-  std::string getTextViewString(ENUM_TEXTVIEW e) const;
+  std::string getTextView(ENUM_TEXTVIEW e) const;
   GtkTextBuffer *tvBuffer(ENUM_TEXTVIEW e = TEXTVIEW_MAIN) const;
   void updateTextView(ENUM_TEXTVIEW e, std::string_view markup);
 
@@ -288,10 +288,11 @@ public:
   void updateButton(ENUM_BUTTON e, bool invert=false);
 
   // sort list functions
-  void refillSort();
-  void rowActivated(GtkListBoxRow *row);
-  void updateSortButton();
-  void setRowSensitive(bool sensitive);
+  void refillSortList();
+  void sortListRowActivated(GtkListBoxRow *row);
+  void updateSortListButton();
+  void sortListSetRowSensitive(bool sensitive);
+  //int getSortList();
 
   void updateProceedingThread();
   void updateProceeding(const char *text = NULL);
