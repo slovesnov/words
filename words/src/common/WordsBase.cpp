@@ -2040,8 +2040,7 @@ void WordsBase::sortFilterResults(ENUM_JOB_TYPE e) {
   if (e != JOB_TYPE_FILTER) {
     // mtsort slowdown
     std::ranges::sort(
-        m_result,
-        SORT_FUNCTION[m_sortlistValue * 2 + get(BUTTON_SORT_ORDER)]);
+        m_result, SORT_FUNCTION[m_sortlistValue * 2 + get(BUTTON_SORT_ORDER)]);
   }
   // auto te = timeElapse(begin);
   m_filteredWordsCount = 0;
@@ -2067,7 +2066,7 @@ void WordsBase::sortFilterResults(ENUM_JOB_TYPE e) {
     i = m_sortlistValue - (NUMBER_OF_SORTS - 3);
     if (i == 0 || i == 1) { // sort by vowels, consonants
       SearchResult::out +=
-          " " + string(VOWELS + i) +
+          " " + string(VOWELS, i) +
           std::format(" {:.1f}%",
                       e.percent[i]); // show percent of vowels or consonants
     } else if (i == 2) {

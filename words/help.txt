@@ -5,6 +5,7 @@ added cluster diameter statistics
 added graphics for dictionary statistics and word lengths
 chain searching has been simplified, accelerated, and made multi-threaded
 removed multithreading from word length statistics due to lack of necessity
+fixed a bug in letter sequence search
 fixed a crash when pasting text that cannot be transcoded to the local locale
 fixed Ctrl+A and Ctrl+C combinations did not always work correctly
 fixed search option change bug during calculation; decoupled variables into separate classes
@@ -18,6 +19,7 @@ fixed invalid height for modification of words
 добавлена графика для статистики словаря и длины слов
 поиск цепочек упрощён, ускорен и стал многозадачным
 убрана многозадачность из статистики длины слов из-за ненадобности
+исправлен баг поиска последовательностей букв
 исправлено если в поле вcтавить текст который нельзя перекодировать в локаль программа падала
 исправлено комбинации ctrl+a и ctrl+c не всегда корректно работали
 исправлен баг с изменением опции поиска во время расчёта (переменные разнесены по разным классам)

@@ -46,21 +46,13 @@ void Parameters::assignToFrame(const Parameters &p) {
   m_addstatus = p.m_addstatus;
 }
 
-const std::string &Parameters::string(ENUM_STRING e) const {
-  return m_languageAll[getLanguageIndex()][e];
+
+const std::string &Parameters::string(ENUM_STRING e, int i) const {
+  return m_languageAll[getLanguageIndex()][int(e) + i];
 }
 
 const std::string Parameters::string(ENUM_STRING e, ENUM_STRING e1) const {
   return string(e) + " " + string(e1);
-}
-
-const std::string &Parameters::string(ENUM_MENU e) const {
-  return m_menuAll[getLanguageIndex()][e];
-}
-
-const std::string &Parameters::string(int i) const {
-  assert(i >= 0 && i < STRING_SIZE);
-  return string(ENUM_STRING(i));
 }
 
 const std::string &Parameters::stringUsingDictionary(ENUM_STRING e,
@@ -71,7 +63,11 @@ const std::string &Parameters::stringUsingDictionary(ENUM_STRING e,
 const std::string &Parameters::settings(ENUM_SETTINGS e, int i) const {
   int n = int(e) + i;
   assert(n < SETTINGS_SIZE);
-  return m_settingsAll[getDictionaryIndex()][ENUM_SETTINGS(n)];
+  return m_settingsAll[getDictionaryIndex()][n];
+}
+
+const std::string &Parameters::string(ENUM_MENU e) const {
+  return m_menuAll[getLanguageIndex()][e];
 }
 
 const std::string &Parameters::alphabet() const {

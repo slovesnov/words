@@ -13,9 +13,6 @@
 #include <thread>
 
 class Frame : public Parameters {
-  static constexpr int COMBOLINE_MARGIN = 3;
-  static const int TIMER = 500; // milliseconds
-
   GtkWidget *m_widget;
   GtkWidget *m_menu;
   GtkWidget *m_textview[TEXTVIEW_SIZE];
@@ -165,7 +162,7 @@ public:
       if constexpr (std::is_integral_v<T>) {
         s = std::to_string(i);
       } else if constexpr (std::is_enum_v<T>) {
-        s = string(i);
+        s = string(static_cast<T>(i));
       }
       v.push_back(s);
     }
@@ -276,8 +273,7 @@ public:
   void refillSortList();
   void sortListRowActivated(GtkListBoxRow *row);
   void updateSortListButton();
-  void sortListSetRowSensitive(bool sensitive);
-  //int getSortList();
+  int getSortList();
 
   void updateProceedingThread();
   void updateProceeding(const char *text = NULL);

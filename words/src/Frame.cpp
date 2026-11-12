@@ -20,6 +20,9 @@ const int MIN_LEFT_PANEL_WIDTH = 300;
 const int MIN_RIGHT_PANEL_WIDTH = 300;
 const int DEFAULT_SEPARATOR_POSITION = 1340;
 const int TEXT_VIEW_MARGIN = 5;
+const int COMBOLINE_MARGIN = 3;
+const int TIMER = 500; // milliseconds
+const int DEFAULT_SORTLIST_VALUE = 1;
 const std::string CONFIG_TAGS[] = {"version",   "language", "dictionary",
                                    "separator", "fontout",  "fontcontrols",
                                    "maximized", "x",        "y",
@@ -192,7 +195,6 @@ Frame::Frame() {
   gtk_container_add(GTK_CONTAINER(w), m_sortlist);
   g_signal_connect(G_OBJECT(m_sortlist), "row-activated",
                    G_CALLBACK(on_row_activated), NULL);
-  m_sortlistValue = 1; // fill on update language
 
   for (auto a : {ENTRY_SEARCH, ENTRY_FILTER}) {
     createEntry(a);
@@ -1698,7 +1700,7 @@ void Frame::labelClicked(GtkWidget *box) {
 }
 
 void Frame::refillSortList() {
-  // pr(getSortList(),m_sortlistValue);
+  int savedIndex = getSortList();
   clearContainer(m_sortlist);
   auto v = fromTo(SORT_BY_ALPHABET, SORT_BY_DIFFERENT_NUMBER_OF_CHARACTERS);
   for (auto &s : v) {
@@ -1711,20 +1713,31 @@ void Frame::refillSortList() {
 
     gtk_list_box_insert(GTK_LIST_BOX(m_sortlist), label, -1);
   }
-  // pr(getSortList());
+  if (auto *row =
+          gtk_list_box_get_row_at_index(GTK_LIST_BOX(m_sortlist), savedIndex)) {
+    gtk_list_box_select_row(GTK_LIST_BOX(m_sortlist), row);
+  }
   updateSortListButton();
   gtk_widget_show_all(GTK_WIDGET(m_sortlist));
 }
 
 void Frame::updateSortListButton() {
-  sortListSetRowSensitive(false);
-  const std::string &s = string(SORT_BY_ALPHABET + m_sortlistValue);
+  GtkListBoxRow *selectedRow =
+      gtk_list_box_get_selected_row(GTK_LIST_BOX(m_sortlist));
+
+  GList *children = gtk_container_get_children(GTK_CONTAINER(m_sortlist));
+  for (GList *iter = children; iter != nullptr; iter = iter->next) {
+    GtkWidget *row = GTK_WIDGET(iter->data);
+    gtk_widget_set_sensitive(row, GTK_LIST_BOX_ROW(row) != selectedRow);
+  }
+  g_list_free(children);
+
+  const std::string &s = string(SORT_BY_ALPHABET, getSortList());
   gtk_button_set_label(GTK_BUTTON(m_sortbutton), s.c_str());
 }
 
 void Frame::sortListRowActivated(GtkListBoxRow *row) {
-  sortListSetRowSensitive(true);
-  m_sortlistValue = gtk_list_box_row_get_index(row);
+  gtk_list_box_select_row(GTK_LIST_BOX(m_sortlist), row);
   updateSortListButton();
   GtkPopover *popover =
       gtk_menu_button_get_popover(GTK_MENU_BUTTON(m_sortbutton));
@@ -1732,19 +1745,10 @@ void Frame::sortListRowActivated(GtkListBoxRow *row) {
   job(JOB_TYPE_SORT_AND_FILTER);
 }
 
-void Frame::sortListSetRowSensitive(bool sensitive) {
-  GtkListBoxRow *row =
-      gtk_list_box_get_row_at_index(GTK_LIST_BOX(m_sortlist), m_sortlistValue);
-  gtk_widget_set_sensitive(GTK_WIDGET(row), sensitive);
-}
-/*
 int Frame::getSortList() {
   GtkListBoxRow *row = gtk_list_box_get_selected_row(GTK_LIST_BOX(m_sortlist));
-  if (row == nullptr) {
-    return -1;
-  }
-  return gtk_list_box_row_get_index(row);
-}*/
+  return row ? gtk_list_box_row_get_index(row) : DEFAULT_SORTLIST_VALUE;
+}
 
 void Frame::updateProceedingThread() {
   bool b = wordsBase->oneOfCluster();
@@ -2227,10 +2231,12 @@ void Frame::addUp(auto &&...args) {
 }
 
 void Frame::setParameters() {
+  // m_menuClick, m_buttonValue changed in Frame class
   int i;
   for (i = 0; auto &a : m_comboValue) {
     a = getCombo(ENUM_COMBOBOX(i++));
   }
+  m_sortlistValue = getSortList();
   for (i = 0; auto &a : m_entryValueUtf8) {
     a = getNormalizedEntry(ENUM_ENTRY(i++));
   }
@@ -2242,7 +2248,7 @@ void Frame::setParameters() {
   }
 }
 
-bool Frame::prepare(){
+bool Frame::prepare() {
   // pri;
   setParameters();
   return Parameters::prepare();
