@@ -12,8 +12,6 @@
 #include "consts.h"
 #include <thread>
 
-gboolean on_debounce_timeout(gpointer data);
-
 class Frame : public Parameters {
   static constexpr int COMBOLINE_MARGIN = 3;
   static const int TIMER = 500; // milliseconds
@@ -190,13 +188,7 @@ public:
   std::string normalizeString(ENUM_ENTRY e, std::string const &q);
   std::string getNormalizedEntry(ENUM_ENTRY e);
 
-  template <typename T> void setDebounceTimer(T t) {
-    if (m_debounceTimerId) {
-      g_source_remove(m_debounceTimerId);
-    }
-    m_debounceTimerId = g_timeout_add(TIMER, on_debounce_timeout, pack(t));
-  }
-
+  void setDebounceTimer(auto a);
   void debounceTimeout(gpointer data);
   template <typename T> void setPlaceholder(ENUM_ENTRY e, T t) {
     gtk_entry_set_placeholder_text(GTK_ENTRY(m_entry[e]), string(t).c_str());

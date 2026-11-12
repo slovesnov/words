@@ -916,6 +916,13 @@ void Frame::newVersionMessage() {
   }
 }
 
+void Frame::setDebounceTimer(auto a) {
+  if (m_debounceTimerId) {
+    g_source_remove(m_debounceTimerId);
+  }
+  m_debounceTimerId = g_timeout_add(TIMER, on_debounce_timeout, pack(a));
+}
+
 void Frame::debounceTimeout(gpointer data) {
   m_debounceTimerId = 0;
   auto p = unpack<ENUM_PACKTYPE, int>(data);
