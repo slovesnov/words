@@ -153,8 +153,6 @@ public:
   // begin combobox functions
   int getCombo(ENUM_COMBOBOX e) const;
   void setCombo(ENUM_COMBOBOX e, int v);
-  void updateComboValue(ENUM_COMBOBOX e);
-
   void refillCombo(ENUM_COMBOBOX e, const VString &v, int active);
   template <typename T>
   void refillCombo(ENUM_COMBOBOX e, T from, T to, int active = -1) {
@@ -184,7 +182,6 @@ public:
   // entry functions
   GtkWidget *createEntry(ENUM_ENTRY e, ENUM_STRING n = STRING_SIZE);
   void entryChanged(ENUM_ENTRY e);
-  void updateEntryValue(ENUM_ENTRY e);
   std::string normalizeString(ENUM_ENTRY e, std::string const &q);
   std::string getNormalizedEntry(ENUM_ENTRY e);
 
@@ -250,7 +247,6 @@ public:
   // textview functions
   GtkWidget *createTextView(ENUM_TEXTVIEW e, ENUM_STRING n = STRING_SIZE);
   void textviewChanged(ENUM_TEXTVIEW e);
-  void updateTextviewValue(ENUM_TEXTVIEW e);
   std::string getTextView(ENUM_TEXTVIEW e) const;
   GtkTextBuffer *tvBuffer(ENUM_TEXTVIEW e = TEXTVIEW_MAIN) const;
   void updateTextView(ENUM_TEXTVIEW e, std::string_view markup);
@@ -258,19 +254,16 @@ public:
   // check functons
   GtkWidget *createCheck(ENUM_STRING e, bool set);
   void checkChanged();
-  void updateCheckValue();
   bool getCheck();
 
   // spin functons
   GtkWidget *createSpin(ENUM_SPIN e, const SpinData &spinData);
   double getSpin(ENUM_SPIN e);
   void spinChanged(ENUM_SPIN e);
-  void updateSpinValue(ENUM_SPIN e);
   ENUM_SPIN getLastSpin();
 
   // radio functions
   void radioChanged();
-  void updateRadioValue();
   int getRadio();
   void setRadio(int index);
 
@@ -297,5 +290,6 @@ public:
   std::string getTimeString();
   std::string getStatusString();
   void setParameters();
+  bool prepare();
 };
 extern Frame *frame;

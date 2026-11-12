@@ -706,7 +706,7 @@ void Frame::updateDictionary(bool change) {
     std::string s = stringUsingDictionary(*it, true);
     s = normalizeString(e, s);
     // if user didn't change value of entry we can set it by default
-    if (s == m_entryValueUtf8[e]) {
+    if (s == getNormalizedEntry(e)) {
       s = stringUsingDictionary(*it);
       gtk_entry_set_text(GTK_ENTRY(m_entry[e]), s.c_str());
     }
@@ -714,16 +714,10 @@ void Frame::updateDictionary(bool change) {
 
   if (auto it = MENU_SPIN.get(m_menuClick)) {
     for (auto e : {SPIN0, SPIN1}) {
-      auto v = getSpin(e);
-      pr(it->maximum[getDictionaryIndex()]);
+      // pr(it->maximum[getDictionaryIndex()]);
       // todo+-
       gtk_spin_button_set_range(GTK_SPIN_BUTTON(m_spin[e]), it->minimum,
                                 it->maximum[getDictionaryIndex()]);
-      auto v1 = getSpin(e);
-      if (v1 != v) {
-        pri;
-        updateSpinValue(e);
-      }
     }
   }
   unlockSignals();
@@ -807,7 +801,6 @@ void Frame::addComboLineToHelper(const SpinData &spinData) {
         add(w, r);
         g_signal_connect(r, "toggled", G_CALLBACK(radio_changed), NULL);
       }
-      updateRadioValue();
     }
     add(w, createSpin(ENUM_SPIN(SPIN0 + i), spinData));
   }
@@ -825,9 +818,8 @@ void Frame::comboChanged(ENUM_COMBOBOX e) {
   if (e < 0 || e >= COMBOBOX_SIZE) { // to remove g++ warning
     return;
   }
-  updateComboValue(e);
 
-  pr(magic_enum::enum_name(e), magic_enum::enum_name(e));
+  // pr(magic_enum::enum_name(e), magic_enum::enum_name(e));
   if (m_menuClick == MENU_CHARACTER_SEQUENCE) {
     // visible is "any place of word"
     gtk_widget_set_visible(m_comboline, getCombo(e) == 0);
@@ -891,10 +883,7 @@ void Frame::endJob(bool readParameters) {
 void Frame::setCombo(ENUM_COMBOBOX e, int v) {
   assert(GTK_IS_COMBO_BOX(m_combo[e]));
   gtk_combo_box_set_active(GTK_COMBO_BOX(m_combo[e]), v);
-  updateComboValue(e);
 }
-
-void Frame::updateComboValue(ENUM_COMBOBOX e) { m_comboValue[e] = getCombo(e); }
 
 int Frame::getCombo(ENUM_COMBOBOX e) const {
   auto a = m_combo[e];
@@ -961,7 +950,6 @@ void Frame::debounceTimeout(gpointer data) {
 
 void Frame::entryChanged(ENUM_ENTRY e) {
   bool b;
-  updateEntryValue(e);
   if (e == ENTRY_TEMPLATE) {
     b = prepare();
     addRemoveClass(m_entry[e], CERROR, !b);
@@ -990,7 +978,7 @@ void Frame::clearTagMarks() {
 // n - number of active tag
 void Frame::updateTags(int n) {
   GtkTextBuffer *buffer = tvBuffer();
-  std::string s = m_entryValueUtf8[ENTRY_SEARCH];
+  std::string s = getNormalizedEntry(ENTRY_SEARCH);
 
   int old_tag_index = m_tagIndex;
   m_tagIndex = n;
@@ -1184,7 +1172,6 @@ GtkWidget *Frame::createTextView(ENUM_TEXTVIEW e, ENUM_STRING n) {
   } else if (e == TEXTVIEW0) {
     s = stringUsingDictionary(n);
     gtk_text_buffer_set_text(buffer, s.c_str(), -1);
-    updateTextviewValue(e);
     g_signal_connect(buffer, "changed", G_CALLBACK(textview_changed),
                      GINT_TO_POINTER(TEXTVIEW0));
   } else {
@@ -1195,16 +1182,9 @@ GtkWidget *Frame::createTextView(ENUM_TEXTVIEW e, ENUM_STRING n) {
 
 void Frame::textviewChanged(ENUM_TEXTVIEW e) {
   if (e == TEXTVIEW0) {
-    updateTextviewValue(e);
     if (!isSignalsLocked()) {
       setDebounceTimer(e);
     }
-  }
-}
-
-void Frame::updateTextviewValue(ENUM_TEXTVIEW e) {
-  if (e == TEXTVIEW0) {
-    m_textViewValueUtf8 = getTextView(e);
   }
 }
 
@@ -1236,8 +1216,6 @@ void Frame::updateTextView(ENUM_TEXTVIEW e, std::string_view markup) {
                                 static_cast<gssize>(markup.size()));
   if (e == TEXTVIEW_MAIN) {
     updateSensitivity(m_state == STATE_OK && !markup.empty(), MENU_SAVE_TEXT);
-  } else {
-    updateTextviewValue(e);
   }
 }
 
@@ -1247,15 +1225,9 @@ GtkWidget *Frame::createEntry(ENUM_ENTRY e, ENUM_STRING n) {
   if (e == ENTRY_TEMPLATE) {
     gtk_entry_set_text(GTK_ENTRY(m_entry[e]), s.c_str());
   }
-  updateEntryValue(e);
   g_signal_connect(m_entry[e], "changed", G_CALLBACK(entry_changed),
                    GINT_TO_POINTER(e));
   return m_entry[e];
-}
-
-void Frame::updateEntryValue(ENUM_ENTRY e) {
-  std::string s = gtk_entry_get_text(GTK_ENTRY(m_entry[e]));
-  m_entryValueUtf8[e] = normalizeString(e, s);
 }
 
 std::string Frame::normalizeString(ENUM_ENTRY e, std::string const &q) {
@@ -1458,7 +1430,7 @@ void Frame::job(ENUM_JOB_TYPE e) {
       updateStatus(STATE_ERROR);
       return;
     }
-    setParameters(); // after prepare
+    parameters = *this; // after prepare
     //  store current entry, because after thread lose focus and cursor position
     captureFocusedState();
   }
@@ -1542,21 +1514,15 @@ GtkWidget *Frame::createCheck(ENUM_STRING e, bool set) {
   m_check = gtk_check_button_new_with_label(string(e).c_str());
   gtk_widget_set_can_focus(m_check, FALSE);
   gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(m_check), set);
-  updateCheckValue();
   g_signal_connect(m_check, "toggled", G_CALLBACK(check_changed), NULL);
   return m_check;
 }
 
 void Frame::checkChanged() {
-  updateCheckValue();
   if (m_menuClick == MENU_CHAIN && m_evwords.size() > 1) {
     return;
   }
   job();
-}
-
-void Frame::updateCheckValue() {
-  m_checkValue = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(m_check));
 }
 
 bool Frame::getCheck() {
@@ -1585,7 +1551,6 @@ GtkWidget *Frame::createSpin(ENUM_SPIN e, const SpinData &spinData) {
                      gtk_spin_button_update(GTK_SPIN_BUTTON(editable));
                    }),
                    NULL);
-  updateSpinValue(e);
   return m_spin[e];
 }
 
@@ -1614,17 +1579,9 @@ void Frame::spinChanged(ENUM_SPIN e) {
     }
   }
 
-  updateSpinValue(e);
-
-  // after updateSpinValue(e);
   if (getLastSpin() == e) {
     updateCharactersLabel();
   }
-}
-
-void Frame::updateSpinValue(ENUM_SPIN e) {
-  // pr(magic_enum::enum_name(e), getSpin(e));
-  m_spinValue[e] = getSpin(e);
 }
 
 ENUM_SPIN Frame::getLastSpin() {
@@ -1640,11 +1597,8 @@ ENUM_SPIN Frame::getLastSpin() {
 
 void Frame::radioChanged() {
   // pri;
-  updateRadioValue();
   job();
 }
-
-void Frame::updateRadioValue() { m_radioValue = getRadio(); }
 
 int Frame::getRadio() {
   if (!GTK_IS_RADIO_BUTTON(m_radio)) {
@@ -1670,7 +1624,6 @@ void Frame::setRadio(int index) {
   for (GSList *l = group; l != NULL; l = l->next) {
     if (((total_buttons - 1) - reverse_index) == index) {
       gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(l->data), TRUE);
-      updateRadioValue();
       return;
     }
     reverse_index++;
@@ -2275,21 +2228,22 @@ void Frame::addUp(auto &&...args) {
 
 void Frame::setParameters() {
   int i;
-
-  parameters.m_menuClick = m_menuClick;
-  parameters.m_buttonValue = m_buttonValue;
-
-  for (i = 0; auto &a : parameters.m_comboValue) {
+  for (i = 0; auto &a : m_comboValue) {
     a = getCombo(ENUM_COMBOBOX(i++));
   }
-  parameters.m_sortlistValue = m_sortlistValue;
-  for (i = 0; auto &a : parameters.m_entryValueUtf8) {
+  for (i = 0; auto &a : m_entryValueUtf8) {
     a = getNormalizedEntry(ENUM_ENTRY(i++));
   }
-  parameters.m_radioValue = getRadio();
-  parameters.m_checkValue = getCheck();
-  parameters.m_textViewValueUtf8 = getTextView(TEXTVIEW0);
-  for (i = 0; auto &a : parameters.m_spinValue) {
+  m_radioValue = getRadio();
+  m_checkValue = getCheck();
+  m_textViewValueUtf8 = getTextView(TEXTVIEW0);
+  for (i = 0; auto &a : m_spinValue) {
     a = getSpin(ENUM_SPIN(i++));
   }
+}
+
+bool Frame::prepare(){
+  // pri;
+  setParameters();
+  return Parameters::prepare();
 }

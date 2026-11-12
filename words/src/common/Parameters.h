@@ -102,7 +102,7 @@ protected:
   int get(ENUM_COMBOBOX e) const;
   double get(ENUM_SPIN e) const;
 
-  template <typename... Args> bool oneOfMenu(Args &&...args) {
-    return oneOf(m_menuClick, std::forward<Args>(args)...);
+  bool oneOfMenu(auto &&...args) {
+    return oneOf(m_menuClick, std::forward<decltype(args)>(args)...);
   }
 };
