@@ -170,8 +170,6 @@ const LookupTable<ENUM_MENU, SpinData> MENU_SPIN_DATA = {
      {MENU_CLUSTER_DIAMETER_STATISTICS,
       SpinData(MINIMUM_CLUSTER_DIAMETER, 1, 1, 10'000, 1, 5, 1)}}};
 
-const int UPDATEONLY_BUTTON = -1;
-const int INVERT_BUTTON = -2;
 const char SEPARATOR[] = "SEPARATOR";
 
 #endif /*#ifndef NOGTK*/

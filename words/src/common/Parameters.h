@@ -23,6 +23,7 @@ public:
   void operator=(const Parameters &p);
   void assignToWordsBase(const Parameters &p);
   void assignToFrame(const Parameters &p);
+  void assignToP();
 
   // public for modification class
   const std::string &vowelConsonant(bool consonant);
@@ -34,11 +35,11 @@ public:
 protected:
   // values
   ENUM_MENU m_menuClick;
+  std::array<int, BUTTON_SIZE> m_buttonValue;
   std::array<int, COMBOBOX_SIZE> m_comboValue;
   int m_sortlistValue;
   std::array<std::string, ENTRY_SIZE> m_entryValueUtf8; // utf8
   int m_radioValue;
-  std::array<int, BUTTON_SIZE> m_buttonValue;
   bool m_checkValue;
   std::string m_textViewValueUtf8; // do splitr so need utf8
   std::array<double, SPIN_SIZE> m_spinValue;

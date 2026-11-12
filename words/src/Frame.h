@@ -14,7 +14,7 @@
 
 gboolean on_debounce_timeout(gpointer data);
 
-class Frame : Parameters {
+class Frame : public Parameters {
   static constexpr int COMBOLINE_MARGIN = 3;
   static const int TIMER = 500; // milliseconds
 
@@ -156,6 +156,8 @@ public:
   int getComboIndex(ENUM_COMBOBOX e) const;
   void setComboIndex(ENUM_COMBOBOX e, int v);
   void updateComboValue(ENUM_COMBOBOX e);
+  int getComboValue(ENUM_COMBOBOX e);
+
   void refillCombo(ENUM_COMBOBOX e, const VString &v, int active);
   template <typename T>
   void refillCombo(ENUM_COMBOBOX e, T from, T to, int active = -1) {
@@ -282,7 +284,7 @@ public:
   // button functions
   void clickButton(ENUM_BUTTON e);
   void clickButton(GtkWidget *w);
-  void updateButton(ENUM_BUTTON e, int i = UPDATEONLY_BUTTON);
+  void updateButton(ENUM_BUTTON e, bool invert=false);
 
   // sort list functions
   void refillSort();
@@ -301,3 +303,4 @@ public:
   std::string getTimeString();
   std::string getStatusString();
 };
+extern Frame *frame;

@@ -14,8 +14,6 @@
 #include <latch>
 #include <thread>
 
-class WordsBase;
-extern WordsBase *wordsBase;
 class WordsBase : public Parameters {
   Dictionary m_dictionary[DICTIONARY_SIZE];
   std::string m_keyboardOneRow[256][2];
@@ -159,3 +157,4 @@ public:
   void updateProceedingText(std::string s = "", bool add = true);
   VectorInt relations(int nthread, VectorInt const &v1, VectorInt const &v2);
 };
+extern WordsBase *wordsBase;

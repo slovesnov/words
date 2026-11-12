@@ -685,7 +685,8 @@ void Frame::setHelperPanel(bool ignoreStateBegin) {
   default:;
   }
 
-  if (m_charactersLabel) {updateCharactersLabel();
+  if (m_charactersLabel) {
+    updateCharactersLabel();
   }
 
   gtk_widget_show_all(m_helperUp);
@@ -911,6 +912,10 @@ void Frame::updateComboValue(ENUM_COMBOBOX e) {
     // v can be =-1 when combobox just created
   }
   m_comboValue[e] = v;
+}
+
+int Frame::getComboValue(ENUM_COMBOBOX e) {
+  return GTK_IS_COMBO_BOX(m_combo[e]) ? getComboIndex(e) : -1;
 }
 
 void Frame::newVersionMessage() {
@@ -1454,6 +1459,7 @@ void Frame::job(ENUM_JOB_TYPE e) {
       updateStatus(STATE_ERROR);
       return;
     }
+    parameters.assignToP();
     parameters = *this; // after prepare
     //  store current entry, because after thread lose focus and cursor position
     captureFocusedState();
@@ -1688,7 +1694,7 @@ void Frame::clickButton(ENUM_BUTTON e) {
     } else if (e == BUTTON_LANGUAGE) {
       updateLanguage(true);
     } else if (oneOf(e, BUTTON_SORT_ORDER, BUTTON_FOUND)) {
-      updateButton(e, INVERT_BUTTON);
+      updateButton(e, true);
       job(e == BUTTON_SORT_ORDER ? JOB_TYPE_SORT_AND_FILTER : JOB_TYPE_FILTER);
     }
   }
@@ -1699,15 +1705,11 @@ void Frame::clickButton(GtkWidget *w) {
   clickButton(e);
 }
 
-void Frame::updateButton(ENUM_BUTTON e, int i) {
+void Frame::updateButton(ENUM_BUTTON e, bool invert = false) {
   std::string s;
-  auto va = m_buttonValue[e];
-  if (i == UPDATEONLY_BUTTON) {
-    i = va;
-  } else if (i == INVERT_BUTTON) {
-    i = m_buttonValue[e] = !va;
-  } else {
-    m_buttonValue[e] = i;
+  auto i = m_buttonValue[e];
+  if (invert) {
+    i = m_buttonValue[e] = !i;
   }
   if (e == BUTTON_FOUND) {
     const ENUM_STRING m[] = {FOUND, NOT_FOUND};
