@@ -153,10 +153,9 @@ public:
   StartStopButtonState getStartStopState() const;
 
   // begin combobox functions
-  int getComboIndex(ENUM_COMBOBOX e) const;
-  void setComboIndex(ENUM_COMBOBOX e, int v);
+  int getCombo(ENUM_COMBOBOX e) const;
+  void setCombo(ENUM_COMBOBOX e, int v);
   void updateComboValue(ENUM_COMBOBOX e);
-  int getComboValue(ENUM_COMBOBOX e);
 
   void refillCombo(ENUM_COMBOBOX e, const VString &v, int active);
   template <typename T>
@@ -189,6 +188,7 @@ public:
   void entryChanged(ENUM_ENTRY e);
   void updateEntryValue(ENUM_ENTRY e);
   std::string normalizeString(ENUM_ENTRY e, std::string const &q);
+  std::string getNormalizedEntry(ENUM_ENTRY e);
 
   template <typename T> void setDebounceTimer(T t) {
     if (m_debounceTimerId) {
@@ -267,6 +267,7 @@ public:
   GtkWidget *createCheck(ENUM_STRING e, bool set);
   void checkChanged();
   void updateCheckValue();
+  bool getCheck();
 
   // spin functons
   GtkWidget *createSpin(ENUM_SPIN e, const SpinData &spinData);
@@ -302,5 +303,6 @@ public:
   void onDraw(GtkWidget *widget, cairo_t *cr);
   std::string getTimeString();
   std::string getStatusString();
+  void setParameters();
 };
 extern Frame *frame;

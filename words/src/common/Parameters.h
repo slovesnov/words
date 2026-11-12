@@ -23,7 +23,6 @@ public:
   void operator=(const Parameters &p);
   void assignToWordsBase(const Parameters &p);
   void assignToFrame(const Parameters &p);
-  void assignToP();
 
   // public for modification class
   const std::string &vowelConsonant(bool consonant);
@@ -32,7 +31,6 @@ public:
   int indexOfCluster() const;
   bool oneOfCluster() const;
 
-protected:
   // values
   ENUM_MENU m_menuClick;
   std::array<int, BUTTON_SIZE> m_buttonValue;
@@ -44,6 +42,7 @@ protected:
   std::string m_textViewValueUtf8; // do splitr so need utf8
   std::array<double, SPIN_SIZE> m_spinValue;
 
+protected:
   // postcount variable
   int m_filteredWordsCount;
   std::string m_addstatus;

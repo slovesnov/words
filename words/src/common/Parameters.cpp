@@ -46,34 +46,6 @@ void Parameters::assignToFrame(const Parameters &p) {
   m_addstatus = p.m_addstatus;
 }
 
-void Parameters::assignToP() {
-  m_menuClick = frame->m_menuClick;
-  m_buttonValue = frame->m_buttonValue; // use array allow assign all values
-
-  int i;
-
-  i = 0;
-  for (auto& a : m_comboValue) {
-    a = frame->getComboValue(ENUM_COMBOBOX(i++));
-  }
-  pr(std::format("{} {}", m_comboValue, frame->m_comboValue));
-  m_sortlistValue = frame->m_sortlistValue;
-  // m_entryValueUtf8 = p.m_entryValueUtf8; // utf8
-  // m_radioValue = p.m_radioValue;
-  // m_checkValue = p.m_checkValue;
-  // m_textViewValueUtf8 = p.m_textViewValueUtf8; // do splitr so need utf8
-  // m_spinValue = p.m_spinValue;
-  /*
-  int m_sortlistValue;
-  std::array<std::string, ENTRY_SIZE> m_entryValueUtf8; // utf8
-  int m_radioValue;
-  bool m_checkValue;
-  std::string m_textViewValueUtf8; // do splitr so need utf8
-  std::array<double, SPIN_SIZE> m_spinValue;
-  
-  */
-}
-
 const std::string &Parameters::string(ENUM_STRING e) const {
   return m_languageAll[getLanguageIndex()][e];
 }
