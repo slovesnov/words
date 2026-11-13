@@ -46,7 +46,6 @@ void Parameters::assignToFrame(const Parameters &p) {
   m_addstatus = p.m_addstatus;
 }
 
-
 const std::string &Parameters::string(ENUM_STRING e, int i) const {
   return m_languageAll[getLanguageIndex()][int(e) + i];
 }
@@ -81,7 +80,7 @@ int Parameters::alphabetIndex(char c) const {
   return i == std::string::npos ? -1 : i;
 }
 
-const std::string &Parameters::vowelConsonant(bool consonant) {
+const std::string &Parameters::vowelConsonant(bool consonant) const {
   return settings(consonant ? SETTINGS_CONSONANTS : SETTINGS_VOWELS);
 }
 
@@ -156,7 +155,7 @@ bool Parameters::prepare() {
   if (!MENU_WITH_ENTRY.get(m_menuClick)) {
     return true;
   }
-  std::string evUtf8 = utf8Trim(m_entryValueUtf8[ENTRY_TEMPLATE]);
+  std::string evUtf8 = utf8Trim(m_entryValueUtf8[ENTRY0]);
   auto result = tryUtf8ToLocale(evUtf8);
   if (!result.has_value()) {
     return false;
@@ -167,11 +166,11 @@ bool Parameters::prepare() {
   }
 
   if (m_menuClick == MENU_REGULAR_EXPRESSIONS) {
-    return createRegex(ENTRY_TEMPLATE);
+    return createRegex(ENTRY0);
   }
 
   if (m_menuClick == MENU_MODIFICATION) { // finish with MENU_MODIFICATION
-    s = m_entryValueUtf8[ENTRY_TEMPLATE];
+    s = m_entryValueUtf8[ENTRY0];
     if (!m_modifications.parse(m_ev)) {
 #ifdef NOGTK
       printf(string(CGI_STRING_ERROR_INVALID_MODIFICATION_STRING).c_str());

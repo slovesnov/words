@@ -59,6 +59,10 @@ list row:selected {
     color: inherit; /* Keeps the text color normal instead of forcing it to white */
 }
 
+list row label {
+  padding: 2px 10px;
+}
+
 menu separator {
     background-color: #585858; 
     min-height: 1px;

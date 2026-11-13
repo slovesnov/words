@@ -2133,7 +2133,7 @@ void WordsBase::run_thread(int nthread) {
   } else if (m_menuClick == MENU_REGULAR_EXPRESSIONS) {
     UniquePcre2Code r;
     UniquePcre2MatchData m;
-    if (!createRegex(ENTRY_TEMPLATE, r, m)) {
+    if (!createRegex(ENTRY0, r, m)) {
       assert(0);
       return;
     }

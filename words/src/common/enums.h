@@ -266,7 +266,7 @@ enum ENUM_DICTIONARY {
 };
 
 enum ENUM_ENTRY {
-  ENTRY_TEMPLATE,
+  ENTRY0,
   ENTRY_FILTER,
   ENTRY_SEARCH,
 
@@ -274,7 +274,7 @@ enum ENUM_ENTRY {
 };
 // Note cann't move this constant to consts.h
 static const int REGEX_SIZE = 2;
-static_assert(ENTRY_TEMPLATE < REGEX_SIZE);
+static_assert(ENTRY0 < REGEX_SIZE);
 static_assert(ENTRY_FILTER < REGEX_SIZE);
 
 enum ENUM_CHAIN_MODE {

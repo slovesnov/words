@@ -287,5 +287,6 @@ public:
   std::string getStatusString();
   void setParameters();
   bool prepare();
+  void resetWidgets();
 };
 extern Frame *frame;

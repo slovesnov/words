@@ -25,7 +25,7 @@ public:
   void assignToFrame(const Parameters &p);
 
   // public for modification class
-  const std::string &vowelConsonant(bool consonant);
+  const std::string &vowelConsonant(bool consonant) const;
   bool isAlphabetChar(char c) const;
 
   int indexOfCluster() const;
@@ -53,8 +53,7 @@ protected:
 
   // no Frame
   SetString m_ss;
-  std::string
-      m_ev; // locale m_ev=utf8ToLocale(m_entryValueUtf8[ENTRY_TEMPLATE])
+  std::string m_ev; // locale m_ev=utf8ToLocale(m_entryValueUtf8[ENTRY0])
   Modification m_modifications;
 
   static std::mutex m_mutex;

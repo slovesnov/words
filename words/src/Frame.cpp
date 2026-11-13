@@ -117,8 +117,11 @@ gboolean update_status(gpointer data) {
 }
 
 gboolean end_job(gpointer data) {
+  prsync("");
   bool readParameters = GPOINTER_TO_INT(data);
+  prsync("");
   frame->endJob(readParameters);
+  prsync("");
   return G_SOURCE_REMOVE;
 }
 
@@ -613,7 +616,8 @@ void Frame::setHelperPanel(bool ignoreStateBegin) {
   std::string s;
 
   clearContainer(m_helperUp);
-  m_charactersLabel = nullptr;
+  m_charactersLabel = nullptr; // todo
+  resetWidgets();
 
   if (!ignoreStateBegin &&
       m_state == STATE_BEGIN) { // also worked when language is changed
@@ -628,8 +632,7 @@ void Frame::setHelperPanel(bool ignoreStateBegin) {
   }
 
   if (auto it = MENU_WITH_ENTRY.get(m_menuClick)) {
-    addUp(COMBOLINE_MARGIN, MENU_SEARCH, false,
-          createEntry(ENTRY_TEMPLATE, *it), true);
+    addUp(COMBOLINE_MARGIN, MENU_SEARCH, false, createEntry(ENTRY0, *it), true);
   }
 
   if (m_menuClick == MENU_CHARACTER_SEQUENCE) { // before MENU_SPIN
@@ -704,7 +707,7 @@ void Frame::updateDictionary(bool change) {
 
   lockSignals(); // lock signals to prevent entry|combo start new job
   if (auto it = MENU_WITH_ENTRY.get(m_menuClick)) {
-    auto e = ENTRY_TEMPLATE;
+    auto e = ENTRY0;
     std::string s = stringUsingDictionary(*it, true);
     s = normalizeString(e, s);
     // if user didn't change value of entry we can set it by default
@@ -844,6 +847,7 @@ void Frame::setMenuLabel(ENUM_MENU e, std::string const &text) {
 }
 
 void Frame::endJob(bool readParameters) {
+  prsync("");
   // prsync(readParameters);
   if (readParameters) {
     m_end = clock();
@@ -880,6 +884,7 @@ void Frame::endJob(bool readParameters) {
       g_signal_connect(G_OBJECT(m_area), "draw", G_CALLBACK(on_draw), NULL);
     }
   }
+  prsync("");
 }
 
 void Frame::setCombo(ENUM_COMBOBOX e, int v) {
@@ -921,7 +926,7 @@ void Frame::debounceTimeout(gpointer data) {
   if (p.first == PACKTYPE_ENTRY) {
     ENUM_ENTRY e = ENUM_ENTRY(p.second);
     switch (e) {
-    case ENTRY_TEMPLATE:
+    case ENTRY0:
       job();
       break;
 
@@ -952,7 +957,7 @@ void Frame::debounceTimeout(gpointer data) {
 
 void Frame::entryChanged(ENUM_ENTRY e) {
   bool b;
-  if (e == ENTRY_TEMPLATE) {
+  if (e == ENTRY0) {
     b = prepare();
     addRemoveClass(m_entry[e], CERROR, !b);
   } else if (e == ENTRY_FILTER) {
@@ -1224,7 +1229,7 @@ void Frame::updateTextView(ENUM_TEXTVIEW e, std::string_view markup) {
 GtkWidget *Frame::createEntry(ENUM_ENTRY e, ENUM_STRING n) {
   m_entry[e] = gtk_entry_new();
   std::string s = n == STRING_SIZE ? "" : stringUsingDictionary(n);
-  if (e == ENTRY_TEMPLATE) {
+  if (e == ENTRY0) {
     gtk_entry_set_text(GTK_ENTRY(m_entry[e]), s.c_str());
   }
   g_signal_connect(m_entry[e], "changed", G_CALLBACK(entry_changed),
@@ -1236,7 +1241,7 @@ std::string Frame::normalizeString(ENUM_ENTRY e, std::string const &q) {
   std::string s = q;
   // lowercased utf8, changed 'ё' -> 'е'
   bool regex = e == ENTRY_FILTER ||
-               (e == ENTRY_TEMPLATE && m_menuClick == MENU_REGULAR_EXPRESSIONS);
+               (e == ENTRY0 && m_menuClick == MENU_REGULAR_EXPRESSIONS);
   if (regex) {
     s = lowercase_utf8_regex(s);
   } else {
@@ -1410,8 +1415,11 @@ JOB_TYPE_SORT_AND_FILTER - stop calculations if needed, then sort and filter
 results JOB_TYPE_FILTER - stop calculations if needed, then filter results
 JOB_TYPE_STOP - stop calculations if needed
 */
+std::atomic<int> jobcounter(0);
 void Frame::job(ENUM_JOB_TYPE e) {
-  // prsync(magic_enum::enum_name(m_menuClick), magic_enum::enum_name(e));
+  int n = jobcounter++;
+
+  prsync(n, magic_enum::enum_name(m_menuClick), magic_enum::enum_name(e));
 
   if (oneOf(e, JOB_TYPE_SORT_AND_FILTER, JOB_TYPE_FILTER) && m_result.empty()) {
     return;
@@ -1427,34 +1435,46 @@ void Frame::job(ENUM_JOB_TYPE e) {
     }
 
     clear(e);
+    prsync(n);
     if (!prepare()) {
+      prsync(n);
       m_end = clock();
+      prsync(n);
       updateStatus(STATE_ERROR);
+      prsync(n);
       return;
     }
+    prsync(n);
     parameters = *this; // after prepare
+    prsync(n);
     //  store current entry, because after thread lose focus and cursor position
     captureFocusedState();
+    prsync(n);
   }
 
   if (m_managerThread.joinable()) {
     m_managerThread.request_stop();
     m_managerThread.detach();
   }
-  m_managerThread = std::jthread([this, e](std::stop_token manager_token) {
+  m_managerThread = std::jthread([this, e, n](std::stop_token manager_token) {
     if (e != JOB_TYPE_STOP) {
       g_idle_add_full(G_PRIORITY_HIGH, update_status, pack(STATE_PROCEEDING, e),
                       NULL);
     }
     if (m_thread.joinable()) {
+      prsync(n, "joinable");
       m_thread.request_stop();
       m_thread.join();
       if (e == JOB_TYPE_FULL) {
         clear(e);
       }
+      prsync(n, "joined");
+    } else {
+      prsync(n, "not joinable");
     }
 
     if (manager_token.stop_requested()) {
+      prsync(n, "return");
       return;
     }
 
@@ -1464,17 +1484,26 @@ void Frame::job(ENUM_JOB_TYPE e) {
       return;
     }
 
-    m_thread = std::jthread([this, e](std::stop_token token) {
+    m_thread = std::jthread([this, e, n](std::stop_token token) {
+      prsync(n);
       m_token = token;
 
-      if (token.stop_requested())
+      if (token.stop_requested()) {
+        prsync(n, "return");
         return;
+      }
 
+      prsync(n);
       wordsBase->assignToWordsBase(parameters);
+      prsync(n);
       wordsBase->run(e);
+      prsync(n);
 
-      if (token.stop_requested())
+      if (token.stop_requested()) {
+        prsync(n, "return");
         return;
+      }
+      prsync(n, "g_idle_add_full");
 
       g_idle_add_full(G_PRIORITY_HIGH, end_job, GINT_TO_POINTER(true), NULL);
     });
@@ -1581,7 +1610,7 @@ void Frame::spinChanged(ENUM_SPIN e) {
     }
   }
 
-  if (getLastSpin() == e) {
+  if (m_charactersLabel && getLastSpin() == e) {
     updateCharactersLabel();
   }
 }
@@ -1706,17 +1735,11 @@ void Frame::refillSortList() {
   for (auto &s : v) {
     auto label = createLabel(s);
     gtk_label_set_xalign(GTK_LABEL(label), 0.0);
-    gtk_widget_set_margin_start(label, 10);
-    gtk_widget_set_margin_end(label, 10);
-    gtk_widget_set_margin_top(label, 5);
-    gtk_widget_set_margin_bottom(label, 5);
-
     gtk_list_box_insert(GTK_LIST_BOX(m_sortlist), label, -1);
   }
-  if (auto *row =
-          gtk_list_box_get_row_at_index(GTK_LIST_BOX(m_sortlist), savedIndex)) {
-    gtk_list_box_select_row(GTK_LIST_BOX(m_sortlist), row);
-  }
+  auto *row =
+      gtk_list_box_get_row_at_index(GTK_LIST_BOX(m_sortlist), savedIndex);
+  gtk_list_box_select_row(GTK_LIST_BOX(m_sortlist), row);
   updateSortListButton();
   gtk_widget_show_all(GTK_WIDGET(m_sortlist));
 }
@@ -2233,6 +2256,7 @@ void Frame::addUp(auto &&...args) {
 void Frame::setParameters() {
   // m_menuClick, m_buttonValue changed in Frame class
   int i;
+  // prsync();
   for (i = 0; auto &a : m_comboValue) {
     a = getCombo(ENUM_COMBOBOX(i++));
   }
@@ -2246,10 +2270,26 @@ void Frame::setParameters() {
   for (i = 0; auto &a : m_spinValue) {
     a = getSpin(ENUM_SPIN(i++));
   }
+  // prsync();
 }
 
 bool Frame::prepare() {
   // pri;
+  // prsync();
   setParameters();
+  // prsync();
   return Parameters::prepare();
+}
+
+void Frame::resetWidgets() {
+  for (auto &a : m_combo) {
+    a = nullptr;
+  }
+  m_entry[ENTRY0] = nullptr;
+  m_radio = nullptr;
+  m_check = nullptr;
+  m_textview[TEXTVIEW0] = nullptr;
+  for (auto &a : m_spin) {
+    a = nullptr;
+  }
 }
