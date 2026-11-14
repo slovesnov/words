@@ -2,4 +2,4 @@
 *.exe
 *.o
 *.txt
-!r.txt
+!help.txt

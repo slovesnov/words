@@ -10,9 +10,11 @@
 #define ASLOV_SHORT_LOGGING
 #include "aslov.h"
 #include "enums.h"
+#include <cassert>
 #include <cmath>
 #include <set>
 #include <unordered_map>
+
 
 // Note cann't move this constants to consts.h
 const int LANGUAGES = 2;
@@ -149,11 +151,21 @@ class SpinData {
   // Base constructor with full member initialization
   SpinData(ENUM_STRING _e, ENUM_STRING _e1, double _initial, double _minimum,
            const std::array<double, LANGUAGES> &_maximum,
-           double _step_increment, double _page_increment,
-           double _climb_rate, int _digits)
+           double _step_increment, double _page_increment, double _climb_rate,
+           int _digits)
       : e(_e), e1(_e1), digits(_digits), initial(_initial), minimum(_minimum),
         step_increment(_step_increment), page_increment(_page_increment),
-        climb_rate(_climb_rate), maximum(_maximum) {}
+        climb_rate(_climb_rate), maximum(_maximum) {
+    assert(initial >= minimum);
+    assert(
+        (std::ranges::all_of(
+            maximum, [this](double max_val) { return minimum < max_val; })) &&
+        "minimum must be less than every element in maximum");
+    assert(
+        (std::ranges::all_of(
+             maximum, [this](double max_val) { return initial <= max_val; }) &&
+         "initial must be less or equal than every element in maximum"));
+  }
 
   // Helper to create a std::array filled with a single value
   static std::array<double, LANGUAGES> make_max_array(double val) {
@@ -171,7 +183,8 @@ public:
 
   SpinData() = default;
 
-  // Constructor without ENUM_STRING (constrained to arithmetic types to prevent enum conversion)
+  // Constructor without ENUM_STRING (constrained to arithmetic types to prevent
+  // enum conversion)
   template <typename T, typename = std::enable_if_t<std::is_arithmetic_v<T>>>
   SpinData(T _initial, double _minimum, double _maximum,
            double _step_increment = 1, double _page_increment = 1,
@@ -180,7 +193,8 @@ public:
                  _minimum, make_max_array(_maximum), _step_increment,
                  _page_increment, _climb_rate, _digits) {}
 
-  // Constructor with one ENUM_STRING (constrained to arithmetic types to avoid overload ambiguity)
+  // Constructor with one ENUM_STRING (constrained to arithmetic types to avoid
+  // overload ambiguity)
   template <typename T, typename = std::enable_if_t<std::is_arithmetic_v<T>>>
   SpinData(ENUM_STRING _e, T _initial, double _minimum, double _maximum,
            double _step_increment = 1, double _page_increment = 1,
@@ -192,8 +206,7 @@ public:
   // Constructor with two ENUM_STRING arguments and a scalar maximum
   SpinData(ENUM_STRING _e, ENUM_STRING _e1, double _initial, double _minimum,
            double _maximum, double _step_increment = 1,
-           double _page_increment = 1, double _climb_rate = 1,
-           int _digits = 0)
+           double _page_increment = 1, double _climb_rate = 1, int _digits = 0)
       : SpinData(_e, _e1, _initial, _minimum, make_max_array(_maximum),
                  _step_increment, _page_increment, _climb_rate, _digits) {}
 
@@ -676,8 +689,8 @@ public:
 
 std::string clusterString(const MapIntInt &m, int minsize = 0);
 
-constexpr int PACK_BITS = std::bit_width(
-    std::max(unsigned(PACKTYPE_SIZE), unsigned(STATE_SIZE)) - 1);
+constexpr int PACK_BITS =
+    std::bit_width(std::max(unsigned(PACKTYPE_SIZE), unsigned(STATE_SIZE)) - 1);
 
 // A - low, B - high
 template <typename A, typename B> std::pair<A, B> unpack(gpointer data) {
