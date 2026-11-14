@@ -70,7 +70,7 @@ class WordsBase : public Parameters {
 public:
   WordsBase();
 
-  void run(ENUM_JOB_TYPE e);
+  void run(ENUM_JOB_TYPE e,std::stop_token token);
   void run_thread(int nthread);
 
   template <typename T>

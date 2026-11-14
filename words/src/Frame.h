@@ -42,7 +42,7 @@ class Frame : public Parameters {
 
   MapMenu m_menuMap;
   bool m_lockSignals, m_lastCommandWithTabs = false;
-  std::jthread m_thread, m_managerThread;
+  std::jthread m_thread;
   CheckNewVersion m_newVersion;
   guint m_debounceTimerId = 0;
   GtkWidget *m_focused_widget = nullptr;

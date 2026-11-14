@@ -2163,8 +2163,9 @@ void WordsBase::run_thread(int nthread) {
   // prsync(nthread, timeElapse(begin));
 }
 
-void WordsBase::run(ENUM_JOB_TYPE e) {
+void WordsBase::run(ENUM_JOB_TYPE e, std::stop_token token) {
   // pr(get(SPIN0), get(SPIN1), m_radioValue, get(COMBOBOX0));
+  m_token = token;
   m_addstatus = "";
   bool userbreak = false;
   // auto begin = clock();
@@ -2203,6 +2204,7 @@ void WordsBase::run(ENUM_JOB_TYPE e) {
     // can be inside sortFilterResults
     userbreak = m_token.stop_requested();
   }
+  //prsync("stop", userbreak);
 }
 
 bool WordsBase::differenceOnlyOneChar(const std::string &a,

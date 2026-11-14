@@ -946,8 +946,7 @@ void Frame::debounceTimeout(gpointer data) {
   } else if (p.first == PACKTYPE_TEXTVIEW) {
     job();
   } else {
-    if (oneOfMenu(MENU_CLUSTER_SIZE_STATISTICS,
-                  MENU_CLUSTER_DIAMETER_STATISTICS)) {
+    if (oneOfCluster()) {
       updateProceedingThread();
     } else {
       job();
@@ -1415,7 +1414,56 @@ JOB_TYPE_SORT_AND_FILTER - stop calculations if needed, then sort and filter
 results JOB_TYPE_FILTER - stop calculations if needed, then filter results
 JOB_TYPE_STOP - stop calculations if needed
 */
-std::atomic<int> jobcounter(0);
+void Frame::job(ENUM_JOB_TYPE e) {
+  //prsync(n, magic_enum::enum_name(m_menuClick), magic_enum::enum_name(e));
+
+  if (oneOf(e, JOB_TYPE_SORT_AND_FILTER, JOB_TYPE_FILTER) && m_result.empty()) {
+    return;
+  }
+
+  m_thread = {};
+
+  if (e == JOB_TYPE_STOP) {
+    if (isValid()) {
+      g_idle_add_full(G_PRIORITY_HIGH, end_job, GINT_TO_POINTER(false), NULL);
+    }
+    return;
+  }
+
+  if (isValid()) {
+    if (e == JOB_TYPE_FULL && m_lastCommandWithTabs) {
+      gtk_container_remove(GTK_CONTAINER(m_notebook),
+                           m_textviewscrolled[TEXTVIEW_MAIN]);
+      gtk_container_remove(GTK_CONTAINER(m_box), m_notebook);
+      add(m_box, m_textviewscrolled[TEXTVIEW_MAIN], true);
+      gtk_widget_show_all(m_box);
+    }
+
+    clear(e);
+    if (!prepare()) {
+      m_end = clock();
+      updateStatus(STATE_ERROR);
+      return;
+    }
+    parameters = *this;
+    captureFocusedState();
+  }
+
+  g_idle_add_full(G_PRIORITY_HIGH, update_status, pack(STATE_PROCEEDING, e), NULL);
+
+  m_thread = std::jthread([this, e](std::stop_token token) {
+    if (token.stop_requested()) return;
+
+    wordsBase->assignToWordsBase(parameters);
+    wordsBase->run(e, token);
+
+    if (token.stop_requested()) return;
+
+    g_idle_add_full(G_PRIORITY_HIGH, end_job, GINT_TO_POINTER(true), NULL);
+  });
+}
+
+/*
 void Frame::job(ENUM_JOB_TYPE e) {
   int n = jobcounter++;
 
@@ -1509,7 +1557,7 @@ void Frame::job(ENUM_JOB_TYPE e) {
     });
   });
 }
-
+*/
 void Frame::addHelp(ENUM_STRING e) {
   // Note 20oct2026 for very long strings >1000-1100 can be invalid height of
   // components, split on several labels doesn't help
@@ -1593,7 +1641,6 @@ double Frame::getSpin(ENUM_SPIN e) {
 
 void Frame::spinChanged(ENUM_SPIN e) {
   // pr(magic_enum::enum_name(e));
-  //  pr(!b, m_radioValue);
   setDebounceTimer(e);
   if (MENU_SPIN.has(m_menuClick) && !oneOfMenu(MENU_WORDS_SPLIT)) {
     int v0 = getSpin(SPIN0);
@@ -1790,6 +1837,7 @@ void Frame::updateProceeding(const char *text) {
   int i = wordsBase->indexOfCluster();
   bool scrollDown = i == -1;
   if (i != -1) {
+    int v= getSpin(SPIN0);
     if (i == 0) {
       decltype(SearchResult::mapIMII) map;
       {
@@ -1797,7 +1845,7 @@ void Frame::updateProceeding(const char *text) {
         map = SearchResult::mapIMII;
       }
       for (const auto &[length, m] : map) {
-        s1 = clusterString(m, m_spinValue[SPIN0]);
+        s1 = clusterString(m,v);
         if (!s1.empty()) {
           if (!s.empty()) {
             s += "\n";
@@ -1814,7 +1862,7 @@ void Frame::updateProceeding(const char *text) {
       for (const auto &[length, m1] : map) {
         s1 = "";
         for (const auto &[diameter, m] : m1) {
-          if (diameter >= m_spinValue[SPIN0]) { // value from Frame
+          if (diameter >= v) { // value from Frame
             s1 += std::format(" {{{}}}", intToString(diameter)) +
                   clusterString(m);
           }
