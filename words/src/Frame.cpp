@@ -117,11 +117,11 @@ gboolean update_status(gpointer data) {
 }
 
 gboolean end_job(gpointer data) {
-  prsync("");
+  // prsync("");
   bool readParameters = GPOINTER_TO_INT(data);
-  prsync("");
+  // prsync("");
   frame->endJob(readParameters);
-  prsync("");
+  // prsync("");
   return G_SOURCE_REMOVE;
 }
 
@@ -682,7 +682,7 @@ void Frame::setHelperPanel(bool ignoreStateBegin) {
 
   case MENU_DENSITY:
     addUp(COMBOLINE_MARGIN, MAXIMUM, true,
-          createSpin(SPIN0, SpinData(25, 0, 25, .1, 1, 1, 1)), true, "%", true,
+          createSpin(SPIN0, SpinData(25, 0, 100, .1, 1, 1, 1)), true, "%", true,
           createTextCombo(COMBOBOX0, VOWELS, CONSONANTS, 0), true, CHARACTERS,
           true);
     break;
@@ -847,7 +847,7 @@ void Frame::setMenuLabel(ENUM_MENU e, std::string const &text) {
 }
 
 void Frame::endJob(bool readParameters) {
-  prsync("");
+  // prsync("");
   // prsync(readParameters);
   if (readParameters) {
     m_end = clock();
@@ -884,7 +884,7 @@ void Frame::endJob(bool readParameters) {
       g_signal_connect(G_OBJECT(m_area), "draw", G_CALLBACK(on_draw), NULL);
     }
   }
-  prsync("");
+  // prsync("");
 }
 
 void Frame::setCombo(ENUM_COMBOBOX e, int v) {
