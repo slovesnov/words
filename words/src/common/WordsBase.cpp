@@ -55,10 +55,6 @@ const LookupTable<ENUM_MENU, void (WordsBase::*)(int)> COMPLEX_FUNCTION = {
      &WordsBase::wordFrequency}, // not implemented (too fast)
     {MENU_CHECK_DICTIONARY, &WordsBase::checkDictionary}, // not implemented
     {MENU_TWO_CHARACTERS_DISTRIBUTION,
-     &WordsBase::twoCharactersDistribution}, // not implemented
-    {MENU_TWO_CHARACTERS_DISTRIBUTION_START,
-     &WordsBase::twoCharactersDistribution}, // not implemented
-    {MENU_TWO_CHARACTERS_DISTRIBUTION_END,
      &WordsBase::twoCharactersDistribution} // not implemented
 };
 
@@ -82,8 +78,7 @@ const LookupTable<ENUM_MENU, void (WordsBase::*)()> menuPostProseeding = {
     {MENU_DICTIONARY_STATISTICS,
      &WordsBase::dictionaryStatisticsPostProseeding},
     {MENU_CHECK_DICTIONARY, &WordsBase::checkDictionaryPostProseeding},
-    {{MENU_TWO_CHARACTERS_DISTRIBUTION, MENU_TWO_CHARACTERS_DISTRIBUTION_START,
-      MENU_TWO_CHARACTERS_DISTRIBUTION_END},
+    {MENU_TWO_CHARACTERS_DISTRIBUTION,
      &WordsBase::twoCharactersDistributionPostProseeding}};
 
 // regular expression special proceeding
@@ -1835,6 +1830,7 @@ void WordsBase::twoCharactersDistribution(int nthread) {
   auto &st = m_tr[nthread];
   st.clear(n);
   int &total = st.total;
+  auto v = get(COMBOBOX0);
   auto &a = st.a;
   auto [it, end] = iterators(nthread);
   for (; it != end; it++) {
@@ -1842,15 +1838,13 @@ void WordsBase::twoCharactersDistribution(int nthread) {
     if (e.length() < 2) {
       continue;
     }
-    if (m_menuClick == MENU_TWO_CHARACTERS_DISTRIBUTION) {
+    if (v == 0) {
       for (i = 0; i < int(e.length()) - 1; i++) {
         a[alphabetIndex(e[i])][alphabetIndex(e[i + 1])]++;
         total++;
       }
     } else {
-      i = m_menuClick == MENU_TWO_CHARACTERS_DISTRIBUTION_START
-              ? 0
-              : e.length() - 2;
+      i = v == 1 ? 0 : e.length() - 2;
       a[alphabetIndex(e[i])][alphabetIndex(e[i + 1])]++;
       total++;
     }
@@ -2204,7 +2198,7 @@ void WordsBase::run(ENUM_JOB_TYPE e, std::stop_token token) {
     // can be inside sortFilterResults
     userbreak = m_token.stop_requested();
   }
-  //prsync("stop", userbreak);
+  // prsync("stop", userbreak);
 }
 
 bool WordsBase::differenceOnlyOneChar(const std::string &a,

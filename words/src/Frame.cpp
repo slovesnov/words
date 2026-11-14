@@ -687,6 +687,13 @@ void Frame::setHelperPanel(bool ignoreStateBegin) {
           true);
     break;
 
+  case MENU_TWO_CHARACTERS_DISTRIBUTION:
+    addUp(COMBOLINE_MARGIN,
+          createTextCombo(COMBOBOX0, DISTRIBUTION_ANYWHERE_IN_A_WORD,
+                          DISTRIBUTION_AT_THE_END_OF_A_WORD, 0),
+          true);
+    break;
+
   default:;
   }
 
