@@ -616,7 +616,7 @@ void Frame::setHelperPanel(bool ignoreStateBegin) {
   std::string s;
 
   clearContainer(m_helperUp);
-  m_charactersLabel = nullptr; // todo
+  // m_charactersLabel = nullptr; // todo
   resetWidgets();
 
   if (!ignoreStateBegin &&
@@ -697,9 +697,7 @@ void Frame::setHelperPanel(bool ignoreStateBegin) {
   default:;
   }
 
-  if (m_charactersLabel) {
-    updateCharactersLabel();
-  }
+  updateCharactersLabel();
 
   gtk_widget_show_all(m_helperUp);
 }
@@ -726,8 +724,6 @@ void Frame::updateDictionary(bool change) {
 
   if (auto it = MENU_SPIN.get(m_menuClick)) {
     for (auto e : {SPIN0, SPIN1}) {
-      // pr(it->maximum[getDictionaryIndex()]);
-      // todo+-
       gtk_spin_button_set_range(GTK_SPIN_BUTTON(m_spin[e]), it->minimum,
                                 it->maximum[getDictionaryIndex()]);
     }
@@ -794,8 +790,7 @@ GtkWidget *Frame::createTextCombo(ENUM_COMBOBOX e, VString v, int active) {
 void Frame::addComboLineToHelper(const SpinData &spinData) {
   int i, j;
   const bool any = spinData.e == NUMBER_OF_MATCHES;
-  // pr(any, magic_enum::enum_name(spinData.e1),
-  //    magic_enum::enum_name(spinData.e2));
+  pr(magic_enum::enum_name(m_menuClick));
   GtkWidget *w = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, COMBOLINE_MARGIN), *r;
   for (i = 0; i < (oneOfMenu(MENU_WORDS_SPLIT) ? 1 : 2); i++) {
     add(w, i == 0 ? string(spinData.e) +
@@ -817,8 +812,7 @@ void Frame::addComboLineToHelper(const SpinData &spinData) {
     add(w, createSpin(ENUM_SPIN(SPIN0 + i), spinData));
   }
 
-  if (oneOfMenu(MENU_ANAGRAM, MENU_SIMPLE_WORD_SEQUENCE,
-                MENU_DOUBLE_WORD_SEQUENCE)) {
+  if (getSpinCharacters() != SPIN_SIZE) {
     m_charactersLabel = createLabel("");
     add(w, m_charactersLabel);
   }
@@ -1243,7 +1237,7 @@ GtkWidget *Frame::createEntry(ENUM_ENTRY e, ENUM_STRING n) {
   return m_entry[e];
 }
 
-std::string Frame::normalizeString(ENUM_ENTRY e, std::string const &q) {
+std::string Frame::normalizeString(ENUM_ENTRY e, std::string const &q)const {
   std::string s = q;
   // lowercased utf8, changed 'ё' -> 'е'
   bool regex = e == ENTRY_FILTER ||
@@ -1256,7 +1250,7 @@ std::string Frame::normalizeString(ENUM_ENTRY e, std::string const &q) {
   return replaceAll(s, "ё", "е");
 }
 
-std::string Frame::getNormalizedEntry(ENUM_ENTRY e) {
+std::string Frame::getNormalizedEntry(ENUM_ENTRY e) const {
   if (!GTK_IS_ENTRY(m_entry[e])) {
     return "";
   }
@@ -1266,8 +1260,7 @@ std::string Frame::getNormalizedEntry(ENUM_ENTRY e) {
 
 void Frame::updateCharactersLabel() {
   bool b;
-  const int n = get(getLastSpin());
-  // pr(n);
+  const int n = getWidgetValue(getSpinCharacters());
   const int mod100 = n % 100;
   const int mod10 = n % 10;
   // in the genitive case [ru] в родительном падеже
@@ -1422,7 +1415,7 @@ results JOB_TYPE_FILTER - stop calculations if needed, then filter results
 JOB_TYPE_STOP - stop calculations if needed
 */
 void Frame::job(ENUM_JOB_TYPE e) {
-  //prsync(n, magic_enum::enum_name(m_menuClick), magic_enum::enum_name(e));
+  // prsync(n, magic_enum::enum_name(m_menuClick), magic_enum::enum_name(e));
 
   if (oneOf(e, JOB_TYPE_SORT_AND_FILTER, JOB_TYPE_FILTER) && m_result.empty()) {
     return;
@@ -1456,115 +1449,23 @@ void Frame::job(ENUM_JOB_TYPE e) {
     captureFocusedState();
   }
 
-  g_idle_add_full(G_PRIORITY_HIGH, update_status, pack(STATE_PROCEEDING, e), NULL);
+  g_idle_add_full(G_PRIORITY_HIGH, update_status, pack(STATE_PROCEEDING, e),
+                  NULL);
 
   m_thread = std::jthread([this, e](std::stop_token token) {
-    if (token.stop_requested()) return;
+    if (token.stop_requested())
+      return;
 
     wordsBase->assignToWordsBase(parameters);
     wordsBase->run(e, token);
 
-    if (token.stop_requested()) return;
+    if (token.stop_requested())
+      return;
 
     g_idle_add_full(G_PRIORITY_HIGH, end_job, GINT_TO_POINTER(true), NULL);
   });
 }
 
-/*
-void Frame::job(ENUM_JOB_TYPE e) {
-  int n = jobcounter++;
-
-  prsync(n, magic_enum::enum_name(m_menuClick), magic_enum::enum_name(e));
-
-  if (oneOf(e, JOB_TYPE_SORT_AND_FILTER, JOB_TYPE_FILTER) && m_result.empty()) {
-    return;
-  }
-
-  if (isValid()) {
-    if (e == JOB_TYPE_FULL && m_lastCommandWithTabs) {
-      gtk_container_remove(GTK_CONTAINER(m_notebook),
-                           m_textviewscrolled[TEXTVIEW_MAIN]);
-      gtk_container_remove(GTK_CONTAINER(m_box), m_notebook);
-      add(m_box, m_textviewscrolled[TEXTVIEW_MAIN], true);
-      gtk_widget_show_all(m_box);
-    }
-
-    clear(e);
-    prsync(n);
-    if (!prepare()) {
-      prsync(n);
-      m_end = clock();
-      prsync(n);
-      updateStatus(STATE_ERROR);
-      prsync(n);
-      return;
-    }
-    prsync(n);
-    parameters = *this; // after prepare
-    prsync(n);
-    //  store current entry, because after thread lose focus and cursor position
-    captureFocusedState();
-    prsync(n);
-  }
-
-  if (m_managerThread.joinable()) {
-    m_managerThread.request_stop();
-    m_managerThread.detach();
-  }
-  m_managerThread = std::jthread([this, e, n](std::stop_token manager_token) {
-    if (e != JOB_TYPE_STOP) {
-      g_idle_add_full(G_PRIORITY_HIGH, update_status, pack(STATE_PROCEEDING, e),
-                      NULL);
-    }
-    if (m_thread.joinable()) {
-      prsync(n, "joinable");
-      m_thread.request_stop();
-      m_thread.join();
-      if (e == JOB_TYPE_FULL) {
-        clear(e);
-      }
-      prsync(n, "joined");
-    } else {
-      prsync(n, "not joinable");
-    }
-
-    if (manager_token.stop_requested()) {
-      prsync(n, "return");
-      return;
-    }
-
-    if (e == JOB_TYPE_STOP) {
-      if (isValid())
-        g_idle_add_full(G_PRIORITY_HIGH, end_job, GINT_TO_POINTER(false), NULL);
-      return;
-    }
-
-    m_thread = std::jthread([this, e, n](std::stop_token token) {
-      prsync(n);
-      m_token = token;
-
-      if (token.stop_requested()) {
-        prsync(n, "return");
-        return;
-      }
-
-      prsync(n);
-      wordsBase->assignToWordsBase(parameters);
-      prsync(n);
-      wordsBase->run(e);
-      prsync(n);
-
-      if (token.stop_requested()) {
-        prsync(n, "return");
-        return;
-      }
-      prsync(n, "g_idle_add_full");
-
-      g_idle_add_full(G_PRIORITY_HIGH, end_job, GINT_TO_POINTER(true), NULL);
-    });
-  });
-}
-*/
 void Frame::addHelp(ENUM_STRING e) {
   // Note 20oct2026 for very long strings >1000-1100 can be invalid height of
   // components, split on several labels doesn't help
@@ -1611,7 +1512,7 @@ void Frame::checkChanged() {
   job();
 }
 
-bool Frame::getCheck() {
+bool Frame::getCheck() const {
   return GTK_IS_TOGGLE_BUTTON(m_check)
              ? gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(m_check))
              : false;
@@ -1640,7 +1541,7 @@ GtkWidget *Frame::createSpin(ENUM_SPIN e, const SpinData &spinData) {
   return m_spin[e];
 }
 
-double Frame::getSpin(ENUM_SPIN e) {
+double Frame::getSpin(ENUM_SPIN e) const {
   auto a = m_spin[e];
   return GTK_IS_SPIN_BUTTON(a) ? gtk_spin_button_get_value(GTK_SPIN_BUTTON(a))
                                : -1;
@@ -1650,9 +1551,9 @@ void Frame::spinChanged(ENUM_SPIN e) {
   // pr(magic_enum::enum_name(e));
   setDebounceTimer(e);
   if (MENU_SPIN.has(m_menuClick) && !oneOfMenu(MENU_WORDS_SPLIT)) {
-    int v0 = getSpin(SPIN0);
-    int v1 = getSpin(SPIN1);
-    int v = getSpin(e);
+    int v0 = getWidgetValue(SPIN0);
+    int v1 = getWidgetValue(SPIN1);
+    int v = getWidgetValue(e);
     auto o = e == SPIN0 ? SPIN1 : SPIN0;
     if (v0 > v1) {
       gtk_spin_button_set_value(GTK_SPIN_BUTTON(m_spin[o]), v);
@@ -1664,20 +1565,17 @@ void Frame::spinChanged(ENUM_SPIN e) {
     }
   }
 
-  if (m_charactersLabel && getLastSpin() == e) {
+  if (getSpinCharacters() == e) {
     updateCharactersLabel();
   }
 }
 
-ENUM_SPIN Frame::getLastSpin() {
-  // use only for MENU_WORDS_SPLIT..., to update characterslabel
-  if (m_menuClick == MENU_WORDS_SPLIT)
-    return SPIN0;
-  else if (oneOfMenu(MENU_ANAGRAM, MENU_SIMPLE_WORD_SEQUENCE,
-                     MENU_DOUBLE_WORD_SEQUENCE))
+ENUM_SPIN Frame::getSpinCharacters() {
+  if (oneOfMenu(MENU_ANAGRAM, MENU_SIMPLE_WORD_SEQUENCE,
+                MENU_DOUBLE_WORD_SEQUENCE))
     return SPIN1;
   else
-    return SPIN_SIZE;
+    return oneOfMenu(MENU_WORDS_SPLIT) ? SPIN0 : SPIN_SIZE;
 }
 
 void Frame::radioChanged() {
@@ -1685,7 +1583,7 @@ void Frame::radioChanged() {
   job();
 }
 
-int Frame::getRadio() {
+int Frame::getRadio() const {
   if (!GTK_IS_RADIO_BUTTON(m_radio)) {
     return -1;
   }
@@ -1822,7 +1720,7 @@ void Frame::sortListRowActivated(GtkListBoxRow *row) {
   job(JOB_TYPE_SORT_AND_FILTER);
 }
 
-int Frame::getSortList() {
+int Frame::getSortList() const {
   GtkListBoxRow *row = gtk_list_box_get_selected_row(GTK_LIST_BOX(m_sortlist));
   return row ? gtk_list_box_row_get_index(row) : DEFAULT_SORTLIST_VALUE;
 }
@@ -1844,7 +1742,7 @@ void Frame::updateProceeding(const char *text) {
   int i = wordsBase->indexOfCluster();
   bool scrollDown = i == -1;
   if (i != -1) {
-    int v= getSpin(SPIN0);
+    int v = getWidgetValue(SPIN0);
     if (i == 0) {
       decltype(SearchResult::mapIMII) map;
       {
@@ -1852,7 +1750,7 @@ void Frame::updateProceeding(const char *text) {
         map = SearchResult::mapIMII;
       }
       for (const auto &[length, m] : map) {
-        s1 = clusterString(m,v);
+        s1 = clusterString(m, v);
         if (!s1.empty()) {
           if (!s.empty()) {
             s += "\n";
@@ -2311,28 +2209,36 @@ void Frame::addUp(auto &&...args) {
 void Frame::setParameters() {
   // m_menuClick, m_buttonValue changed in Frame class
   int i;
-  // prsync();
   for (i = 0; auto &a : m_comboValue) {
-    a = getCombo(ENUM_COMBOBOX(i++));
+    a = getWidgetValue(ENUM_COMBOBOX(i++));
   }
   m_sortlistValue = getSortList();
   for (i = 0; auto &a : m_entryValueUtf8) {
-    a = getNormalizedEntry(ENUM_ENTRY(i++));
+    a = getWidgetValue(ENUM_ENTRY(i++));
   }
   m_radioValue = getRadio();
   m_checkValue = getCheck();
   m_textViewValueUtf8 = getTextView(TEXTVIEW0);
   for (i = 0; auto &a : m_spinValue) {
-    a = getSpin(ENUM_SPIN(i++));
+    a = getWidgetValue(ENUM_SPIN(i++));
   }
-  // prsync();
+  // for (i = 0; auto &a : m_comboValue) {todo
+  //   a = getCombo(ENUM_COMBOBOX(i++));
+  // }
+  // m_sortlistValue = getSortList();
+  // for (i = 0; auto &a : m_entryValueUtf8) {
+  //   a = getNormalizedEntry(ENUM_ENTRY(i++));
+  // }
+  // m_radioValue = getRadio();
+  // m_checkValue = getCheck();
+  // m_textViewValueUtf8 = getTextView(TEXTVIEW0);
+  // for (i = 0; auto &a : m_spinValue) {
+  //   a = getSpin(ENUM_SPIN(i++));
+  // }
 }
 
 bool Frame::prepare() {
-  // pri;
-  // prsync();
   setParameters();
-  // prsync();
   return Parameters::prepare();
 }
 
@@ -2348,3 +2254,15 @@ void Frame::resetWidgets() {
     a = nullptr;
   }
 }
+
+int Frame::getWidgetValue(ENUM_COMBOBOX e) const { return getCombo(e); }
+
+std::string Frame::getWidgetValue(ENUM_ENTRY e) const {
+  return getNormalizedEntry(e);
+}
+
+std::string Frame::getWidgetValue(ENUM_TEXTVIEW e) const {
+  return getTextView(e);
+}
+
+double Frame::getWidgetValue(ENUM_SPIN e) const { return getSpin(e); }

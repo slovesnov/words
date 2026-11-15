@@ -179,8 +179,8 @@ public:
   // entry functions
   GtkWidget *createEntry(ENUM_ENTRY e, ENUM_STRING n = STRING_SIZE);
   void entryChanged(ENUM_ENTRY e);
-  std::string normalizeString(ENUM_ENTRY e, std::string const &q);
-  std::string getNormalizedEntry(ENUM_ENTRY e);
+  std::string normalizeString(ENUM_ENTRY e, std::string const &q)const;
+  std::string getNormalizedEntry(ENUM_ENTRY e) const;
 
   void setDebounceTimer(auto a);
   void debounceTimeout(gpointer data);
@@ -251,29 +251,29 @@ public:
   // check functons
   GtkWidget *createCheck(ENUM_STRING e, bool set);
   void checkChanged();
-  bool getCheck();
+  bool getCheck() const;
 
   // spin functons
   GtkWidget *createSpin(ENUM_SPIN e, const SpinData &spinData);
-  double getSpin(ENUM_SPIN e);
+  double getSpin(ENUM_SPIN e) const;
   void spinChanged(ENUM_SPIN e);
-  ENUM_SPIN getLastSpin();
+  ENUM_SPIN getSpinCharacters();
 
   // radio functions
   void radioChanged();
-  int getRadio();
+  int getRadio() const;
   void setRadio(int index);
 
   // button functions
   void clickButton(ENUM_BUTTON e);
   void clickButton(GtkWidget *w);
-  void updateButton(ENUM_BUTTON e, bool invert=false);
+  void updateButton(ENUM_BUTTON e, bool invert = false);
 
   // sort list functions
   void refillSortList();
   void sortListRowActivated(GtkListBoxRow *row);
   void updateSortListButton();
-  int getSortList();
+  int getSortList() const;
 
   void updateProceedingThread();
   void updateProceeding(const char *text = NULL);
@@ -288,5 +288,10 @@ public:
   void setParameters();
   bool prepare();
   void resetWidgets();
+
+  int getWidgetValue(ENUM_COMBOBOX e) const;
+  std::string getWidgetValue(ENUM_ENTRY e) const;
+  std::string getWidgetValue(ENUM_TEXTVIEW e) const;
+  double getWidgetValue(ENUM_SPIN e) const;
 };
 extern Frame *frame;
