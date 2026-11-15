@@ -1411,7 +1411,7 @@ void WordsBase::clusterDiameterStatistics(int nthread) {
 void WordsBase::clusterStatisticsPreProseeding() {
   m_ss.clear(); // used in fillDictionaryLength() so clear
   m_iiv = {getWordLengthMap().begin(), getWordLengthMap().end()};
-  const bool finalRelease = 0; // todo
+  const bool finalRelease = 1; // todo
   if (finalRelease) {
     std::ranges::sort(m_iiv,
                       [](auto &a, auto &b) { return a.second > b.second; });

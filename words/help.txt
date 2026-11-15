@@ -95,13 +95,6 @@ en 'enindex.dic' https://github.com/wooorm/dictionaries/tree/main/dictionaries/d
 en 'words_alpha.txt' https://github.com/dwyl/english-words/blob/master/words_alpha.txt
 удалено учебно-научно-произ-водственный
 
-TODO
-после выпуска новой версии обновить файл "https://slovesnov.github.io/wordsversion.txt"
-после выпуска новой версии words site{
-    en,ru содержит ... слов
-    readme.md update
-}
-
 ============================================================================================================
 4.44 17oct2025
 changed links

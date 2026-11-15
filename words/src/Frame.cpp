@@ -614,9 +614,7 @@ void Frame::aboutDialog() {
 void Frame::setHelperPanel(bool ignoreStateBegin) {
   int i;
   std::string s;
-
   clearContainer(m_helperUp);
-  // m_charactersLabel = nullptr; // todo
   resetWidgets();
 
   if (!ignoreStateBegin &&
@@ -698,7 +696,6 @@ void Frame::setHelperPanel(bool ignoreStateBegin) {
   }
 
   updateCharactersLabel();
-
   gtk_widget_show_all(m_helperUp);
 }
 
@@ -788,9 +785,9 @@ GtkWidget *Frame::createTextCombo(ENUM_COMBOBOX e, VString v, int active) {
 }
 
 void Frame::addComboLineToHelper(const SpinData &spinData) {
+  // pr(magic_enum::enum_name(m_menuClick));
   int i, j;
   const bool any = spinData.e == NUMBER_OF_MATCHES;
-  pr(magic_enum::enum_name(m_menuClick));
   GtkWidget *w = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, COMBOLINE_MARGIN), *r;
   for (i = 0; i < (oneOfMenu(MENU_WORDS_SPLIT) ? 1 : 2); i++) {
     add(w, i == 0 ? string(spinData.e) +
@@ -1237,7 +1234,7 @@ GtkWidget *Frame::createEntry(ENUM_ENTRY e, ENUM_STRING n) {
   return m_entry[e];
 }
 
-std::string Frame::normalizeString(ENUM_ENTRY e, std::string const &q)const {
+std::string Frame::normalizeString(ENUM_ENTRY e, std::string const &q) const {
   std::string s = q;
   // lowercased utf8, changed 'ё' -> 'е'
   bool regex = e == ENTRY_FILTER ||
@@ -1260,7 +1257,11 @@ std::string Frame::getNormalizedEntry(ENUM_ENTRY e) const {
 
 void Frame::updateCharactersLabel() {
   bool b;
-  const int n = getWidgetValue(getSpinCharacters());
+  ENUM_SPIN es = getSpinCharacters();
+  if (es == SPIN_SIZE) {
+    return;
+  }
+  const int n = getWidgetValue(es);
   const int mod100 = n % 100;
   const int mod10 = n % 10;
   // in the genitive case [ru] в родительном падеже
@@ -2222,19 +2223,6 @@ void Frame::setParameters() {
   for (i = 0; auto &a : m_spinValue) {
     a = getWidgetValue(ENUM_SPIN(i++));
   }
-  // for (i = 0; auto &a : m_comboValue) {todo
-  //   a = getCombo(ENUM_COMBOBOX(i++));
-  // }
-  // m_sortlistValue = getSortList();
-  // for (i = 0; auto &a : m_entryValueUtf8) {
-  //   a = getNormalizedEntry(ENUM_ENTRY(i++));
-  // }
-  // m_radioValue = getRadio();
-  // m_checkValue = getCheck();
-  // m_textViewValueUtf8 = getTextView(TEXTVIEW0);
-  // for (i = 0; auto &a : m_spinValue) {
-  //   a = getSpin(ENUM_SPIN(i++));
-  // }
 }
 
 bool Frame::prepare() {
